@@ -42,6 +42,8 @@ static const char *text_dither[] =
    "Ordered 1",
    "Ordered 2",
    "Ordered 3",
+   "FloydSteinberg 1",
+   "FloydSteinberg 2",
 };
 //-------------------------------------
 
@@ -67,6 +69,19 @@ void gui_init()
 void gui_update()
 {
    gui_buttons();
+
+   if(SLK_key_down(SLK_KEY_LEFT))
+      if(gui_out_width>0)
+         gui_out_width-=8;
+   if(SLK_key_down(SLK_KEY_RIGHT))
+      if(gui_out_width<256)
+         gui_out_width+=8;
+   if(SLK_key_down(SLK_KEY_DOWN))
+      if(gui_out_height>0)
+         gui_out_height-=8;
+   if(SLK_key_down(SLK_KEY_UP))
+      if(gui_out_height<256)
+         gui_out_height+=8;
 
    gui_draw();
 }
@@ -124,12 +139,12 @@ static void gui_buttons()
       {
          pixel_process_mode--;
          if(pixel_process_mode<0)
-            pixel_process_mode = 3;
+            pixel_process_mode = 5;
       }
       else if(x>142&&x<149&&y>19&&y<28) //Dither right
       {
          pixel_process_mode++;
-         if(pixel_process_mode>3)
+         if(pixel_process_mode>5)
             pixel_process_mode = 0;
       }
       else if(x>0&&x<9&&y>89&&y<98) //Output width left
@@ -225,22 +240,7 @@ static void update_output()
    if(sprite_in==NULL)
       return;
 
-   //Process image
-   int out_width = sprite_out->width;
-   int out_height = sprite_out->height;
-   for(int y = 0;y<gui_out_height;y++)
-   {
-      for(int x = 0;x<gui_out_width;x++)
-      {
-         SLK_Color in = sample_pixel((float)x/(float)out_width,(float)y/(float)out_height,pixel_sample_mode,sprite_in);          
-         SLK_Color out;
-         if(in.a!=255)
-            out = SLK_color_create(0,0,0,0);
-         else
-            out = process_pixel(x,y,pixel_process_mode,in,palette);
-         SLK_rgb_sprite_set_pixel(sprite_out,x,y,out);
-      }
-   }
+   process_image(sprite_in,sprite_out,palette,pixel_sample_mode,pixel_process_mode);
 
    SLK_layer_set_current(2);
    SLK_draw_rgb_set_changed(1);
@@ -248,4 +248,3 @@ static void update_output()
    SLK_draw_rgb_clear();
    SLK_draw_rgb_sprite(sprite_out,0,0);
 }
-//-------------------------------------

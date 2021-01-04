@@ -15,10 +15,10 @@ assets.o: ../../src/assets.c ../../src/assets.h
 gui.o: ../../src/gui.c ../../src/gui.h ../../src/assets.h ../../src/process.h ../../src/sample.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
-process.o: ../../src/process.c ../../src/process.h
+process.o: ../../src/process.c ../../src/process.h ../../src/sample.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
-sample.o: ../../src/sample.c ../../src/sample.h
+sample.o: ../../src/sample.c ../../src/sample.h ../../src/process.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 tinyfiledialogs.o: ../../external/tinyfiledialogs.c

@@ -12,6 +12,21 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _PROCESS_H_
 
-SLK_Color process_pixel(int x, int y, int process_mode, SLK_Color in, SLK_Palette *pal);
+typedef struct
+{
+   union
+   {
+      struct
+      {
+         int16_t r;
+         int16_t g;
+         int16_t b;
+         int16_t a;
+      };
+      uint64_t n;
+   };
+}Big_pixel;
+
+void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *palette, int sample_mode, int process_mode);
 
 #endif

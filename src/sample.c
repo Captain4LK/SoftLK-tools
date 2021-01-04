@@ -9,11 +9,13 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
+#include <stdint.h>
 #include <SLK/SLK.h>
 #include "../external/tinyfiledialogs.h"
 //-------------------------------------
 
 //Internal includes
+#include "process.h"
 #include "sample.h"
 //-------------------------------------
 
@@ -27,28 +29,36 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static SLK_Color sample_noname(float x, float y, SLK_RGB_sprite *sprite);
+static void sample_noname(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
 //-------------------------------------
 
 //Function implementations
-SLK_Color sample_pixel(float x, float y, int sample_mode, SLK_RGB_sprite *sprite)
+
+void sample_image(const SLK_RGB_sprite *in, Big_pixel *out, int sample_mode, int width, int height)
 {
-   SLK_Color out = SLK_color_create(0,0,0,255);
    switch(sample_mode)
    {
    case 0:
-      out = sample_noname(x,y,sprite);
+   default:
+      sample_noname(in,out,width,height);
       break;
    }
-
-   return out;
 }
 
-static SLK_Color sample_noname(float x, float y, SLK_RGB_sprite *sprite)
+static void sample_noname(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
-   double sx = x*sprite->width;   
-   double sy = y*sprite->height;   
-
-   return SLK_rgb_sprite_get_pixel(sprite,sx,sy);
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      {
+         double sx = ((double)x/(double)width)*in->width;   
+         double sy = ((double)y/(double)height)*in->height;   
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,sx,sy);
+         out[y*width+x].r = c.r;
+         out[y*width+x].b = c.b;
+         out[y*width+x].g = c.g;
+         out[y*width+x].a = c.a;
+      }
+   }
 }
 //-------------------------------------

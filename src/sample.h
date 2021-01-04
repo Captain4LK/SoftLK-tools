@@ -12,6 +12,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _SAMPLE_H_
 
-SLK_Color sample_pixel(float x, float y, int sample_mode, SLK_RGB_sprite *sprite);
+void sample_image(const SLK_RGB_sprite *in, Big_pixel *out, int sample_mode, int width, int height);
 
 #endif

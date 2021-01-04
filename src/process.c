@@ -9,6 +9,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
+#include <math.h>
+#include <stdint.h>
 #include <limits.h>
 #include <SLK/SLK.h>
 #include "../external/tinyfiledialogs.h"
@@ -16,6 +18,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "process.h"
+#include "sample.h"
 //-------------------------------------
 
 //#defines
@@ -61,70 +64,167 @@ static const uint8_t dither_threshold_little[64] =
    2, 15, 1, 14, 2, 14, 1, 13,
    10, 7, 9, 5, 10, 6, 9, 5
 };
+
+static const uint8_t dither_threshold_none[64] = {0};
+
 static const uint8_t *dither_threshold = dither_threshold_little;
+static Big_pixel *tmp_data = NULL;
 //-------------------------------------
 
 //Function prototypes
-static SLK_Color orderd_dither(int x, int y, SLK_Color in, SLK_Palette *pal);
-static SLK_Color find_closest(SLK_Color in, SLK_Palette *pal);
-static int color_dist2(SLK_Color c0, SLK_Color c1);
+static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height);
+static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height);
+static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height);
+static void floyd_apply_error(Big_pixel *d, double error_r, double error_g, double error_b, int x, int y, int width, int height);
+static SLK_Color find_closest(Big_pixel in, SLK_Palette *pal);
+static int64_t color_dist2(Big_pixel c0, SLK_Color c1);
+static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height);
 //-------------------------------------
 
 //Function implementations
 
-SLK_Color process_pixel(int x, int y, int process_mode, SLK_Color in, SLK_Palette *pal)
+void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *palette, int sample_mode, int process_mode)
 {
-   SLK_Color out = SLK_color_create(0,0,0,255);
-   if(pal==NULL)
-      return out;
+   if(tmp_data)
+      free(tmp_data);
+   tmp_data = malloc(sizeof(*tmp_data)*out->width*out->height);
+
+   sample_image(in,tmp_data,sample_mode,out->width,out->height);
+
+   dither_image(tmp_data,out,palette,process_mode,out->width,out->height);
+}
+
+static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height)
+{
    switch(process_mode)
    {
    case 0: //No dithering
-      out = find_closest(in,pal);
+      dither_threshold = dither_threshold_none;
+      orderd_dither(d,out,palette,width,height);
       break;
    case 1: //Ordered dithering (level 0)
       dither_threshold = dither_threshold_little;
-      out = orderd_dither(x,y,in,pal);
+      orderd_dither(d,out,palette,width,height);
       break;
    case 2: //Ordered dithering (level 1)
       dither_threshold = dither_threshold_some;
-      out = orderd_dither(x,y,in,pal);
+      orderd_dither(d,out,palette,width,height);
       break;
    case 3: //Ordered dithering (level 2)
       dither_threshold = dither_threshold_normal;
-      out = orderd_dither(x,y,in,pal);
+      orderd_dither(d,out,palette,width,height);
+      break;
+   case 4: //Floyd-Steinberg dithering (per color error)
+      floyd_dither(d,out,palette,width,height);
+      break;
+   case 5: //Floyd-Steinberg dithering (distributed error)
+      floyd2_dither(d,out,palette,width,height);
       break;
    }
-
-   return out;
 }
 
-static SLK_Color orderd_dither(int x, int y, SLK_Color in, SLK_Palette *pal)
+static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height)
 {
-   uint8_t tresshold_id = ((y & 7) << 3) + (x & 7);
-   SLK_Color out; 
-   out.a = in.a;
-
-   SLK_Color c;
-   c.r = MIN((in.r+dither_threshold[tresshold_id]),0xff);
-   c.g = MIN((in.g+dither_threshold[tresshold_id]),0xff);
-   c.b = MIN((in.b+dither_threshold[tresshold_id]),0xff);
-   c.a = in.a;
-   out = find_closest(c,pal);
-
-   return out;
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      { 
+         Big_pixel in = d[y*width+x];
+         if(in.a<255)
+         {
+            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            continue;
+         }
+         uint8_t tresshold_id = ((y & 7) << 3) + (x & 7);
+         Big_pixel c;
+         c.r = MIN((in.r+dither_threshold[tresshold_id]),0xff);
+         c.g = MIN((in.g+dither_threshold[tresshold_id]),0xff);
+         c.b = MIN((in.b+dither_threshold[tresshold_id]),0xff);
+         c.a = in.a;
+         out->data[y*width+x] = find_closest(c,pal);
+         out->data[y*width+x].a = 255;
+      }
+   }
 }
 
-static int color_dist2(SLK_Color c0, SLK_Color c1)
+static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height)
 {
-   int diff_r = c1.r-c0.r;
-   int diff_g = c1.g-c0.g;
-   int diff_b = c1.b-c0.b;
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      {
+         Big_pixel in = d[y*width+x];
+         if(in.a<255)
+         {
+            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            continue;
+         }
+         
+         SLK_Color p = find_closest(in,pal);
+         double error_r = (double)in.r-(double)p.r;
+         double error_g = (double)in.g-(double)p.g;
+         double error_b = (double)in.b-(double)p.b;
+         floyd_apply_error(d,error_r*(7.0/16.0),error_g*(7.0/16.0),error_b*(7.0/16.0),x+1,y,width,height);
+         floyd_apply_error(d,error_r*(3.0/16.0),error_g*(3.0/16.0),error_b*(3.0/16.0),x-1,y+1,width,height);
+         floyd_apply_error(d,error_r*(5.0/16.0),error_g*(5.0/16.0),error_b*(5.0/16.0),x,y+1,width,height);
+         floyd_apply_error(d,error_r*(1.0/16.0),error_g*(1.0/16.0),error_b*(1.0/16.0),x+1,y+1,width,height);
+
+         out->data[y*width+x] = p;
+         out->data[y*width+x].a = 255;
+      }
+   }
+}
+
+static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height)
+{
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      {
+         Big_pixel in = d[y*width+x];
+         if(in.a<255)
+         {
+            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            continue;
+         }
+         
+         SLK_Color p = find_closest(in,pal);
+         double error = (double)in.r-(double)p.r;
+         error+=(double)in.g-(double)p.g;
+         error+=(double)in.b-(double)p.b;
+         error = error/3.0;
+         floyd_apply_error(d,error*(7.0/16.0),error*(7.0/16.0),error*(7.0/16.0),x+1,y,width,height);
+         floyd_apply_error(d,error*(3.0/16.0),error*(3.0/16.0),error*(3.0/16.0),x-1,y+1,width,height);
+         floyd_apply_error(d,error*(5.0/16.0),error*(5.0/16.0),error*(5.0/16.0),x,y+1,width,height);
+         floyd_apply_error(d,error*(1.0/16.0),error*(1.0/16.0),error*(1.0/16.0),x+1,y+1,width,height);
+
+         out->data[y*width+x] = p;
+         out->data[y*width+x].a = 255;
+      }
+   }
+}
+
+static void floyd_apply_error(Big_pixel *d, double error_r, double error_g, double error_b, int x, int y, int width, int height)
+{
+   if(x>width-1||x<0||y>height-1||y<0)
+      return;
+
+   Big_pixel *in = &d[y*width+x];
+   in->r = in->r+error_r;
+   in->g = in->g+error_g;
+   in->b = in->b+error_b;
+}
+
+static int64_t color_dist2(Big_pixel c0, SLK_Color c1)
+{
+   int64_t diff_r = c1.r-c0.r;
+   int64_t diff_g = c1.g-c0.g;
+   int64_t diff_b = c1.b-c0.b;
 
    return (diff_r*diff_r+diff_g*diff_g+diff_b*diff_b);
 }
 
-static SLK_Color find_closest(SLK_Color in, SLK_Palette *pal)
+static SLK_Color find_closest(Big_pixel in, SLK_Palette *pal)
 {
    if(in.a==0)
       return pal->colors[0];
