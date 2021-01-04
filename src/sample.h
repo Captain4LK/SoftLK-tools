@@ -8,13 +8,10 @@ To the extent possible under law, the author(s) have dedicated all copyright and
 You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
 */
 
-#ifndef _ASSETS_H_
+#ifndef _SAMPLE_H_
 
-#define _ASSETS_H_
+#define _SAMPLE_H_
 
-extern SLK_RGB_sprite *sprite_backdrop_1;
-extern SLK_RGB_sprite *sprite_gui_0;
-
-void assets_load();
+SLK_Color sample_pixel(float x, float y, int sample_mode, SLK_RGB_sprite *sprite);
 
 #endif

@@ -14,7 +14,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
-#include "assets.h"
+#include "sample.h"
 //-------------------------------------
 
 //#defines
@@ -24,19 +24,31 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Variables
-SLK_RGB_sprite *sprite_backdrop_1 = NULL;
-SLK_RGB_sprite *sprite_gui_0 = NULL;
 //-------------------------------------
 
 //Function prototypes
+static SLK_Color sample_noname(float x, float y, SLK_RGB_sprite *sprite);
 //-------------------------------------
 
 //Function implementations
-
-void assets_load()
+SLK_Color sample_pixel(float x, float y, int sample_mode, SLK_RGB_sprite *sprite)
 {
-   SLK_draw_rgb_load_font("assets/cursive2.png");
-   sprite_backdrop_1 = SLK_rgb_sprite_load("assets/box.png");
-   sprite_gui_0 = SLK_rgb_sprite_load("assets/ui.png");
+   SLK_Color out = SLK_color_create(0,0,0,255);
+   switch(sample_mode)
+   {
+   case 0:
+      out = sample_noname(x,y,sprite);
+      break;
+   }
+
+   return out;
+}
+
+static SLK_Color sample_noname(float x, float y, SLK_RGB_sprite *sprite)
+{
+   double sx = x*sprite->width;   
+   double sy = y*sprite->height;   
+
+   return SLK_rgb_sprite_get_pixel(sprite,sx,sy);
 }
 //-------------------------------------
