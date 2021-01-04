@@ -233,7 +233,11 @@ static void update_output()
       for(int x = 0;x<gui_out_width;x++)
       {
          SLK_Color in = sample_pixel((float)x/(float)out_width,(float)y/(float)out_height,pixel_sample_mode,sprite_in);          
-         SLK_Color out = process_pixel(x,y,pixel_process_mode,in,palette);
+         SLK_Color out;
+         if(in.a!=255)
+            out = SLK_color_create(0,0,0,0);
+         else
+            out = process_pixel(x,y,pixel_process_mode,in,palette);
          SLK_rgb_sprite_set_pixel(sprite_out,x,y,out);
       }
    }
