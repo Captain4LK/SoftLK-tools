@@ -1,0 +1,3 @@
+[submodule "external/UtilityLK"]
+	path = external/UtilityLK
+	url = https://codeberg.org/Captain4LK/UtilityLK
