@@ -49,52 +49,13 @@ static const uint8_t dither_threshold_normal[64] =
    63,31,55,23,61,29,53,21,
 };
 
-static const uint8_t dither_threshold_some[64] = 
-{
-   //Old dither patterns
-   /*0 ,24, 6,30, 1,26, 7,32,
-   16, 8,22,14,17,10,24,15,
-   4 ,28, 2,26, 5,29, 4,28,
-   20,12,18,10,21,14,19,11, 
-   1 ,25, 7,31, 1,25, 7,30, 
-   17, 9,23,15,16, 8,22,15, 
-    5,29, 3,27, 4,28, 3,26, 
-   21,13,19,11,21,12,18,10*/
-   0,16,4,20,1,17,5,21,
-   24,8,28,12,25,9,29,13,
-   6,22,2,18,7,23,3,19,
-   30,14,26,10,31,15,27,11,
-   2,18,6,22,1,17,5,21,
-   26,10,30,14,25,9,29,13,
-   8,24,4,20,7,23,3,19,
-   32,16,28,12,31,15,27,11,
-};
-
-static const uint8_t dither_threshold_little[64] = 
-{
-   //Old dither patterns
-   /*0, 12, 3, 15, 0, 13, 3, 16,
-   8, 4, 11, 7, 8, 5, 12, 8,
-   2, 14, 1, 13, 2, 15, 2, 14,
-   10, 6, 9, 5, 10, 7, 8, 5,
-   0, 13, 3, 15, 1, 12, 3, 15,
-   9, 4, 11, 8, 8, 4, 11, 7,
-   2, 15, 1, 14, 2, 14, 1, 13,
-   10, 7, 9, 5, 10, 6, 9, 5*/
-   0,8,2,10,1,9,3,11,
-   12,4,14,6,13,5,15,7,
-   3,11,1,9,4,12,2,10,
-   15,7,13,5,16,8,14,6,
-   1,9,3,11,0,8,2,10,
-   13,5,15,7,12,4,14,6,
-   4,12,2,10,3,11,1,9,
-   16,8,14,6,15,7,13,5,
-};
-
 static const uint8_t dither_threshold_none[64] = {0};
 
-static const uint8_t *dither_threshold = dither_threshold_little;
+static uint8_t dither_threshold_tmp[64] = {0};
+static const uint8_t *dither_threshold = dither_threshold_none;
 static Big_pixel *tmp_data = NULL;
+
+int dither_amount = 250;
 //-------------------------------------
 
 //Function prototypes
@@ -129,21 +90,15 @@ static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette
       orderd_dither(d,out,palette,width,height);
       break;
    case 1: //Ordered dithering (level 0)
-      dither_threshold = dither_threshold_little;
+      for(int i = 0;i<64;i++)
+         dither_threshold_tmp[i] = (int)((float)dither_threshold_normal[i]*((float)dither_amount/1000.0f));
+      dither_threshold = dither_threshold_tmp;
       orderd_dither(d,out,palette,width,height);
       break;
-   case 2: //Ordered dithering (level 1)
-      dither_threshold = dither_threshold_some;
-      orderd_dither(d,out,palette,width,height);
-      break;
-   case 3: //Ordered dithering (level 2)
-      dither_threshold = dither_threshold_normal;
-      orderd_dither(d,out,palette,width,height);
-      break;
-   case 4: //Floyd-Steinberg dithering (per color component error)
+   case 2: //Floyd-Steinberg dithering (per color component error)
       floyd_dither(d,out,palette,width,height);
       break;
-   case 5: //Floyd-Steinberg dithering (distributed error)
+   case 3: //Floyd-Steinberg dithering (distributed error)
       floyd2_dither(d,out,palette,width,height);
       break;
    }
