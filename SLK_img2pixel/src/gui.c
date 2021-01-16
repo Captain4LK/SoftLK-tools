@@ -22,6 +22,11 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //#defines
+#define MIN(a,b) \
+   ((a)<(b)?(a):(b))
+ 
+#define MAX(a,b) \
+   ((a)>(b)?(a):(b))
 //-------------------------------------
 
 //Typedefs
@@ -29,8 +34,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Variables
 //Lots of globals here, I need to find a way to manage this better
-static int gui_pos_x = 0;
-static int gui_pos_y = 0;
 static SLK_RGB_sprite *sprite_in = NULL;
 static SLK_RGB_sprite *sprite_out = NULL;
 static SLK_Palette *palette = NULL;
@@ -38,12 +41,11 @@ static int gui_out_width = 128;
 static int gui_out_height = 128;
 static int pixel_sample_mode = 0;
 static int pixel_process_mode = 1;
+static int palette_selected = 0;
 
 static SLK_gui_window *preview = NULL;
 static SLK_gui_window *settings = NULL;
 static SLK_gui_element *settings_tabs = NULL;
-
-
 
 //Hide in struct to not pollute namespace
 struct Elements
@@ -53,6 +55,25 @@ struct Elements
    SLK_gui_element *save_save;
    SLK_gui_element *save_load_preset;
    SLK_gui_element *save_save_preset;
+
+   //Palette tab
+   SLK_gui_element *palette_save;
+   SLK_gui_element *palette_load;
+   SLK_gui_element *palette_palette;
+   SLK_RGB_sprite *palette_sprite;
+   SLK_gui_element *palette_button;
+   SLK_gui_element *palette_bar_r;
+   SLK_gui_element *palette_bar_g;
+   SLK_gui_element *palette_bar_b;
+   SLK_gui_element *palette_plus_r;
+   SLK_gui_element *palette_minus_r;
+   SLK_gui_element *palette_plus_g;
+   SLK_gui_element *palette_minus_g;
+   SLK_gui_element *palette_plus_b;
+   SLK_gui_element *palette_minus_b;
+   SLK_gui_element *palette_label_r;
+   SLK_gui_element *palette_label_g;
+   SLK_gui_element *palette_label_b;
 
    //General tab
    SLK_gui_element *general_width_plus;
@@ -117,6 +138,10 @@ static const char *text_tab_settings[] =
 static void gui_buttons();
 static void gui_draw();
 static void update_output();
+static void save_preset(const char *path);
+static void load_preset(const char *path);
+static void palette_draw();
+static void palette_labels();
 //-------------------------------------
 
 //Function implementations
@@ -147,7 +172,6 @@ void gui_init()
    SLK_gui_tabbar_add_element(tabbar,0,image_in);
    image_out = SLK_gui_image_create(2,28,256,256,tmp,(SLK_gui_rectangle){0,0,1,1});
    SLK_gui_tabbar_add_element(tabbar,1,image_out);
-   SLK_rgb_sprite_destroy(tmp);
    SLK_gui_window_add_element(preview,tabbar);
    
    //Gui window
@@ -165,6 +189,48 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_load_preset);
    elements.save_save_preset = SLK_gui_button_create(158,226,164,14,"Save preset");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_save_preset);
+   //Palette tab
+   elements.palette_load = SLK_gui_button_create(158,218,164,14,"Load palette");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_load);
+   elements.palette_save = SLK_gui_button_create(158,246,164,14,"Save palette");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_save);
+   elements.palette_sprite = SLK_rgb_sprite_create(279,81);
+   elements.palette_palette = SLK_gui_image_create(100,15,279,81,elements.palette_sprite,(SLK_gui_rectangle){0,0,279,81});
+   palette_draw();
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_palette);
+   elements.palette_button = SLK_gui_icon_create(100,15,279,81,tmp,(SLK_gui_rectangle){0,0,1,1},(SLK_gui_rectangle){0,0,1,1});
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_button);
+   elements.palette_minus_r = SLK_gui_button_create(160,109,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_minus_r);
+   elements.palette_plus_r = SLK_gui_button_create(344,109,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_plus_r);
+   elements.palette_minus_g = SLK_gui_button_create(160,141,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_minus_g);
+   elements.palette_plus_g = SLK_gui_button_create(344,141,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_plus_g);
+   elements.palette_minus_b = SLK_gui_button_create(160,173,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_minus_b);
+   elements.palette_plus_b = SLK_gui_button_create(344,173,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_plus_b);
+   elements.palette_bar_r = SLK_gui_slider_create(174,109,170,14,0,255);
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_bar_r);
+   elements.palette_bar_g = SLK_gui_slider_create(174,141,170,14,0,255);
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_bar_g);
+   elements.palette_bar_b = SLK_gui_slider_create(174,173,170,14,0,255);
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_bar_b);
+   label = SLK_gui_label_create(104,112,48,12,"red");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,label);
+   label = SLK_gui_label_create(104,144,48,12,"green");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,label);
+   label = SLK_gui_label_create(104,176,48,12,"blue");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,label);
+   elements.palette_label_r = SLK_gui_label_create(354,112,32,12,"128");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_r);
+   elements.palette_label_g = SLK_gui_label_create(354,144,32,12,"128");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_g);
+   elements.palette_label_b = SLK_gui_label_create(354,176,32,12,"128");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_b);
+   palette_labels();
    //General tab
    elements.general_width_plus = SLK_gui_button_create(344,21,14,14,"+");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_width_plus);
@@ -231,6 +297,8 @@ void gui_update()
 
 static void gui_buttons()
 {
+   int mx,my;
+   SLK_mouse_get_layer_pos(0,&mx,&my);
    int update = 0;
    switch(settings_tabs->vtabbar.current_tab)
    {
@@ -244,6 +312,7 @@ static void gui_buttons()
          if(sprite_in)
             SLK_gui_image_update(image_in,sprite_in,(SLK_gui_rectangle){0,0,sprite_in->width,sprite_in->height});
          update = 1;
+         elements.save_load->button.state.released = 0;
       }
       else if(elements.save_save->button.state.released)
       {
@@ -256,15 +325,71 @@ static void gui_buttons()
       {
          const char *filter_patterns[2] = {"*.json"};
          const char *file_path = tinyfd_openFileDialog("Select a preset","",1,filter_patterns,NULL,0);
+         load_preset(file_path);
+         elements.save_load_preset->button.state.released = 0;
       }
       else if(elements.save_save_preset->button.state.released)
       {
          const char *filter_patterns[2] = {"*.json"};
          const char *file_path = tinyfd_saveFileDialog("Save preset","",1,filter_patterns,NULL);
+         save_preset(file_path);
+         elements.save_save_preset->button.state.released = 0;
       }
       break;
    case 1: //Palette tab
-
+      if(elements.palette_load->button.state.released)
+      {
+         const char *filter_patterns[2] = {"*.pal"};
+         const char *file_path = tinyfd_openFileDialog("Load a palette","",1,filter_patterns,NULL,0);
+         if(file_path!=NULL)
+         {
+            if(palette)
+               free(palette);
+            palette = SLK_palette_load(file_path);
+            update = 1;
+            palette_draw();
+            palette_labels();
+         }
+         elements.palette_load->button.state.released = 0;
+      }
+      else if(elements.palette_save->button.state.released)
+      {
+         const char *filter_patterns[2] = {"*.pal"};
+         const char *file_path = tinyfd_saveFileDialog("Save palette","",1,filter_patterns,NULL);
+         SLK_palette_save(file_path,palette);
+         elements.palette_save->button.state.released = 0;
+      }
+      else if(elements.palette_button->icon.state.pressed)
+      {
+         int nx = mx-settings->pos.x-elements.palette_button->icon.pos.x;
+         int ny = my-settings->pos.y-elements.palette_button->icon.pos.y;
+         palette_selected = MIN(255,(ny/9)*31+nx/9);
+         palette_labels();
+      }
+      if(elements.palette_minus_r->button.state.pressed&&palette->colors[palette_selected].r>0)
+         elements.palette_bar_r->slider.value--;
+      else if(elements.palette_plus_r->button.state.pressed&&palette->colors[palette_selected].r<255)
+         elements.palette_bar_r->slider.value++;
+      else if(elements.palette_minus_g->button.state.pressed&&palette->colors[palette_selected].g>0)
+         elements.palette_bar_g->slider.value--;
+      else if(elements.palette_plus_g->button.state.pressed&&palette->colors[palette_selected].g<255)
+         elements.palette_bar_g->slider.value++;
+      else if(elements.palette_minus_b->button.state.pressed&&palette->colors[palette_selected].b>0)
+         elements.palette_bar_b->slider.value--;
+      else if(elements.palette_plus_b->button.state.pressed&&palette->colors[palette_selected].b<255)
+         elements.palette_bar_b->slider.value++;
+      if(elements.palette_bar_r->slider.value!=palette->colors[palette_selected].r||elements.palette_bar_g->slider.value!=palette->colors[palette_selected].g||elements.palette_bar_b->slider.value!=palette->colors[palette_selected].b)
+      {
+         palette->colors[palette_selected].r = elements.palette_bar_r->slider.value;
+         palette->colors[palette_selected].g = elements.palette_bar_g->slider.value;
+         palette->colors[palette_selected].b = elements.palette_bar_b->slider.value;
+         if(palette_selected!=0)
+            palette->colors[palette_selected].a = 255;
+         palette->used = MAX(palette->used,palette_selected+1);
+         palette_draw();
+         palette_labels();
+         update = 1;
+      }
       break;
    case 2: //General tab
       if(elements.general_width_plus->button.state.pressed&&elements.general_bar_width->slider.value<elements.general_bar_width->slider.max)
@@ -418,6 +543,12 @@ static void gui_draw()
    SLK_draw_rgb_clear();
 
    SLK_gui_window_draw(settings);
+   if(settings_tabs->vtabbar.current_tab==1)
+   {
+      int pos_y = palette_selected/31;
+      int pos_x = palette_selected-pos_y*31;
+      SLK_draw_rgb_rectangle(settings->pos.x+pos_x*9+100,settings->pos.y+pos_y*9+15,9,9,SLK_color_create(0,0,0,255));
+   }
    SLK_gui_window_draw(preview);
    /*if(SLK_layer_get_resized(3))
    {
@@ -483,3 +614,44 @@ static void update_output()
    process_image(sprite_in,sprite_out,palette,pixel_sample_mode,pixel_process_mode);
    SLK_gui_image_update(image_out,sprite_out,(SLK_gui_rectangle){0,0,sprite_out->width,sprite_out->height});
 }
+
+static void save_preset(const char *path)
+{
+
+}
+
+static void load_preset(const char *path)
+{
+
+}
+
+static void palette_draw()
+{
+   SLK_RGB_sprite *old = SLK_draw_rgb_get_target();
+   SLK_draw_rgb_set_target(elements.palette_sprite);
+   SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,255));
+   SLK_draw_rgb_clear();
+
+   for(int y = 0;y<9;y++)
+      for(int x = 0;x<31;x++)
+         if(y*31+x<palette->used)
+            SLK_draw_rgb_fill_rectangle(x*9,y*9,9,9,palette->colors[y*31+x]);
+
+   SLK_draw_rgb_set_target(old);
+   SLK_gui_image_update(elements.palette_palette,elements.palette_sprite,(SLK_gui_rectangle){0,0,279,81});
+}
+
+static void palette_labels()
+{
+   char ctmp[16];
+   sprintf(ctmp,"%d",palette->colors[palette_selected].r);
+   SLK_gui_label_set_text(elements.palette_label_r,ctmp);
+   elements.palette_bar_r->slider.value = palette->colors[palette_selected].r;
+   sprintf(ctmp,"%d",palette->colors[palette_selected].g);
+   SLK_gui_label_set_text(elements.palette_label_g,ctmp);
+   elements.palette_bar_g->slider.value = palette->colors[palette_selected].g;
+   sprintf(ctmp,"%d",palette->colors[palette_selected].b);
+   SLK_gui_label_set_text(elements.palette_label_b,ctmp);
+   elements.palette_bar_b->slider.value = palette->colors[palette_selected].b;
+}
+//-------------------------------------
