@@ -88,6 +88,16 @@ struct Elements
    SLK_gui_element *general_label_width;
    SLK_gui_element *general_label_height;
    SLK_gui_element *general_label_dither;
+
+   //Process tab
+   SLK_gui_element *process_bar_brightness;
+   SLK_gui_element *process_minus_brightness;
+   SLK_gui_element *process_plus_brightness;
+   SLK_gui_element *process_label_brightness;
+   SLK_gui_element *process_bar_contrast;
+   SLK_gui_element *process_minus_contrast;
+   SLK_gui_element *process_plus_contrast;
+   SLK_gui_element *process_label_contrast;
 };
 static struct Elements elements = {0};
 
@@ -114,7 +124,7 @@ static const char *text_tab_settings[] =
    "Save/Load",
    "Palette",
    "General",
-   "Reserved",
+   "Process",
    "Reserved",
    "Reserved",
    "Reserved",
@@ -244,7 +254,7 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,2,label);
    label = SLK_gui_label_create(104,56,56,12,"Height");
    SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_bar_width = SLK_gui_slider_create(174,21,170,14,0,256);;
+   elements.general_bar_width = SLK_gui_slider_create(174,21,170,14,0,256);
    elements.general_bar_width->slider.value = 128;
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_width);
    elements.general_bar_height = SLK_gui_slider_create(174,53,170,14,0,256);;
@@ -267,6 +277,29 @@ void gui_init()
    elements.general_bar_dither = SLK_gui_slider_create(160,157,198,14,0,1000);
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_dither);
    elements.general_bar_dither->slider.value = 250;
+   //Process tab
+   label = SLK_gui_label_create(104,24,56,12,"Bright");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   label = SLK_gui_label_create(104,56,56,12,"Contra");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   elements.process_bar_brightness = SLK_gui_slider_create(174,21,162,14,-255,255);
+   elements.process_bar_brightness->slider.value = 0;
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_brightness);
+   elements.process_label_brightness = SLK_gui_label_create(346,24,40,12,"0");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_brightness);
+   elements.process_plus_brightness = SLK_gui_button_create(336,21,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_brightness);
+   elements.process_minus_brightness = SLK_gui_button_create(160,21,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_brightness);
+   elements.process_bar_contrast = SLK_gui_slider_create(174,53,162,14,-255,255);
+   elements.process_bar_contrast->slider.value = 0;
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_contrast);
+   elements.process_label_contrast = SLK_gui_label_create(346,56,40,12,"0");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_contrast);
+   elements.process_plus_contrast = SLK_gui_button_create(336,53,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_contrast);
+   elements.process_minus_contrast = SLK_gui_button_create(160,53,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_contrast);
 }
 
 void gui_update()
@@ -435,6 +468,32 @@ static void gui_buttons()
       if(elements.general_bar_dither->slider.value!=dither_amount)
       {
          dither_amount = elements.general_bar_dither->slider.value;
+         update = 1;
+      }
+      break;
+   case 3: //Process tab
+      if(elements.process_minus_brightness->button.state.pressed&&elements.process_bar_brightness->slider.value>elements.process_bar_brightness->slider.min)
+         elements.process_bar_brightness->slider.value--;
+      else if(elements.process_plus_brightness->button.state.pressed&&elements.process_bar_brightness->slider.value<elements.process_bar_brightness->slider.max)
+         elements.process_bar_brightness->slider.value++;
+      if(elements.process_minus_contrast->button.state.pressed&&elements.process_bar_contrast->slider.value>elements.process_bar_contrast->slider.min)
+         elements.process_bar_contrast->slider.value--;
+      else if(elements.process_plus_contrast->button.state.pressed&&elements.process_bar_contrast->slider.value<elements.process_bar_contrast->slider.max)
+         elements.process_bar_contrast->slider.value++;
+      if(brightness!=elements.process_bar_brightness->slider.value)
+      {
+         brightness = elements.process_bar_brightness->slider.value;
+         char ctmp[16];
+         sprintf(ctmp,"%d",brightness);
+         SLK_gui_label_set_text(elements.process_label_brightness,ctmp);
+         update = 1;
+      }
+      if(contrast!=elements.process_bar_contrast->slider.value)
+      {
+         contrast = elements.process_bar_contrast->slider.value;
+         char ctmp[16];
+         sprintf(ctmp,"%d",contrast);
+         SLK_gui_label_set_text(elements.process_label_contrast,ctmp);
          update = 1;
       }
       break;

@@ -21,7 +21,11 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //#defines
-#define MIN(a,b) (a<b?a:b)
+#define MIN(a,b) \
+   ((a)<(b)?(a):(b))
+ 
+#define MAX(a,b) \
+   ((a)>(b)?(a):(b))
 //-------------------------------------
 
 //Typedefs
@@ -56,6 +60,8 @@ static const uint8_t *dither_threshold = dither_threshold_none;
 static Big_pixel *tmp_data = NULL;
 
 int dither_amount = 250;
+int brightness = 0;
+int contrast = 0;
 //-------------------------------------
 
 //Function prototypes
@@ -77,6 +83,32 @@ void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *p
    tmp_data = malloc(sizeof(*tmp_data)*out->width*out->height);
 
    sample_image(in,tmp_data,sample_mode,out->width,out->height);
+   float contrast_factor = (259.0f*(255.0f+(float)contrast))/(255.0f*(259.0f-(float)contrast));
+   for(int y = 0;y<out->height;y++)
+   {
+      for(int x = 0;x<out->width;x++)
+      {
+         //Brightness
+         if(brightness!=0)
+         {
+            Big_pixel in = tmp_data[y*out->width+x];
+            in.r = MAX(0,MIN(255,in.r+brightness));
+            in.g = MAX(0,MIN(255,in.g+brightness));
+            in.b = MAX(0,MIN(255,in.b+brightness));
+            tmp_data[y*out->width+x] = in;
+         }
+
+         //Contrast
+         if(contrast!=0)
+         {
+            Big_pixel in = tmp_data[y*out->width+x];
+            in.r = MAX(0,MIN(255,(int)(contrast_factor*((float)in.r-128.0f)+128.0f)));
+            in.g = MAX(0,MIN(255,(int)(contrast_factor*((float)in.g-128.0f)+128.0f)));
+            in.b = MAX(0,MIN(255,(int)(contrast_factor*((float)in.b-128.0f)+128.0f)));
+            tmp_data[y*out->width+x] = in;
+         }
+      }
+   }
 
    dither_image(tmp_data,out,palette,process_mode,out->width,out->height);
 }
