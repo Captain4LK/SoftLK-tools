@@ -62,6 +62,7 @@ static Big_pixel *tmp_data = NULL;
 int dither_amount = 250;
 int brightness = 0;
 int contrast = 0;
+int img_gamma = 100;
 //-------------------------------------
 
 //Function prototypes
@@ -84,10 +85,21 @@ void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *p
 
    sample_image(in,tmp_data,sample_mode,out->width,out->height);
    float contrast_factor = (259.0f*(255.0f+(float)contrast))/(255.0f*(259.0f-(float)contrast));
+   float gamma_factor = (float)img_gamma/100.0f;
    for(int y = 0;y<out->height;y++)
    {
       for(int x = 0;x<out->width;x++)
       {
+         //Contrast
+         if(contrast!=0)
+         {
+            Big_pixel in = tmp_data[y*out->width+x];
+            in.r = MAX(0,MIN(255,(int)(contrast_factor*((float)in.r-128.0f)+128.0f)));
+            in.g = MAX(0,MIN(255,(int)(contrast_factor*((float)in.g-128.0f)+128.0f)));
+            in.b = MAX(0,MIN(255,(int)(contrast_factor*((float)in.b-128.0f)+128.0f)));
+            tmp_data[y*out->width+x] = in;
+         }
+
          //Brightness
          if(brightness!=0)
          {
@@ -98,13 +110,13 @@ void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *p
             tmp_data[y*out->width+x] = in;
          }
 
-         //Contrast
-         if(contrast!=0)
+         //Gamma
+         if(img_gamma!=100)
          {
             Big_pixel in = tmp_data[y*out->width+x];
-            in.r = MAX(0,MIN(255,(int)(contrast_factor*((float)in.r-128.0f)+128.0f)));
-            in.g = MAX(0,MIN(255,(int)(contrast_factor*((float)in.g-128.0f)+128.0f)));
-            in.b = MAX(0,MIN(255,(int)(contrast_factor*((float)in.b-128.0f)+128.0f)));
+            in.r = MAX(0,MIN(255,(int)(255.0f*pow((float)in.r/255.0f,gamma_factor))));
+            in.g = MAX(0,MIN(255,(int)(255.0f*pow((float)in.g/255.0f,gamma_factor))));
+            in.b = MAX(0,MIN(255,(int)(255.0f*pow((float)in.b/255.0f,gamma_factor))));
             tmp_data[y*out->width+x] = in;
          }
       }

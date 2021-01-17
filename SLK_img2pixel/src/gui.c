@@ -82,12 +82,15 @@ struct Elements
    SLK_gui_element *general_height_minus;
    SLK_gui_element *general_dither_left;
    SLK_gui_element *general_dither_right;
+   SLK_gui_element *general_sample_left;
+   SLK_gui_element *general_sample_right;
    SLK_gui_element *general_bar_width;
    SLK_gui_element *general_bar_height;
    SLK_gui_element *general_bar_dither;
    SLK_gui_element *general_label_width;
    SLK_gui_element *general_label_height;
    SLK_gui_element *general_label_dither;
+   SLK_gui_element *general_label_sample;
 
    //Process tab
    SLK_gui_element *process_bar_brightness;
@@ -98,6 +101,10 @@ struct Elements
    SLK_gui_element *process_minus_contrast;
    SLK_gui_element *process_plus_contrast;
    SLK_gui_element *process_label_contrast;
+   SLK_gui_element *process_bar_gamma;
+   SLK_gui_element *process_minus_gamma;
+   SLK_gui_element *process_plus_gamma;
+   SLK_gui_element *process_label_gamma;
 };
 static struct Elements elements = {0};
 
@@ -111,6 +118,14 @@ static const char *text_dither[] =
    "Ordered",
    "FloydSteinberg 1",
    "FloydSteinberg 2",
+};
+
+static const char *text_sample[] = 
+{
+   "Round",
+   "Floor",
+   "Ceil",
+   "Linear",
 };
 
 static const char *text_tab_image[] = 
@@ -277,10 +292,20 @@ void gui_init()
    elements.general_bar_dither = SLK_gui_slider_create(160,157,198,14,0,1000);
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_dither);
    elements.general_bar_dither->slider.value = 250;
+   label = SLK_gui_label_create(104,232,56,12,"Sample");
+   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
+   elements.general_sample_left = SLK_gui_button_create(160,229,14,14,"<");;
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_sample_left);
+   elements.general_sample_right = SLK_gui_button_create(344,229,14,14,">");
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_sample_right);
+   elements.general_label_sample = SLK_gui_label_create(174,232,170,12,text_sample[0]);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_sample);
    //Process tab
    label = SLK_gui_label_create(104,24,56,12,"Bright");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
    label = SLK_gui_label_create(104,56,56,12,"Contra");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   label = SLK_gui_label_create(104,88,56,12,"Gamma");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
    elements.process_bar_brightness = SLK_gui_slider_create(174,21,162,14,-255,255);
    elements.process_bar_brightness->slider.value = 0;
@@ -300,6 +325,15 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_contrast);
    elements.process_minus_contrast = SLK_gui_button_create(160,53,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_contrast);
+   elements.process_bar_gamma = SLK_gui_slider_create(174,85,162,14,1,800);
+   elements.process_bar_gamma->slider.value = 100;
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_gamma);
+   elements.process_label_gamma = SLK_gui_label_create(346,88,40,12,"100");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_gamma);
+   elements.process_plus_gamma = SLK_gui_button_create(336,85,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_gamma);
+   elements.process_minus_gamma = SLK_gui_button_create(160,85,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_gamma);
 }
 
 void gui_update()
@@ -470,6 +504,23 @@ static void gui_buttons()
          dither_amount = elements.general_bar_dither->slider.value;
          update = 1;
       }
+      if(elements.general_sample_left->button.state.pressed)
+      {
+         pixel_sample_mode--;
+         if(pixel_sample_mode<0)
+            pixel_sample_mode = 3;
+         update = 1;
+         SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
+      }
+      else if(elements.general_sample_right->button.state.pressed)
+      {
+         pixel_sample_mode++;
+         if(pixel_sample_mode>3)
+            pixel_sample_mode = 0;
+         update = 1;
+         SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
+      }
+
       break;
    case 3: //Process tab
       if(elements.process_minus_brightness->button.state.pressed&&elements.process_bar_brightness->slider.value>elements.process_bar_brightness->slider.min)
@@ -480,6 +531,10 @@ static void gui_buttons()
          elements.process_bar_contrast->slider.value--;
       else if(elements.process_plus_contrast->button.state.pressed&&elements.process_bar_contrast->slider.value<elements.process_bar_contrast->slider.max)
          elements.process_bar_contrast->slider.value++;
+      if(elements.process_minus_gamma->button.state.pressed&&elements.process_bar_gamma->slider.value>elements.process_bar_gamma->slider.min)
+         elements.process_bar_gamma->slider.value--;
+      else if(elements.process_plus_gamma->button.state.pressed&&elements.process_bar_gamma->slider.value<elements.process_bar_gamma->slider.max)
+         elements.process_bar_gamma->slider.value++;
       if(brightness!=elements.process_bar_brightness->slider.value)
       {
          brightness = elements.process_bar_brightness->slider.value;
@@ -496,102 +551,19 @@ static void gui_buttons()
          SLK_gui_label_set_text(elements.process_label_contrast,ctmp);
          update = 1;
       }
+      if(img_gamma!=elements.process_bar_gamma->slider.value)
+      {
+         img_gamma = elements.process_bar_gamma->slider.value;
+         char ctmp[16];
+         sprintf(ctmp,"%d",img_gamma);
+         SLK_gui_label_set_text(elements.process_label_gamma,ctmp);
+         update = 1;
+      }
       break;
    }
 
    if(update)
       update_output(); 
-   /*int update = 0;
-   int x,y;
-   SLK_mouse_get_layer_pos(0,&x,&y);
-
-   if(SLK_mouse_pressed(SLK_BUTTON_LEFT))
-   {
-      if(x>3&&x<64&&y>372&&y<395) //Load button
-      {
-         const char *filter_patterns[2] = {"*.png"};
-         const char *file_path = tinyfd_openFileDialog("Select a png file","",1,filter_patterns,NULL,0);
-         SLK_rgb_sprite_destroy(sprite_in);
-         sprite_in = SLK_rgb_sprite_load(file_path);
-         if(sprite_in)
-         {
-            SLK_layer_set_size(1,sprite_in->width,sprite_in->height);
-            SLK_layer_set_current(1);
-            SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));
-            SLK_draw_rgb_clear();
-            SLK_draw_rgb_sprite(sprite_in,0,0);
-            SLK_draw_rgb_set_changed(1);
-            float scale;
-            if(sprite_in->width>sprite_in->height)
-               scale = 256.0f/sprite_in->width;
-            else 
-               scale = 256.0f/sprite_in->height;
-            SLK_layer_set_scale(1,scale);
-            update_output();
-         }
-      }
-      else if(x>81&&x<144&&y>373&&y<395) //Save button
-      {
-         const char *filter_patterns[2] = {"*.png"};
-         const char *file_path = tinyfd_saveFileDialog("Save image","",1,filter_patterns,NULL);
-         SLK_rgb_sprite_save(file_path,sprite_out);
-         puts(file_path);
-      }
-      else if(x>3&&x<144&&y>332&&y<355) //Palette load button
-      {
-         const char *filter_patterns[2] = {"*.pal"};
-         const char *file_path = tinyfd_openFileDialog("Load a palette","",1,filter_patterns,NULL,0);
-         if(palette)
-            free(palette);
-         palette = SLK_palette_load(file_path);
-         update = 1;
-      }
-      else if(x>3&&x<144&&y>293&&y<315) //Process image button
-      {
-         update = 1;
-      }
-      else if(x>0&&x<9&&y>19&&y<28) //Dither left
-      {
-         pixel_process_mode--;
-         if(pixel_process_mode<0)
-            pixel_process_mode = 5;
-         update = 1;
-      }
-      else if(x>142&&x<149&&y>19&&y<28) //Dither right
-      {
-         pixel_process_mode++;
-         if(pixel_process_mode>5)
-            pixel_process_mode = 0;
-         update = 1;
-      }
-      else if(x>0&&x<9&&y>89&&y<98) //Output width left
-      {
-         if(gui_out_width>0)
-            gui_out_width-=8;
-         update = 1;
-      }
-      else if(x>142&&x<149&&y>89&&y<98) //Output width right
-      {
-         if(gui_out_width<256)
-            gui_out_width+=8;
-         update = 1;
-      }
-      else if(x>0&&x<9&&y>123&&y<132) //Output height left
-      {
-         if(gui_out_height>0)
-            gui_out_height-=8;
-         update = 1;
-      }
-      else if(x>142&&x<149&&y>123&&y<132) //Output height right
-      {
-         if(gui_out_height<256)
-            gui_out_height+=8;
-         update = 1;
-      }
-   }
-
-   if(update)
-      update_output();*/
 }
 
 static void gui_draw()
@@ -609,54 +581,6 @@ static void gui_draw()
       SLK_draw_rgb_rectangle(settings->pos.x+pos_x*9+100,settings->pos.y+pos_y*9+15,9,9,SLK_color_create(0,0,0,255));
    }
    SLK_gui_window_draw(preview);
-   /*if(SLK_layer_get_resized(3))
-   {
-      SLK_layer_set_current(3);
-      SLK_draw_rgb_set_changed(1);
-      SLK_draw_rgb_set_clear_color(SLK_color_create(20,20,20,255));
-      SLK_draw_rgb_clear();
-      int w,h;
-      SLK_layer_get_size(3,&w,&h);
-
-      //Update layer pos
-      gui_pos_x = w/32;
-      gui_pos_y = (h-400)/2;
-      SLK_layer_set_pos(0,gui_pos_x,gui_pos_y);
-
-      int y = h/16;
-      int x = gui_pos_x+150+w/32;
-      SLK_layer_set_pos(1,x,y);
-      SLK_draw_rgb_sprite(sprite_backdrop_1,x-4,y-4);
-      SLK_draw_rgb_string(x+88,y+264,2,"Input",SLK_color_create(255,255,255,255));
-
-      y = h-256-h/16;
-      x = w-256-w/32;
-      SLK_layer_set_pos(2,x,y);
-      SLK_draw_rgb_sprite(sprite_backdrop_1,x-4,y-4);
-      SLK_draw_rgb_string(x+80,y-24,2,"Output",SLK_color_create(255,255,255,255));
-   }
-
-   SLK_layer_set_current(0);
-   SLK_draw_rgb_set_changed(1);
-   SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));
-   //SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,255));
-   SLK_draw_rgb_clear();
-   SLK_draw_rgb_sprite(sprite_gui_0,0,0);
-
-   //Adjust text to middle
-   const char *text = text_dither[pixel_process_mode];
-   int len = strlen(text)*8;
-   int pos_x = 8+(134-len)/2;
-   SLK_draw_rgb_string(pos_x,20,1,text_dither[pixel_process_mode],SLK_color_create(255,255,255,255));
-   char tmp_text[256];
-   sprintf(tmp_text,"%d",gui_out_width);
-   len = strlen(tmp_text)*8;
-   pos_x = 8+(134-len)/2;
-   SLK_draw_rgb_string(pos_x,90,1,tmp_text,SLK_color_create(255,255,255,255));
-   sprintf(tmp_text,"%d",gui_out_height);
-   len = strlen(tmp_text)*8;
-   pos_x = 8+(134-len)/2;
-   SLK_draw_rgb_string(pos_x,124,1,tmp_text,SLK_color_create(255,255,255,255));*/
 }
 
 static void update_output()

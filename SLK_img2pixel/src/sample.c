@@ -28,7 +28,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static void sample_noname(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
+static void sample_round(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
+static void sample_floor(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
+static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
+static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
 //-------------------------------------
 
 //Function implementations
@@ -37,26 +40,71 @@ void sample_image(const SLK_RGB_sprite *in, Big_pixel *out, int sample_mode, int
 {
    switch(sample_mode)
    {
-   case 0:
-   default:
-      sample_noname(in,out,width,height);
-      break;
+   case 0: sample_round(in,out,width,height); break;
+   case 1: sample_floor(in,out,width,height); break;
+   case 2: sample_ceil(in,out,width,height); break;
+   case 3: sample_linear(in,out,width,height); break;
    }
 }
 
-static void sample_noname(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+static void sample_round(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         double sx = ((double)x/(double)width)*in->width;   
-         double sy = ((double)y/(double)height)*in->height;   
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,sx,sy);
+         double sx = ((double)x/(double)width)*(double)in->width;   
+         double sy = ((double)y/(double)height)*(double)in->height;   
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,round(sx),round(sy));
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
          out[y*width+x].g = c.g;
          out[y*width+x].a = c.a;
+      }
+   }
+}
+
+static void sample_floor(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+{
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      {
+         double sx = ((double)x/(double)width)*(double)in->width;   
+         double sy = ((double)y/(double)height)*(double)in->height;   
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,floor(sx),floor(sy));
+         out[y*width+x].r = c.r;
+         out[y*width+x].b = c.b;
+         out[y*width+x].g = c.g;
+         out[y*width+x].a = c.a;
+      }
+   }
+}
+
+static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+{
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      {
+         double sx = ((double)x/(double)width)*(double)in->width;   
+         double sy = ((double)y/(double)height)*(double)in->height;   
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,ceil(sx),ceil(sy));
+         out[y*width+x].r = c.r;
+         out[y*width+x].b = c.b;
+         out[y*width+x].g = c.g;
+         out[y*width+x].a = c.a;
+      }
+   }
+}
+
+static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+{
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      {
+
       }
    }
 }
