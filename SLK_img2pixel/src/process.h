@@ -27,10 +27,10 @@ typedef struct
    };
 }Big_pixel;
 
-extern int dither_amount;
 extern int brightness;
 extern int contrast;
 extern int img_gamma;
+extern int dither_amount;
 
 void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *palette, int sample_mode, int process_mode);
 

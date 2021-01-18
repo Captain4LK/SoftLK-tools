@@ -59,10 +59,10 @@ static uint8_t dither_threshold_tmp[64] = {0};
 static const uint8_t *dither_threshold = dither_threshold_none;
 static Big_pixel *tmp_data = NULL;
 
-int dither_amount = 250;
 int brightness = 0;
 int contrast = 0;
 int img_gamma = 100;
+int dither_amount = 250;
 //-------------------------------------
 
 //Function prototypes

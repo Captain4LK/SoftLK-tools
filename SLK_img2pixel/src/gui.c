@@ -12,6 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <SLK/SLK.h>
 #include <SLK/SLK_gui.h>
 #include "../../external/tinyfiledialogs.h"
+#include "../../external/UtilityLK/include/ULK_json.h"
 //-------------------------------------
 
 //Internal includes
@@ -36,11 +37,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Lots of globals here, I need to find a way to manage this better
 static SLK_RGB_sprite *sprite_in = NULL;
 static SLK_RGB_sprite *sprite_out = NULL;
-static SLK_Palette *palette = NULL;
-static int gui_out_width = 128;
-static int gui_out_height = 128;
-static int pixel_sample_mode = 0;
-static int pixel_process_mode = 1;
 static int palette_selected = 0;
 
 static SLK_gui_window *preview = NULL;
@@ -157,16 +153,22 @@ static const char *text_tab_settings[] =
    "Reserved",
    "Reserved",
 };
+
+static SLK_Palette *palette = NULL;
+static int gui_out_width = 128;
+static int gui_out_height = 128;
+static int pixel_sample_mode = 0;
+static int pixel_process_mode = 1;
 //-------------------------------------
 
 //Function prototypes
 static void gui_buttons();
 static void gui_draw();
 static void update_output();
-static void save_preset(const char *path);
-static void load_preset(const char *path);
 static void palette_draw();
 static void palette_labels();
+static void preset_save(const char *path);
+static void preset_load(const char *path);
 //-------------------------------------
 
 //Function implementations
@@ -392,14 +394,14 @@ static void gui_buttons()
       {
          const char *filter_patterns[2] = {"*.json"};
          const char *file_path = tinyfd_openFileDialog("Select a preset","",1,filter_patterns,NULL,0);
-         load_preset(file_path);
+         preset_load(file_path);
          elements.save_load_preset->button.state.released = 0;
       }
       else if(elements.save_save_preset->button.state.released)
       {
          const char *filter_patterns[2] = {"*.json"};
          const char *file_path = tinyfd_saveFileDialog("Save preset","",1,filter_patterns,NULL);
-         save_preset(file_path);
+         preset_save(file_path);
          elements.save_save_preset->button.state.released = 0;
       }
       break;
@@ -598,16 +600,6 @@ static void update_output()
    SLK_gui_image_update(image_out,sprite_out,(SLK_gui_rectangle){0,0,sprite_out->width,sprite_out->height});
 }
 
-static void save_preset(const char *path)
-{
-
-}
-
-static void load_preset(const char *path)
-{
-
-}
-
 static void palette_draw()
 {
    SLK_RGB_sprite *old = SLK_draw_rgb_get_target();
@@ -636,5 +628,70 @@ static void palette_labels()
    sprintf(ctmp,"%d",palette->colors[palette_selected].b);
    SLK_gui_label_set_text(elements.palette_label_b,ctmp);
    elements.palette_bar_b->slider.value = palette->colors[palette_selected].b;
+}
+
+void preset_save(const char *path)
+{
+   ULK_json5_root *root = ULK_json_create_root();
+   ULK_json5 object = ULK_json_create_object();
+   ULK_json_object_add_integer(&object,"used",palette->used);
+   ULK_json5 array = ULK_json_create_array();
+   for(int i = 0;i<256;i++)
+      ULK_json_array_add_integer(&array,palette->colors[i].n);
+   ULK_json_object_add_object(&object,"colors",array);
+   ULK_json_object_add_object(&root->root,"palette",object);
+   ULK_json_object_add_integer(&root->root,"width",gui_out_width);
+   ULK_json_object_add_integer(&root->root,"height",gui_out_height);
+   ULK_json_object_add_integer(&root->root,"dither_mode",pixel_process_mode);
+   ULK_json_object_add_integer(&root->root,"dither_amount",dither_amount);
+   ULK_json_object_add_integer(&root->root,"sample_mode",pixel_sample_mode);
+   ULK_json_object_add_integer(&root->root,"brightness",brightness);
+   ULK_json_object_add_integer(&root->root,"contrast",contrast);
+   ULK_json_object_add_integer(&root->root,"gamma",img_gamma);
+ 
+   FILE *f = fopen(path,"w");
+   ULK_json_write_file(f,&root->root);
+   ULK_json_free(root);
+   fclose(f);
+}
+
+void preset_load(const char *path)
+{
+   ULK_json5 fallback = {0};
+   ULK_json5_root *root = ULK_json_parse_file(path);
+   ULK_json5 *o = ULK_json_get_object_object(&root->root,"palette",&fallback);
+   palette->used = ULK_json_get_object_integer(o,"used",0);
+   ULK_json5 *array = ULK_json_get_object(o,"colors");
+   for(int i = 0;i<256;i++)
+      palette->colors[i].n = ULK_json_get_array_integer(array,i,0);
+   elements.palette_bar_r->slider.value = palette->colors[palette_selected].r;
+   elements.palette_bar_g->slider.value = palette->colors[palette_selected].g;
+   elements.palette_bar_b->slider.value = palette->colors[palette_selected].b;
+   palette_draw();
+   palette_labels();
+   elements.general_bar_width->slider.value = ULK_json_get_object_integer(&root->root,"width",1);
+      gui_out_width = elements.general_bar_width->slider.value;
+   elements.general_bar_height->slider.value = ULK_json_get_object_integer(&root->root,"height",1);
+      gui_out_height = elements.general_bar_height->slider.value;
+   pixel_process_mode = ULK_json_get_object_integer(&root->root,"dither_mode",0);
+   SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);
+   elements.general_bar_dither->slider.value = ULK_json_get_object_integer(&root->root,"dither_amount",1);
+   pixel_sample_mode = ULK_json_get_object_integer(&root->root,"sample_mode",0);
+      SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
+   elements.process_bar_brightness->slider.value = ULK_json_get_object_integer(&root->root,"brightness",0);
+      brightness = elements.process_bar_brightness->slider.value;
+      char ctmp[16];
+      sprintf(ctmp,"%d",brightness);
+      SLK_gui_label_set_text(elements.process_label_brightness,ctmp);
+   elements.process_bar_contrast->slider.value = ULK_json_get_object_integer(&root->root,"contrast",0);
+      contrast = elements.process_bar_contrast->slider.value;
+      sprintf(ctmp,"%d",contrast);
+      SLK_gui_label_set_text(elements.process_label_contrast,ctmp);
+   elements.process_bar_gamma->slider.value = ULK_json_get_object_integer(&root->root,"gamma",0);
+      img_gamma = elements.process_bar_gamma->slider.value;
+      sprintf(ctmp,"%d",img_gamma);
+      SLK_gui_label_set_text(elements.process_label_gamma,ctmp);
+   update_output();
+   ULK_json_free(root);
 }
 //-------------------------------------
