@@ -2,7 +2,7 @@
 
 This repo hosts the source code for different (currently only one) tools that were made to be used with SoftLK-lib.
 
-## SLK_img2pixel
+## SLK_img2pixel (v0.1)
 
 A tool for transforming images into pixel art.
 
@@ -24,3 +24,4 @@ All code in this repository (except the 'external' directory containing source c
 # Third party libraries
 
 * [tinyfiledialogs](https://sourceforge.net/projects/tinyfiledialogs/), zlib
+* [cute_files](https://github.com/RandyGaul/cute_headers), zlib/unlicense

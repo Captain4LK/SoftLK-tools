@@ -13,6 +13,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <SLK/SLK_gui.h>
 #include "../../external/tinyfiledialogs.h"
 #include "../../external/UtilityLK/include/ULK_json.h"
+#include "../../external/cute_files.h"
 //-------------------------------------
 
 //Internal includes
@@ -20,6 +21,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "gui.h"
 #include "process.h"
 #include "sample.h"
+#include "utility.h"
 //-------------------------------------
 
 //#defines
@@ -136,7 +138,7 @@ static const char *text_tab_settings[] =
    "Palette",
    "General",
    "Process",
-   "Reserved",
+   "Batch",
    "Reserved",
    "Reserved",
    "Reserved",
@@ -208,9 +210,9 @@ void gui_init()
    settings_tabs = SLK_gui_vtabbar_create(2,14,96,20,text_tab_settings);
    SLK_gui_window_add_element(settings,settings_tabs);
    //Save/Load tab
-   elements.save_load = SLK_gui_button_create(158,64,164,14,"Load");
+   elements.save_load = SLK_gui_button_create(158,64,164,14,"Load image");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_load);
-   elements.save_save = SLK_gui_button_create(158,198,164,14,"Save");
+   elements.save_save = SLK_gui_button_create(158,198,164,14,"Save image");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_save);
    elements.save_load_preset = SLK_gui_button_create(158,92,164,14,"Load preset");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_load_preset);
@@ -385,9 +387,9 @@ static void gui_buttons()
       }
       else if(elements.save_save->button.state.released)
       {
-         const char *filter_patterns[2] = {"*.png"};
-         const char *file_path = tinyfd_saveFileDialog("Save image","",1,filter_patterns,NULL);
-         SLK_rgb_sprite_save(file_path,sprite_out);
+         const char *filter_patterns[2] = {"*.png","*.slk"};
+         const char *file_path = tinyfd_saveFileDialog("Save image","",2,filter_patterns,NULL);
+         image_save(file_path,sprite_out,palette);
          elements.save_save->button.state.released = 0;
       }
       else if(elements.save_load_preset->button.state.released)

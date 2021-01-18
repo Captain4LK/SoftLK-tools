@@ -9,15 +9,13 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
+#include <stdint.h>
 #include <SLK/SLK.h>
-#include <SLK/SLK_gui.h>
-#define CUTE_FILES_IMPLEMENTATION
 #include "../../external/cute_files.h"
 //-------------------------------------
 
 //Internal includes
-#include "assets.h"
-#include "gui.h"
+#include "utility.h"
 //-------------------------------------
 
 //#defines
@@ -30,31 +28,43 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
+static uint8_t find_palette(SLK_Color in, SLK_Palette *pal);
 //-------------------------------------
 
 //Function implementations
 
-int main(int argc, char **argv)
+void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
 {
-   SLK_setup(800,500,4,"SLK_img2pixel",0,SLK_WINDOW_MAX,1);
-   SLK_timer_set_fps(30);
+   if(img==NULL||path==NULL)
+      return;
 
-   SLK_layer_create(0,SLK_LAYER_RGB); //Layer for GUI
+   cf_file_t file; //Not ment to be used this way, but since it's possible, who cares
+   strcpy(file.name,path);
 
-   SLK_layer_activate(0,1);
-   SLK_layer_set_dynamic(0,1);
-
-   assets_load();
-   gui_init();
-
-   while(SLK_core_running())
+   //slk file
+   if(strcmp(cf_get_ext(&file),".slk")==0)
    {
-      SLK_update();
+      SLK_Pal_sprite *p = SLK_pal_sprite_create(img->width,img->height);
+      for(int i = 0;i<p->width*p->height;i++)
+      {
+         p->data[i].mask = img->data[i].a==0?255:0;
+         p->data[i].index = find_palette(img->data[i],pal);
+      }
+      SLK_pal_sprite_save(path,p,0);
+      SLK_pal_sprite_destroy(p);
 
-      gui_update();
-
-      SLK_render_update();
+      return;
    }
+
+   //anything else --> png
+   SLK_rgb_sprite_save(path,img);
+}
+
+static uint8_t find_palette(SLK_Color in, SLK_Palette *pal)
+{
+   for(int i = 0;i<pal->used;i++)
+      if(pal->colors[i].r==in.r&&pal->colors[i].g==in.g&&pal->colors[i].b==in.b)
+         return i;
 
    return 0;
 }
