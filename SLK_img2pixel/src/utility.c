@@ -13,6 +13,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <SLK/SLK.h>
 #define CUTE_FILES_IMPLEMENTATION
 #include "../../external/cute_files.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "../../external/stb_image.h"
 //-------------------------------------
 
 //Internal includes
@@ -59,6 +61,28 @@ void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
 
    //anything else --> png
    SLK_rgb_sprite_save(path,img);
+}
+
+SLK_RGB_sprite *image_load(const char *path)
+{
+   unsigned char *data = NULL;
+   int width = 1;
+   int height = 1;
+   SLK_RGB_sprite *out;
+
+   data = stbi_load(path,&width,&height,NULL,4);
+   if(data==NULL)
+   {
+      printf("Failed to load %s\n",path);
+      return SLK_rgb_sprite_create(1,1);
+   }
+
+   out = SLK_rgb_sprite_create(width,height);
+   memcpy(out->data,data,width*height*sizeof(*out->data));
+
+   stbi_image_free(data);
+
+   return out;
 }
 
 static uint8_t find_palette(SLK_Color in, SLK_Palette *pal)

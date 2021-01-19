@@ -269,12 +269,12 @@ static SLK_Color find_closest(Big_pixel in, SLK_Palette *pal)
    if(in.a==0)
       return pal->colors[0];
 
-   int min_dist = INT_MAX;
-   int min_index = 0;
+   int64_t min_dist = INT_MAX;
+   int64_t min_index = 0;
 
-   for(int i = 0;i<pal->used;i++)
+   for(int64_t i = 0;i<pal->used;i++)
    {   
-      int dist = color_dist2(in,pal->colors[i]);
+      int64_t dist = color_dist2(in,pal->colors[i]);
       if(dist<min_dist)
       {
          min_dist = dist;

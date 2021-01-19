@@ -25,3 +25,4 @@ All code in this repository (except the 'external' directory containing source c
 
 * [tinyfiledialogs](https://sourceforge.net/projects/tinyfiledialogs/), zlib
 * [cute_files](https://github.com/RandyGaul/cute_headers), zlib/unlicense
+* [stb_image](https://github.com/nothings/stb), mit/unlicense

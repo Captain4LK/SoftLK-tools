@@ -13,5 +13,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define _UTILITY_H_
 
 void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal);
+SLK_RGB_sprite *image_load(const char *path);
 
 #endif

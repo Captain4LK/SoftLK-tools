@@ -392,9 +392,9 @@ static void gui_buttons()
       if(elements.save_load->button.state.released)
       {
          const char *filter_patterns[2] = {"*.png"};
-         const char *file_path = tinyfd_openFileDialog("Select a png file","",1,filter_patterns,NULL,0);
+         const char *file_path = tinyfd_openFileDialog("Select a png file","",0,filter_patterns,NULL,0);
          SLK_rgb_sprite_destroy(sprite_in);
-         sprite_in = SLK_rgb_sprite_load(file_path);
+         sprite_in = image_load(file_path);
          if(sprite_in)
             SLK_gui_image_update(image_in,sprite_in,(SLK_gui_rectangle){0,0,sprite_in->width,sprite_in->height});
          update = 1;
