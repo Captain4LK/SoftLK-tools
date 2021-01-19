@@ -11,6 +11,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //External includes
 #include <stdint.h>
 #include <SLK/SLK.h>
+#define CUTE_FILES_IMPLEMENTATION
 #include "../../external/cute_files.h"
 //-------------------------------------
 
