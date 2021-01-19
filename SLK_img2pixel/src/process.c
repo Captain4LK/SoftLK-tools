@@ -62,6 +62,7 @@ static Big_pixel *tmp_data = NULL;
 int brightness = 0;
 int contrast = 0;
 int img_gamma = 100;
+int saturation = 100;
 int dither_amount = 250;
 //-------------------------------------
 
@@ -86,29 +87,43 @@ void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *p
    sample_image(in,tmp_data,sample_mode,out->width,out->height);
    float contrast_factor = (259.0f*(255.0f+(float)contrast))/(255.0f*(259.0f-(float)contrast));
    float gamma_factor = (float)img_gamma/100.0f;
+   float saturation_factor = (float)saturation/100.0f;
+   float brightness_factor = (float)brightness/255.0f;
+
+   //Setup "matrix"
+   float t = (1.0f-contrast_factor)/2.0f;
+   float sr = (1.0f-saturation_factor)*0.3086f;
+   float sg = (1.0f-saturation_factor)*0.6094f;
+   float sb = (1.0f-saturation_factor)*0.0820f;
+
+   float rr = contrast_factor*(sr+saturation_factor);
+   float rg = contrast_factor*sr;
+   float rb = contrast_factor*sr;
+
+   float gr = contrast_factor*sg;
+   float gg = contrast_factor*(sg+saturation_factor);
+   float gb = contrast_factor*sg;
+
+   float br = contrast_factor*sb;
+   float bg = contrast_factor*sb;
+   float bb = contrast_factor*(sb+saturation_factor);
+
+   float wr = (t+brightness_factor)*255.0f;
+   float wg = (t+brightness_factor)*255.0f;
+   float wb = (t+brightness_factor)*255.0f;
+
    for(int y = 0;y<out->height;y++)
    {
       for(int x = 0;x<out->width;x++)
       {
-         //Contrast
-         if(contrast!=0)
-         {
-            Big_pixel in = tmp_data[y*out->width+x];
-            in.r = MAX(0,MIN(255,(int)(contrast_factor*((float)in.r-128.0f)+128.0f)));
-            in.g = MAX(0,MIN(255,(int)(contrast_factor*((float)in.g-128.0f)+128.0f)));
-            in.b = MAX(0,MIN(255,(int)(contrast_factor*((float)in.b-128.0f)+128.0f)));
-            tmp_data[y*out->width+x] = in;
-         }
-
-         //Brightness
-         if(brightness!=0)
-         {
-            Big_pixel in = tmp_data[y*out->width+x];
-            in.r = MAX(0,MIN(255,in.r+brightness));
-            in.g = MAX(0,MIN(255,in.g+brightness));
-            in.b = MAX(0,MIN(255,in.b+brightness));
-            tmp_data[y*out->width+x] = in;
-         }
+         Big_pixel in = tmp_data[y*out->width+x];
+         float r = (float)in.r;
+         float g = (float)in.g;
+         float b = (float)in.b;
+         in.r = MAX(0,MIN(255,(int)(rr*r)+(gr*g)+(br*b)+wr));
+         in.g = MAX(0,MIN(255,(int)(rg*r)+(gg*g)+(bg*b)+wg));
+         in.b = MAX(0,MIN(255,(int)(rb*r)+(gb*g)+(bb*b)+wb));
+         tmp_data[y*out->width+x] = in;
 
          //Gamma
          if(img_gamma!=100)

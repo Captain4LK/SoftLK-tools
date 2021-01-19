@@ -99,6 +99,10 @@ struct Elements
    SLK_gui_element *process_minus_contrast;
    SLK_gui_element *process_plus_contrast;
    SLK_gui_element *process_label_contrast;
+   SLK_gui_element *process_bar_saturation;
+   SLK_gui_element *process_minus_saturation;
+   SLK_gui_element *process_plus_saturation;
+   SLK_gui_element *process_label_saturation;
    SLK_gui_element *process_bar_gamma;
    SLK_gui_element *process_minus_gamma;
    SLK_gui_element *process_plus_gamma;
@@ -138,7 +142,7 @@ static const char *text_tab_settings[] =
    "Palette",
    "General",
    "Process",
-   "Batch",
+   "Reserved",
    "Reserved",
    "Reserved",
    "Reserved",
@@ -309,7 +313,9 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
    label = SLK_gui_label_create(104,56,56,12,"Contra");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
-   label = SLK_gui_label_create(104,88,56,12,"Gamma");
+   label = SLK_gui_label_create(104,88,56,12,"Satura");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   label = SLK_gui_label_create(104,120,56,12,"Gamma");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
    elements.process_bar_brightness = SLK_gui_slider_create(174,21,162,14,-255,255);
    elements.process_bar_brightness->slider.value = 0;
@@ -329,14 +335,23 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_contrast);
    elements.process_minus_contrast = SLK_gui_button_create(160,53,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_contrast);
-   elements.process_bar_gamma = SLK_gui_slider_create(174,85,162,14,1,800);
+   elements.process_bar_saturation = SLK_gui_slider_create(174,85,162,14,1,600);
+   elements.process_bar_saturation->slider.value = 100;
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_saturation);
+   elements.process_label_saturation = SLK_gui_label_create(346,88,40,12,"100");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_saturation);
+   elements.process_plus_saturation = SLK_gui_button_create(336,85,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_saturation);
+   elements.process_minus_saturation = SLK_gui_button_create(160,85,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_saturation);
+   elements.process_bar_gamma = SLK_gui_slider_create(174,118,162,14,1,800);
    elements.process_bar_gamma->slider.value = 100;
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_gamma);
-   elements.process_label_gamma = SLK_gui_label_create(346,88,40,12,"100");
+   elements.process_label_gamma = SLK_gui_label_create(346,120,40,12,"100");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_gamma);
-   elements.process_plus_gamma = SLK_gui_button_create(336,85,14,14,"+");
+   elements.process_plus_gamma = SLK_gui_button_create(336,118,14,14,"+");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_gamma);
-   elements.process_minus_gamma = SLK_gui_button_create(160,85,14,14,"-");
+   elements.process_minus_gamma = SLK_gui_button_create(160,118,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_gamma);
 }
 
@@ -512,14 +527,14 @@ static void gui_buttons()
       {
          pixel_sample_mode--;
          if(pixel_sample_mode<0)
-            pixel_sample_mode = 3;
+            pixel_sample_mode = 2;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
       }
       else if(elements.general_sample_right->button.state.pressed)
       {
          pixel_sample_mode++;
-         if(pixel_sample_mode>3)
+         if(pixel_sample_mode>2)
             pixel_sample_mode = 0;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
@@ -535,6 +550,10 @@ static void gui_buttons()
          elements.process_bar_contrast->slider.value--;
       else if(elements.process_plus_contrast->button.state.pressed&&elements.process_bar_contrast->slider.value<elements.process_bar_contrast->slider.max)
          elements.process_bar_contrast->slider.value++;
+      if(elements.process_minus_saturation->button.state.pressed&&elements.process_bar_saturation->slider.value>elements.process_bar_saturation->slider.min)
+         elements.process_bar_saturation->slider.value--;
+      else if(elements.process_plus_saturation->button.state.pressed&&elements.process_bar_saturation->slider.value<elements.process_bar_saturation->slider.max)
+         elements.process_bar_saturation->slider.value++;
       if(elements.process_minus_gamma->button.state.pressed&&elements.process_bar_gamma->slider.value>elements.process_bar_gamma->slider.min)
          elements.process_bar_gamma->slider.value--;
       else if(elements.process_plus_gamma->button.state.pressed&&elements.process_bar_gamma->slider.value<elements.process_bar_gamma->slider.max)
@@ -553,6 +572,14 @@ static void gui_buttons()
          char ctmp[16];
          sprintf(ctmp,"%d",contrast);
          SLK_gui_label_set_text(elements.process_label_contrast,ctmp);
+         update = 1;
+      }
+      if(saturation!=elements.process_bar_saturation->slider.value)
+      {
+         saturation = elements.process_bar_saturation->slider.value;
+         char ctmp[16];
+         sprintf(ctmp,"%d",saturation);
+         SLK_gui_label_set_text(elements.process_label_saturation,ctmp);
          update = 1;
       }
       if(img_gamma!=elements.process_bar_gamma->slider.value)
@@ -634,6 +661,9 @@ static void palette_labels()
 
 void preset_save(const char *path)
 {
+   if(path==NULL)
+      return;
+
    ULK_json5_root *root = ULK_json_create_root();
    ULK_json5 object = ULK_json_create_object();
    ULK_json_object_add_integer(&object,"used",palette->used);
@@ -650,6 +680,7 @@ void preset_save(const char *path)
    ULK_json_object_add_integer(&root->root,"brightness",brightness);
    ULK_json_object_add_integer(&root->root,"contrast",contrast);
    ULK_json_object_add_integer(&root->root,"gamma",img_gamma);
+   ULK_json_object_add_integer(&root->root,"saturation",saturation);
  
    FILE *f = fopen(path,"w");
    ULK_json_write_file(f,&root->root);
@@ -659,6 +690,9 @@ void preset_save(const char *path)
 
 void preset_load(const char *path)
 {
+   if(path==NULL)
+      return;
+
    ULK_json5 fallback = {0};
    ULK_json5_root *root = ULK_json_parse_file(path);
    ULK_json5 *o = ULK_json_get_object_object(&root->root,"palette",&fallback);
@@ -689,6 +723,10 @@ void preset_load(const char *path)
       contrast = elements.process_bar_contrast->slider.value;
       sprintf(ctmp,"%d",contrast);
       SLK_gui_label_set_text(elements.process_label_contrast,ctmp);
+   elements.process_bar_saturation->slider.value = ULK_json_get_object_integer(&root->root,"saturation",0);
+      saturation = elements.process_bar_saturation->slider.value;
+      sprintf(ctmp,"%d",saturation);
+      SLK_gui_label_set_text(elements.process_label_saturation,ctmp);
    elements.process_bar_gamma->slider.value = ULK_json_get_object_integer(&root->root,"gamma",0);
       img_gamma = elements.process_bar_gamma->slider.value;
       sprintf(ctmp,"%d",img_gamma);
