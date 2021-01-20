@@ -119,7 +119,8 @@ static SLK_gui_element *image_out = NULL;
 static const char *text_dither[] = 
 {
    "No dithering",
-   "Ordered",
+   "Ordered 1",
+   "Ordered 2",
    "FloydSteinberg 1",
    "FloydSteinberg 2",
 };
@@ -508,14 +509,14 @@ static void gui_buttons()
       {
          pixel_process_mode--;
          if(pixel_process_mode<0)
-            pixel_process_mode = 3;
+            pixel_process_mode = 4;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);
       }
       else if(elements.general_dither_right->button.state.pressed)
       {
          pixel_process_mode++;
-         if(pixel_process_mode>3)
+         if(pixel_process_mode>4)
             pixel_process_mode = 0;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);

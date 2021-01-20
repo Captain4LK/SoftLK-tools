@@ -32,7 +32,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Variables
-static const uint8_t dither_threshold_normal[64] = 
+static const int16_t dither_threshold_normal[64] = 
 {
    //Old dither patterns
    /*0 ,48,12,60, 3,51,15,63,
@@ -53,10 +53,10 @@ static const uint8_t dither_threshold_normal[64] =
    63,31,55,23,61,29,53,21,
 };
 
-static const uint8_t dither_threshold_none[64] = {0};
+static const int16_t dither_threshold_none[64] = {0};
 
-static uint8_t dither_threshold_tmp[64] = {0};
-static const uint8_t *dither_threshold = dither_threshold_none;
+static int16_t dither_threshold_tmp[64] = {0};
+static const int16_t *dither_threshold = dither_threshold_none;
 static Big_pixel *tmp_data = NULL;
 
 int brightness = 0;
@@ -149,16 +149,22 @@ static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette
       dither_threshold = dither_threshold_none;
       orderd_dither(d,out,palette,width,height);
       break;
-   case 1: //Ordered dithering (level 0)
+   case 1: //Ordered dithering (positiv map)
       for(int i = 0;i<64;i++)
          dither_threshold_tmp[i] = (int)((float)dither_threshold_normal[i]*((float)dither_amount/1000.0f));
       dither_threshold = dither_threshold_tmp;
       orderd_dither(d,out,palette,width,height);
       break;
-   case 2: //Floyd-Steinberg dithering (per color component error)
+   case 2: //Ordered dithering (positiv and negativ map)
+      for(int i = 0;i<64;i++)
+         dither_threshold_tmp[i] = (int)((float)(dither_threshold_normal[i]-31)*((float)dither_amount/1000.0f));
+      dither_threshold = dither_threshold_tmp;
+      orderd_dither(d,out,palette,width,height);
+      break;
+   case 3: //Floyd-Steinberg dithering (per color component error)
       floyd_dither(d,out,palette,width,height);
       break;
-   case 3: //Floyd-Steinberg dithering (distributed error)
+   case 4: //Floyd-Steinberg dithering (distributed error)
       floyd2_dither(d,out,palette,width,height);
       break;
    }
@@ -178,9 +184,9 @@ static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
          }
          uint8_t tresshold_id = ((y & 7) << 3) + (x & 7);
          Big_pixel c;
-         c.r = MIN((in.r+dither_threshold[tresshold_id]),0xff);
-         c.g = MIN((in.g+dither_threshold[tresshold_id]),0xff);
-         c.b = MIN((in.b+dither_threshold[tresshold_id]),0xff);
+         c.r = MAX(0,MIN((in.r+dither_threshold[tresshold_id]),0xff));
+         c.g = MAX(0,MIN((in.g+dither_threshold[tresshold_id]),0xff));
+         c.b = MAX(0,MIN((in.b+dither_threshold[tresshold_id]),0xff));
          c.a = in.a;
          out->data[y*width+x] = find_closest(c,pal);
          out->data[y*width+x].a = 255;
