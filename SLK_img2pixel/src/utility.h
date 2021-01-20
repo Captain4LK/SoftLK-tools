@@ -14,5 +14,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal);
 SLK_RGB_sprite *image_load(const char *path);
+void dir_input_select(const char *path);
+void dir_output_select(const char *path, int dither_mode, int sample_mode, int width, int height, SLK_Palette *pal);
 
 #endif

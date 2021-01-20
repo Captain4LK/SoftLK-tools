@@ -21,7 +21,7 @@ process.o: ../../src/process.c ../../src/process.h ../../src/sample.h
 sample.o: ../../src/sample.c ../../src/sample.h ../../src/process.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
-utility.o: ../../src/utility.c ../../src/utility.h
+utility.o: ../../src/utility.c ../../src/utility.h ../../src/process.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 tinyfiledialogs.o: ../../../external/tinyfiledialogs.c

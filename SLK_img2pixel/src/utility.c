@@ -19,6 +19,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "utility.h"
+#include "process.h"
 //-------------------------------------
 
 //#defines
@@ -32,6 +33,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function prototypes
 static uint8_t find_palette(SLK_Color in, SLK_Palette *pal);
+static char input_dir[256];
+static char output_dir[256];
 //-------------------------------------
 
 //Function implementations
@@ -92,5 +95,50 @@ static uint8_t find_palette(SLK_Color in, SLK_Palette *pal)
          return i;
 
    return 0;
+}
+
+void dir_input_select(const char *path)
+{
+   if(path==NULL)
+   {
+      input_dir[0] = '\0';
+      return;
+   }
+   strcpy(input_dir,path);
+}
+
+void dir_output_select(const char *path, int dither_mode, int sample_mode, int width, int height, SLK_Palette *pal)
+{
+   if(path==NULL)
+   {
+      output_dir[0] = '\0';
+      return;
+   }
+   strcpy(output_dir,path);
+
+   if(output_dir[0]!='\0'&&input_dir[0]!='\0') //Process directory
+   {
+      cf_dir_t dir;
+      cf_dir_open(&dir,input_dir);
+      SLK_RGB_sprite *out = SLK_rgb_sprite_create(width,height);
+      while (dir.has_next)
+      {
+         cf_file_t file;
+         cf_read_file(&dir, &file);
+         if(strcmp(file.name,".")&&strcmp(file.name,".."))
+         {
+            char tmp[516];
+            sprintf(tmp,"%s/%s",input_dir,file.name);
+            SLK_RGB_sprite *in = image_load(tmp);
+            process_image(in,out,pal,sample_mode,dither_mode);
+            sprintf(tmp,"%s/%s.png",output_dir,file.name);
+            image_save(tmp,out,pal);
+            SLK_rgb_sprite_destroy(in);
+         }
+         cf_dir_next(&dir);
+      }
+      cf_dir_close(&dir);
+      SLK_rgb_sprite_destroy(out);
+   }
 }
 //-------------------------------------

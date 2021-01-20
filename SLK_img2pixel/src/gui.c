@@ -53,6 +53,8 @@ struct Elements
    SLK_gui_element *save_save;
    SLK_gui_element *save_load_preset;
    SLK_gui_element *save_save_preset;
+   SLK_gui_element *save_load_folder;
+   SLK_gui_element *save_save_folder;
 
    //Palette tab
    SLK_gui_element *palette_save;
@@ -214,14 +216,18 @@ void gui_init()
    settings_tabs = SLK_gui_vtabbar_create(2,14,96,20,text_tab_settings);
    SLK_gui_window_add_element(settings,settings_tabs);
    //Save/Load tab
-   elements.save_load = SLK_gui_button_create(158,64,164,14,"Load image");
+   elements.save_load = SLK_gui_button_create(158,32,164,14,"Load image");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_load);
-   elements.save_save = SLK_gui_button_create(158,198,164,14,"Save image");
+   elements.save_save = SLK_gui_button_create(158,64,164,14,"Save image");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_save);
-   elements.save_load_preset = SLK_gui_button_create(158,92,164,14,"Load preset");
+   elements.save_load_preset = SLK_gui_button_create(158,128,164,14,"Load preset");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_load_preset);
-   elements.save_save_preset = SLK_gui_button_create(158,226,164,14,"Save preset");
+   elements.save_save_preset = SLK_gui_button_create(158,160,164,14,"Save preset");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_save_preset);
+   elements.save_load_folder = SLK_gui_button_create(158,224,164,14,"Select input dir");
+   SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_load_folder);
+   elements.save_save_folder = SLK_gui_button_create(158,256,164,14,"Select output dir");
+   SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_save_folder);
    //Palette tab
    elements.palette_load = SLK_gui_button_create(158,218,164,14,"Load palette");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_load);
@@ -420,6 +426,18 @@ static void gui_buttons()
          const char *file_path = tinyfd_saveFileDialog("Save preset","",1,filter_patterns,NULL);
          preset_save(file_path);
          elements.save_save_preset->button.state.released = 0;
+      }
+      else if(elements.save_save_folder->button.state.released)
+      {
+         const char *path = tinyfd_selectFolderDialog("Select output directory",NULL);
+         dir_output_select(path,pixel_process_mode,pixel_sample_mode,gui_out_width,gui_out_height,palette);
+         elements.save_save_folder->button.state.released = 0;
+      }
+      else if(elements.save_load_folder->button.state.released)
+      {
+         const char *path = tinyfd_selectFolderDialog("Select input directory",NULL);
+         dir_input_select(path);
+         elements.save_load_folder->button.state.released = 0;
       }
       break;
    case 1: //Palette tab

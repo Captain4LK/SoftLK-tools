@@ -82,15 +82,16 @@ void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *p
 {
    if(tmp_data)
       free(tmp_data);
-   tmp_data = malloc(sizeof(*tmp_data)*out->width*out->height);
 
+   tmp_data = malloc(sizeof(*tmp_data)*out->width*out->height);
    sample_image(in,tmp_data,sample_mode,out->width,out->height);
+
+   //Setup "matrix"
    float contrast_factor = (259.0f*(255.0f+(float)contrast))/(255.0f*(259.0f-(float)contrast));
    float gamma_factor = (float)img_gamma/100.0f;
    float saturation_factor = (float)saturation/100.0f;
    float brightness_factor = (float)brightness/255.0f;
 
-   //Setup "matrix"
    float t = (1.0f-contrast_factor)/2.0f;
    float sr = (1.0f-saturation_factor)*0.3086f;
    float sg = (1.0f-saturation_factor)*0.6094f;
@@ -170,7 +171,7 @@ static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
       for(int x = 0;x<width;x++)
       { 
          Big_pixel in = d[y*width+x];
-         if(in.a<255)
+         if(in.a==0)
          {
             out->data[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -194,7 +195,7 @@ static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, in
       for(int x = 0;x<width;x++)
       {
          Big_pixel in = d[y*width+x];
-         if(in.a<255)
+         if(in.a==0)
          {
             out->data[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -222,7 +223,7 @@ static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
       for(int x = 0;x<width;x++)
       {
          Big_pixel in = d[y*width+x];
-         if(in.a<255)
+         if(in.a==0)
          {
             out->data[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
