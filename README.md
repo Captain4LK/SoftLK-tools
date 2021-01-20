@@ -17,6 +17,10 @@ A tool for transforming images into pixel art.
 * ...and build it: ``make``
 * The binary can be found at the top level of the repo in the bin directory
 
+# Download 
+
+* SLK_img2pixel: [itch.io](https://captain4lk.itch.io/slk-img2pixel)
+
 # License
 
 All code in this repository (except the 'external' directory containing source code not by my) is released into the public domain (CC0), see LICENSE for more info.

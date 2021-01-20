@@ -461,7 +461,8 @@ static void gui_buttons()
       {
          const char *filter_patterns[2] = {"*.pal"};
          const char *file_path = tinyfd_saveFileDialog("Save palette","",1,filter_patterns,NULL);
-         SLK_palette_save(file_path,palette);
+         if(file_path!=NULL)
+            SLK_palette_save(file_path,palette);
          elements.palette_save->button.state.released = 0;
       }
       else if(elements.palette_button->icon.state.pressed)
