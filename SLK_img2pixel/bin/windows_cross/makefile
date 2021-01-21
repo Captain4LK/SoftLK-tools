@@ -1,7 +1,7 @@
 CC = i686-w64-mingw32-gcc
 CFLAGS+=-L../../../../SoftLK-lib/lib/windows_cross/ -I ../../../../SoftLK-lib/include/ -lcomdlg32 -lole32 -lSLK -lSLK_gui -lmingw32 -lSDL2main -lSDL2 -mwindows -Wall 
 
-SLK_img2pix: main.o assets.o gui.o process.o sample.o utility.o tinyfiledialogs.o ULK_json.o
+SLK_img2pix: main.o assets.o gui.o process.o sample.o utility.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
 	$(CC) -o SLK_img2pix $^ $(CFLAGS)
 	mv SLK_img2pix.exe ../../../bin/
 
@@ -26,6 +26,13 @@ utility.o: ../../src/utility.c ../../src/utility.h ../../src/process.h
 tinyfiledialogs.o: ../../../external/tinyfiledialogs.c
 	$(CC) -O3 -c $< $(CFLAGS) 
 
+gifenc.o: ../../../external/gifenc.c
+	$(CC) -O3 -c $< $(CFLAGS) 
+
+gifdec.o: ../../../external/gifdec.c
+	$(CC) -O3 -c $< $(CFLAGS) 
+
+ULK_json.o: ../../../external/UtilityLK/src/ULK_json.c
 ULK_json.o: ../../../external/UtilityLK/src/ULK_json.c
 	$(CC) -O3 -c $< $(CFLAGS) 
 

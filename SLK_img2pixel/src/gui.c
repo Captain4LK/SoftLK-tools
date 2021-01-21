@@ -113,6 +113,10 @@ struct Elements
    SLK_gui_element *process_minus_gamma;
    SLK_gui_element *process_plus_gamma;
    SLK_gui_element *process_label_gamma;
+
+   //Special tab
+   SLK_gui_element *special_gif_load;
+   SLK_gui_element *special_gif_save;
 };
 static struct Elements elements = {0};
 
@@ -149,22 +153,22 @@ static const char *text_tab_settings[] =
    "Palette",
    "General",
    "Process",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
-   "Reserved",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "Special",
 };
 
 static SLK_Palette *palette = NULL;
@@ -215,7 +219,7 @@ void gui_init()
    SLK_gui_window_add_element(preview,tabbar);
    
    //Gui window
-   settings = SLK_gui_window_create(10,10,384,294);
+   settings = SLK_gui_window_create(10,10,384,296);
    SLK_gui_window_set_title(settings,"Settings");
    SLK_gui_window_set_moveable(settings,1);
    settings_tabs = SLK_gui_vtabbar_create(2,14,96,20,text_tab_settings);
@@ -375,6 +379,11 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_gamma);
    elements.process_minus_gamma = SLK_gui_button_create(160,118,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_gamma);
+   //Special tab
+   elements.special_gif_load = SLK_gui_button_create(158,32,164,14,"Load gif");
+   SLK_gui_vtabbar_add_element(settings_tabs,19,elements.special_gif_load);
+   elements.special_gif_save = SLK_gui_button_create(158,64,164,14,"Save gif");
+   SLK_gui_vtabbar_add_element(settings_tabs,19,elements.special_gif_save);
 }
 
 void gui_update()
@@ -635,6 +644,22 @@ static void gui_buttons()
          sprintf(ctmp,"%d",img_gamma);
          SLK_gui_label_set_text(elements.process_label_gamma,ctmp);
          update = 1;
+      }
+      break;
+   case 19: //Special tab
+      if(elements.special_gif_save->button.state.released)
+      {
+         const char *filter_patterns[2] = {"*.gif"};
+         const char *file_path = tinyfd_saveFileDialog("Save gif","",1,filter_patterns,NULL);
+         gif_output_select(file_path,pixel_process_mode,pixel_sample_mode,gui_out_width,gui_out_height,palette);
+         elements.special_gif_save->button.state.released = 0;
+      }
+      else if(elements.special_gif_load->button.state.released)
+      {
+         const char *filter_patterns[2] = {"*.gif"};
+         const char *file_path = tinyfd_openFileDialog("Select a gif file","",1,filter_patterns,NULL,0);
+         gif_input_select(file_path);
+         elements.special_gif_load->button.state.released = 0;
       }
       break;
    }

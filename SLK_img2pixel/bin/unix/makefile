@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS+=-lm -Wall
 
-SLK_img2pix: main.o assets.o gui.o process.o sample.o utility.o tinyfiledialogs.o ULK_json.o
+SLK_img2pix: main.o assets.o gui.o process.o sample.o utility.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
 	gcc -o SLK_img2pix $^ -lSLK -lSLK_gui -lm -lSDL2 -Wall
 	chmod +x SLK_img2pix 
 	mv SLK_img2pix ../../../bin/
@@ -25,6 +25,12 @@ utility.o: ../../src/utility.c ../../src/utility.h ../../src/process.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 tinyfiledialogs.o: ../../../external/tinyfiledialogs.c
+	$(CC) -O3 -c $< $(CFLAGS) 
+
+gifenc.o: ../../../external/gifenc.c
+	$(CC) -O3 -c $< $(CFLAGS) 
+
+gifdec.o: ../../../external/gifdec.c
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 ULK_json.o: ../../../external/UtilityLK/src/ULK_json.c

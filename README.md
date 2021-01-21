@@ -30,3 +30,5 @@ All code in this repository (except the 'external' directory containing source c
 * [tinyfiledialogs](https://sourceforge.net/projects/tinyfiledialogs/), zlib
 * [cute_files](https://github.com/RandyGaul/cute_headers), zlib/unlicense
 * [stb_image](https://github.com/nothings/stb), mit/unlicense
+* [gifenc](https://github.com/lecram/gifenc), public domain
+* [gifdec](https://github.com/lecram/gifdec), public domain

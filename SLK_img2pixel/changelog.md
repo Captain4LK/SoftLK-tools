@@ -11,6 +11,7 @@ CHANGES:
 
 * added bilinear sampling mode
 * added alpha threshold
+* added gif support
 
 ----------------------------------------
 Version:                SLK_img2pixel 0.1 - initial prerelease (20.01.2021)

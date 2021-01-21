@@ -13,9 +13,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <SLK/SLK.h>
 #define CUTE_FILES_IMPLEMENTATION
 #include "../../external/cute_files.h"
-#define STBI_NO_GIF
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../external/stb_image.h"
+#include "../../external/gifdec.h"
+#include "../../external/gifenc.h"
 //-------------------------------------
 
 //Internal includes
@@ -36,6 +37,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 static uint8_t find_palette(SLK_Color in, SLK_Palette *pal);
 static char input_dir[256];
 static char output_dir[256];
+static char input_gif[256];
+static char output_gif[256];
 //-------------------------------------
 
 //Function implementations
@@ -140,6 +143,64 @@ void dir_output_select(const char *path, int dither_mode, int sample_mode, int w
       }
       cf_dir_close(&dir);
       SLK_rgb_sprite_destroy(out);
+   }
+}
+
+void gif_input_select(const char *path)
+{
+   if(path==NULL)
+   {
+      input_gif[0] = '\0';
+      return;
+   }
+   strcpy(input_gif,path);
+}
+
+void gif_output_select(const char *path, int dither_mode, int sample_mode, int width, int height, SLK_Palette *pal)
+{
+   if(path==NULL)
+   {
+      output_gif[0] = '\0';
+      return;
+   }
+   strcpy(output_gif,path);
+
+   if(output_gif[0]!='\0'&&input_gif[0]!='\0') //Process directory
+   {
+      gd_GIF *gif = gd_open_gif(input_gif);
+      if(!gif)
+         return;
+      uint8_t gif_palette[256*3] = {0};
+      for(int i = 0;i<256;i++)
+      {
+         gif_palette[i*3] = pal->colors[i].r;
+         gif_palette[i*3+1] = pal->colors[i].g;
+         gif_palette[i*3+2] = pal->colors[i].b;
+      }
+      ge_GIF *gif_out = ge_new_gif(output_gif,width,height,gif_palette,8,gif->loop_count);
+      uint8_t *frame = malloc(gif->width*gif->height*3);
+      SLK_RGB_sprite *out = SLK_rgb_sprite_create(width,height);
+      SLK_RGB_sprite *in = SLK_rgb_sprite_create(gif->width,gif->height);
+
+      while(gd_get_frame(gif))
+      {
+         gd_render_frame(gif,frame);
+         for(int i = 0;i<gif->width*gif->height;i++)
+         {
+            in->data[i].r = frame[i*3];
+            in->data[i].g = frame[i*3+1];
+            in->data[i].b = frame[i*3+2];
+            in->data[i].a = 255;
+         }
+         process_image(in,out,pal,sample_mode,dither_mode);
+         for(int i = 0;i<width*height;i++)
+            gif_out->frame[i] = find_palette(out->data[i],pal);
+         ge_add_frame(gif_out,gif->gce.delay);
+      }
+
+      free(frame);
+      gd_close_gif(gif);
+      ge_close_gif(gif_out);
    }
 }
 //-------------------------------------
