@@ -13,6 +13,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <SLK/SLK.h>
 #define CUTE_FILES_IMPLEMENTATION
 #include "../../external/cute_files.h"
+#define STBI_NO_GIF
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../external/stb_image.h"
 //-------------------------------------

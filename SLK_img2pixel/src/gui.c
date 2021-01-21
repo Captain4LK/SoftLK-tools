@@ -80,6 +80,8 @@ struct Elements
    SLK_gui_element *general_width_minus;
    SLK_gui_element *general_height_plus;
    SLK_gui_element *general_height_minus;
+   SLK_gui_element *general_alpha_plus;
+   SLK_gui_element *general_alpha_minus;
    SLK_gui_element *general_dither_left;
    SLK_gui_element *general_dither_right;
    SLK_gui_element *general_sample_left;
@@ -87,10 +89,12 @@ struct Elements
    SLK_gui_element *general_bar_width;
    SLK_gui_element *general_bar_height;
    SLK_gui_element *general_bar_dither;
+   SLK_gui_element *general_bar_alpha;
    SLK_gui_element *general_label_width;
    SLK_gui_element *general_label_height;
    SLK_gui_element *general_label_dither;
    SLK_gui_element *general_label_sample;
+   SLK_gui_element *general_label_alpha;
 
    //Process tab
    SLK_gui_element *process_bar_brightness;
@@ -130,7 +134,7 @@ static const char *text_sample[] =
    "Round",
    "Floor",
    "Ceil",
-   "Linear",
+   "Bilinear",
 };
 
 static const char *text_tab_image[] = 
@@ -199,7 +203,7 @@ void gui_init()
    SLK_gui_set_colors(SLK_color_create(90,90,90,255),SLK_color_create(200,200,200,255),SLK_color_create(100,100,100,255),SLK_color_create(50,50,50,255),SLK_color_create(0,0,0,255));
    SLK_gui_set_font(font);
    SLK_gui_set_font_color(SLK_color_create(0,0,0,255));
-   preview = SLK_gui_window_create(384,100,260,286);
+   preview = SLK_gui_window_create(400,100,260,286);
    SLK_gui_window_set_title(preview,"Preview");
    SLK_gui_window_set_moveable(preview,1);
    SLK_gui_element *tabbar = SLK_gui_tabbar_create(2,14,256,14,2,text_tab_image);
@@ -294,27 +298,38 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_width);
    elements.general_label_height = SLK_gui_label_create(354,56,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_height);
-   elements.general_dither_left = SLK_gui_button_create(160,125,14,14,"<");;
+   elements.general_dither_left = SLK_gui_button_create(160,101,14,14,"<");;
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_dither_left);
-   elements.general_dither_right = SLK_gui_button_create(344,125,14,14,">");
+   elements.general_dither_right = SLK_gui_button_create(344,101,14,14,">");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_dither_right);
-   label = SLK_gui_label_create(104,128,56,12,"Dither");
+   label = SLK_gui_label_create(104,104,56,12,"Dither");
    SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_label_dither = SLK_gui_label_create(174,128,170,12,text_dither[1]);
+   elements.general_label_dither = SLK_gui_label_create(174,104,170,12,text_dither[1]);
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_dither);
-   label = SLK_gui_label_create(104,160,56,12,"Amount");
+   label = SLK_gui_label_create(104,136,56,12,"Amount");
    SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_bar_dither = SLK_gui_slider_create(160,157,198,14,0,1000);
+   elements.general_bar_dither = SLK_gui_slider_create(160,133,198,14,0,1000);
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_dither);
    elements.general_bar_dither->slider.value = 250;
-   label = SLK_gui_label_create(104,232,56,12,"Sample");
+   label = SLK_gui_label_create(104,184,56,12,"Sample");
    SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_sample_left = SLK_gui_button_create(160,229,14,14,"<");;
+   elements.general_sample_left = SLK_gui_button_create(160,181,14,14,"<");;
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_sample_left);
-   elements.general_sample_right = SLK_gui_button_create(344,229,14,14,">");
+   elements.general_sample_right = SLK_gui_button_create(344,181,14,14,">");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_sample_right);
-   elements.general_label_sample = SLK_gui_label_create(174,232,170,12,text_sample[0]);
+   elements.general_label_sample = SLK_gui_label_create(174,184,170,12,text_sample[0]);
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_sample);
+   label = SLK_gui_label_create(104,232,56,12,"Alpha");
+   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
+   elements.general_alpha_plus = SLK_gui_button_create(344,229,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_alpha_plus);
+   elements.general_alpha_minus = SLK_gui_button_create(160,229,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_alpha_minus);
+   elements.general_bar_alpha = SLK_gui_slider_create(174,229,170,14,0,255);
+   elements.general_bar_alpha->slider.value = 128;
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_alpha);
+   elements.general_label_alpha = SLK_gui_label_create(354,232,32,12,"128");
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_alpha);
    //Process tab
    label = SLK_gui_label_create(104,24,56,12,"Bright");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
@@ -506,6 +521,10 @@ static void gui_buttons()
          elements.general_bar_height->slider.value++;
       else if(elements.general_height_minus->button.state.pressed&&elements.general_bar_height->slider.value>elements.general_bar_height->slider.min)
          elements.general_bar_height->slider.value--;
+      else if(elements.general_alpha_plus->button.state.pressed&&elements.general_bar_alpha->slider.value<elements.general_bar_alpha->slider.max)
+         elements.general_bar_alpha->slider.value++;
+      else if(elements.general_alpha_minus->button.state.pressed&&elements.general_bar_alpha->slider.value>elements.general_bar_alpha->slider.min)
+         elements.general_bar_alpha->slider.value--;
       if(elements.general_dither_left->button.state.pressed)
       {
          pixel_process_mode--;
@@ -547,19 +566,26 @@ static void gui_buttons()
       {
          pixel_sample_mode--;
          if(pixel_sample_mode<0)
-            pixel_sample_mode = 2;
+            pixel_sample_mode = 3;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
       }
       else if(elements.general_sample_right->button.state.pressed)
       {
          pixel_sample_mode++;
-         if(pixel_sample_mode>2)
+         if(pixel_sample_mode>3)
             pixel_sample_mode = 0;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
       }
-
+      if(elements.general_bar_alpha->slider.value!=alpha_threshold)
+      {
+         alpha_threshold = elements.general_bar_alpha->slider.value;
+         char tmp[16];
+         sprintf(tmp,"%d",alpha_threshold);
+         SLK_gui_label_set_text(elements.general_label_alpha,tmp);
+         update = 1;
+      }
       break;
    case 3: //Process tab
       if(elements.process_minus_brightness->button.state.pressed&&elements.process_bar_brightness->slider.value>elements.process_bar_brightness->slider.min)

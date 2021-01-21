@@ -64,6 +64,7 @@ int contrast = 0;
 int img_gamma = 100;
 int saturation = 100;
 int dither_amount = 250;
+int alpha_threshold = 128;
 //-------------------------------------
 
 //Function prototypes
@@ -177,7 +178,7 @@ static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
       for(int x = 0;x<width;x++)
       { 
          Big_pixel in = d[y*width+x];
-         if(in.a==0)
+         if(in.a<alpha_threshold)
          {
             out->data[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -201,7 +202,7 @@ static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, in
       for(int x = 0;x<width;x++)
       {
          Big_pixel in = d[y*width+x];
-         if(in.a==0)
+         if(in.a<alpha_threshold)
          {
             out->data[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -229,7 +230,7 @@ static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
       for(int x = 0;x<width;x++)
       {
          Big_pixel in = d[y*width+x];
-         if(in.a==0)
+         if(in.a<alpha_threshold)
          {
             out->data[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
