@@ -184,8 +184,8 @@ static void gui_draw();
 static void update_output();
 static void palette_draw();
 static void palette_labels();
-static void preset_save(const char *path);
-static void preset_load(const char *path);
+static void preset_save(FILE *f);
+static void preset_load(FILE *f);
 //-------------------------------------
 
 //Function implementations
@@ -422,10 +422,8 @@ static void gui_buttons()
    case 0: //Save/Load tab
       if(elements.save_load->button.state.released)
       {
-         const char *filter_patterns[2] = {"*.png"};
-         const char *file_path = tinyfd_openFileDialog("Select a png file","",0,filter_patterns,NULL,0);
          SLK_rgb_sprite_destroy(sprite_in);
-         sprite_in = image_load(file_path);
+         sprite_in = image_select();
          if(sprite_in)
             SLK_gui_image_update(image_in,sprite_in,(SLK_gui_rectangle){0,0,sprite_in->width,sprite_in->height});
          update = 1;
@@ -433,48 +431,41 @@ static void gui_buttons()
       }
       else if(elements.save_save->button.state.released)
       {
-         const char *filter_patterns[2] = {"*.png","*.slk"};
-         const char *file_path = tinyfd_saveFileDialog("Save image","",2,filter_patterns,NULL);
-         image_save(file_path,sprite_out,palette);
+         image_write(sprite_out,palette);
          elements.save_save->button.state.released = 0;
       }
       else if(elements.save_load_preset->button.state.released)
       {
-         const char *filter_patterns[2] = {"*.json"};
-         const char *file_path = tinyfd_openFileDialog("Select a preset","",1,filter_patterns,NULL,0);
-         preset_load(file_path);
+         FILE *f = json_select();
+         preset_load(f);
          elements.save_load_preset->button.state.released = 0;
       }
       else if(elements.save_save_preset->button.state.released)
       {
-         const char *filter_patterns[2] = {"*.json"};
-         const char *file_path = tinyfd_saveFileDialog("Save preset","",1,filter_patterns,NULL);
-         preset_save(file_path);
+         FILE *f = json_write();
+         preset_save(f);
          elements.save_save_preset->button.state.released = 0;
       }
       else if(elements.save_save_folder->button.state.released)
       {
-         const char *path = tinyfd_selectFolderDialog("Select output directory",NULL);
-         dir_output_select(path,pixel_process_mode,pixel_sample_mode,gui_out_width,gui_out_height,palette);
+         dir_output_select(pixel_process_mode,pixel_sample_mode,gui_out_width,gui_out_height,palette);
          elements.save_save_folder->button.state.released = 0;
       }
       else if(elements.save_load_folder->button.state.released)
       {
-         const char *path = tinyfd_selectFolderDialog("Select input directory",NULL);
-         dir_input_select(path);
+         dir_input_select();
          elements.save_load_folder->button.state.released = 0;
       }
       break;
    case 1: //Palette tab
       if(elements.palette_load->button.state.released)
       {
-         const char *filter_patterns[2] = {"*.pal"};
-         const char *file_path = tinyfd_openFileDialog("Load a palette","",1,filter_patterns,NULL,0);
-         if(file_path!=NULL)
+         SLK_Palette *p = palette_select();
+         if(p!=NULL)
          {
             if(palette)
                free(palette);
-            palette = SLK_palette_load(file_path);
+            palette = p;
             update = 1;
             palette_draw();
             palette_labels();
@@ -483,10 +474,7 @@ static void gui_buttons()
       }
       else if(elements.palette_save->button.state.released)
       {
-         const char *filter_patterns[2] = {"*.pal"};
-         const char *file_path = tinyfd_saveFileDialog("Save palette","",1,filter_patterns,NULL);
-         if(file_path!=NULL)
-            SLK_palette_save(file_path,palette);
+         palette_write(palette);
          elements.palette_save->button.state.released = 0;
       }
       else if(elements.palette_button->icon.state.pressed)
@@ -649,16 +637,12 @@ static void gui_buttons()
    case 19: //Special tab
       if(elements.special_gif_save->button.state.released)
       {
-         const char *filter_patterns[2] = {"*.gif"};
-         const char *file_path = tinyfd_saveFileDialog("Save gif","",1,filter_patterns,NULL);
-         gif_output_select(file_path,pixel_process_mode,pixel_sample_mode,gui_out_width,gui_out_height,palette);
+         gif_output_select(pixel_process_mode,pixel_sample_mode,gui_out_width,gui_out_height,palette);
          elements.special_gif_save->button.state.released = 0;
       }
       else if(elements.special_gif_load->button.state.released)
       {
-         const char *filter_patterns[2] = {"*.gif"};
-         const char *file_path = tinyfd_openFileDialog("Select a gif file","",1,filter_patterns,NULL,0);
-         gif_input_select(file_path);
+         gif_input_select();
          elements.special_gif_load->button.state.released = 0;
       }
       break;
@@ -730,9 +714,9 @@ static void palette_labels()
    elements.palette_bar_b->slider.value = palette->colors[palette_selected].b;
 }
 
-void preset_save(const char *path)
+void preset_save(FILE *f)
 {
-   if(path==NULL)
+   if(!f)
       return;
 
    ULK_json5_root *root = ULK_json_create_root();
@@ -753,19 +737,19 @@ void preset_save(const char *path)
    ULK_json_object_add_integer(&root->root,"gamma",img_gamma);
    ULK_json_object_add_integer(&root->root,"saturation",saturation);
  
-   FILE *f = fopen(path,"w");
    ULK_json_write_file(f,&root->root);
    ULK_json_free(root);
    fclose(f);
 }
 
-void preset_load(const char *path)
+void preset_load(FILE *f)
 {
-   if(path==NULL)
+   if(!f)
       return;
 
    ULK_json5 fallback = {0};
-   ULK_json5_root *root = ULK_json_parse_file(path);
+   ULK_json5_root *root = ULK_json_parse_file_stream(f);
+   fclose(f);
    ULK_json5 *o = ULK_json_get_object_object(&root->root,"palette",&fallback);
    palette->used = ULK_json_get_object_integer(o,"used",0);
    ULK_json5 *array = ULK_json_get_object(o,"colors");

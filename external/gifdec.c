@@ -13,6 +13,8 @@
 #include <unistd.h>
 #endif
 
+#include "fopen_utf8.h"
+
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 
@@ -49,11 +51,19 @@ gd_open_gif(const char *fname)
     int gct_sz;
     gd_GIF *gif;
 
+#ifdef _WIN32
+   wchar_t *wpath = (wchar_t *) utf8_to_utf16((const uint8_t *) fname, NULL);
+    fd = _wopen(wpath, O_RDONLY);
+    if (fd == -1) return NULL;
+    setmode(fd, O_BINARY);
+    free(wpath);
+#else
+
     fd = open(fname, O_RDONLY);
     if (fd == -1) return NULL;
-#ifdef _WIN32
-    setmode(fd, O_BINARY);
+
 #endif
+
     /* Header */
     read(fd, sigver, 3);
     if (memcmp(sigver, "GIF", 3) != 0) {

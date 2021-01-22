@@ -8,15 +8,18 @@ To the extent possible under law, the author(s) have dedicated all copyright and
 You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
 */
 
+//wchar_t my ass
+
 //External includes
 #include <stdint.h>
 #include <SLK/SLK.h>
 #define FOPEN_UTF8_IMPLEMENTATION
 #include "../../external/fopen_utf8.h"
-#define CUTE_FILES_IMPLEMENTATION
-#include "../../external/cute_files.h"
+#define STBI_WINDOWS_UTF8
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../external/stb_image.h"
+#define CUTE_FILES_IMPLEMENTATION
+#include "../../external/cute_files.h"
 #include "../../external/gifdec.h"
 #include "../../external/gifenc.h"
 #include "../../external/tinyfiledialogs.h"
@@ -34,10 +37,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Variables
-static char input_dir[512];
-static char output_dir[512];
-static char input_gif[512];
-static char output_gif[512];
+static wchar_t input_dir[512];
+static wchar_t output_dir[512];
+static wchar_t input_gif[512];
+static wchar_t output_gif[512];
 //-------------------------------------
 
 //Function prototypes
@@ -48,60 +51,86 @@ static uint8_t find_palette(SLK_Color in, SLK_Palette *pal);
 
 SLK_RGB_sprite *image_select()
 {
-   const char *filter_patterns[2] = {"*.png"};
-   const char *file_path = tinyfd_openFileDialog("Select a file","",0,filter_patterns,NULL,0);
-   return image_load(file_path);
+   const wchar_t *filter_patterns[2] = {L"*.png"};
+   const wchar_t *file_path = tinyfd_openFileDialogW(L"Select a file",L"",0,filter_patterns,NULL,0);
+   char buffer[512];
+   stbi_convert_wchar_to_utf8(buffer,512,file_path);
+   return image_load(buffer);
 }
 
 void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
 {
-   const char *filter_patterns[2] = {"*.png","*.slk"};
-   const char *file_path = tinyfd_saveFileDialog("Save image","",2,filter_patterns,NULL);
-   image_save(file_path,img,pal);
+   const wchar_t *filter_patterns[2] = {L"*.png",L"*.slk"};
+   const wchar_t *file_path = tinyfd_saveFileDialogW(L"Save image",L"",2,filter_patterns,NULL);
+   image_save_w(file_path,img,pal);
 }
 
 FILE *json_select()
 {
-   const char *filter_patterns[2] = {"*.json"};
-   const char *file_path = tinyfd_openFileDialog("Select a preset","",1,filter_patterns,NULL,0);
-   if(file_path!=NULL)
-      return fopen(file_path,"r");
+   const wchar_t *filter_patterns[2] = {L"*.json"};
+   const wchar_t *file_path = tinyfd_openFileDialogW(L"Select a preset",L"",1,filter_patterns,NULL,0);
+   char buffer[512];
+   stbi_convert_wchar_to_utf8(buffer,512,file_path);
+   if(buffer[0]!='\0')
+      return fopen_utf8(buffer,"r");
    return NULL;
 }
 
 FILE *json_write()
 {
-   const char *filter_patterns[2] = {"*.json"};
-   const char *file_path = tinyfd_saveFileDialog("Save preset","",1,filter_patterns,NULL);
-   if(file_path!=NULL)
-      return fopen(file_path,"w");
+   const wchar_t *filter_patterns[2] = {L"*.json"};
+   const wchar_t *file_path = tinyfd_saveFileDialogW(L"Save preset",L"",1,filter_patterns,NULL);
+   char buffer[512];
+   stbi_convert_wchar_to_utf8(buffer,512,file_path);
+   if(buffer[0]!='\0')
+      return fopen_utf8(buffer,"w");
    return NULL;
 }
 
 SLK_Palette *palette_select()
 {
-   const char *filter_patterns[2] = {"*.pal"};
-   const char *file_path = tinyfd_openFileDialog("Load a palette","",1,filter_patterns,NULL,0);
-   if(file_path!=NULL)
-      return SLK_palette_load(file_path);
+   const wchar_t *filter_patterns[2] = {L"*.pal"};
+   const wchar_t *file_path = tinyfd_openFileDialogW(L"Load a palette",L"",1,filter_patterns,NULL,0);
+   char buffer[512];
+   stbi_convert_wchar_to_utf8(buffer,512,file_path);
+   if(buffer[0]!='\0')
+   {
+      FILE *f = fopen_utf8(buffer,"r");
+      SLK_Palette *p = SLK_palette_load_file(f);
+      fclose(f);
+      return p;
+   }
    return NULL;
 }
 
 void palette_write(SLK_Palette *pal)
 {
-   const char *filter_patterns[2] = {"*.pal"};
-   const char *file_path = tinyfd_saveFileDialog("Save palette","",1,filter_patterns,NULL);
-   if(file_path!=NULL)
-      SLK_palette_save(file_path,pal);
+   const wchar_t *filter_patterns[2] = {L"*.pal"};
+   const wchar_t *file_path = tinyfd_saveFileDialogW(L"Save palette",L"",1,filter_patterns,NULL);
+   char buffer[512];
+   stbi_convert_wchar_to_utf8(buffer,512,file_path);
+   if(buffer[0]!='\0')
+   {
+      FILE *f = fopen_utf8(buffer,"w");
+      SLK_palette_save_file(f,pal);
+      fclose(f);
+   }
 }
 
 void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
 {
+
+}
+
+void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)
+{
    if(img==NULL||path==NULL)
       return;
 
+   char buffer[512];
+   stbi_convert_wchar_to_utf8(buffer,512,path);
    cf_file_t file; //Not ment to be used this way, but since it's possible, who cares
-   strcpy(file.name,path);
+   strcpy(file.name,buffer);
 
    //slk file
    if(strcmp(cf_get_ext(&file),".slk")==0)
@@ -112,19 +141,18 @@ void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
          p->data[i].mask = img->data[i].a==0?255:0;
          p->data[i].index = find_palette(img->data[i],pal);
       }
-      SLK_pal_sprite_save(path,p,0);
+      FILE *f = fopen_utf8(buffer,"wb");
+      SLK_pal_sprite_save_file(f,p,0);
+      fclose(f);
       SLK_pal_sprite_destroy(p);
 
       return;
    }
 
    //anything else --> png
-   SLK_rgb_sprite_save(path,img);
-}
-
-void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)
-{
-
+   FILE *f = fopen_utf8(buffer,"wb");
+   SLK_rgb_sprite_save_file(f,img);
+   fclose(f);
 }
 
 SLK_RGB_sprite *image_load(const char *path)
@@ -160,29 +188,31 @@ static uint8_t find_palette(SLK_Color in, SLK_Palette *pal)
 
 void dir_input_select()
 {
-   const char *path = tinyfd_selectFolderDialog("Select input directory",NULL);
+   const wchar_t *path = tinyfd_selectFolderDialogW(L"Select input directory",NULL);
    if(path==NULL)
    {
       input_dir[0] = '\0';
       return;
    }
-   strcpy(input_dir,path);
+   wcscpy(input_dir,path);
 }
 
 void dir_output_select(int dither_mode, int sample_mode, int width, int height, SLK_Palette *pal)
 {
-   const char *path = tinyfd_selectFolderDialog("Select output directory",NULL);
+   const wchar_t *path = tinyfd_selectFolderDialogW(L"Select output directory",NULL);
    if(path==NULL)
    {
       output_dir[0] = '\0';
       return;
    }
-   strcpy(output_dir,path);
+   wcscpy(output_dir,path);
 
    if(output_dir[0]!='\0'&&input_dir[0]!='\0') //Process directory
    {
+      char buffer[512];
+      stbi_convert_wchar_to_utf8(buffer,512,input_dir);
       cf_dir_t dir;
-      cf_dir_open(&dir,input_dir);
+      cf_dir_open(&dir,buffer);
       SLK_RGB_sprite *out = SLK_rgb_sprite_create(width,height);
       while (dir.has_next)
       {
@@ -191,11 +221,15 @@ void dir_output_select(int dither_mode, int sample_mode, int width, int height, 
          if(strcmp(file.name,".")&&strcmp(file.name,".."))
          {
             char tmp[1028];
-            sprintf(tmp,"%s/%s",input_dir,file.name);
+            sprintf(tmp,"%s/%s",buffer,file.name);
             SLK_RGB_sprite *in = image_load(tmp);
             process_image(in,out,pal,sample_mode,dither_mode);
-            sprintf(tmp,"%s/%s.png",output_dir,file.name);
-            image_save(tmp,out,pal);
+            char buffer[512];
+            stbi_convert_wchar_to_utf8(buffer,512,output_dir);
+            sprintf(tmp,"%s/%s.png",buffer,file.name);
+            wchar_t *wpath = (wchar_t *) utf8_to_utf16((const uint8_t *) tmp, NULL);
+            image_save_w(wpath,out,pal);
+            free(wpath);
             SLK_rgb_sprite_destroy(in);
          }
          cf_dir_next(&dir);
@@ -203,34 +237,37 @@ void dir_output_select(int dither_mode, int sample_mode, int width, int height, 
       cf_dir_close(&dir);
       SLK_rgb_sprite_destroy(out);
    }
+
 }
 
 void gif_input_select()
 {
-   const char *filter_patterns[2] = {"*.gif"};
-   const char *path = tinyfd_openFileDialog("Select a gif file","",1,filter_patterns,NULL,0);
+   const wchar_t *filter_patterns[2] = {L"*.gif"};
+   const wchar_t *path = tinyfd_openFileDialogW(L"Select a gif file",L"",1,filter_patterns,NULL,0);
    if(path==NULL)
    {
       input_gif[0] = '\0';
       return;
    }
-   strcpy(input_gif,path);
+   wcscpy(input_gif,path);
 }
 
 void gif_output_select(int dither_mode, int sample_mode, int width, int height, SLK_Palette *pal)
 {
-   const char *filter_patterns[2] = {"*.gif"};
-   const char *path = tinyfd_saveFileDialog("Save gif","",1,filter_patterns,NULL);
+   const wchar_t *filter_patterns[2] = {L"*.gif"};
+   const wchar_t *path = tinyfd_saveFileDialogW(L"Save gif",L"",1,filter_patterns,NULL);
    if(path==NULL)
    {
       output_gif[0] = '\0';
       return;
    }
-   strcpy(output_gif,path);
+   wcscpy(output_gif,path);
 
    if(output_gif[0]!='\0'&&input_gif[0]!='\0') //Process directory
    {
-      gd_GIF *gif = gd_open_gif(input_gif);
+      char buffer[512];
+      stbi_convert_wchar_to_utf8(buffer,512,input_gif);
+      gd_GIF *gif = gd_open_gif(buffer);
       if(!gif)
          return;
       uint8_t gif_palette[256*3] = {0};
@@ -240,7 +277,9 @@ void gif_output_select(int dither_mode, int sample_mode, int width, int height, 
          gif_palette[i*3+1] = pal->colors[i].g;
          gif_palette[i*3+2] = pal->colors[i].b;
       }
-      ge_GIF *gif_out = ge_new_gif(output_gif,width,height,gif_palette,8,gif->loop_count);
+      char buffer_out[512];
+      stbi_convert_wchar_to_utf8(buffer_out,512,output_gif);
+      ge_GIF *gif_out = ge_new_gif(buffer_out,width,height,gif_palette,8,gif->loop_count);
       uint8_t *frame = malloc(gif->width*gif->height*3);
       SLK_RGB_sprite *out = SLK_rgb_sprite_create(width,height);
       SLK_RGB_sprite *in = SLK_rgb_sprite_create(gif->width,gif->height);

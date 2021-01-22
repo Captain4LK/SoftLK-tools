@@ -12,6 +12,8 @@
 #include <unistd.h>
 #endif
 
+#include "fopen_utf8.h"
+
 /* helper to write a little-endian 16-bit number portably */
 #define write_num(fd, n) write((fd), (uint8_t []) {(n) & 0xFF, (n) >> 8}, 2)
 
@@ -87,7 +89,9 @@ ge_new_gif(
     gif->frame = (uint8_t *) &gif[1];
     gif->back = &gif->frame[width*height];
 #ifdef _WIN32
-    gif->fd = creat(fname, S_IWRITE);
+    wchar_t *wpath = (wchar_t *) utf8_to_utf16((const uint8_t *) fname, NULL);
+    gif->fd = _wcreat(wpath, S_IWRITE);
+    free(wpath);
 #else
     gif->fd = creat(fname, 0666);
 #endif

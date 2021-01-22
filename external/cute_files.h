@@ -148,7 +148,7 @@ void cf_do_unit_tests();
 		char path[CUTE_FILES_MAX_PATH];
 		int has_next;
 		HANDLE handle;
-		WIN32_FIND_DATAA fdata;
+		WIN32_FIND_DATAW fdata;
 	};
 
 	struct cf_time_t
@@ -282,10 +282,12 @@ int cf_match_ext(cf_file_t* file, const char* ext)
 		n = cf_safe_strcpy(fpath, dpath, 0, CUTE_FILES_MAX_PATH);
 		n = cf_safe_strcpy(fpath, "/", n - 1, CUTE_FILES_MAX_PATH);
 
-		char* dname = dir->fdata.cFileName;
+      char buffer[512];
+      stbi_convert_wchar_to_utf8(buffer,512,dir->fdata.cFileName);
+		//char* dname = dir->fdata.cFileName;
 		char* fname = file->name;
 
-		cf_safe_strcpy(fname, dname, 0, CUTE_FILES_MAX_FILENAME);
+		cf_safe_strcpy(fname, buffer, 0, CUTE_FILES_MAX_FILENAME);
 		cf_safe_strcpy(fpath, fname, n - 1, CUTE_FILES_MAX_PATH);
 
 		size_t max_dword = MAXDWORD;
@@ -303,7 +305,7 @@ int cf_match_ext(cf_file_t* file, const char* ext)
 	{
 		CUTE_FILES_ASSERT(dir->has_next);
 
-		if (!FindNextFileA(dir->handle, &dir->fdata))
+		if (!FindNextFileW(dir->handle, &dir->fdata))
 		{
 			dir->has_next = 0;
 			DWORD err = GetLastError();
@@ -322,7 +324,10 @@ int cf_match_ext(cf_file_t* file, const char* ext)
 	{
 		int n = cf_safe_strcpy(dir->path, path, 0, CUTE_FILES_MAX_PATH);
 		n = cf_safe_strcpy(dir->path, "\\*", n - 1, CUTE_FILES_MAX_PATH);
-		dir->handle = FindFirstFileA(dir->path, &dir->fdata);
+      wchar_t *wpath;
+      wpath = (wchar_t *) utf8_to_utf16((const uint8_t *) dir->path, NULL);
+		dir->handle = FindFirstFileW(wpath, &dir->fdata);
+      free(wpath);
 		dir->path[n - 3] = 0;
 
 		if (dir->handle == INVALID_HANDLE_VALUE)
