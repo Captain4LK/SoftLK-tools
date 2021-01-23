@@ -34,10 +34,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Variables
-static char input_dir[512];
-static char output_dir[512];
-static char input_gif[512];
-static char output_gif[512];
+static char input_dir[256];
+static char output_dir[256];
+static char input_gif[256];
+static char output_gif[256];
 //-------------------------------------
 
 //Function prototypes
@@ -190,7 +190,7 @@ void dir_output_select(int dither_mode, int sample_mode, int width, int height, 
          cf_read_file(&dir, &file);
          if(strcmp(file.name,".")&&strcmp(file.name,".."))
          {
-            char tmp[1028];
+            char tmp[516];
             sprintf(tmp,"%s/%s",input_dir,file.name);
             SLK_RGB_sprite *in = image_load(tmp);
             process_image(in,out,pal,sample_mode,dither_mode);

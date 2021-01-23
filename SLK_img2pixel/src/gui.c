@@ -42,6 +42,7 @@ static SLK_RGB_sprite *sprite_out = NULL;
 static int palette_selected = 0;
 
 static SLK_gui_window *preview = NULL;
+static SLK_gui_element *preview_tabs = NULL;
 static SLK_gui_window *settings = NULL;
 static SLK_gui_element *settings_tabs = NULL;
 
@@ -121,8 +122,8 @@ struct Elements
 static struct Elements elements = {0};
 
 //Preview window
-static SLK_gui_element *image_in = NULL;
-static SLK_gui_element *image_out = NULL;
+//static SLK_gui_element *image_in = NULL;
+//static SLK_gui_element *image_out = NULL;
 
 static const char *text_dither[] = 
 {
@@ -174,6 +175,10 @@ static const char *text_tab_settings[] =
 static SLK_Palette *palette = NULL;
 static int gui_out_width = 128;
 static int gui_out_height = 128;
+static int gui_in_x = 0;
+static int gui_in_y = 0;
+static int gui_out_x = 0;
+static int gui_out_y = 0;
 static int pixel_sample_mode = 0;
 static int pixel_process_mode = 1;
 //-------------------------------------
@@ -198,6 +203,14 @@ void gui_init()
    //Clear layer
    SLK_layer_set_current(0);
    SLK_draw_rgb_set_changed(1);
+   SLK_draw_rgb_set_clear_color(SLK_color_create(20,20,20,0));
+   SLK_draw_rgb_clear();
+   SLK_layer_set_current(1);
+   SLK_draw_rgb_set_changed(1);
+   SLK_draw_rgb_set_clear_color(SLK_color_create(20,20,20,0));
+   SLK_draw_rgb_clear();
+   SLK_layer_set_current(2);
+   SLK_draw_rgb_set_changed(1);
    SLK_draw_rgb_set_clear_color(SLK_color_create(20,20,20,255));
    SLK_draw_rgb_clear();
 
@@ -210,15 +223,16 @@ void gui_init()
    preview = SLK_gui_window_create(400,100,260,286);
    SLK_gui_window_set_title(preview,"Preview");
    SLK_gui_window_set_moveable(preview,1);
-   SLK_gui_element *tabbar = SLK_gui_tabbar_create(2,14,256,14,2,text_tab_image);
-   SLK_RGB_sprite *tmp = SLK_rgb_sprite_create(1,1);
-   image_in = SLK_gui_image_create(2,28,256,256,tmp,(SLK_gui_rectangle){0,0,1,1});
-   SLK_gui_tabbar_add_element(tabbar,0,image_in);
-   image_out = SLK_gui_image_create(2,28,256,256,tmp,(SLK_gui_rectangle){0,0,1,1});
-   SLK_gui_tabbar_add_element(tabbar,1,image_out);
-   SLK_gui_window_add_element(preview,tabbar);
+   preview_tabs = SLK_gui_tabbar_create(2,14,256,14,2,text_tab_image);
+   //SLK_RGB_sprite *tmp = SLK_rgb_sprite_create(1,1);
+   //image_in = SLK_gui_image_create(2,28,256,256,tmp,(SLK_gui_rectangle){0,0,1,1});
+   //SLK_gui_tabbar_add_element(preview_tabs,0,image_in);
+   //image_out = SLK_gui_image_create(2,28,256,256,tmp,(SLK_gui_rectangle){0,0,1,1});
+   //SLK_gui_tabbar_add_element(tabbar,1,image_out);
+   SLK_gui_window_add_element(preview,preview_tabs);
    
    //Gui window
+   SLK_RGB_sprite *tmp = SLK_rgb_sprite_create(1,1);
    settings = SLK_gui_window_create(10,10,384,296);
    SLK_gui_window_set_title(settings,"Settings");
    SLK_gui_window_set_moveable(settings,1);
@@ -389,7 +403,7 @@ void gui_init()
 void gui_update()
 {
    int mx,my;
-   SLK_mouse_get_layer_pos(0,&mx,&my);
+   SLK_mouse_get_layer_pos(2,&mx,&my);
    if(settings->moveable!=2)
       SLK_gui_window_update_input(preview,SLK_mouse_get_state(SLK_BUTTON_LEFT),SLK_mouse_get_state(SLK_BUTTON_RIGHT),mx,my);
    if(preview->moveable!=2)
@@ -415,7 +429,7 @@ void gui_update()
 static void gui_buttons()
 {
    int mx,my;
-   SLK_mouse_get_layer_pos(0,&mx,&my);
+   SLK_mouse_get_layer_pos(2,&mx,&my);
    int update = 0;
    switch(settings_tabs->vtabbar.current_tab)
    {
@@ -425,7 +439,24 @@ static void gui_buttons()
          SLK_rgb_sprite_destroy(sprite_in);
          sprite_in = image_select();
          if(sprite_in)
-            SLK_gui_image_update(image_in,sprite_in,(SLK_gui_rectangle){0,0,sprite_in->width,sprite_in->height});
+         {
+            SLK_layer_set_size(0,sprite_in->width,sprite_in->height);
+            SLK_layer_set_current(0);
+            SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));
+            SLK_draw_rgb_clear();
+            SLK_draw_rgb_sprite(sprite_in,0,0);
+            SLK_draw_rgb_set_changed(1);
+            float scale;
+            if(sprite_in->width>sprite_in->height)
+               scale = 256.0f/sprite_in->width;
+            else 
+               scale = 256.0f/sprite_in->height;
+            SLK_layer_set_scale(0,scale);
+            int fwidth = (int)((float)sprite_in->width*scale);
+            int fheight = (int)((float)sprite_in->height*scale);
+            gui_in_x = (256-fwidth)/2;
+            gui_in_y = (256-fheight)/2;
+         }
          update = 1;
          elements.save_load->button.state.released = 0;
       }
@@ -654,7 +685,7 @@ static void gui_buttons()
 
 static void gui_draw()
 {
-   SLK_layer_set_current(0);
+   SLK_layer_set_current(2);
    SLK_draw_rgb_set_changed(1);
    SLK_draw_rgb_set_clear_color(SLK_color_create(20,20,20,255));
    SLK_draw_rgb_clear();
@@ -666,6 +697,18 @@ static void gui_draw()
       int pos_x = palette_selected-pos_y*31;
       SLK_draw_rgb_rectangle(settings->pos.x+pos_x*9+100,settings->pos.y+pos_y*9+15,9,9,SLK_color_create(0,0,0,255));
    }
+   if(preview_tabs->tabbar.current_tab==0)
+   {
+      SLK_layer_activate(0,1);
+      SLK_layer_activate(1,0);
+      SLK_layer_set_pos(0,preview->pos.x+2+gui_in_x,preview->pos.y+28+gui_in_y);
+   }
+   else
+   {
+      SLK_layer_activate(0,0);
+      SLK_layer_activate(1,1);
+      SLK_layer_set_pos(1,preview->pos.x+2+gui_out_x,preview->pos.y+28+gui_out_y);
+   }
    SLK_gui_window_draw(preview);
 }
 
@@ -675,13 +718,29 @@ static void update_output()
    {
       SLK_rgb_sprite_destroy(sprite_out);
       sprite_out = SLK_rgb_sprite_create(gui_out_width,gui_out_height);
+      SLK_layer_set_size(1,sprite_out->width,sprite_out->height);
    }
 
    if(sprite_in==NULL)
       return;
 
    process_image(sprite_in,sprite_out,palette,pixel_sample_mode,pixel_process_mode);
-   SLK_gui_image_update(image_out,sprite_out,(SLK_gui_rectangle){0,0,sprite_out->width,sprite_out->height});
+
+   SLK_layer_set_current(1);
+   SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));
+   SLK_draw_rgb_clear();
+   SLK_draw_rgb_sprite(sprite_out,0,0);
+   SLK_draw_rgb_set_changed(1);
+   float scale;
+   if(sprite_out->width>sprite_out->height)
+      scale = 256.0f/sprite_out->width;
+   else 
+      scale = 256.0f/sprite_out->height;
+   SLK_layer_set_scale(1,scale);
+   int fwidth = (int)((float)sprite_out->width*scale);
+   int fheight = (int)((float)sprite_out->height*scale);
+   gui_out_x = (256-fwidth)/2;
+   gui_out_y = (256-fheight)/2;
 }
 
 static void palette_draw()

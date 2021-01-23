@@ -37,10 +37,16 @@ int main(int argc, char **argv)
    SLK_setup(800,500,4,"SLK_img2pixel",0,SLK_WINDOW_MAX,1);
    SLK_timer_set_fps(30);
 
-   SLK_layer_create(0,SLK_LAYER_RGB); //Layer for GUI
+   SLK_layer_create(0,SLK_LAYER_RGB); //Layer for input preview
+   SLK_layer_create(1,SLK_LAYER_RGB); //Layer for output preview
+   SLK_layer_create(2,SLK_LAYER_RGB); //Layer for GUI
 
    SLK_layer_activate(0,1);
-   SLK_layer_set_dynamic(0,1);
+   SLK_layer_set_dynamic(0,0);
+   SLK_layer_activate(1,0);
+   SLK_layer_set_dynamic(1,0);
+   SLK_layer_activate(2,1);
+   SLK_layer_set_dynamic(2,1);
 
    assets_load();
    gui_init();
