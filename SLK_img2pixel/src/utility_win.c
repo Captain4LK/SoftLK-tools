@@ -197,7 +197,7 @@ void dir_input_select()
    wcscpy(input_dir,path);
 }
 
-void dir_output_select(int dither_mode, int sample_mode, int width, int height, SLK_Palette *pal)
+void dir_output_select(int dither_mode, int sample_mode, int scale_mode, int width, int height, SLK_Palette *pal)
 {
    const wchar_t *path = tinyfd_selectFolderDialogW(L"Select output directory",NULL);
    if(path==NULL)
@@ -213,7 +213,10 @@ void dir_output_select(int dither_mode, int sample_mode, int width, int height, 
       stbi_convert_wchar_to_utf8(buffer,512,input_dir);
       cf_dir_t dir;
       cf_dir_open(&dir,buffer);
-      SLK_RGB_sprite *out = SLK_rgb_sprite_create(width,height);
+      SLK_RGB_sprite *out = NULL;
+      if(scale_mode==0)
+         out = SLK_rgb_sprite_create(width,height);
+
       while (dir.has_next)
       {
          cf_file_t file;
@@ -223,19 +226,27 @@ void dir_output_select(int dither_mode, int sample_mode, int width, int height, 
             char tmp[1028];
             sprintf(tmp,"%s/%s",buffer,file.name);
             SLK_RGB_sprite *in = image_load(tmp);
-            process_image(in,out,pal,sample_mode,dither_mode);
-            char buffer[512];
-            stbi_convert_wchar_to_utf8(buffer,512,output_dir);
-            sprintf(tmp,"%s/%s.png",buffer,file.name);
-            wchar_t *wpath = (wchar_t *) utf8_to_utf16((const uint8_t *) tmp, NULL);
-            image_save_w(wpath,out,pal);
-            free(wpath);
-            SLK_rgb_sprite_destroy(in);
+            if(in!=NULL)
+            {
+               if(scale_mode==1)
+                  out = SLK_rgb_sprite_create(in->width/width,in->height/height);
+               process_image(in,out,pal,sample_mode,dither_mode);
+               char buffer[512];
+               stbi_convert_wchar_to_utf8(buffer,512,output_dir);
+               sprintf(tmp,"%s/%s.png",buffer,file.name);
+               wchar_t *wpath = (wchar_t *) utf8_to_utf16((const uint8_t *) tmp, NULL);
+               image_save_w(wpath,out,pal);
+               free(wpath);
+               if(scale_mode==1)
+                  SLK_rgb_sprite_destroy(out);
+               SLK_rgb_sprite_destroy(in);
+            }
          }
          cf_dir_next(&dir);
       }
       cf_dir_close(&dir);
-      SLK_rgb_sprite_destroy(out);
+      if(scale_mode==0)
+         SLK_rgb_sprite_destroy(out);
    }
 
 }
@@ -252,7 +263,7 @@ void gif_input_select()
    wcscpy(input_gif,path);
 }
 
-void gif_output_select(int dither_mode, int sample_mode, int width, int height, SLK_Palette *pal)
+void gif_output_select(int dither_mode, int sample_mode, int scale_mode, int width, int height, SLK_Palette *pal)
 {
    const wchar_t *filter_patterns[2] = {L"*.gif"};
    const wchar_t *path = tinyfd_saveFileDialogW(L"Save gif",L"",1,filter_patterns,NULL);
@@ -279,9 +290,17 @@ void gif_output_select(int dither_mode, int sample_mode, int width, int height, 
       }
       char buffer_out[512];
       stbi_convert_wchar_to_utf8(buffer_out,512,output_gif);
-      ge_GIF *gif_out = ge_new_gif(buffer_out,width,height,gif_palette,8,gif->loop_count);
+      ge_GIF *gif_out;
+      if(scale_mode==0)
+         gif_out = ge_new_gif(buffer_out,width,height,gif_palette,8,gif->loop_count);
+      else
+         gif_out = ge_new_gif(buffer_out,gif->width/width,gif->height/height,gif_palette,8,gif->loop_count);
       uint8_t *frame = malloc(gif->width*gif->height*3);
-      SLK_RGB_sprite *out = SLK_rgb_sprite_create(width,height);
+      SLK_RGB_sprite *out = NULL;
+      if(scale_mode==0)
+         out = SLK_rgb_sprite_create(width,height);
+      else
+         out = SLK_rgb_sprite_create(gif->width/width,gif->height/height);
       SLK_RGB_sprite *in = SLK_rgb_sprite_create(gif->width,gif->height);
 
       while(gd_get_frame(gif))
@@ -295,7 +314,7 @@ void gif_output_select(int dither_mode, int sample_mode, int width, int height, 
             in->data[i].a = 255;
          }
          process_image(in,out,pal,sample_mode,dither_mode);
-         for(int i = 0;i<width*height;i++)
+         for(int i = 0;i<out->width*out->height;i++)
             gif_out->frame[i] = find_palette(out->data[i],pal);
          ge_add_frame(gif_out,gif->gce.delay);
       }
@@ -303,6 +322,8 @@ void gif_output_select(int dither_mode, int sample_mode, int width, int height, 
       free(frame);
       gd_close_gif(gif);
       ge_close_gif(gif_out);
+      SLK_rgb_sprite_destroy(out);
+      SLK_rgb_sprite_destroy(in);
    }
 }
 //-------------------------------------

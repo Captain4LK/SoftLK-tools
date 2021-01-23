@@ -10,6 +10,7 @@ Version:                SLK_img2pixel 1.0 - initial release (tba)
 CHANGES:
 
 * preview now drawn by the gpu
+* added relative image sizes
 
 ----------------------------------------
 Version:                SLK_img2pixel 0.2 - unicode hell (22.01.2021)

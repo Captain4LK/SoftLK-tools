@@ -169,7 +169,7 @@ void dir_input_select()
    strcpy(input_dir,path);
 }
 
-void dir_output_select(int dither_mode, int sample_mode, int width, int height, SLK_Palette *pal)
+void dir_output_select(int dither_mode, int sample_mode, int scale_mode, int width, int height, SLK_Palette *pal)
 {
    const char *path = tinyfd_selectFolderDialog("Select output directory",NULL);
    if(path==NULL)
@@ -183,7 +183,10 @@ void dir_output_select(int dither_mode, int sample_mode, int width, int height, 
    {
       cf_dir_t dir;
       cf_dir_open(&dir,input_dir);
-      SLK_RGB_sprite *out = SLK_rgb_sprite_create(width,height);
+      SLK_RGB_sprite *out = NULL;
+      if(scale_mode==0)
+         out = SLK_rgb_sprite_create(width,height);
+
       while (dir.has_next)
       {
          cf_file_t file;
@@ -193,15 +196,23 @@ void dir_output_select(int dither_mode, int sample_mode, int width, int height, 
             char tmp[516];
             sprintf(tmp,"%s/%s",input_dir,file.name);
             SLK_RGB_sprite *in = image_load(tmp);
-            process_image(in,out,pal,sample_mode,dither_mode);
-            sprintf(tmp,"%s/%s.png",output_dir,file.name);
-            image_save(tmp,out,pal);
-            SLK_rgb_sprite_destroy(in);
+            if(in!=NULL)
+            {
+               if(scale_mode==1)
+                  out = SLK_rgb_sprite_create(in->width/width,in->height/height);
+               process_image(in,out,pal,sample_mode,dither_mode);
+               sprintf(tmp,"%s/%s.png",output_dir,file.name);
+               image_save(tmp,out,pal);
+               if(scale_mode==1)
+                  SLK_rgb_sprite_destroy(out);
+               SLK_rgb_sprite_destroy(in);
+            }
          }
          cf_dir_next(&dir);
       }
       cf_dir_close(&dir);
-      SLK_rgb_sprite_destroy(out);
+      if(scale_mode==0)
+         SLK_rgb_sprite_destroy(out);
    }
 }
 
@@ -217,7 +228,7 @@ void gif_input_select()
    strcpy(input_gif,path);
 }
 
-void gif_output_select(int dither_mode, int sample_mode, int width, int height, SLK_Palette *pal)
+void gif_output_select(int dither_mode, int sample_mode, int scale_mode, int width, int height, SLK_Palette *pal)
 {
    const char *filter_patterns[2] = {"*.gif"};
    const char *path = tinyfd_saveFileDialog("Save gif","",1,filter_patterns,NULL);
@@ -240,9 +251,17 @@ void gif_output_select(int dither_mode, int sample_mode, int width, int height, 
          gif_palette[i*3+1] = pal->colors[i].g;
          gif_palette[i*3+2] = pal->colors[i].b;
       }
-      ge_GIF *gif_out = ge_new_gif(output_gif,width,height,gif_palette,8,gif->loop_count);
+      ge_GIF *gif_out;
+      if(scale_mode==0)
+         gif_out = ge_new_gif(output_gif,width,height,gif_palette,8,gif->loop_count);
+      else
+         gif_out = ge_new_gif(output_gif,gif->width/width,gif->height/height,gif_palette,8,gif->loop_count);
       uint8_t *frame = malloc(gif->width*gif->height*3);
-      SLK_RGB_sprite *out = SLK_rgb_sprite_create(width,height);
+      SLK_RGB_sprite *out = NULL;
+      if(scale_mode==0)
+         out = SLK_rgb_sprite_create(width,height);
+      else
+         out = SLK_rgb_sprite_create(gif->width/width,gif->height/height);
       SLK_RGB_sprite *in = SLK_rgb_sprite_create(gif->width,gif->height);
 
       while(gd_get_frame(gif))
@@ -256,7 +275,7 @@ void gif_output_select(int dither_mode, int sample_mode, int width, int height, 
             in->data[i].a = 255;
          }
          process_image(in,out,pal,sample_mode,dither_mode);
-         for(int i = 0;i<width*height;i++)
+         for(int i = 0;i<out->width*out->height;i++)
             gif_out->frame[i] = find_palette(out->data[i],pal);
          ge_add_frame(gif_out,gif->gce.delay);
       }
@@ -264,6 +283,8 @@ void gif_output_select(int dither_mode, int sample_mode, int width, int height, 
       free(frame);
       gd_close_gif(gif);
       ge_close_gif(gif_out);
+      SLK_rgb_sprite_destroy(out);
+      SLK_rgb_sprite_destroy(in);
    }
 }
 //-------------------------------------

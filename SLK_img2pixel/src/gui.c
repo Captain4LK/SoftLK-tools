@@ -77,10 +77,15 @@ struct Elements
    SLK_gui_element *palette_label_b;
 
    //General tab
+   SLK_gui_element *general_tab_scale;
    SLK_gui_element *general_width_plus;
    SLK_gui_element *general_width_minus;
    SLK_gui_element *general_height_plus;
    SLK_gui_element *general_height_minus;
+   SLK_gui_element *general_swidth_plus;
+   SLK_gui_element *general_swidth_minus;
+   SLK_gui_element *general_sheight_plus;
+   SLK_gui_element *general_sheight_minus;
    SLK_gui_element *general_alpha_plus;
    SLK_gui_element *general_alpha_minus;
    SLK_gui_element *general_dither_left;
@@ -89,10 +94,14 @@ struct Elements
    SLK_gui_element *general_sample_right;
    SLK_gui_element *general_bar_width;
    SLK_gui_element *general_bar_height;
+   SLK_gui_element *general_bar_swidth;
+   SLK_gui_element *general_bar_sheight;
    SLK_gui_element *general_bar_dither;
    SLK_gui_element *general_bar_alpha;
    SLK_gui_element *general_label_width;
    SLK_gui_element *general_label_height;
+   SLK_gui_element *general_label_swidth;
+   SLK_gui_element *general_label_sheight;
    SLK_gui_element *general_label_dither;
    SLK_gui_element *general_label_sample;
    SLK_gui_element *general_label_alpha;
@@ -148,6 +157,12 @@ static const char *text_tab_image[] =
    "Output",
 };
 
+static const char *text_tab_scale[] = 
+{
+   "Absoulte",
+   "Relative",
+};
+
 static const char *text_tab_settings[] = 
 {
    "Save/Load",
@@ -175,10 +190,13 @@ static const char *text_tab_settings[] =
 static SLK_Palette *palette = NULL;
 static int gui_out_width = 128;
 static int gui_out_height = 128;
+static int gui_out_swidth = 2;
+static int gui_out_sheight = 2;
 static int gui_in_x = 0;
 static int gui_in_y = 0;
 static int gui_out_x = 0;
 static int gui_out_y = 0;
+static int pixel_scale_mode = 0;
 static int pixel_sample_mode = 0;
 static int pixel_process_mode = 1;
 //-------------------------------------
@@ -294,59 +312,83 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_b);
    palette_labels();
    //General tab
-   elements.general_width_plus = SLK_gui_button_create(344,21,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_width_plus);
-   elements.general_width_minus = SLK_gui_button_create(160,21,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_width_minus);
-   elements.general_height_plus = SLK_gui_button_create(344,53,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_height_plus);
-   elements.general_height_minus = SLK_gui_button_create(160,53,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_height_minus);
-   label = SLK_gui_label_create(104,24,48,12,"Width");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   label = SLK_gui_label_create(104,56,56,12,"Height");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_bar_width = SLK_gui_slider_create(174,21,170,14,0,256);
+   elements.general_tab_scale = SLK_gui_tabbar_create(99,14,283,14,2,text_tab_scale);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_tab_scale);
+   elements.general_width_plus = SLK_gui_button_create(344,35,14,14,"+");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,0,elements.general_width_plus);
+   elements.general_width_minus = SLK_gui_button_create(160,35,14,14,"-");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,0,elements.general_width_minus);
+   elements.general_height_plus = SLK_gui_button_create(344,67,14,14,"+");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,0,elements.general_height_plus);
+   elements.general_height_minus = SLK_gui_button_create(160,67,14,14,"-");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,0,elements.general_height_minus);
+   label = SLK_gui_label_create(104,38,48,12,"Width");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,0,label);
+   label = SLK_gui_label_create(104,70,56,12,"Height");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,0,label);
+   elements.general_bar_width = SLK_gui_slider_create(174,35,170,14,0,256);
    elements.general_bar_width->slider.value = 128;
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_width);
-   elements.general_bar_height = SLK_gui_slider_create(174,53,170,14,0,256);;
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,0,elements.general_bar_width);
+   elements.general_bar_height = SLK_gui_slider_create(174,67,170,14,0,256);;
    elements.general_bar_height->slider.value = 128;
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_height);
-   elements.general_label_width = SLK_gui_label_create(354,24,32,12,"128");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_width);
-   elements.general_label_height = SLK_gui_label_create(354,56,32,12,"128");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_height);
-   elements.general_dither_left = SLK_gui_button_create(160,101,14,14,"<");;
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,0,elements.general_bar_height);
+   elements.general_label_width = SLK_gui_label_create(354,38,32,12,"128");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,0,elements.general_label_width);
+   elements.general_label_height = SLK_gui_label_create(354,70,32,12,"128");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,0,elements.general_label_height);
+   elements.general_swidth_plus = SLK_gui_button_create(344,35,14,14,"+");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,1,elements.general_swidth_plus);
+   elements.general_swidth_minus = SLK_gui_button_create(160,35,14,14,"-");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,1,elements.general_swidth_minus);
+   elements.general_sheight_plus = SLK_gui_button_create(344,67,14,14,"+");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,1,elements.general_sheight_plus);
+   elements.general_sheight_minus = SLK_gui_button_create(160,67,14,14,"-");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,1,elements.general_sheight_minus);
+   label = SLK_gui_label_create(104,38,48,12,"x pix");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,1,label);
+   label = SLK_gui_label_create(104,70,48,12,"y pix");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,1,label);
+   elements.general_bar_swidth = SLK_gui_slider_create(174,35,170,14,1,32);
+   elements.general_bar_swidth->slider.value = 2;
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,1,elements.general_bar_swidth);
+   elements.general_bar_sheight = SLK_gui_slider_create(174,67,170,14,1,32);;
+   elements.general_bar_sheight->slider.value = 2;
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,1,elements.general_bar_sheight);
+   elements.general_label_swidth = SLK_gui_label_create(354,38,32,12,"2");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,1,elements.general_label_swidth);
+   elements.general_label_sheight = SLK_gui_label_create(354,70,32,12,"2");
+   SLK_gui_tabbar_add_element(elements.general_tab_scale,1,elements.general_label_sheight);
+   elements.general_dither_left = SLK_gui_button_create(160,115,14,14,"<");;
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_dither_left);
-   elements.general_dither_right = SLK_gui_button_create(344,101,14,14,">");
+   elements.general_dither_right = SLK_gui_button_create(344,115,14,14,">");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_dither_right);
-   label = SLK_gui_label_create(104,104,56,12,"Dither");
+   label = SLK_gui_label_create(104,118,56,12,"Dither");
    SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_label_dither = SLK_gui_label_create(174,104,170,12,text_dither[1]);
+   elements.general_label_dither = SLK_gui_label_create(174,118,170,12,text_dither[1]);
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_dither);
-   label = SLK_gui_label_create(104,136,56,12,"Amount");
+   label = SLK_gui_label_create(104,150,56,12,"Amount");
    SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_bar_dither = SLK_gui_slider_create(160,133,198,14,0,1000);
+   elements.general_bar_dither = SLK_gui_slider_create(160,147,198,14,0,1000);
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_dither);
    elements.general_bar_dither->slider.value = 250;
-   label = SLK_gui_label_create(104,184,56,12,"Sample");
+   label = SLK_gui_label_create(104,198,56,12,"Sample");
    SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_sample_left = SLK_gui_button_create(160,181,14,14,"<");;
+   elements.general_sample_left = SLK_gui_button_create(160,195,14,14,"<");;
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_sample_left);
-   elements.general_sample_right = SLK_gui_button_create(344,181,14,14,">");
+   elements.general_sample_right = SLK_gui_button_create(344,195,14,14,">");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_sample_right);
-   elements.general_label_sample = SLK_gui_label_create(174,184,170,12,text_sample[0]);
+   elements.general_label_sample = SLK_gui_label_create(174,198,170,12,text_sample[0]);
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_sample);
-   label = SLK_gui_label_create(104,232,56,12,"Alpha");
+   label = SLK_gui_label_create(104,246,56,12,"Alpha");
    SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_alpha_plus = SLK_gui_button_create(344,229,14,14,"+");
+   elements.general_alpha_plus = SLK_gui_button_create(344,243,14,14,"+");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_alpha_plus);
-   elements.general_alpha_minus = SLK_gui_button_create(160,229,14,14,"-");
+   elements.general_alpha_minus = SLK_gui_button_create(160,243,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_alpha_minus);
-   elements.general_bar_alpha = SLK_gui_slider_create(174,229,170,14,0,255);
+   elements.general_bar_alpha = SLK_gui_slider_create(174,243,170,14,0,255);
    elements.general_bar_alpha->slider.value = 128;
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_alpha);
-   elements.general_label_alpha = SLK_gui_label_create(354,232,32,12,"128");
+   elements.general_label_alpha = SLK_gui_label_create(354,246,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_alpha);
    //Process tab
    label = SLK_gui_label_create(104,24,56,12,"Bright");
@@ -479,7 +521,10 @@ static void gui_buttons()
       }
       else if(elements.save_save_folder->button.state.released)
       {
-         dir_output_select(pixel_process_mode,pixel_sample_mode,gui_out_width,gui_out_height,palette);
+         if(pixel_scale_mode==0)
+            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_scale_mode,gui_out_width,gui_out_height,palette);
+         else
+            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_scale_mode,gui_out_swidth,gui_out_sheight,palette);
          elements.save_save_folder->button.state.released = 0;
       }
       else if(elements.save_load_folder->button.state.released)
@@ -498,6 +543,9 @@ static void gui_buttons()
                free(palette);
             palette = p;
             update = 1;
+            elements.palette_bar_r->slider.value = p->colors[palette_selected].r;
+            elements.palette_bar_g->slider.value = p->colors[palette_selected].g;
+            elements.palette_bar_b->slider.value = p->colors[palette_selected].b;
             palette_draw();
             palette_labels();
          }
@@ -549,6 +597,14 @@ static void gui_buttons()
          elements.general_bar_height->slider.value++;
       else if(elements.general_height_minus->button.state.pressed&&elements.general_bar_height->slider.value>elements.general_bar_height->slider.min)
          elements.general_bar_height->slider.value--;
+      else if(elements.general_swidth_plus->button.state.pressed&&elements.general_bar_swidth->slider.value<elements.general_bar_swidth->slider.max)
+         elements.general_bar_swidth->slider.value++;
+      else if(elements.general_swidth_minus->button.state.pressed&&elements.general_bar_swidth->slider.value>elements.general_bar_swidth->slider.min)
+         elements.general_bar_swidth->slider.value--;
+      else if(elements.general_sheight_plus->button.state.pressed&&elements.general_bar_sheight->slider.value<elements.general_bar_sheight->slider.max)
+         elements.general_bar_sheight->slider.value++;
+      else if(elements.general_sheight_minus->button.state.pressed&&elements.general_bar_sheight->slider.value>elements.general_bar_sheight->slider.min)
+         elements.general_bar_sheight->slider.value--;
       else if(elements.general_alpha_plus->button.state.pressed&&elements.general_bar_alpha->slider.value<elements.general_bar_alpha->slider.max)
          elements.general_bar_alpha->slider.value++;
       else if(elements.general_alpha_minus->button.state.pressed&&elements.general_bar_alpha->slider.value>elements.general_bar_alpha->slider.min)
@@ -585,6 +641,23 @@ static void gui_buttons()
          SLK_gui_label_set_text(elements.general_label_height,tmp);
          update = 1;
       }
+      if(elements.general_bar_swidth->slider.value!=gui_out_swidth)
+      {
+         gui_out_swidth = elements.general_bar_swidth->slider.value;
+         char tmp[16];
+         sprintf(tmp,"%d",gui_out_swidth);
+         SLK_gui_label_set_text(elements.general_label_swidth,tmp);
+         update = 1;
+      }
+      if(elements.general_bar_sheight->slider.value!=gui_out_sheight)
+      {
+         gui_out_sheight = elements.general_bar_sheight->slider.value;
+         char tmp[16];
+         sprintf(tmp,"%d",gui_out_sheight);
+         SLK_gui_label_set_text(elements.general_label_sheight,tmp);
+         update = 1;
+      }
+
       if(elements.general_bar_dither->slider.value!=dither_amount)
       {
          dither_amount = elements.general_bar_dither->slider.value;
@@ -612,6 +685,11 @@ static void gui_buttons()
          char tmp[16];
          sprintf(tmp,"%d",alpha_threshold);
          SLK_gui_label_set_text(elements.general_label_alpha,tmp);
+         update = 1;
+      }
+      if(elements.general_tab_scale->tabbar.current_tab!=pixel_scale_mode)
+      {
+         pixel_scale_mode = elements.general_tab_scale->tabbar.current_tab;
          update = 1;
       }
       break;
@@ -668,7 +746,10 @@ static void gui_buttons()
    case 19: //Special tab
       if(elements.special_gif_save->button.state.released)
       {
-         gif_output_select(pixel_process_mode,pixel_sample_mode,gui_out_width,gui_out_height,palette);
+         if(pixel_scale_mode==0)
+            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_scale_mode,gui_out_width,gui_out_height,palette);
+         else
+            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_scale_mode,gui_out_swidth,gui_out_sheight,palette);
          elements.special_gif_save->button.state.released = 0;
       }
       else if(elements.special_gif_load->button.state.released)
@@ -714,10 +795,25 @@ static void gui_draw()
 
 static void update_output()
 {
-   if(sprite_out==NULL||sprite_out->width!=gui_out_width||sprite_out->height!=gui_out_height)
+   if(sprite_in==NULL)
+      return;
+   int width;
+   int height;
+   if(pixel_scale_mode==0)
+   {
+      width = gui_out_width;
+      height = gui_out_height;
+   }
+   else
+   {
+      width = sprite_in->width/gui_out_swidth;
+      height = sprite_in->height/gui_out_sheight;
+   }
+
+   if(sprite_out==NULL||sprite_out->width!=width||sprite_out->height!=height)
    {
       SLK_rgb_sprite_destroy(sprite_out);
-      sprite_out = SLK_rgb_sprite_create(gui_out_width,gui_out_height);
+      sprite_out = SLK_rgb_sprite_create(width,height);
       SLK_layer_set_size(1,sprite_out->width,sprite_out->height);
    }
 
