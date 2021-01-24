@@ -11,6 +11,8 @@ CHANGES:
 
 * preview now drawn by the gpu
 * added relative image sizes
+* added image sharpening
+* improved bilinear sampling
 
 ----------------------------------------
 Version:                SLK_img2pixel 0.2 - unicode hell (22.01.2021)

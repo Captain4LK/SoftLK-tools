@@ -58,6 +58,7 @@ static const int16_t dither_threshold_none[64] = {0};
 static int16_t dither_threshold_tmp[64] = {0};
 static const int16_t *dither_threshold = dither_threshold_none;
 static Big_pixel *tmp_data = NULL;
+static Big_pixel *tmp_data2 = NULL;
 
 int brightness = 0;
 int contrast = 0;
@@ -65,6 +66,7 @@ int img_gamma = 100;
 int saturation = 100;
 int dither_amount = 250;
 int alpha_threshold = 128;
+int sharpen = 0;
 //-------------------------------------
 
 //Function prototypes
@@ -140,6 +142,57 @@ void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *p
    }
 
    dither_image(tmp_data,out,palette,process_mode,out->width,out->height);
+}
+
+void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
+{
+   if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
+      return;
+
+   tmp_data2 = malloc(sizeof(*tmp_data2)*out->width*out->height);
+   for(int i = 0;i<out->width*out->height;i++)
+   {
+      tmp_data2[i].r = in->data[i].r;
+      tmp_data2[i].g = in->data[i].g;
+      tmp_data2[i].b = in->data[i].b;
+      tmp_data2[i].a = in->data[i].a;
+   }
+
+   //Sharpen image
+   float sharpen_factor = (float)sharpen/100.0f;
+   float sharpen_kernel[3][3] = {
+      {-1.0f*sharpen_factor,-1.0f*sharpen_factor-1.0f*sharpen_factor},
+      {-1.0f*sharpen_factor,8.0f*sharpen_factor+1.0f,-1.0f*sharpen_factor},
+      {-1.0f*sharpen_factor,-1.0f*sharpen_factor-1.0f*sharpen_factor},
+   };
+   if(sharpen!=0)
+   {
+      for(int y = 1;y<out->height-1;y++)
+      {
+         for(int x = 1;x<out->width-1;x++)
+         {
+            float r = 0.0f;
+            float g = 0.0f;
+            float b = 0.0f;
+            for(int yk = -1;yk<2;yk++)
+            {
+               for(int xk = -1;xk<2;xk++)
+               {
+                  Big_pixel in = tmp_data2[(y+yk)*out->width+x+xk];
+                  r+=sharpen_kernel[yk+1][xk+1]*(float)in.r;
+                  g+=sharpen_kernel[yk+1][xk+1]*(float)in.g;
+                  b+=sharpen_kernel[yk+1][xk+1]*(float)in.b;
+               }
+            }
+            out->data[y*out->width+x].r = MAX(0,MIN(255,(int)r));
+            out->data[y*out->width+x].g = MAX(0,MIN(255,(int)g));
+            out->data[y*out->width+x].b = MAX(0,MIN(255,(int)b));
+            out->data[y*out->width+x].a = in->data[y*out->width+x].a;
+         }
+      }
+   }
+
+   free(tmp_data2);
 }
 
 static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height)

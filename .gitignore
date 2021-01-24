@@ -1,3 +1,6 @@
 *.o
 *.dll
 *.exe
+bin/*.png
+bin/*.json
+bin/*.gif

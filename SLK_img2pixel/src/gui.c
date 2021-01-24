@@ -11,9 +11,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //External includes
 #include <SLK/SLK.h>
 #include <SLK/SLK_gui.h>
-#include "../../external/tinyfiledialogs.h"
 #include "../../external/UtilityLK/include/ULK_json.h"
-#include "../../external/cute_files.h"
 //-------------------------------------
 
 //Internal includes
@@ -38,6 +36,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Variables
 //Lots of globals here, I need to find a way to manage this better
 static SLK_RGB_sprite *sprite_in = NULL;
+static SLK_RGB_sprite *sprite_in_org = NULL;
 static SLK_RGB_sprite *sprite_out = NULL;
 static int palette_selected = 0;
 
@@ -123,16 +122,16 @@ struct Elements
    SLK_gui_element *process_minus_gamma;
    SLK_gui_element *process_plus_gamma;
    SLK_gui_element *process_label_gamma;
+   SLK_gui_element *process_bar_sharpen;
+   SLK_gui_element *process_minus_sharpen;
+   SLK_gui_element *process_plus_sharpen;
+   SLK_gui_element *process_label_sharpen;
 
    //Special tab
    SLK_gui_element *special_gif_load;
    SLK_gui_element *special_gif_save;
 };
 static struct Elements elements = {0};
-
-//Preview window
-//static SLK_gui_element *image_in = NULL;
-//static SLK_gui_element *image_out = NULL;
 
 static const char *text_dither[] = 
 {
@@ -149,6 +148,7 @@ static const char *text_sample[] =
    "Floor",
    "Ceil",
    "Bilinear",
+   "Bicubic",
 };
 
 static const char *text_tab_image[] = 
@@ -221,11 +221,11 @@ void gui_init()
    //Clear layer
    SLK_layer_set_current(0);
    SLK_draw_rgb_set_changed(1);
-   SLK_draw_rgb_set_clear_color(SLK_color_create(20,20,20,0));
+   SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));
    SLK_draw_rgb_clear();
    SLK_layer_set_current(1);
    SLK_draw_rgb_set_changed(1);
-   SLK_draw_rgb_set_clear_color(SLK_color_create(20,20,20,0));
+   SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));
    SLK_draw_rgb_clear();
    SLK_layer_set_current(2);
    SLK_draw_rgb_set_changed(1);
@@ -242,11 +242,6 @@ void gui_init()
    SLK_gui_window_set_title(preview,"Preview");
    SLK_gui_window_set_moveable(preview,1);
    preview_tabs = SLK_gui_tabbar_create(2,14,256,14,2,text_tab_image);
-   //SLK_RGB_sprite *tmp = SLK_rgb_sprite_create(1,1);
-   //image_in = SLK_gui_image_create(2,28,256,256,tmp,(SLK_gui_rectangle){0,0,1,1});
-   //SLK_gui_tabbar_add_element(preview_tabs,0,image_in);
-   //image_out = SLK_gui_image_create(2,28,256,256,tmp,(SLK_gui_rectangle){0,0,1,1});
-   //SLK_gui_tabbar_add_element(tabbar,1,image_out);
    SLK_gui_window_add_element(preview,preview_tabs);
    
    //Gui window
@@ -399,6 +394,8 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
    label = SLK_gui_label_create(104,120,56,12,"Gamma");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   label = SLK_gui_label_create(104,152,56,12,"Sharp");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
    elements.process_bar_brightness = SLK_gui_slider_create(174,21,162,14,-255,255);
    elements.process_bar_brightness->slider.value = 0;
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_brightness);
@@ -435,6 +432,15 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_gamma);
    elements.process_minus_gamma = SLK_gui_button_create(160,118,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_gamma);
+   elements.process_bar_sharpen = SLK_gui_slider_create(174,150,162,14,0,100);
+   elements.process_bar_sharpen->slider.value = 0;
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_sharpen);
+   elements.process_label_sharpen = SLK_gui_label_create(346,152,40,12,"0");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_sharpen);
+   elements.process_plus_sharpen = SLK_gui_button_create(336,150,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_sharpen);
+   elements.process_minus_sharpen = SLK_gui_button_create(160,150,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_sharpen);
    //Special tab
    elements.special_gif_load = SLK_gui_button_create(158,32,164,14,"Load gif");
    SLK_gui_vtabbar_add_element(settings_tabs,19,elements.special_gif_load);
@@ -468,6 +474,7 @@ void gui_update()
    gui_draw();
 }
 
+//Big boy function
 static void gui_buttons()
 {
    int mx,my;
@@ -479,9 +486,12 @@ static void gui_buttons()
       if(elements.save_load->button.state.released)
       {
          SLK_rgb_sprite_destroy(sprite_in);
+         SLK_rgb_sprite_destroy(sprite_in_org);
          sprite_in = image_select();
          if(sprite_in)
          {
+            sprite_in_org = SLK_rgb_sprite_create(sprite_in->width,sprite_in->height);
+            SLK_rgb_sprite_copy(sprite_in_org,sprite_in);
             SLK_layer_set_size(0,sprite_in->width,sprite_in->height);
             SLK_layer_set_current(0);
             SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));
@@ -667,14 +677,14 @@ static void gui_buttons()
       {
          pixel_sample_mode--;
          if(pixel_sample_mode<0)
-            pixel_sample_mode = 3;
+            pixel_sample_mode = 4;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
       }
       else if(elements.general_sample_right->button.state.pressed)
       {
          pixel_sample_mode++;
-         if(pixel_sample_mode>3)
+         if(pixel_sample_mode>4)
             pixel_sample_mode = 0;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
@@ -710,6 +720,10 @@ static void gui_buttons()
          elements.process_bar_gamma->slider.value--;
       else if(elements.process_plus_gamma->button.state.pressed&&elements.process_bar_gamma->slider.value<elements.process_bar_gamma->slider.max)
          elements.process_bar_gamma->slider.value++;
+      if(elements.process_minus_sharpen->button.state.pressed&&elements.process_bar_sharpen->slider.value>elements.process_bar_sharpen->slider.min)
+         elements.process_bar_sharpen->slider.value--;
+      else if(elements.process_plus_sharpen->button.state.pressed&&elements.process_bar_sharpen->slider.value<elements.process_bar_sharpen->slider.max)
+         elements.process_bar_sharpen->slider.value++;
       if(brightness!=elements.process_bar_brightness->slider.value)
       {
          brightness = elements.process_bar_brightness->slider.value;
@@ -740,6 +754,15 @@ static void gui_buttons()
          char ctmp[16];
          sprintf(ctmp,"%d",img_gamma);
          SLK_gui_label_set_text(elements.process_label_gamma,ctmp);
+         update = 1;
+      }
+      if(sharpen!=elements.process_bar_sharpen->slider.value)
+      {
+         sharpen = elements.process_bar_sharpen->slider.value;
+         char ctmp[16];
+         sprintf(ctmp,"%d",sharpen);
+         SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
+         sharpen_image(sprite_in_org,sprite_in);
          update = 1;
       }
       break;
@@ -884,6 +907,9 @@ void preset_save(FILE *f)
    ULK_json_object_add_object(&root->root,"palette",object);
    ULK_json_object_add_integer(&root->root,"width",gui_out_width);
    ULK_json_object_add_integer(&root->root,"height",gui_out_height);
+   ULK_json_object_add_integer(&root->root,"swidth",gui_out_swidth);
+   ULK_json_object_add_integer(&root->root,"sheight",gui_out_sheight);
+   ULK_json_object_add_integer(&root->root,"scale_mode",pixel_scale_mode);
    ULK_json_object_add_integer(&root->root,"dither_mode",pixel_process_mode);
    ULK_json_object_add_integer(&root->root,"dither_amount",dither_amount);
    ULK_json_object_add_integer(&root->root,"sample_mode",pixel_sample_mode);
@@ -902,6 +928,7 @@ void preset_load(FILE *f)
    if(!f)
       return;
 
+   //The unnecessary indentations are for my own sanity
    ULK_json5 fallback = {0};
    ULK_json5_root *root = ULK_json_parse_file_stream(f);
    fclose(f);
@@ -917,8 +944,23 @@ void preset_load(FILE *f)
    palette_labels();
    elements.general_bar_width->slider.value = ULK_json_get_object_integer(&root->root,"width",1);
       gui_out_width = elements.general_bar_width->slider.value;
+      char ctmp[16];
+      sprintf(ctmp,"%d",gui_out_width);
+      SLK_gui_label_set_text(elements.general_label_width,ctmp);
    elements.general_bar_height->slider.value = ULK_json_get_object_integer(&root->root,"height",1);
       gui_out_height = elements.general_bar_height->slider.value;
+      sprintf(ctmp,"%d",gui_out_height);
+      SLK_gui_label_set_text(elements.general_label_height,ctmp);
+   elements.general_bar_swidth->slider.value = ULK_json_get_object_integer(&root->root,"swidth",1);
+      gui_out_swidth = elements.general_bar_swidth->slider.value;
+      sprintf(ctmp,"%d",gui_out_swidth);
+      SLK_gui_label_set_text(elements.general_label_swidth,ctmp);
+   elements.general_bar_sheight->slider.value = ULK_json_get_object_integer(&root->root,"sheight",1);
+      gui_out_sheight = elements.general_bar_sheight->slider.value;
+      sprintf(ctmp,"%d",gui_out_sheight);
+      SLK_gui_label_set_text(elements.general_label_sheight,ctmp);
+   elements.general_tab_scale->tabbar.current_tab = ULK_json_get_object_integer(&root->root,"scale_mode",1);
+      pixel_scale_mode = elements.general_tab_scale->tabbar.current_tab;
    pixel_process_mode = ULK_json_get_object_integer(&root->root,"dither_mode",0);
    SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);
    elements.general_bar_dither->slider.value = ULK_json_get_object_integer(&root->root,"dither_amount",1);
@@ -926,7 +968,6 @@ void preset_load(FILE *f)
       SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
    elements.process_bar_brightness->slider.value = ULK_json_get_object_integer(&root->root,"brightness",0);
       brightness = elements.process_bar_brightness->slider.value;
-      char ctmp[16];
       sprintf(ctmp,"%d",brightness);
       SLK_gui_label_set_text(elements.process_label_brightness,ctmp);
    elements.process_bar_contrast->slider.value = ULK_json_get_object_integer(&root->root,"contrast",0);

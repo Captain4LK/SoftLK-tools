@@ -196,6 +196,7 @@ void dir_output_select(int dither_mode, int sample_mode, int scale_mode, int wid
             char tmp[516];
             sprintf(tmp,"%s/%s",input_dir,file.name);
             SLK_RGB_sprite *in = image_load(tmp);
+            sharpen_image(in,in);
             if(in!=NULL)
             {
                if(scale_mode==1)
@@ -274,6 +275,7 @@ void gif_output_select(int dither_mode, int sample_mode, int scale_mode, int wid
             in->data[i].b = frame[i*3+2];
             in->data[i].a = 255;
          }
+         sharpen_image(in,in);
          process_image(in,out,pal,sample_mode,dither_mode);
          for(int i = 0;i<out->width*out->height;i++)
             gif_out->frame[i] = find_palette(out->data[i],pal);
