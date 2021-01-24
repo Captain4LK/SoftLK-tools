@@ -13,6 +13,7 @@ CHANGES:
 * added relative image sizes
 * added image sharpening
 * improved bilinear sampling
+* added bicubic sampling mode
 
 ----------------------------------------
 Version:                SLK_img2pixel 0.2 - unicode hell (22.01.2021)

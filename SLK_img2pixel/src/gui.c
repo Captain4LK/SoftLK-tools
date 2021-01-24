@@ -917,6 +917,7 @@ void preset_save(FILE *f)
    ULK_json_object_add_integer(&root->root,"contrast",contrast);
    ULK_json_object_add_integer(&root->root,"gamma",img_gamma);
    ULK_json_object_add_integer(&root->root,"saturation",saturation);
+   ULK_json_object_add_integer(&root->root,"sharpness",sharpen);
  
    ULK_json_write_file(f,&root->root);
    ULK_json_free(root);
@@ -982,6 +983,11 @@ void preset_load(FILE *f)
       img_gamma = elements.process_bar_gamma->slider.value;
       sprintf(ctmp,"%d",img_gamma);
       SLK_gui_label_set_text(elements.process_label_gamma,ctmp);
+   elements.process_bar_sharpen->slider.value = ULK_json_get_object_integer(&root->root,"sharpness",0);
+      sharpen = elements.process_bar_sharpen->slider.value;
+      sprintf(ctmp,"%d",sharpen);
+      SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
+      sharpen_image(sprite_in_org,sprite_in);
    update_output();
    ULK_json_free(root);
 }
