@@ -39,6 +39,7 @@ static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int
 static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
 static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
 static float cubic_hermite (float a, float b, float c, float d, float t);
+static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
 //-------------------------------------
 
 //Function implementations
@@ -52,6 +53,7 @@ void sample_image(const SLK_RGB_sprite *in, Big_pixel *out, int sample_mode, int
    case 2: sample_ceil(in,out,width,height); break;
    case 3: sample_linear(in,out,width,height); break;
    case 4: sample_bicubic(in,out,width,height); break;
+   case 5: sample_supersample(in,out,width,height); break;
    }
 }
 
@@ -227,5 +229,59 @@ static float cubic_hermite (float a, float b, float c, float d, float t)
    float d_ = b;
 
    return a_*t*t*t+b_*t*t+c_*t+d_;
+}
+
+static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+{
+   double fw = (double)in->width/(double)width;
+   double fh = (double)in->height/(double)height;
+
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      {
+         Big_pixel p = {0};
+         float n = 0.0f;
+         float r = 0.0f;
+         float g = 0.0f;
+         float b = 0.0f;
+         float a = 0.0f;
+
+         for(int sy = (int)((double)y*fh);sy<(int)ceil((double)(y+1)*fh);sy++)
+         {
+            float wy;
+            if(sy<(int)((double)y*fh))
+               wy = (double)sy-(double)y*fh+1.0f;
+            else if((double)sy+1.0f>(double)(y+1.0f)*fh)
+               wy = (double)(y+1.0f)*fh-(double)sy;
+            else
+               wy = 1.0f;
+
+            for(int sx = (int)((double)x*fw);sx<(int)ceil((double)(x+1)*fw);sx++)
+            {
+               float wx;
+               if(sx<(int)((double)x*fw))
+                  wx = (double)sx-(double)x*fw+1.0f;
+               else if((double)sx+1.0f>(double)(x+1.0f)*fw)
+                  wx = (double)(x+1.0f)*fw-(double)sx;
+               else
+                  wx = 1.0f;
+               
+               n+=wx*wy;
+               SLK_Color c = SLK_rgb_sprite_get_pixel(in,sx,sy);
+               r+=wx*wy*(double)c.r;
+               g+=wx*wy*(double)c.g;
+               b+=wx*wy*(double)c.b;
+               a+=wx*wy*(double)c.a;
+            }
+         }
+
+         p.r = r/n;
+         p.g = g/n;
+         p.b = b/n;
+         p.a = a/n;
+         out[y*width+x] = p;
+      }
+   }
 }
 //-------------------------------------

@@ -1,10 +1,10 @@
 # Changelog
 
 
-Current development version: SLK_img2pixel 1.0
+Current development version: SLK_img2pixel 0.3
 
 ----------------------------------------
-Version:                SLK_img2pixel 1.0 - initial release (tba)
+Version:                SLK_img2pixel 0.3 - supersampling is amazing (24.01.2021)
 ----------------------------------------
 
 CHANGES:
@@ -14,6 +14,7 @@ CHANGES:
 * added image sharpening
 * improved bilinear sampling
 * added bicubic sampling mode
+* added supersampling sampling mode (works great for portraits!)
 
 ----------------------------------------
 Version:                SLK_img2pixel 0.2 - unicode hell (22.01.2021)

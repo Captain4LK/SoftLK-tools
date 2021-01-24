@@ -112,8 +112,11 @@ void palette_write(SLK_Palette *pal)
    if(buffer[0]!='\0')
    {
       FILE *f = fopen_utf8(buffer,"w");
-      SLK_palette_save_file(f,pal);
-      fclose(f);
+      if(f)
+      {
+         SLK_palette_save_file(f,pal);
+         fclose(f);
+      }
    }
 }
 

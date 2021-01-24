@@ -149,6 +149,7 @@ static const char *text_sample[] =
    "Ceil",
    "Bilinear",
    "Bicubic",
+   "Supersampling",
 };
 
 static const char *text_tab_image[] = 
@@ -677,14 +678,14 @@ static void gui_buttons()
       {
          pixel_sample_mode--;
          if(pixel_sample_mode<0)
-            pixel_sample_mode = 4;
+            pixel_sample_mode = 5;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
       }
       else if(elements.general_sample_right->button.state.pressed)
       {
          pixel_sample_mode++;
-         if(pixel_sample_mode>4)
+         if(pixel_sample_mode>5)
             pixel_sample_mode = 0;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
