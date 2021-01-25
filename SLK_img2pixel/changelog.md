@@ -1,7 +1,15 @@
 # Changelog
 
 
-Current development version: SLK_img2pixel 0.3
+Current development version: SLK_img2pixel 1.0
+
+----------------------------------------
+Version:                SLK_img2pixel 1.0 - initial release (tba)
+----------------------------------------
+
+CHANGES:
+
+* fix sharpness not changing at value of 0
 
 ----------------------------------------
 Version:                SLK_img2pixel 0.3 - supersampling is amazing (24.01.2021)

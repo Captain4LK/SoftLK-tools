@@ -165,30 +165,28 @@ void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
       {-1.0f*sharpen_factor,8.0f*sharpen_factor+1.0f,-1.0f*sharpen_factor},
       {-1.0f*sharpen_factor,-1.0f*sharpen_factor-1.0f*sharpen_factor},
    };
-   if(sharpen!=0)
+
+   for(int y = 1;y<out->height-1;y++)
    {
-      for(int y = 1;y<out->height-1;y++)
+      for(int x = 1;x<out->width-1;x++)
       {
-         for(int x = 1;x<out->width-1;x++)
+         float r = 0.0f;
+         float g = 0.0f;
+         float b = 0.0f;
+         for(int yk = -1;yk<2;yk++)
          {
-            float r = 0.0f;
-            float g = 0.0f;
-            float b = 0.0f;
-            for(int yk = -1;yk<2;yk++)
+            for(int xk = -1;xk<2;xk++)
             {
-               for(int xk = -1;xk<2;xk++)
-               {
-                  Big_pixel in = tmp_data2[(y+yk)*out->width+x+xk];
-                  r+=sharpen_kernel[yk+1][xk+1]*(float)in.r;
-                  g+=sharpen_kernel[yk+1][xk+1]*(float)in.g;
-                  b+=sharpen_kernel[yk+1][xk+1]*(float)in.b;
-               }
+               Big_pixel in = tmp_data2[(y+yk)*out->width+x+xk];
+               r+=sharpen_kernel[yk+1][xk+1]*(float)in.r;
+               g+=sharpen_kernel[yk+1][xk+1]*(float)in.g;
+               b+=sharpen_kernel[yk+1][xk+1]*(float)in.b;
             }
-            out->data[y*out->width+x].r = MAX(0,MIN(255,(int)r));
-            out->data[y*out->width+x].g = MAX(0,MIN(255,(int)g));
-            out->data[y*out->width+x].b = MAX(0,MIN(255,(int)b));
-            out->data[y*out->width+x].a = in->data[y*out->width+x].a;
          }
+         out->data[y*out->width+x].r = MAX(0,MIN(255,(int)r));
+         out->data[y*out->width+x].g = MAX(0,MIN(255,(int)g));
+         out->data[y*out->width+x].b = MAX(0,MIN(255,(int)b));
+         out->data[y*out->width+x].a = in->data[y*out->width+x].a;
       }
    }
 

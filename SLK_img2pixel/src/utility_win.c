@@ -95,9 +95,13 @@ SLK_Palette *palette_select()
    stbi_convert_wchar_to_utf8(buffer,512,file_path);
    if(buffer[0]!='\0')
    {
+      SLK_Palette *p = NULL;
       FILE *f = fopen_utf8(buffer,"r");
-      SLK_Palette *p = SLK_palette_load_file(f);
-      fclose(f);
+      if(f)
+      {
+         p = SLK_palette_load_file(f);
+         fclose(f);
+      }
       return p;
    }
    return NULL;
