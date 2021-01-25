@@ -10,6 +10,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //External includes
 #include <stdint.h>
+#include <math.h>
 #include <SLK/SLK.h>
 //-------------------------------------
 
@@ -44,6 +45,7 @@ static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int wid
 
 //Function implementations
 
+//Downsamples an image to the specified dimensions
 void sample_image(const SLK_RGB_sprite *in, Big_pixel *out, int sample_mode, int width, int height)
 {
    switch(sample_mode)
@@ -57,14 +59,17 @@ void sample_image(const SLK_RGB_sprite *in, Big_pixel *out, int sample_mode, int
    }
 }
 
+//Nearest neighbour sampling,
+//rounding the position
 static void sample_round(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         double sx = ((double)x/(double)width)*(double)in->width;   
-         double sy = ((double)y/(double)height)*(double)in->height;   
+         float sx = ((float)x/(float)width)*(float)in->width;
+         float sy = ((float)y/(float)height)*(float)in->height;
+
          SLK_Color c = SLK_rgb_sprite_get_pixel(in,round(sx),round(sy));
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
@@ -74,14 +79,17 @@ static void sample_round(const SLK_RGB_sprite *in, Big_pixel *out, int width, in
    }
 }
 
+//Nearest neighbour sampling,
+//flooring the position
 static void sample_floor(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         double sx = ((double)x/(double)width)*(double)in->width;   
-         double sy = ((double)y/(double)height)*(double)in->height;   
+         float sx = ((float)x/(float)width)*(float)in->width;
+         float sy = ((float)y/(float)height)*(float)in->height;
+
          SLK_Color c = SLK_rgb_sprite_get_pixel(in,floor(sx),floor(sy));
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
@@ -91,14 +99,17 @@ static void sample_floor(const SLK_RGB_sprite *in, Big_pixel *out, int width, in
    }
 }
 
+//Nearest neighbour sampling,
+//ceiling the position
 static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         double sx = ((double)x/(double)width)*(double)in->width;   
-         double sy = ((double)y/(double)height)*(double)in->height;   
+         float sx = ((float)x/(float)width)*(float)in->width;
+         float sy = ((float)y/(float)height)*(float)in->height;
+
          SLK_Color c = SLK_rgb_sprite_get_pixel(in,ceil(sx),ceil(sy));
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
@@ -108,16 +119,17 @@ static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int
    }
 }
 
+//Bilinear sampling
 static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         double sx = ((double)x/(double)width)*(double)in->width;   
-         double sy = ((double)y/(double)height)*(double)in->height;   
-         double six = ((double)x/(double)width);
-         double siy = ((double)y/(double)height);
+         float sx = ((float)x/(float)width)*(float)in->width;   
+         float sy = ((float)y/(float)height)*(float)in->height;   
+         float six = ((float)x/(float)width);
+         float siy = ((float)y/(float)height);
          int ix = (int)round(sx);
          int iy = (int)round(sy);
 
@@ -128,18 +140,26 @@ static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, i
          c3 = SLK_rgb_sprite_get_pixel(in,ix,iy+1);
          c4 = SLK_rgb_sprite_get_pixel(in,ix+1,iy+1);
 
+         //r value
          float c1t = ((1.0f-six)*(float)c1.r+six*(float)c2.r);
          float c2t = ((1.0f-six)*(float)c3.r+six*(float)c4.r);
          c.r = (int)((1.0f-siy)*c1t+siy*c2t);
+
+         //g value
          c1t = ((1.0f-six)*(float)c1.g+six*(float)c2.g);
          c2t = ((1.0f-six)*(float)c3.g+six*(float)c4.g);
          c.g = (int)((1.0f-siy)*c1t+siy*c2t);
+
+         //b value
          c1t = ((1.0f-six)*(float)c1.b+six*(float)c2.b);
          c2t = ((1.0f-six)*(float)c3.b+six*(float)c4.b);
          c.b = (int)((1.0f-siy)*c1t+siy*c2t);
+
+         //a value
          c1t = ((1.0f-six)*(float)c1.a+six*(float)c2.a);
          c2t = ((1.0f-six)*(float)c3.a+six*(float)c4.a);
          c.a = (int)((1.0f-siy)*c1t+siy*c2t);
+
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
          out[y*width+x].g = c.g;
@@ -148,16 +168,17 @@ static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, i
    }
 }
 
+//Bicubic sampling
 static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         double sx = ((double)x/(double)width)*(double)in->width;
-         double sy = ((double)y/(double)height)*(double)in->height;
-         double six = ((double)x/(double)width);
-         double siy = ((double)y/(double)height);
+         float sx = ((float)x/(float)width)*(float)in->width;
+         float sy = ((float)y/(float)height)*(float)in->height;
+         float six = ((float)x/(float)width);
+         float siy = ((float)y/(float)height);
          int ix = (int)round(sx);
          int iy = (int)round(sy);
 
@@ -221,6 +242,7 @@ static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
    }
 }
 
+//Helper function for sample_bicubic
 static float cubic_hermite (float a, float b, float c, float d, float t)
 {
    float a_ = -a/2.0f+(3.0f*b)/2.0f-(3.0f*c)/2.0f+d/2.0f;   
@@ -231,10 +253,11 @@ static float cubic_hermite (float a, float b, float c, float d, float t)
    return a_*t*t*t+b_*t*t+c_*t+d_;
 }
 
+//Supersampling --> works best in most cases
 static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
-   double fw = (double)in->width/(double)width;
-   double fh = (double)in->height/(double)height;
+   float fw = (float)in->width/(float)width;
+   float fh = (float)in->height/(float)height;
 
    for(int y = 0;y<height;y++)
    {
@@ -247,32 +270,28 @@ static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int wid
          float b = 0.0f;
          float a = 0.0f;
 
-         for(int sy = (int)((double)y*fh);sy<(int)ceil((double)(y+1)*fh);sy++)
+         for(int sy = (int)((float)y*fh);sy<(int)ceil((float)(y+1)*fh);sy++)
          {
-            float wy;
-            if(sy<(int)((double)y*fh))
-               wy = (double)sy-(double)y*fh+1.0f;
-            else if((double)sy+1.0f>(double)(y+1.0f)*fh)
-               wy = (double)(y+1.0f)*fh-(double)sy;
-            else
-               wy = 1.0f;
+            float wy = 1.0f;
+            if(sy<(int)((float)y*fh))
+               wy = (float)sy-(float)y*fh+1.0f;
+            else if((float)sy+1.0f>(float)(y+1.0f)*fh)
+               wy = (float)(y+1.0f)*fh-(float)sy;
 
-            for(int sx = (int)((double)x*fw);sx<(int)ceil((double)(x+1)*fw);sx++)
+            for(int sx = (int)((float)x*fw);sx<(int)ceil((float)(x+1)*fw);sx++)
             {
-               float wx;
-               if(sx<(int)((double)x*fw))
-                  wx = (double)sx-(double)x*fw+1.0f;
-               else if((double)sx+1.0f>(double)(x+1.0f)*fw)
-                  wx = (double)(x+1.0f)*fw-(double)sx;
-               else
-                  wx = 1.0f;
+               float wx = 1.0f;
+               if(sx<(int)((float)x*fw))
+                  wx = (float)sx-(float)x*fw+1.0f;
+               else if((float)sx+1.0f>(float)(x+1.0f)*fw)
+                  wx = (float)(x+1.0f)*fw-(float)sx;
                
-               n+=wx*wy;
                SLK_Color c = SLK_rgb_sprite_get_pixel(in,sx,sy);
-               r+=wx*wy*(double)c.r;
-               g+=wx*wy*(double)c.g;
-               b+=wx*wy*(double)c.b;
-               a+=wx*wy*(double)c.a;
+               n+=wx*wy;
+               r+=wx*wy*(float)c.r;
+               g+=wx*wy*(float)c.g;
+               b+=wx*wy*(float)c.b;
+               a+=wx*wy*(float)c.a;
             }
          }
 

@@ -9,9 +9,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
-#include <math.h>
 #include <stdint.h>
 #include <limits.h>
+#include <math.h>
 #include <SLK/SLK.h>
 //-------------------------------------
 
@@ -52,13 +52,7 @@ static const int16_t dither_threshold_normal[64] =
    15,47,7,39,13,45,5,37,
    63,31,55,23,61,29,53,21,
 };
-
 static const int16_t dither_threshold_none[64] = {0};
-
-static int16_t dither_threshold_tmp[64] = {0};
-static const int16_t *dither_threshold = dither_threshold_none;
-static Big_pixel *tmp_data = NULL;
-static Big_pixel *tmp_data2 = NULL;
 
 int brightness = 0;
 int contrast = 0;
@@ -70,7 +64,7 @@ int sharpen = 0;
 //-------------------------------------
 
 //Function prototypes
-static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height);
+static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold);
 static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height);
 static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height);
 static void floyd_apply_error(Big_pixel *d, double error_r, double error_g, double error_b, int x, int y, int width, int height);
@@ -81,21 +75,30 @@ static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette
 
 //Function implementations
 
+//"Glue" function, samples, processes and dithers the input image
 void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *palette, int sample_mode, int process_mode)
 {
-   if(tmp_data)
-      free(tmp_data);
+   Big_pixel *tmp_data = malloc(sizeof(*tmp_data)*out->width*out->height);
+   if(tmp_data==NULL)
+      return;
 
-   tmp_data = malloc(sizeof(*tmp_data)*out->width*out->height);
+   //Downsample image before processing it. 
+   //Every image operation except kernel based ones (sharpness)
+   //is done after downsampling.
    sample_image(in,tmp_data,sample_mode,out->width,out->height);
 
-   //Setup "matrix"
-   float contrast_factor = (259.0f*(255.0f+(float)contrast))/(255.0f*(259.0f-(float)contrast));
+   //Adjust range of values
    float gamma_factor = (float)img_gamma/100.0f;
+   float contrast_factor = (259.0f*(255.0f+(float)contrast))/(255.0f*(259.0f-(float)contrast));
    float saturation_factor = (float)saturation/100.0f;
    float brightness_factor = (float)brightness/255.0f;
 
+   //Setup "matrix"
+   //saturation, brighness and contrast are implemented with a color matrix
+   //(with unused parts removed).
+   //See here: https://docs.rainmeter.net/tips/colormatrix-guide/
    float t = (1.0f-contrast_factor)/2.0f;
+
    float sr = (1.0f-saturation_factor)*0.3086f;
    float sg = (1.0f-saturation_factor)*0.6094f;
    float sb = (1.0f-saturation_factor)*0.0820f;
@@ -115,41 +118,55 @@ void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *p
    float wr = (t+brightness_factor)*255.0f;
    float wg = (t+brightness_factor)*255.0f;
    float wb = (t+brightness_factor)*255.0f;
+   //-------------------------------------
 
    for(int y = 0;y<out->height;y++)
    {
       for(int x = 0;x<out->width;x++)
       {
          Big_pixel in = tmp_data[y*out->width+x];
+
+         //Saturation, brightness and contrast
          float r = (float)in.r;
          float g = (float)in.g;
          float b = (float)in.b;
-         in.r = MAX(0,MIN(255,(int)(rr*r)+(gr*g)+(br*b)+wr));
-         in.g = MAX(0,MIN(255,(int)(rg*r)+(gg*g)+(bg*b)+wg));
-         in.b = MAX(0,MIN(255,(int)(rb*r)+(gb*g)+(bb*b)+wb));
-         tmp_data[y*out->width+x] = in;
+         in.r = MAX(0,MIN(0xff,(int)(rr*r)+(gr*g)+(br*b)+wr));
+         in.g = MAX(0,MIN(0xff,(int)(rg*r)+(gg*g)+(bg*b)+wg));
+         in.b = MAX(0,MIN(0xff,(int)(rb*r)+(gb*g)+(bb*b)+wb));
 
          //Gamma
+         //Only ajust if not the default value --> better performance
          if(img_gamma!=100)
          {
-            Big_pixel in = tmp_data[y*out->width+x];
-            in.r = MAX(0,MIN(255,(int)(255.0f*pow((float)in.r/255.0f,gamma_factor))));
-            in.g = MAX(0,MIN(255,(int)(255.0f*pow((float)in.g/255.0f,gamma_factor))));
-            in.b = MAX(0,MIN(255,(int)(255.0f*pow((float)in.b/255.0f,gamma_factor))));
-            tmp_data[y*out->width+x] = in;
+            in.r = MAX(0,MIN(0xff,(int)(255.0f*pow((float)in.r/255.0f,gamma_factor))));
+            in.g = MAX(0,MIN(0xff,(int)(255.0f*pow((float)in.g/255.0f,gamma_factor))));
+            in.b = MAX(0,MIN(0xff,(int)(255.0f*pow((float)in.b/255.0f,gamma_factor))));
          }
+
+         tmp_data[y*out->width+x] = in;
       }
    }
 
+   //Dithering is done after all image processing
+   //If it was done at any other time, it would
+   //resoult in different colors than the palette
    dither_image(tmp_data,out,palette,process_mode,out->width,out->height);
+
+   //Clean up
+   free(tmp_data);
 }
 
+//Sharpens an image, input and output dimensions must be equal
 void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 {
    if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
       return;
 
-   tmp_data2 = malloc(sizeof(*tmp_data2)*out->width*out->height);
+   Big_pixel *tmp_data2 = malloc(sizeof(*tmp_data2)*out->width*out->height);
+   if(tmp_data2==NULL)
+      return;
+
+   //Can't use memcpy, since one is 64bit and the other is 32bit
    for(int i = 0;i<out->width*out->height;i++)
    {
       tmp_data2[i].r = in->data[i].r;
@@ -158,7 +175,7 @@ void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
       tmp_data2[i].a = in->data[i].a;
    }
 
-   //Sharpen image
+   //Setup sharpening kernel
    float sharpen_factor = (float)sharpen/100.0f;
    float sharpen_kernel[3][3] = {
       {-1.0f*sharpen_factor,-1.0f*sharpen_factor-1.0f*sharpen_factor},
@@ -173,6 +190,8 @@ void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
          float r = 0.0f;
          float g = 0.0f;
          float b = 0.0f;
+
+         //Apply kernel
          for(int yk = -1;yk<2;yk++)
          {
             for(int xk = -1;xk<2;xk++)
@@ -183,35 +202,41 @@ void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
                b+=sharpen_kernel[yk+1][xk+1]*(float)in.b;
             }
          }
-         out->data[y*out->width+x].r = MAX(0,MIN(255,(int)r));
-         out->data[y*out->width+x].g = MAX(0,MIN(255,(int)g));
-         out->data[y*out->width+x].b = MAX(0,MIN(255,(int)b));
+
+         out->data[y*out->width+x].r = MAX(0,MIN(0xff,(int)r));
+         out->data[y*out->width+x].g = MAX(0,MIN(0xff,(int)g));
+         out->data[y*out->width+x].b = MAX(0,MIN(0xff,(int)b));
          out->data[y*out->width+x].a = in->data[y*out->width+x].a;
       }
    }
 
+   //Cleanup
    free(tmp_data2);
 }
 
+//Dithers an image to the provided palette using the specified mode
 static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height)
 {
    switch(process_mode)
    {
    case 0: //No dithering
-      dither_threshold = dither_threshold_none;
-      orderd_dither(d,out,palette,width,height);
+      orderd_dither(d,out,palette,width,height,dither_threshold_none);
       break;
-   case 1: //Ordered dithering (positiv map)
+   case 1: //Ordered dithering (positiv map --> bias towards lighter colors)
+      {
+      int16_t dither_threshold_tmp[64] = {0};
       for(int i = 0;i<64;i++)
          dither_threshold_tmp[i] = (int)((float)dither_threshold_normal[i]*((float)dither_amount/1000.0f));
-      dither_threshold = dither_threshold_tmp;
-      orderd_dither(d,out,palette,width,height);
+      orderd_dither(d,out,palette,width,height,dither_threshold_tmp);
+      }
       break;
-   case 2: //Ordered dithering (positiv and negativ map)
+   case 2: //Ordered dithering (positiv and negativ map --> no bias)
+      {
+      int16_t dither_threshold_tmp[64] = {0};
       for(int i = 0;i<64;i++)
          dither_threshold_tmp[i] = (int)((float)(dither_threshold_normal[i]-31)*((float)dither_amount/1000.0f));
-      dither_threshold = dither_threshold_tmp;
-      orderd_dither(d,out,palette,width,height);
+      orderd_dither(d,out,palette,width,height,dither_threshold_tmp);
+      }
       break;
    case 3: //Floyd-Steinberg dithering (per color component error)
       floyd_dither(d,out,palette,width,height);
@@ -222,7 +247,8 @@ static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette
    }
 }
 
-static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height)
+//Applies ordered dithering to the input
+static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold)
 {
    for(int y = 0;y<height;y++)
    {
@@ -234,11 +260,14 @@ static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
             out->data[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
          }
-         uint8_t tresshold_id = ((y & 7) << 3) + (x & 7);
+
+         //Add a value to the color depending on the position,
+         //this creates the dithering effect
+         uint8_t tresshold_id = ((y&7)<<3)+(x&7);
          Big_pixel c;
-         c.r = MAX(0,MIN((in.r+dither_threshold[tresshold_id]),0xff));
-         c.g = MAX(0,MIN((in.g+dither_threshold[tresshold_id]),0xff));
-         c.b = MAX(0,MIN((in.b+dither_threshold[tresshold_id]),0xff));
+         c.r = MAX(0,MIN(0xff,(in.r+dither_threshold[tresshold_id])));
+         c.g = MAX(0,MIN(0xff,(in.g+dither_threshold[tresshold_id])));
+         c.b = MAX(0,MIN(0xff,(in.b+dither_threshold[tresshold_id])));
          c.a = in.a;
          out->data[y*width+x] = find_closest(c,pal);
          out->data[y*width+x].a = 255;
@@ -246,6 +275,9 @@ static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
    }
 }
 
+//Applies Floyd-Steinberg dithering to the input
+//This version uses per color component errror values,
+//this usually does not work well with most palettes
 static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height)
 {
    for(int y = 0;y<height;y++)
@@ -274,6 +306,9 @@ static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, in
    }
 }
 
+//Applies Floyd-Steinberg dithering to the input
+//This version uses distributed error values,
+//this results in better results for most palettes
 static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height)
 {
    for(int y = 0;y<height;y++)
@@ -303,6 +338,7 @@ static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
    }
 }
 
+//Helper function for floyd_dither and floyd2_dither
 static void floyd_apply_error(Big_pixel *d, double error_r, double error_g, double error_b, int x, int y, int width, int height)
 {
    if(x>width-1||x<0||y>height-1||y<0)
@@ -314,6 +350,7 @@ static void floyd_apply_error(Big_pixel *d, double error_r, double error_g, doub
    in->b = in->b+error_b;
 }
 
+//Caluclates the difference between two colors
 static int64_t color_dist2(Big_pixel c0, SLK_Color c1)
 {
    int64_t diff_r = c1.r-c0.r;
@@ -323,12 +360,15 @@ static int64_t color_dist2(Big_pixel c0, SLK_Color c1)
    return (diff_r*diff_r+diff_g*diff_g+diff_b*diff_b);
 }
 
+//Returns the color in the palette that is closest 
+//to the input color.
+//Probably would work better in a different color space
 static SLK_Color find_closest(Big_pixel in, SLK_Palette *pal)
 {
    if(in.a==0)
       return pal->colors[0];
 
-   int64_t min_dist = INT_MAX;
+   int64_t min_dist = INT64_MAX;
    int64_t min_index = 0;
 
    for(int64_t i = 0;i<pal->used;i++)
