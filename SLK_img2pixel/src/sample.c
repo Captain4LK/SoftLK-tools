@@ -323,8 +323,6 @@ static void sample_lanczos(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
       {
          int ix = (int)((double)x*fw);
          int iy = (int)((double)y*fh);
-         //double sx = ((double)x*fw)-(double)ix;
-         //double sy = ((double)y*fh)-(double)iy;
          double sx = ((double)x/(double)width);
          double sy = ((double)y/(double)height);
          Big_pixel p = {0};

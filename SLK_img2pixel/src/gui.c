@@ -87,6 +87,8 @@ struct Elements
    SLK_gui_element *general_sheight_minus;
    SLK_gui_element *general_alpha_plus;
    SLK_gui_element *general_alpha_minus;
+   SLK_gui_element *general_gauss_plus;
+   SLK_gui_element *general_gauss_minus;
    SLK_gui_element *general_dither_left;
    SLK_gui_element *general_dither_right;
    SLK_gui_element *general_sample_left;
@@ -96,6 +98,7 @@ struct Elements
    SLK_gui_element *general_bar_swidth;
    SLK_gui_element *general_bar_sheight;
    SLK_gui_element *general_bar_dither;
+   SLK_gui_element *general_bar_gauss;
    SLK_gui_element *general_bar_alpha;
    SLK_gui_element *general_label_width;
    SLK_gui_element *general_label_height;
@@ -103,6 +106,7 @@ struct Elements
    SLK_gui_element *general_label_sheight;
    SLK_gui_element *general_label_dither;
    SLK_gui_element *general_label_sample;
+   SLK_gui_element *general_label_gauss;
    SLK_gui_element *general_label_alpha;
 
    //Process tab
@@ -380,16 +384,27 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_sample_right);
    elements.general_label_sample = SLK_gui_label_create(174,198,170,12,text_sample[0]);
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_sample);
-   label = SLK_gui_label_create(104,246,56,12,"Alpha");
+   label = SLK_gui_label_create(104,230,56,12,"Gauss");
    SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_alpha_plus = SLK_gui_button_create(344,243,14,14,"+");
+   elements.general_gauss_plus = SLK_gui_button_create(344,227,14,14,"+");
+   SLK_gui_tabbar_add_element(settings_tabs,2,elements.general_gauss_plus);
+   elements.general_gauss_minus = SLK_gui_button_create(160,227,14,14,"-");
+   SLK_gui_tabbar_add_element(settings_tabs,2,elements.general_gauss_minus);
+   elements.general_bar_gauss = SLK_gui_slider_create(174,227,170,14,1,500);
+   elements.general_bar_gauss->slider.value = 80;
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_gauss);
+   elements.general_label_gauss = SLK_gui_label_create(354,230,32,12,"80");
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_gauss);
+   label = SLK_gui_label_create(104,278,56,12,"Alpha");
+   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
+   elements.general_alpha_plus = SLK_gui_button_create(344,275,14,14,"+");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_alpha_plus);
-   elements.general_alpha_minus = SLK_gui_button_create(160,243,14,14,"-");
+   elements.general_alpha_minus = SLK_gui_button_create(160,275,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_alpha_minus);
-   elements.general_bar_alpha = SLK_gui_slider_create(174,243,170,14,0,255);
+   elements.general_bar_alpha = SLK_gui_slider_create(174,275,170,14,0,255);
    elements.general_bar_alpha->slider.value = 128;
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_alpha);
-   elements.general_label_alpha = SLK_gui_label_create(354,246,32,12,"128");
+   elements.general_label_alpha = SLK_gui_label_create(354,278,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_alpha);
 
    //Process tab
@@ -630,6 +645,10 @@ static void gui_buttons()
          elements.general_bar_alpha->slider.value++;
       else if(elements.general_alpha_minus->button.state.pressed&&elements.general_bar_alpha->slider.value>elements.general_bar_alpha->slider.min)
          elements.general_bar_alpha->slider.value--;
+      else if(elements.general_gauss_plus->button.state.pressed&&elements.general_bar_gauss->slider.value<elements.general_bar_gauss->slider.max)
+         elements.general_bar_gauss->slider.value++;
+      else if(elements.general_gauss_minus->button.state.pressed&&elements.general_bar_gauss->slider.value>elements.general_bar_gauss->slider.min)
+         elements.general_bar_gauss->slider.value--;
       if(elements.general_dither_left->button.state.pressed)
       {
          pixel_process_mode--;
@@ -706,6 +725,16 @@ static void gui_buttons()
          char tmp[16];
          sprintf(tmp,"%d",alpha_threshold);
          SLK_gui_label_set_text(elements.general_label_alpha,tmp);
+         update = 1;
+      }
+      if(elements.general_bar_gauss->slider.value!=gauss)
+      {
+         gauss = elements.general_bar_gauss->slider.value;
+         char tmp[16];
+         sprintf(tmp,"%d",gauss);
+         SLK_gui_label_set_text(elements.general_label_gauss,tmp);
+         lowpass_image(sprite_in_org,sprite_in);
+         sharpen_image(sprite_in,sprite_in);
          update = 1;
       }
       if(elements.general_tab_scale->tabbar.current_tab!=pixel_scale_mode)

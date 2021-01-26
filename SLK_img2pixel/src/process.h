@@ -34,6 +34,7 @@ extern int saturation;
 extern int sharpen;
 extern int dither_amount;
 extern int alpha_threshold;
+extern int gauss;
 
 void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *palette, int sample_mode, int process_mode);
 void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out);

@@ -61,6 +61,7 @@ int saturation = 100;
 int dither_amount = 250;
 int alpha_threshold = 128;
 int sharpen = 0;
+int gauss = 80;
 //-------------------------------------
 
 //Function prototypes
@@ -71,6 +72,8 @@ static void floyd_apply_error(Big_pixel *d, double error_r, double error_g, doub
 static SLK_Color find_closest(Big_pixel in, SLK_Palette *pal);
 static int64_t color_dist2(Big_pixel c0, SLK_Color c1);
 static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height);
+static double gauss_calc(double x, double y, double sigma);
+static Big_pixel gauss_data_get(int x, int y, int width, int height, const Big_pixel *data);
 //-------------------------------------
 
 //Function implementations
@@ -233,30 +236,37 @@ void lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    }
 
    //Setup lowpass kernel
-   float lowpass_kernel[3][3] = {
-      {1.0f/9.0f,1.0f/9.0f,1.0f/9.0f},
-      {1.0f/9.0f,1.0f/9.0f,1.0f/9.0f},
-      {1.0f/9.0f,1.0f/9.0f,1.0f/9.0f},
-   };
+   double gauss_factor = (double)gauss/100.0f;
+   double lowpass_kernel[7][7];
+   for(int y = 0;y<7;y++)
+      for(int x = 0;x<7;x++)
+         lowpass_kernel[x][y] = gauss_calc((double)x-3.0f,(double)y-3.0f,gauss_factor);
+   double norm_val = 0.0f;
+   for(int y = 0;y<7;y++)
+      for(int x = 0;x<7;x++)
+         norm_val+=lowpass_kernel[x][y];
+   for(int y = 0;y<7;y++)
+      for(int x = 0;x<7;x++)
+         lowpass_kernel[x][y] = lowpass_kernel[x][y]/norm_val;
 
-   for(int y = 1;y<out->height-1;y++)
+   for(int y = 0;y<out->height;y++)
    {
-      for(int x = 1;x<out->width-1;x++)
+      for(int x = 0;x<out->width;x++)
       {
-         float r = 0.0f;
-         float g = 0.0f;
-         float b = 0.0f;
+         double r = 0.0f;
+         double g = 0.0f;
+         double b = 0.0f;
 
          //Apply kernel
-         for(int yk = -1;yk<2;yk++)
+         for(int yk = -3;yk<4;yk++)
          {
-            for(int xk = -1;xk<2;xk++)
+            for(int xk = -3;xk<4;xk++)
             {
-               Big_pixel in = tmp_data2[(y+yk)*out->width+x+xk];
+               Big_pixel in = gauss_data_get(x+xk,y+yk,out->width,out->height,tmp_data2);
 
-               r+=lowpass_kernel[yk+1][xk+1]*(float)in.r;
-               g+=lowpass_kernel[yk+1][xk+1]*(float)in.g;
-               b+=lowpass_kernel[yk+1][xk+1]*(float)in.b;
+               r+=lowpass_kernel[xk+3][yk+3]*(double)in.r;
+               g+=lowpass_kernel[xk+3][yk+3]*(double)in.g;
+               b+=lowpass_kernel[xk+3][yk+3]*(double)in.b;
             }
          }
 
@@ -269,6 +279,28 @@ void lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 
    //Cleanup
    free(tmp_data2);
+}
+
+//Helper function for lowpass_image
+static double gauss_calc(double x, double y, double sigma)
+{
+   double val = (1.0f/(2.0f*M_PI*sigma*sigma))*pow(M_E,-((x*x+y*y)/(2*sigma*sigma)));
+   return val;
+}
+
+//Helper function for lowpass_image
+static Big_pixel gauss_data_get(int x, int y, int width, int height, const Big_pixel *data)
+{
+   if(x<0)
+      return gauss_data_get(0,y,width,height,data);
+   if(y<0)
+      return gauss_data_get(x,0,width,height,data);
+   if(x>width-1)
+      return gauss_data_get(width-1,y,width,height,data);
+   if(y>height-1)
+      return gauss_data_get(x,height-1,width,height,data);
+
+   return data[y*width+x];
 }
 
 //Dithers an image to the provided palette using the specified mode

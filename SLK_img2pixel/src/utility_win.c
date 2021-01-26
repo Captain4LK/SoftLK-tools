@@ -319,6 +319,7 @@ void gif_output_select(int dither_mode, int sample_mode, int scale_mode, int wid
             in->data[i].b = frame[i*3+2];
             in->data[i].a = 255;
          }
+         lowpass_image(in,in);
          sharpen_image(in,in);
          process_image(in,out,pal,sample_mode,dither_mode);
          for(int i = 0;i<out->width*out->height;i++)

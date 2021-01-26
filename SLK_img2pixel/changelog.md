@@ -11,7 +11,7 @@ CHANGES:
 
 * fix sharpness not changing at value of 0
 * renamed supersampling to box sampling
-* added lowpass filtering
+* added gaussian blur
 * added lanczos sample mode
 
 ----------------------------------------
