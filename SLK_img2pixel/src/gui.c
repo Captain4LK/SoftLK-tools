@@ -244,6 +244,7 @@ void gui_init()
    SLK_gui_window_set_moveable(preview,1);
    preview_tabs = SLK_gui_tabbar_create(2,14,256,14,2,text_tab_image);
    SLK_gui_window_add_element(preview,preview_tabs);
+   //-------------------------------------
    
    //Gui window
    SLK_RGB_sprite *tmp = SLK_rgb_sprite_create(1,1);
@@ -252,6 +253,7 @@ void gui_init()
    SLK_gui_window_set_moveable(settings,1);
    settings_tabs = SLK_gui_vtabbar_create(2,14,96,20,text_tab_settings);
    SLK_gui_window_add_element(settings,settings_tabs);
+
    //Save/Load tab
    elements.save_load = SLK_gui_button_create(158,32,164,14,"Load image");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_load);
@@ -265,6 +267,7 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_load_folder);
    elements.save_save_folder = SLK_gui_button_create(158,256,164,14,"Select output dir");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_save_folder);
+
    //Palette tab
    elements.palette_load = SLK_gui_button_create(158,218,164,14,"Load palette");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_load);
@@ -307,6 +310,7 @@ void gui_init()
    elements.palette_label_b = SLK_gui_label_create(354,176,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_b);
    palette_labels();
+
    //General tab
    elements.general_tab_scale = SLK_gui_tabbar_create(99,14,283,14,2,text_tab_scale);
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_tab_scale);
@@ -386,6 +390,7 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_alpha);
    elements.general_label_alpha = SLK_gui_label_create(354,246,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_alpha);
+
    //Process tab
    label = SLK_gui_label_create(104,24,56,12,"Bright");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
@@ -442,11 +447,13 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_sharpen);
    elements.process_minus_sharpen = SLK_gui_button_create(160,150,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_sharpen);
+
    //Special tab
    elements.special_gif_load = SLK_gui_button_create(158,32,164,14,"Load gif");
    SLK_gui_vtabbar_add_element(settings_tabs,19,elements.special_gif_load);
    elements.special_gif_save = SLK_gui_button_create(158,64,164,14,"Save gif");
    SLK_gui_vtabbar_add_element(settings_tabs,19,elements.special_gif_save);
+   //-------------------------------------
 }
 
 void gui_update()
@@ -481,6 +488,7 @@ static void gui_buttons()
    int mx,my;
    SLK_mouse_get_layer_pos(2,&mx,&my);
    int update = 0;
+
    switch(settings_tabs->vtabbar.current_tab)
    {
    case 0: //Save/Load tab

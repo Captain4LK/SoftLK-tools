@@ -9,6 +9,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //wchar_t my ass
+//whats utf8? - microshaft
+//windows is the only reason this file exists
 
 //External includes
 #include <stdint.h>
@@ -45,6 +47,7 @@ static wchar_t output_gif[512];
 
 //Function prototypes
 static uint8_t find_palette(SLK_Color in, SLK_Palette *pal);
+static void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal);
 //-------------------------------------
 
 //Function implementations
@@ -122,11 +125,6 @@ void palette_write(SLK_Palette *pal)
          fclose(f);
       }
    }
-}
-
-void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
-{
-
 }
 
 void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)

@@ -19,8 +19,6 @@ FILE *json_write();
 SLK_Palette *palette_select();
 void palette_write(SLK_Palette *pal);
 
-void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal);
-void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal);
 SLK_RGB_sprite *image_load(const char *path);
 void dir_input_select();
 void dir_output_select(int dither_mode, int sample_mode, int scale_mode, int width, int height, SLK_Palette *pal);

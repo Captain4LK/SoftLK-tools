@@ -2,7 +2,7 @@
 
 This repo hosts the source code for different (currently only one) tools that were made to be used with SoftLK-lib.
 
-## SLK_img2pixel (v0.2)
+## SLK_img2pixel (v0.3)
 
 A tool for transforming images into pixel art.
 
@@ -23,7 +23,7 @@ A tool for transforming images into pixel art.
 
 # License
 
-All code in this repository (except the 'external' directory containing source code not by my) is released into the public domain (CC0), see LICENSE for more info.
+All code in this repository (except the 'external' directory containing source code not by my) is released into the public domain (CC0), see COPYING for more info.
 
 # Third party libraries
 

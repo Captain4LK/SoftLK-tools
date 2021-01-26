@@ -11,8 +11,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //External includes
 #include <stdint.h>
 #include <SLK/SLK.h>
-#define FOPEN_UTF8_IMPLEMENTATION
-#include "../../external/fopen_utf8.h"
 #define CUTE_FILES_IMPLEMENTATION
 #include "../../external/cute_files.h"
 #define STB_IMAGE_IMPLEMENTATION
@@ -42,6 +40,7 @@ static char output_gif[256];
 
 //Function prototypes
 static uint8_t find_palette(SLK_Color in, SLK_Palette *pal);
+static void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal);
 //-------------------------------------
 
 //Function implementations
@@ -120,11 +119,6 @@ void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
 
    //anything else --> png
    SLK_rgb_sprite_save(path,img);
-}
-
-void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)
-{
-
 }
 
 SLK_RGB_sprite *image_load(const char *path)
