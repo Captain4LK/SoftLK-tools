@@ -149,7 +149,8 @@ static const char *text_sample[] =
    "Ceil",
    "Bilinear",
    "Bicubic",
-   "Supersampling",
+   "Box sampling",
+   "Lanczos",
 };
 
 static const char *text_tab_image[] = 
@@ -507,6 +508,7 @@ static void gui_buttons()
             SLK_draw_rgb_clear();
             SLK_draw_rgb_sprite(sprite_in,0,0);
             SLK_draw_rgb_set_changed(1);
+            lowpass_image(sprite_in_org,sprite_in);
             float scale;
             if(sprite_in->width>sprite_in->height)
                scale = 256.0f/sprite_in->width;
@@ -686,14 +688,14 @@ static void gui_buttons()
       {
          pixel_sample_mode--;
          if(pixel_sample_mode<0)
-            pixel_sample_mode = 5;
+            pixel_sample_mode = 6;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
       }
       else if(elements.general_sample_right->button.state.pressed)
       {
          pixel_sample_mode++;
-         if(pixel_sample_mode>5)
+         if(pixel_sample_mode>6)
             pixel_sample_mode = 0;
          update = 1;
          SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
@@ -771,7 +773,8 @@ static void gui_buttons()
          char ctmp[16];
          sprintf(ctmp,"%d",sharpen);
          SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
-         sharpen_image(sprite_in_org,sprite_in);
+         lowpass_image(sprite_in_org,sprite_in);
+         sharpen_image(sprite_in,sprite_in);
          update = 1;
       }
       break;

@@ -178,9 +178,9 @@ void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    //Setup sharpening kernel
    float sharpen_factor = (float)sharpen/100.0f;
    float sharpen_kernel[3][3] = {
-      {-1.0f*sharpen_factor,-1.0f*sharpen_factor-1.0f*sharpen_factor},
+      {-1.0f*sharpen_factor,-1.0f*sharpen_factor,-1.0f*sharpen_factor},
       {-1.0f*sharpen_factor,8.0f*sharpen_factor+1.0f,-1.0f*sharpen_factor},
-      {-1.0f*sharpen_factor,-1.0f*sharpen_factor-1.0f*sharpen_factor},
+      {-1.0f*sharpen_factor,-1.0f*sharpen_factor,-1.0f*sharpen_factor},
    };
 
    for(int y = 1;y<out->height-1;y++)
@@ -200,6 +200,63 @@ void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
                r+=sharpen_kernel[yk+1][xk+1]*(float)in.r;
                g+=sharpen_kernel[yk+1][xk+1]*(float)in.g;
                b+=sharpen_kernel[yk+1][xk+1]*(float)in.b;
+            }
+         }
+
+         out->data[y*out->width+x].r = MAX(0,MIN(0xff,(int)r));
+         out->data[y*out->width+x].g = MAX(0,MIN(0xff,(int)g));
+         out->data[y*out->width+x].b = MAX(0,MIN(0xff,(int)b));
+         out->data[y*out->width+x].a = in->data[y*out->width+x].a;
+      }
+   }
+
+   //Cleanup
+   free(tmp_data2);
+}
+
+void lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
+{
+   if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
+      return;
+
+   Big_pixel *tmp_data2 = malloc(sizeof(*tmp_data2)*out->width*out->height);
+   if(tmp_data2==NULL)
+      return;
+
+   //Can't use memcpy, since one is 64bit and the other is 32bit
+   for(int i = 0;i<out->width*out->height;i++)
+   {
+      tmp_data2[i].r = in->data[i].r;
+      tmp_data2[i].g = in->data[i].g;
+      tmp_data2[i].b = in->data[i].b;
+      tmp_data2[i].a = in->data[i].a;
+   }
+
+   //Setup lowpass kernel
+   float lowpass_kernel[3][3] = {
+      {1.0f/9.0f,1.0f/9.0f,1.0f/9.0f},
+      {1.0f/9.0f,1.0f/9.0f,1.0f/9.0f},
+      {1.0f/9.0f,1.0f/9.0f,1.0f/9.0f},
+   };
+
+   for(int y = 1;y<out->height-1;y++)
+   {
+      for(int x = 1;x<out->width-1;x++)
+      {
+         float r = 0.0f;
+         float g = 0.0f;
+         float b = 0.0f;
+
+         //Apply kernel
+         for(int yk = -1;yk<2;yk++)
+         {
+            for(int xk = -1;xk<2;xk++)
+            {
+               Big_pixel in = tmp_data2[(y+yk)*out->width+x+xk];
+
+               r+=lowpass_kernel[yk+1][xk+1]*(float)in.r;
+               g+=lowpass_kernel[yk+1][xk+1]*(float)in.g;
+               b+=lowpass_kernel[yk+1][xk+1]*(float)in.b;
             }
          }
 

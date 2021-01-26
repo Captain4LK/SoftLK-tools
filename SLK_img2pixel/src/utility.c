@@ -190,6 +190,7 @@ void dir_output_select(int dither_mode, int sample_mode, int scale_mode, int wid
             char tmp[516];
             sprintf(tmp,"%s/%s",input_dir,file.name);
             SLK_RGB_sprite *in = image_load(tmp);
+            lowpass_image(in,in);
             sharpen_image(in,in);
             if(in!=NULL)
             {

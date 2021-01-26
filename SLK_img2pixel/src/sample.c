@@ -41,6 +41,8 @@ static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, i
 static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
 static float cubic_hermite (float a, float b, float c, float d, float t);
 static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
+static void sample_lanczos(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
+static double lanczos(double v);
 //-------------------------------------
 
 //Function implementations
@@ -56,6 +58,7 @@ void sample_image(const SLK_RGB_sprite *in, Big_pixel *out, int sample_mode, int
    case 3: sample_linear(in,out,width,height); break;
    case 4: sample_bicubic(in,out,width,height); break;
    case 5: sample_supersample(in,out,width,height); break;
+   case 6: sample_lanczos(in,out,width,height); break;
    }
 }
 
@@ -63,14 +66,14 @@ void sample_image(const SLK_RGB_sprite *in, Big_pixel *out, int sample_mode, int
 //rounding the position
 static void sample_round(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
+   float fw = (float)in->width/(float)width;
+   float fh = (float)in->height/(float)height;
+
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         float sx = ((float)x/(float)width)*(float)in->width;
-         float sy = ((float)y/(float)height)*(float)in->height;
-
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,round(sx),round(sy));
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,round((float)x*fw),round((float)y*fh));
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
          out[y*width+x].g = c.g;
@@ -83,14 +86,14 @@ static void sample_round(const SLK_RGB_sprite *in, Big_pixel *out, int width, in
 //flooring the position
 static void sample_floor(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
+   float fw = (float)in->width/(float)width;
+   float fh = (float)in->height/(float)height;
+
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         float sx = ((float)x/(float)width)*(float)in->width;
-         float sy = ((float)y/(float)height)*(float)in->height;
-
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,floor(sx),floor(sy));
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,floor((float)x*fw),floor((float)y*fh));
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
          out[y*width+x].g = c.g;
@@ -103,14 +106,14 @@ static void sample_floor(const SLK_RGB_sprite *in, Big_pixel *out, int width, in
 //ceiling the position
 static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
+   float fw = (float)in->width/(float)width;
+   float fh = (float)in->height/(float)height;
+
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         float sx = ((float)x/(float)width)*(float)in->width;
-         float sy = ((float)y/(float)height)*(float)in->height;
-
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,ceil(sx),ceil(sy));
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,ceil((float)x*fw),ceil((float)y*fh));
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
          out[y*width+x].g = c.g;
@@ -122,16 +125,17 @@ static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int
 //Bilinear sampling
 static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
+   float fw = (float)in->width/(float)width;
+   float fh = (float)in->height/(float)height;
+
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         float sx = ((float)x/(float)width)*(float)in->width;   
-         float sy = ((float)y/(float)height)*(float)in->height;   
-         float six = ((float)x/(float)width);
-         float siy = ((float)y/(float)height);
-         int ix = (int)round(sx);
-         int iy = (int)round(sy);
+         int ix = (int)((float)x*fw);
+         int iy = (int)((float)y*fh);
+         float six = ((float)x*fw)-(float)ix;
+         float siy = ((float)y*fh)-(float)iy;
 
          SLK_Color c;
          SLK_Color c1,c2,c3,c4;
@@ -171,16 +175,17 @@ static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, i
 //Bicubic sampling
 static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
+   float fw = (float)in->width/(float)width;
+   float fh = (float)in->height/(float)height;
+
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         float sx = ((float)x/(float)width)*(float)in->width;
-         float sy = ((float)y/(float)height)*(float)in->height;
+         int ix = (int)((float)x*fw);
+         int iy = (int)((float)y*fh);
          float six = ((float)x/(float)width);
          float siy = ((float)y/(float)height);
-         int ix = (int)round(sx);
-         int iy = (int)round(sy);
 
          SLK_Color c00,c10,c20,c30;
          SLK_Color c01,c11,c21,c31;
@@ -302,5 +307,78 @@ static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int wid
          out[y*width+x] = p;
       }
    }
+}
+
+//Lanczos downsampling
+//The only one to use doubles 
+//for best possible result
+static void sample_lanczos(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+{
+   double fw = (double)in->width/(double)width;
+   double fh = (double)in->height/(double)height;
+
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      {
+         int ix = (int)((double)x*fw);
+         int iy = (int)((double)y*fh);
+         //double sx = ((double)x*fw)-(double)ix;
+         //double sy = ((double)y*fh)-(double)iy;
+         double sx = ((double)x/(double)width);
+         double sy = ((double)y/(double)height);
+         Big_pixel p = {0};
+
+         double a0 = lanczos(sx+2.0f);
+         double a1 = lanczos(sx+1.0f);
+         double a2 = lanczos(sx);
+         double a3 = lanczos(sx-1.0f);
+         double a4 = lanczos(sx-2.0f);
+         double a5 = lanczos(sx-3.0f);
+         double b0 = lanczos(sy+2.0f);
+         double b1 = lanczos(sy+1.0f);
+         double b2 = lanczos(sy);
+         double b3 = lanczos(sy-1.0f);
+         double b4 = lanczos(sy-2.0f);
+         double b5 = lanczos(sy-3.0f);
+
+         double r[6];
+         double g[6];
+         double b[6];
+         double a[6];
+         for(int i = 0;i<6;i++)
+         {
+            SLK_Color p0 = SLK_rgb_sprite_get_pixel(in,ix-2,iy-2+i);
+            SLK_Color p1 = SLK_rgb_sprite_get_pixel(in,ix-1,iy-2+i);
+            SLK_Color p2 = SLK_rgb_sprite_get_pixel(in,ix,iy-2+i);
+            SLK_Color p3 = SLK_rgb_sprite_get_pixel(in,ix+1,iy-2+i);
+            SLK_Color p4 = SLK_rgb_sprite_get_pixel(in,ix+2,iy-2+i);
+            SLK_Color p5 = SLK_rgb_sprite_get_pixel(in,ix+3,iy-2+i);
+
+            r[i] = b0*(double)p0.r+b1*(double)p1.r+b2*(double)p2.r+b3*(double)p3.r+b4*(double)p4.r+b5*(double)p5.r;
+            g[i] = b0*(double)p0.g+b1*(double)p1.g+b2*(double)p2.g+b3*(double)p3.g+b4*(double)p4.g+b5*(double)p5.g;
+            b[i] = b0*(double)p0.b+b1*(double)p1.b+b2*(double)p2.b+b3*(double)p3.b+b4*(double)p4.b+b5*(double)p5.b;
+            a[i] = b0*(double)p0.a+b1*(double)p1.a+b2*(double)p2.a+b3*(double)p3.a+b4*(double)p4.a+b5*(double)p5.a;
+         }
+
+         p.r = MAX(0,MIN(0xff,(int)(a0*r[0]+a1*r[1]+a2*r[2]+a3*r[3]+a4*r[4]+a5*r[5])));
+         p.g = MAX(0,MIN(0xff,(int)(a0*g[0]+a1*g[1]+a2*g[2]+a3*g[3]+a4*g[4]+a5*g[5])));
+         p.b = MAX(0,MIN(0xff,(int)(a0*b[0]+a1*b[1]+a2*b[2]+a3*b[3]+a4*b[4]+a5*b[5])));
+         p.a = MAX(0,MIN(0xff,(int)(a0*a[0]+a1*a[1]+a2*a[2]+a3*a[3]+a4*a[4]+a5*a[5])));
+         out[y*width+x] = p;
+      }
+   }
+}
+
+//Helper function for sample_lanczos
+static double lanczos(double v)
+{
+   if(v==0.0f)
+      return 1.0f;
+   if(v>3.0f)
+      return 0.0f;
+
+   double val = sin(M_PI*(v))*sin(M_PI*(v)/3.0f)/(M_PI*M_PI*(v)*(v)/3.0f);
+   return val;
 }
 //-------------------------------------
