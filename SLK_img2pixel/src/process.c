@@ -236,6 +236,11 @@ void lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    }
 
    //Setup lowpass kernel
+   //We need to divide each cell
+   //by the sum of all cells to make 
+   //sure the sum of all cells will be 1
+   //otherwise the blur would either darken
+   //or lighten the image
    double gauss_factor = (double)gauss/100.0f;
    double lowpass_kernel[7][7];
    for(int y = 0;y<7;y++)

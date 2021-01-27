@@ -33,6 +33,11 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //#defines
+#define MIN(a,b) \
+   ((a)<(b)?(a):(b))
+ 
+#define MAX(a,b) \
+   ((a)>(b)?(a):(b))
 //-------------------------------------
 
 //Typedefs
@@ -48,6 +53,10 @@ static wchar_t output_gif[512];
 //Function prototypes
 static uint8_t find_palette(SLK_Color in, SLK_Palette *pal);
 static void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal);
+static SLK_Palette *palette_png(FILE *f);
+static SLK_Palette *palette_gpl(FILE *f);
+static SLK_Palette *palette_hex(FILE *f);
+static int chartoi(char in);
 //-------------------------------------
 
 //Function implementations
@@ -92,20 +101,32 @@ FILE *json_write()
 
 SLK_Palette *palette_select()
 {
-   const wchar_t *filter_patterns[2] = {L"*.pal"};
-   const wchar_t *file_path = tinyfd_openFileDialogW(L"Load a palette",L"",1,filter_patterns,NULL,0);
+   const wchar_t *filter_patterns[] = {L"*.pal",L"*.png",L"*.gpl",L"*.hex"};
+   const wchar_t *file_path = tinyfd_openFileDialogW(L"Load a palette",L"",4,filter_patterns,NULL,0);
    char buffer[512];
    stbi_convert_wchar_to_utf8(buffer,512,file_path);
    if(buffer[0]!='\0')
    {
       SLK_Palette *p = NULL;
-      FILE *f = fopen_utf8(buffer,"r");
+      FILE *f = fopen_utf8(buffer,"rb");
       if(f)
       {
-         p = SLK_palette_load_file(f);
+         cf_file_t file; //Not ment to be used this way, but since it's possible, who cares
+         strcpy(file.name,buffer);
+         cf_get_ext(&file);
+
+         if(strcmp(file.ext,".pal")==0)
+            p = SLK_palette_load_file(f);
+         else if(strcmp(file.ext,".png")==0)
+            p = palette_png(f);
+         else if(strcmp(file.ext,".gpl")==0)
+            p = palette_gpl(f);
+         else if(strcmp(file.ext,".hex")==0)
+            p = palette_hex(f);
+         
          fclose(f);
+         return p;
       }
-      return p;
    }
    return NULL;
 }
@@ -334,4 +355,83 @@ void gif_output_select(int dither_mode, int sample_mode, int scale_mode, int wid
       SLK_rgb_sprite_destroy(in);
    }
 }
+
+static SLK_Palette *palette_png(FILE *f)
+{
+   SLK_RGB_sprite *s = SLK_rgb_sprite_load_file(f);
+   SLK_Palette *p = malloc(sizeof(*p));
+   if(!p)
+      return NULL;
+   memset(p,0,sizeof(*p));
+   p->used = MIN(256,s->width*s->height);
+   for(int i = 0;i<p->used;i++)
+      p->colors[i] = s->data[i];
+   SLK_rgb_sprite_destroy(s);
+
+   return p;
+}
+
+static SLK_Palette *palette_gpl(FILE *f)
+{
+   SLK_Palette *p = malloc(sizeof(*p));
+   if(!p)
+      return NULL;
+   memset(p,0,sizeof(*p));
+   char buffer[512];
+   int c = 0;
+   int r,g,b;
+
+   while(fgets(buffer,512,f))
+   {
+      if(buffer[0]=='#')
+         continue;
+      if(sscanf(buffer,"%d %d %d",&r,&g,&b)==3)
+      {
+         p->colors[c].r = r;
+         p->colors[c].g = g;
+         p->colors[c].b = b;
+         p->colors[c].a = 255;
+         c++;
+      }
+   }
+   p->used = c;
+
+   return p;
+}
+
+static SLK_Palette *palette_hex(FILE *f)
+{
+
+   SLK_Palette *p = malloc(sizeof(*p));
+   if(!p)
+      return NULL;
+   memset(p,0,sizeof(*p));
+   char buffer[512];
+   int c = 0;
+
+   while(fgets(buffer,512,f))
+   {
+      p->colors[c].r = chartoi(buffer[0])*16+chartoi(buffer[1]);
+      p->colors[c].g = chartoi(buffer[2])*16+chartoi(buffer[3]);
+      p->colors[c].b = chartoi(buffer[4])*16+chartoi(buffer[5]);
+      p->colors[c].a = 255;
+      c++;
+   }
+   p->used= c;
+
+   return p;
+}
+
+//Helper function for palette_hex
+static int chartoi(char in)
+{
+   if(in>='0'&&in<='9')
+      return in-'0';
+   if(in>='a'&&in<='f')
+      return in-'a'+10;
+   if(in>='A'&&in<='F')
+      return in-'A'+10;
+   return 0;
+}
+
 //-------------------------------------

@@ -954,6 +954,8 @@ void preset_save(FILE *f)
    ULK_json_object_add_integer(&root->root,"dither_mode",pixel_process_mode);
    ULK_json_object_add_integer(&root->root,"dither_amount",dither_amount);
    ULK_json_object_add_integer(&root->root,"sample_mode",pixel_sample_mode);
+   ULK_json_object_add_integer(&root->root,"gaussian_blur",gauss);
+   ULK_json_object_add_integer(&root->root,"alpha_threshold",alpha_threshold);
    ULK_json_object_add_integer(&root->root,"brightness",brightness);
    ULK_json_object_add_integer(&root->root,"contrast",contrast);
    ULK_json_object_add_integer(&root->root,"gamma",img_gamma);
@@ -1028,8 +1030,10 @@ void preset_load(FILE *f)
       sharpen = elements.process_bar_sharpen->slider.value;
       sprintf(ctmp,"%d",sharpen);
       SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
-      sharpen_image(sprite_in_org,sprite_in);
-   update_output();
    ULK_json_free(root);
+
+   lowpass_image(sprite_in_org,sprite_in);   
+   sharpen_image(sprite_in,sprite_in);
+   update_output();
 }
 //-------------------------------------
