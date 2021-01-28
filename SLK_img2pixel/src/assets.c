@@ -23,7 +23,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Variables
-SLK_RGB_sprite *font = NULL;
 static const uint32_t font_data[] = 
 {
    0,0,0,0,0,0,0,0,0,0,0,4278190080,4278190080,0,0,0,0,4278190080,4278190080,0,0,4278190080,4278190080,0,0,0,4278190080,4278190080,0,4278190080,4278190080,0,
@@ -219,6 +218,7 @@ static const uint32_t font_data[] =
    0,0,0,0,0,0,0,0,0,0,4278190080,4278190080,4278190080,4278190080,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 };
+SLK_RGB_sprite *font = NULL;
 //-------------------------------------
 
 //Function prototypes
@@ -226,7 +226,7 @@ static const uint32_t font_data[] =
 
 //Function implementations
 
-void assets_load()
+void assets_init()
 {
    font = SLK_rgb_sprite_create(128,48);
    memcpy(font->data,font_data,sizeof(*font->data)*128*48);

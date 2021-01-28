@@ -433,5 +433,4 @@ static int chartoi(char in)
       return in-'A'+10;
    return 0;
 }
-
 //-------------------------------------

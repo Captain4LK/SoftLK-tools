@@ -14,6 +14,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 extern SLK_RGB_sprite *font;
 
-void assets_load();
+void assets_init();
 
 #endif

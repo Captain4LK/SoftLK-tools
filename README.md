@@ -2,7 +2,7 @@
 
 This repo hosts the source code for different (currently only one) tools that were made to be used with SoftLK-lib.
 
-## SLK_img2pixel (v0.3)
+## SLK_img2pixel (v1.0-dev)
 
 A tool for transforming images into pixel art.
 
@@ -23,7 +23,12 @@ A tool for transforming images into pixel art.
 
 # License
 
-All code in this repository (except the 'external' directory containing source code not by my) is released into the public domain (CC0), see COPYING for more info.
+All code in this repository (except the 'external' directory containing source code not by me) is released into the public domain (CC0), see COPYING for more info.
+
+# Planned tools / ideas
+
+* tile map editor
+* pixel art editor
 
 # Third party libraries
 
@@ -32,4 +37,4 @@ All code in this repository (except the 'external' directory containing source c
 * [stb_image](https://github.com/nothings/stb), mit/unlicense
 * [gifenc](https://github.com/lecram/gifenc), public domain
 * [gifdec](https://github.com/lecram/gifdec), public domain
-* [fopen_utf8](https://github.com/Photosounder/fopen_utf8/), public domain
+* [fopen_utf8](https://github.com/Photosounder/fopen_utf8/), only for windows builds, public domain

@@ -1,10 +1,16 @@
 # Changelog
 
 
-Current development version: SLK_img2pixel 0.4
+Current development version: SLK_img2pixel 1.0
 
 ----------------------------------------
-Version:                SLK_img2pixel 0.4 - palette formats! (tba)
+Version:                SLK_img2pixel 1.0 - initial release (tba)
+----------------------------------------
+
+CHANGES:
+
+----------------------------------------
+Version:                SLK_img2pixel 0.4 - palette formats! (27.01.2021)
 ----------------------------------------
 
 NOTE: 

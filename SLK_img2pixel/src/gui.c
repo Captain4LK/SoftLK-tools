@@ -31,20 +31,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Typedefs
-//-------------------------------------
-
-//Variables
-//Lots of globals here, I need to find a way to manage this better
-static SLK_RGB_sprite *sprite_in = NULL;
-static SLK_RGB_sprite *sprite_in_org = NULL;
-static SLK_RGB_sprite *sprite_out = NULL;
-static int palette_selected = 0;
-
-static SLK_gui_window *preview = NULL;
-static SLK_gui_element *preview_tabs = NULL;
-static SLK_gui_window *settings = NULL;
-static SLK_gui_element *settings_tabs = NULL;
-
 //Hide in struct to not pollute namespace
 struct Elements
 {
@@ -135,7 +121,31 @@ struct Elements
    SLK_gui_element *special_gif_load;
    SLK_gui_element *special_gif_save;
 };
+//-------------------------------------
+
+//Variables
+//Lots of globals here, I need to find a way to manage this better
+static SLK_RGB_sprite *sprite_in = NULL;
+static SLK_RGB_sprite *sprite_in_org = NULL;
+static SLK_RGB_sprite *sprite_out = NULL;
+static SLK_Palette *palette = NULL;
+static int palette_selected = 0;
+static SLK_gui_window *preview = NULL;
+static SLK_gui_element *preview_tabs = NULL;
+static SLK_gui_window *settings = NULL;
+static SLK_gui_element *settings_tabs = NULL;
 static struct Elements elements = {0};
+static int gui_out_width = 128;
+static int gui_out_height = 128;
+static int gui_out_swidth = 2;
+static int gui_out_sheight = 2;
+static int gui_in_x = 0;
+static int gui_in_y = 0;
+static int gui_out_x = 0;
+static int gui_out_y = 0;
+static int pixel_scale_mode = 0;
+static int pixel_sample_mode = 0;
+static int pixel_process_mode = 1;
 
 static const char *text_dither[] = 
 {
@@ -192,19 +202,6 @@ static const char *text_tab_settings[] =
    "",
    "Special",
 };
-
-static SLK_Palette *palette = NULL;
-static int gui_out_width = 128;
-static int gui_out_height = 128;
-static int gui_out_swidth = 2;
-static int gui_out_sheight = 2;
-static int gui_in_x = 0;
-static int gui_in_y = 0;
-static int gui_out_x = 0;
-static int gui_out_y = 0;
-static int pixel_scale_mode = 0;
-static int pixel_sample_mode = 0;
-static int pixel_process_mode = 1;
 //-------------------------------------
 
 //Function prototypes
@@ -221,22 +218,9 @@ static void preset_load(FILE *f);
 
 void gui_init()
 {
-   //Load entry palette 
+   //Load entry palette and font
+   assets_init();
    palette = SLK_palette_load("palette/aurora.pal");
-
-   //Clear layer
-   SLK_layer_set_current(0);
-   SLK_draw_rgb_set_changed(1);
-   SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));
-   SLK_draw_rgb_clear();
-   SLK_layer_set_current(1);
-   SLK_draw_rgb_set_changed(1);
-   SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));
-   SLK_draw_rgb_clear();
-   SLK_layer_set_current(2);
-   SLK_draw_rgb_set_changed(1);
-   SLK_draw_rgb_set_clear_color(SLK_color_create(20,20,20,255));
-   SLK_draw_rgb_clear();
 
    //Setup windows
    //Preview window

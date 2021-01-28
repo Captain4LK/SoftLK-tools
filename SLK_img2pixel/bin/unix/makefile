@@ -6,7 +6,7 @@ SLK_img2pix: main.o assets.o gui.o process.o sample.o utility.o tinyfiledialogs.
 	chmod +x SLK_img2pix 
 	mv SLK_img2pix ../../../bin/
 
-main.o: ../../src/main.c ../../src/assets.h ../../src/gui.h
+main.o: ../../src/main.c ../../src/gui.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 assets.o: ../../src/assets.c ../../src/assets.h
