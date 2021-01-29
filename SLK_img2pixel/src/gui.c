@@ -508,6 +508,7 @@ static void gui_buttons()
             SLK_draw_rgb_sprite(sprite_in,0,0);
             SLK_draw_rgb_set_changed(1);
             lowpass_image(sprite_in_org,sprite_in);
+            sharpen_image(sprite_in,sprite_in);
             float scale;
             if(sprite_in->width>sprite_in->height)
                scale = 256.0f/sprite_in->width;

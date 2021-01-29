@@ -66,8 +66,8 @@ void sample_image(const SLK_RGB_sprite *in, Big_pixel *out, int sample_mode, int
 //rounding the position
 static void sample_round(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
-   float fw = (float)in->width/(float)width;
-   float fh = (float)in->height/(float)height;
+   float fw = (float)(in->width-1)/(float)width;
+   float fh = (float)(in->height-1)/(float)height;
 
    for(int y = 0;y<height;y++)
    {
@@ -86,8 +86,8 @@ static void sample_round(const SLK_RGB_sprite *in, Big_pixel *out, int width, in
 //flooring the position
 static void sample_floor(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
-   float fw = (float)in->width/(float)width;
-   float fh = (float)in->height/(float)height;
+   float fw = (float)(in->width-1)/(float)width;
+   float fh = (float)(in->height-1)/(float)height;
 
    for(int y = 0;y<height;y++)
    {
@@ -106,8 +106,8 @@ static void sample_floor(const SLK_RGB_sprite *in, Big_pixel *out, int width, in
 //ceiling the position
 static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
-   float fw = (float)in->width/(float)width;
-   float fh = (float)in->height/(float)height;
+   float fw = (float)(in->width-1)/(float)width;
+   float fh = (float)(in->height-1)/(float)height;
 
    for(int y = 0;y<height;y++)
    {
@@ -125,8 +125,8 @@ static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int
 //Bilinear sampling
 static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
-   float fw = (float)in->width/(float)width;
-   float fh = (float)in->height/(float)height;
+   float fw = (float)(in->width-1)/(float)width;
+   float fh = (float)(in->height-1)/(float)height;
 
    for(int y = 0;y<height;y++)
    {
@@ -175,8 +175,8 @@ static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, i
 //Bicubic sampling
 static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
-   float fw = (float)in->width/(float)width;
-   float fh = (float)in->height/(float)height;
+   float fw = (float)(in->width-1)/(float)width;
+   float fh = (float)(in->height-1)/(float)height;
 
    for(int y = 0;y<height;y++)
    {
@@ -184,8 +184,8 @@ static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
       {
          int ix = (int)((float)x*fw);
          int iy = (int)((float)y*fh);
-         float six = ((float)x/(float)width);
-         float siy = ((float)y/(float)height);
+         float six = (x*fw)-(float)ix;
+         float siy = (y*fh)-(float)iy;
 
          SLK_Color c00,c10,c20,c30;
          SLK_Color c01,c11,c21,c31;
@@ -218,7 +218,7 @@ static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
          float c2 = cubic_hermite((float)c02.r,(float)c12.r,(float)c22.r,(float)c32.r,six);
          float c3 = cubic_hermite((float)c03.r,(float)c13.r,(float)c23.r,(float)c33.r,six);
          float val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].r = MAX(0,MIN(255,(int)val));
+         out[y*width+x].r = MAX(0,MIN(0xff,(int)val));
 
          //g value
          c0 = cubic_hermite((float)c00.g,(float)c10.g,(float)c20.g,(float)c30.g,six);
@@ -226,7 +226,7 @@ static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
          c2 = cubic_hermite((float)c02.g,(float)c12.g,(float)c22.g,(float)c32.g,six);
          c3 = cubic_hermite((float)c03.g,(float)c13.g,(float)c23.g,(float)c33.g,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].g = MAX(0,MIN(255,(int)val));
+         out[y*width+x].g = MAX(0,MIN(0xff,(int)val));
 
          //b value
          c0 = cubic_hermite((float)c00.b,(float)c10.b,(float)c20.b,(float)c30.b,six);
@@ -234,7 +234,7 @@ static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
          c2 = cubic_hermite((float)c02.b,(float)c12.b,(float)c22.b,(float)c32.b,six);
          c3 = cubic_hermite((float)c03.b,(float)c13.b,(float)c23.b,(float)c33.b,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].b = MAX(0,MIN(255,(int)val));
+         out[y*width+x].b = MAX(0,MIN(0xff,(int)val));
 
          //a value
          c0 = cubic_hermite((float)c00.a,(float)c10.a,(float)c20.a,(float)c30.a,six);
@@ -242,7 +242,7 @@ static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
          c2 = cubic_hermite((float)c02.a,(float)c12.a,(float)c22.a,(float)c32.a,six);
          c3 = cubic_hermite((float)c03.a,(float)c13.a,(float)c23.a,(float)c33.a,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].a = MAX(0,MIN(255,(int)val));
+         out[y*width+x].a = MAX(0,MIN(0xff,(int)val));
       }
    }
 }
@@ -261,8 +261,8 @@ static float cubic_hermite (float a, float b, float c, float d, float t)
 //Supersampling --> works best in most cases
 static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
-   float fw = (float)in->width/(float)width;
-   float fh = (float)in->height/(float)height;
+   float fw = (float)(in->width-1)/(float)width;
+   float fh = (float)(in->height-1)/(float)height;
 
    for(int y = 0;y<height;y++)
    {
@@ -314,8 +314,8 @@ static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int wid
 //for best possible result
 static void sample_lanczos(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
-   double fw = (double)in->width/(double)width;
-   double fh = (double)in->height/(double)height;
+   double fw = (double)(in->width-1)/(double)width;
+   double fh = (double)(in->height-1)/(double)height;
 
    for(int y = 0;y<height;y++)
    {
@@ -323,8 +323,8 @@ static void sample_lanczos(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
       {
          int ix = (int)((double)x*fw);
          int iy = (int)((double)y*fh);
-         double sx = ((double)x/(double)width);
-         double sy = ((double)y/(double)height);
+         double sx = ((double)x*fw)-(double)ix;
+         double sy = ((double)y*fh)-(double)iy;
          Big_pixel p = {0};
 
          double a0 = lanczos(sx+2.0f);
@@ -339,6 +339,18 @@ static void sample_lanczos(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
          double b3 = lanczos(sy-1.0f);
          double b4 = lanczos(sy-2.0f);
          double b5 = lanczos(sy-3.0f);
+         /*double a0 = lanczos(sx+3.0f);
+         double a1 = lanczos(sx+2.0f);
+         double a2 = lanczos(sx+1.0f);
+         double a3 = lanczos(sx);
+         double a4 = lanczos(sx-1.0f);
+         double a5 = lanczos(sx-2.0f);
+         double b0 = lanczos(sy+3.0f);
+         double b1 = lanczos(sy+2.0f);
+         double b2 = lanczos(sy+1.0f);
+         double b3 = lanczos(sy);
+         double b4 = lanczos(sy-1.0f);
+         double b5 = lanczos(sy-2.0f);*/
 
          double r[6];
          double g[6];
@@ -353,16 +365,16 @@ static void sample_lanczos(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
             SLK_Color p4 = SLK_rgb_sprite_get_pixel(in,ix+2,iy-2+i);
             SLK_Color p5 = SLK_rgb_sprite_get_pixel(in,ix+3,iy-2+i);
 
-            r[i] = b0*(double)p0.r+b1*(double)p1.r+b2*(double)p2.r+b3*(double)p3.r+b4*(double)p4.r+b5*(double)p5.r;
-            g[i] = b0*(double)p0.g+b1*(double)p1.g+b2*(double)p2.g+b3*(double)p3.g+b4*(double)p4.g+b5*(double)p5.g;
-            b[i] = b0*(double)p0.b+b1*(double)p1.b+b2*(double)p2.b+b3*(double)p3.b+b4*(double)p4.b+b5*(double)p5.b;
-            a[i] = b0*(double)p0.a+b1*(double)p1.a+b2*(double)p2.a+b3*(double)p3.a+b4*(double)p4.a+b5*(double)p5.a;
+            r[i] = a0*(double)p0.r+a1*(double)p1.r+a2*(double)p2.r+a3*(double)p3.r+a4*(double)p4.r+a5*(double)p5.r;
+            g[i] = a0*(double)p0.g+a1*(double)p1.g+a2*(double)p2.g+a3*(double)p3.g+a4*(double)p4.g+a5*(double)p5.g;
+            b[i] = a0*(double)p0.b+a1*(double)p1.b+a2*(double)p2.b+a3*(double)p3.b+a4*(double)p4.b+a5*(double)p5.b;
+            a[i] = a0*(double)p0.a+a1*(double)p1.a+a2*(double)p2.a+a3*(double)p3.a+a4*(double)p4.a+a5*(double)p5.a;
          }
 
-         p.r = MAX(0,MIN(0xff,(int)(a0*r[0]+a1*r[1]+a2*r[2]+a3*r[3]+a4*r[4]+a5*r[5])));
-         p.g = MAX(0,MIN(0xff,(int)(a0*g[0]+a1*g[1]+a2*g[2]+a3*g[3]+a4*g[4]+a5*g[5])));
-         p.b = MAX(0,MIN(0xff,(int)(a0*b[0]+a1*b[1]+a2*b[2]+a3*b[3]+a4*b[4]+a5*b[5])));
-         p.a = MAX(0,MIN(0xff,(int)(a0*a[0]+a1*a[1]+a2*a[2]+a3*a[3]+a4*a[4]+a5*a[5])));
+         p.r = MAX(0,MIN(0xff,(int)(b0*r[0]+b1*r[1]+b2*r[2]+b3*r[3]+b4*r[4]+b5*r[5])));
+         p.g = MAX(0,MIN(0xff,(int)(b0*g[0]+b1*g[1]+b2*g[2]+b3*g[3]+b4*g[4]+b5*g[5])));
+         p.b = MAX(0,MIN(0xff,(int)(b0*b[0]+b1*b[1]+b2*b[2]+b3*b[3]+b4*b[4]+b5*b[5])));
+         p.a = MAX(0,MIN(0xff,(int)(b0*a[0]+b1*a[1]+b2*a[2]+b3*a[3]+b4*a[4]+b5*a[5])));
          out[y*width+x] = p;
       }
    }
@@ -375,8 +387,9 @@ static double lanczos(double v)
       return 1.0f;
    if(v>3.0f)
       return 0.0f;
+   if(v<-3.0f)
+      return 0.0f;
 
-   double val = sin(M_PI*(v))*sin(M_PI*(v)/3.0f)/(M_PI*M_PI*(v)*(v)/3.0f);
-   return val;
+   return ((3.0f*sin(M_PI*v)*sin(M_PI*v/3.0f))/(M_PI*M_PI*v*v));
 }
 //-------------------------------------

@@ -73,7 +73,7 @@ static SLK_Color find_closest(Big_pixel in, SLK_Palette *pal);
 static int64_t color_dist2(Big_pixel c0, SLK_Color c1);
 static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height);
 static double gauss_calc(double x, double y, double sigma);
-static Big_pixel gauss_data_get(int x, int y, int width, int height, const Big_pixel *data);
+static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_RGB_sprite *data);
 //-------------------------------------
 
 //Function implementations
@@ -165,30 +165,23 @@ void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
       return;
 
-   Big_pixel *tmp_data2 = malloc(sizeof(*tmp_data2)*out->width*out->height);
+   SLK_RGB_sprite *tmp_data2 = SLK_rgb_sprite_create(out->width,out->height);
    if(tmp_data2==NULL)
       return;
-
-   //Can't use memcpy, since one is 64bit and the other is 32bit
-   for(int i = 0;i<out->width*out->height;i++)
-   {
-      tmp_data2[i].r = in->data[i].r;
-      tmp_data2[i].g = in->data[i].g;
-      tmp_data2[i].b = in->data[i].b;
-      tmp_data2[i].a = in->data[i].a;
-   }
+   
+   SLK_rgb_sprite_copy(tmp_data2,in);
 
    //Setup sharpening kernel
    float sharpen_factor = (float)sharpen/100.0f;
    float sharpen_kernel[3][3] = {
-      {-1.0f*sharpen_factor,-1.0f*sharpen_factor,-1.0f*sharpen_factor},
-      {-1.0f*sharpen_factor,8.0f*sharpen_factor+1.0f,-1.0f*sharpen_factor},
-      {-1.0f*sharpen_factor,-1.0f*sharpen_factor,-1.0f*sharpen_factor},
+      {0.0f,-1.0f*sharpen_factor,0.0f},
+      {-1.0f*sharpen_factor,4.0f*sharpen_factor+1.0f,-1.0f*sharpen_factor},
+      {0.0f,-1.0f*sharpen_factor,0.0f},
    };
 
-   for(int y = 1;y<out->height-1;y++)
+   for(int y = 0;y<out->height;y++)
    {
-      for(int x = 1;x<out->width-1;x++)
+      for(int x = 0;x<out->width;x++)
       {
          float r = 0.0f;
          float g = 0.0f;
@@ -199,10 +192,11 @@ void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
          {
             for(int xk = -1;xk<2;xk++)
             {
-               Big_pixel in = tmp_data2[(y+yk)*out->width+x+xk];
-               r+=sharpen_kernel[yk+1][xk+1]*(float)in.r;
-               g+=sharpen_kernel[yk+1][xk+1]*(float)in.g;
-               b+=sharpen_kernel[yk+1][xk+1]*(float)in.b;
+               SLK_Color c = kernel_data_get(x+xk,y+yk,out->width,out->height,tmp_data2);
+
+               r+=sharpen_kernel[yk+1][xk+1]*(float)c.r;
+               g+=sharpen_kernel[yk+1][xk+1]*(float)c.g;
+               b+=sharpen_kernel[yk+1][xk+1]*(float)c.b;
             }
          }
 
@@ -214,7 +208,7 @@ void sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    }
 
    //Cleanup
-   free(tmp_data2);
+   SLK_rgb_sprite_destroy(tmp_data2);
 }
 
 void lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
@@ -222,18 +216,11 @@ void lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
       return;
 
-   Big_pixel *tmp_data2 = malloc(sizeof(*tmp_data2)*out->width*out->height);
+   SLK_RGB_sprite *tmp_data2 = SLK_rgb_sprite_create(out->width,out->height);
    if(tmp_data2==NULL)
       return;
-
-   //Can't use memcpy, since one is 64bit and the other is 32bit
-   for(int i = 0;i<out->width*out->height;i++)
-   {
-      tmp_data2[i].r = in->data[i].r;
-      tmp_data2[i].g = in->data[i].g;
-      tmp_data2[i].b = in->data[i].b;
-      tmp_data2[i].a = in->data[i].a;
-   }
+   
+   SLK_rgb_sprite_copy(tmp_data2,in);
 
    //Setup lowpass kernel
    //We need to divide each cell
@@ -267,11 +254,11 @@ void lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
          {
             for(int xk = -3;xk<4;xk++)
             {
-               Big_pixel in = gauss_data_get(x+xk,y+yk,out->width,out->height,tmp_data2);
+               SLK_Color c = kernel_data_get(x+xk,y+yk,out->width,out->height,tmp_data2);
 
-               r+=lowpass_kernel[xk+3][yk+3]*(double)in.r;
-               g+=lowpass_kernel[xk+3][yk+3]*(double)in.g;
-               b+=lowpass_kernel[xk+3][yk+3]*(double)in.b;
+               r+=lowpass_kernel[xk+3][yk+3]*(double)c.r;
+               g+=lowpass_kernel[xk+3][yk+3]*(double)c.g;
+               b+=lowpass_kernel[xk+3][yk+3]*(double)c.b;
             }
          }
 
@@ -283,7 +270,7 @@ void lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    }
 
    //Cleanup
-   free(tmp_data2);
+   SLK_rgb_sprite_destroy(tmp_data2);
 }
 
 //Helper function for lowpass_image
@@ -293,19 +280,19 @@ static double gauss_calc(double x, double y, double sigma)
    return val;
 }
 
-//Helper function for lowpass_image
-static Big_pixel gauss_data_get(int x, int y, int width, int height, const Big_pixel *data)
+//Helper function for lowpass_image and shapren_image
+static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_RGB_sprite *data)
 {
    if(x<0)
-      return gauss_data_get(0,y,width,height,data);
+      return kernel_data_get(0,y,width,height,data);
    if(y<0)
-      return gauss_data_get(x,0,width,height,data);
+      return kernel_data_get(x,0,width,height,data);
    if(x>width-1)
-      return gauss_data_get(width-1,y,width,height,data);
+      return kernel_data_get(width-1,y,width,height,data);
    if(y>height-1)
-      return gauss_data_get(x,height-1,width,height,data);
+      return kernel_data_get(x,height-1,width,height,data);
 
-   return data[y*width+x];
+   return data->data[y*width+x];
 }
 
 //Dithers an image to the provided palette using the specified mode

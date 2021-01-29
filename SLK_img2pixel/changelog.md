@@ -9,6 +9,9 @@ Version:                SLK_img2pixel 1.0 - initial release (tba)
 
 CHANGES:
 
+* improved all sampling modes
+* improved gaussian blur and image sharpening
+
 ----------------------------------------
 Version:                SLK_img2pixel 0.4 - palette formats! (27.01.2021)
 ----------------------------------------
