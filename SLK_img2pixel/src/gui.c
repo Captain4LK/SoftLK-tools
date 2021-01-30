@@ -995,11 +995,11 @@ void preset_load(FILE *f)
    elements.general_bar_dither->slider.value = ULK_json_get_object_integer(&root->root,"dither_amount",1);
    pixel_sample_mode = ULK_json_get_object_integer(&root->root,"sample_mode",0);
       SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
-   alpha_threshold = ULK_json_get_object_integer(&root->root,"alpha_threshold",128);
+   elements.general_bar_alpha->slider.value = ULK_json_get_object_integer(&root->root,"alpha_threshold",128);
       alpha_threshold = elements.general_bar_alpha->slider.value;
       sprintf(ctmp,"%d",alpha_threshold);
       SLK_gui_label_set_text(elements.general_label_alpha,ctmp);
-   gauss = ULK_json_get_object_integer(&root->root,"gaussian_blur",128);
+   elements.general_bar_gauss->slider.value= ULK_json_get_object_integer(&root->root,"gaussian_blur",128);
       gauss = elements.general_bar_gauss->slider.value;
       sprintf(ctmp,"%d",gauss);
       SLK_gui_label_set_text(elements.general_label_gauss,ctmp);
