@@ -339,18 +339,6 @@ static void sample_lanczos(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
          double b3 = lanczos(sy-1.0f);
          double b4 = lanczos(sy-2.0f);
          double b5 = lanczos(sy-3.0f);
-         /*double a0 = lanczos(sx+3.0f);
-         double a1 = lanczos(sx+2.0f);
-         double a2 = lanczos(sx+1.0f);
-         double a3 = lanczos(sx);
-         double a4 = lanczos(sx-1.0f);
-         double a5 = lanczos(sx-2.0f);
-         double b0 = lanczos(sy+3.0f);
-         double b1 = lanczos(sy+2.0f);
-         double b2 = lanczos(sy+1.0f);
-         double b3 = lanczos(sy);
-         double b4 = lanczos(sy-1.0f);
-         double b5 = lanczos(sy-2.0f);*/
 
          double r[6];
          double g[6];
