@@ -57,9 +57,12 @@ struct Elements
    SLK_gui_element *palette_minus_g;
    SLK_gui_element *palette_plus_b;
    SLK_gui_element *palette_minus_b;
+   SLK_gui_element *palette_space_left;
+   SLK_gui_element *palette_space_right;
    SLK_gui_element *palette_label_r;
    SLK_gui_element *palette_label_g;
    SLK_gui_element *palette_label_b;
+   SLK_gui_element *palette_label_space;
 
    //General tab
    SLK_gui_element *general_tab_scale;
@@ -146,6 +149,15 @@ static int gui_out_y = 0;
 static int pixel_scale_mode = 0;
 static int pixel_sample_mode = 0;
 static int pixel_process_mode = 1;
+static int pixel_distance_mode = 0;
+
+static const char *text_space[] = 
+{
+   "RGB",
+   "HSV",
+   "HSL",
+   "Lab",
+};
 
 static const char *text_dither[] = 
 {
@@ -258,9 +270,9 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_save_folder);
 
    //Palette tab
-   elements.palette_load = SLK_gui_button_create(158,218,164,14,"Load palette");
+   elements.palette_load = SLK_gui_button_create(158,244,164,14,"Load palette");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_load);
-   elements.palette_save = SLK_gui_button_create(158,246,164,14,"Save palette");
+   elements.palette_save = SLK_gui_button_create(158,276,164,14,"Save palette");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_save);
    elements.palette_sprite = SLK_rgb_sprite_create(279,81);
    elements.palette_palette = SLK_gui_image_create(100,15,279,81,elements.palette_sprite,(SLK_gui_rectangle){0,0,279,81});
@@ -280,6 +292,10 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_minus_b);
    elements.palette_plus_b = SLK_gui_button_create(344,173,14,14,"+");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_plus_b);
+   elements.palette_space_left = SLK_gui_button_create(160,205,14,14,"<");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_space_left);
+   elements.palette_space_right = SLK_gui_button_create(344,205,14,14,">");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_space_right);
    elements.palette_bar_r = SLK_gui_slider_create(174,109,170,14,0,255);
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_bar_r);
    elements.palette_bar_g = SLK_gui_slider_create(174,141,170,14,0,255);
@@ -292,12 +308,16 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,1,label);
    label = SLK_gui_label_create(104,176,48,12,"blue");
    SLK_gui_vtabbar_add_element(settings_tabs,1,label);
+   label = SLK_gui_label_create(104,208,48,12,"dist");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,label);
    elements.palette_label_r = SLK_gui_label_create(354,112,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_r);
    elements.palette_label_g = SLK_gui_label_create(354,144,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_g);
    elements.palette_label_b = SLK_gui_label_create(354,176,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_b);
+   elements.palette_label_space = SLK_gui_label_create(174,208,170,12,text_space[0]);
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_space);
    palette_labels();
 
    //General tab
@@ -543,9 +563,9 @@ static void gui_buttons()
       else if(elements.save_save_folder->button.state.released)
       {
          if(pixel_scale_mode==0)
-            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_scale_mode,gui_out_width,gui_out_height,palette);
+            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,gui_out_width,gui_out_height,palette);
          else
-            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_scale_mode,gui_out_swidth,gui_out_sheight,palette);
+            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,gui_out_swidth,gui_out_sheight,palette);
          elements.save_save_folder->button.state.released = 0;
       }
       else if(elements.save_load_folder->button.state.released)
@@ -607,6 +627,22 @@ static void gui_buttons()
          palette_draw();
          palette_labels();
          update = 1;
+      }
+      if(elements.palette_space_left->button.state.pressed)
+      {
+         pixel_distance_mode--;
+         if(pixel_distance_mode<0)
+            pixel_distance_mode = 3;
+         update = 1;
+         SLK_gui_label_set_text(elements.palette_label_space,text_space[pixel_distance_mode]);
+      }
+      else if(elements.palette_space_right->button.state.pressed)
+      {
+         pixel_distance_mode++;
+         if(pixel_distance_mode>3)
+            pixel_distance_mode = 0;
+         update = 1;
+         SLK_gui_label_set_text(elements.palette_label_space,text_space[pixel_distance_mode]);
       }
       break;
    case 2: //General tab
@@ -796,9 +832,9 @@ static void gui_buttons()
       if(elements.special_gif_save->button.state.released)
       {
          if(pixel_scale_mode==0)
-            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_scale_mode,gui_out_width,gui_out_height,palette);
+            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,gui_out_width,gui_out_height,palette);
          else
-            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_scale_mode,gui_out_swidth,gui_out_sheight,palette);
+            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,gui_out_swidth,gui_out_sheight,palette);
          elements.special_gif_save->button.state.released = 0;
       }
       else if(elements.special_gif_load->button.state.released)
@@ -869,7 +905,7 @@ static void update_output()
    if(sprite_in==NULL)
       return;
 
-   process_image(sprite_in,sprite_out,palette,pixel_sample_mode,pixel_process_mode);
+   process_image(sprite_in,sprite_out,palette,pixel_sample_mode,pixel_process_mode,pixel_distance_mode);
 
    SLK_layer_set_current(1);
    SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));

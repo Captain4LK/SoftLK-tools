@@ -11,6 +11,7 @@ CHANGES:
 
 * improved all sampling modes
 * improved gaussian blur and image sharpening
+* added color distance modes
 
 ----------------------------------------
 Version:                SLK_img2pixel 0.4 - palette formats! (27.01.2021)

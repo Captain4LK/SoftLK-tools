@@ -1,7 +1,7 @@
 CC = i686-w64-mingw32-gcc
 CFLAGS+=-L../../../../SoftLK-lib/lib/windows_cross/ -I ../../../../SoftLK-lib/include/ -lcomdlg32 -lole32 -lSLK -lSLK_gui -lmingw32 -lSDL2main -lSDL2 -mwindows -Wall 
 
-SLK_img2pix: main.o assets.o gui.o process.o sample.o utility_win.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
+SLK_img2pix: main.o assets.o gui.o process.o sample.o utility_win.o palette.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
 	$(CC) -o SLK_img2pix $^ $(CFLAGS)
 	mv SLK_img2pix.exe ../../../bin/
 
@@ -14,13 +14,16 @@ assets.o: ../../src/assets.c ../../src/assets.h
 gui.o: ../../src/gui.c ../../src/gui.h ../../src/assets.h ../../src/process.h ../../src/sample.h ../../src/utility.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
-process.o: ../../src/process.c ../../src/process.h ../../src/sample.h
+process.o: ../../src/process.c ../../src/process.h ../../src/sample.h ../../src/palette.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 sample.o: ../../src/sample.c ../../src/sample.h ../../src/process.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 utility_win.o: ../../src/utility_win.c ../../src/utility.h ../../src/process.h ../../../external/cute_files.h
+	$(CC) -O3 -c $< $(CFLAGS) 
+
+palette.o: ../../src/palette.c ../../src/palette.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 tinyfiledialogs.o: ../../../external/tinyfiledialogs.c

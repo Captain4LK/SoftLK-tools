@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS+=-lm -Wall
 
-SLK_img2pix: main.o assets.o gui.o process.o sample.o utility.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
+SLK_img2pix: main.o assets.o gui.o process.o sample.o utility.o palette.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
 	gcc -o SLK_img2pix $^ -lSLK -lSLK_gui -lm -lSDL2 -Wall
 	chmod +x SLK_img2pix 
 	mv SLK_img2pix ../../../bin/
@@ -15,13 +15,16 @@ assets.o: ../../src/assets.c ../../src/assets.h
 gui.o: ../../src/gui.c ../../src/gui.h ../../src/assets.h ../../src/process.h ../../src/sample.h ../../src/utility.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
-process.o: ../../src/process.c ../../src/process.h ../../src/sample.h
+process.o: ../../src/process.c ../../src/process.h ../../src/sample.h ../../src/palette.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 sample.o: ../../src/sample.c ../../src/sample.h ../../src/process.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 utility.o: ../../src/utility.c ../../src/utility.h ../../src/process.h
+	$(CC) -O3 -c $< $(CFLAGS) 
+
+palette.o: ../../src/palette.c ../../src/palette.h ../../src/process.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 tinyfiledialogs.o: ../../../external/tinyfiledialogs.c

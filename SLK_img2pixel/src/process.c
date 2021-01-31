@@ -17,6 +17,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "process.h"
+#include "palette.h"
 #include "sample.h"
 //-------------------------------------
 
@@ -65,13 +66,11 @@ int gauss = 80;
 //-------------------------------------
 
 //Function prototypes
-static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold);
-static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height);
-static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height);
+static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold, int distance_mode);
+static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
+static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
 static void floyd_apply_error(Big_pixel *d, double error_r, double error_g, double error_b, int x, int y, int width, int height);
-static SLK_Color find_closest(Big_pixel in, SLK_Palette *pal);
-static int64_t color_dist2(Big_pixel c0, SLK_Color c1);
-static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height);
+static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height, int distance_mode);
 static double gauss_calc(double x, double y, double sigma);
 static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_RGB_sprite *data);
 //-------------------------------------
@@ -79,11 +78,13 @@ static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_
 //Function implementations
 
 //"Glue" function, samples, processes and dithers the input image
-void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *palette, int sample_mode, int process_mode)
+void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *palette, int sample_mode, int process_mode, int distance_mode)
 {
    Big_pixel *tmp_data = malloc(sizeof(*tmp_data)*out->width*out->height);
    if(tmp_data==NULL)
       return;
+
+   palette_setup(palette,distance_mode);
 
    //Downsample image before processing it. 
    //Every image operation except kernel based ones (sharpness)
@@ -153,7 +154,7 @@ void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *p
    //Dithering is done after all image processing
    //If it was done at any other time, it would
    //resoult in different colors than the palette
-   dither_image(tmp_data,out,palette,process_mode,out->width,out->height);
+   dither_image(tmp_data,out,palette,process_mode,out->width,out->height,distance_mode);
 
    //Clean up
    free(tmp_data);
@@ -296,19 +297,19 @@ static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_
 }
 
 //Dithers an image to the provided palette using the specified mode
-static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height)
+static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height, int distance_mode)
 {
    switch(process_mode)
    {
    case 0: //No dithering
-      orderd_dither(d,out,palette,width,height,dither_threshold_none);
+      orderd_dither(d,out,palette,width,height,dither_threshold_none,distance_mode);
       break;
    case 1: //Ordered dithering (positiv map --> bias towards lighter colors)
       {
       int16_t dither_threshold_tmp[64] = {0};
       for(int i = 0;i<64;i++)
          dither_threshold_tmp[i] = (int)((float)dither_threshold_normal[i]*((float)dither_amount/1000.0f));
-      orderd_dither(d,out,palette,width,height,dither_threshold_tmp);
+      orderd_dither(d,out,palette,width,height,dither_threshold_tmp,distance_mode);
       }
       break;
    case 2: //Ordered dithering (positiv and negativ map --> no bias)
@@ -316,20 +317,20 @@ static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette
       int16_t dither_threshold_tmp[64] = {0};
       for(int i = 0;i<64;i++)
          dither_threshold_tmp[i] = (int)((float)(dither_threshold_normal[i]-31)*((float)dither_amount/1000.0f));
-      orderd_dither(d,out,palette,width,height,dither_threshold_tmp);
+      orderd_dither(d,out,palette,width,height,dither_threshold_tmp,distance_mode);
       }
       break;
    case 3: //Floyd-Steinberg dithering (per color component error)
-      floyd_dither(d,out,palette,width,height);
+      floyd_dither(d,out,palette,width,height,distance_mode);
       break;
    case 4: //Floyd-Steinberg dithering (distributed error)
-      floyd2_dither(d,out,palette,width,height);
+      floyd2_dither(d,out,palette,width,height,distance_mode);
       break;
    }
 }
 
 //Applies ordered dithering to the input
-static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold)
+static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold, int distance_mode)
 {
    for(int y = 0;y<height;y++)
    {
@@ -350,7 +351,7 @@ static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
          c.g = MAX(0,MIN(0xff,(in.g+dither_threshold[tresshold_id])));
          c.b = MAX(0,MIN(0xff,(in.b+dither_threshold[tresshold_id])));
          c.a = in.a;
-         out->data[y*width+x] = find_closest(c,pal);
+         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
          out->data[y*width+x].a = 255;
       }
    }
@@ -359,7 +360,7 @@ static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
 //Applies Floyd-Steinberg dithering to the input
 //This version uses per color component errror values,
 //this usually does not work well with most palettes
-static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height)
+static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
 {
    for(int y = 0;y<height;y++)
    {
@@ -372,7 +373,7 @@ static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, in
             continue;
          }
          
-         SLK_Color p = find_closest(in,pal);
+         SLK_Color p = palette_find_closest(pal,in,distance_mode);
          double error_r = (double)in.r-(double)p.r;
          double error_g = (double)in.g-(double)p.g;
          double error_b = (double)in.b-(double)p.b;
@@ -390,7 +391,7 @@ static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, in
 //Applies Floyd-Steinberg dithering to the input
 //This version uses distributed error values,
 //this results in better results for most palettes
-static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height)
+static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
 {
    for(int y = 0;y<height;y++)
    {
@@ -403,7 +404,7 @@ static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
             continue;
          }
          
-         SLK_Color p = find_closest(in,pal);
+         SLK_Color p = palette_find_closest(pal,in,distance_mode);
          double error = ((double)in.r-(double)p.r);
          error+=((double)in.g-(double)p.g);
          error+=((double)in.b-(double)p.b);
@@ -429,39 +430,5 @@ static void floyd_apply_error(Big_pixel *d, double error_r, double error_g, doub
    in->r = in->r+error_r;
    in->g = in->g+error_g;
    in->b = in->b+error_b;
-}
-
-//Caluclates the difference between two colors
-static int64_t color_dist2(Big_pixel c0, SLK_Color c1)
-{
-   int64_t diff_r = c1.r-c0.r;
-   int64_t diff_g = c1.g-c0.g;
-   int64_t diff_b = c1.b-c0.b;
-
-   return (diff_r*diff_r+diff_g*diff_g+diff_b*diff_b);
-}
-
-//Returns the color in the palette that is closest 
-//to the input color.
-//Probably would work better in a different color space
-static SLK_Color find_closest(Big_pixel in, SLK_Palette *pal)
-{
-   if(in.a==0)
-      return pal->colors[0];
-
-   int64_t min_dist = INT64_MAX;
-   int64_t min_index = 0;
-
-   for(int64_t i = 0;i<pal->used;i++)
-   {   
-      int64_t dist = color_dist2(in,pal->colors[i]);
-      if(dist<min_dist)
-      {
-         min_dist = dist;
-         min_index = i;
-      }
-   }
-
-   return pal->colors[min_index];
 }
 //-------------------------------------

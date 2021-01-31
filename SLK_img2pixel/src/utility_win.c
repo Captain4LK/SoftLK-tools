@@ -223,7 +223,7 @@ void dir_input_select()
    wcscpy(input_dir,path);
 }
 
-void dir_output_select(int dither_mode, int sample_mode, int scale_mode, int width, int height, SLK_Palette *pal)
+void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal)
 {
    const wchar_t *path = tinyfd_selectFolderDialogW(L"Select output directory",NULL);
    if(path==NULL)
@@ -258,7 +258,7 @@ void dir_output_select(int dither_mode, int sample_mode, int scale_mode, int wid
             {
                if(scale_mode==1)
                   out = SLK_rgb_sprite_create(in->width/width,in->height/height);
-               process_image(in,out,pal,sample_mode,dither_mode);
+               process_image(in,out,pal,sample_mode,dither_mode,distance_mode);
                char buffer[512];
                stbi_convert_wchar_to_utf8(buffer,512,output_dir);
                sprintf(tmp,"%s/%s.png",buffer,file.name);
@@ -290,7 +290,7 @@ void gif_input_select()
    wcscpy(input_gif,path);
 }
 
-void gif_output_select(int dither_mode, int sample_mode, int scale_mode, int width, int height, SLK_Palette *pal)
+void gif_output_select(int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal)
 {
    const wchar_t *filter_patterns[2] = {L"*.gif"};
    const wchar_t *path = tinyfd_saveFileDialogW(L"Save gif",L"",1,filter_patterns,NULL);
@@ -342,7 +342,7 @@ void gif_output_select(int dither_mode, int sample_mode, int scale_mode, int wid
          }
          lowpass_image(in,in);
          sharpen_image(in,in);
-         process_image(in,out,pal,sample_mode,dither_mode);
+         process_image(in,out,pal,sample_mode,dither_mode,distance_mode);
          for(int i = 0;i<out->width*out->height;i++)
             gif_out->frame[i] = find_palette(out->data[i],pal);
          ge_add_frame(gif_out,gif->gce.delay);
