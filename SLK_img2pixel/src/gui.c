@@ -154,9 +154,9 @@ static int pixel_distance_mode = 0;
 static const char *text_space[] = 
 {
    "RGB",
-   "HSV",
-   "HSL",
-   "Lab",
+   "CIE76",
+   "CIE94",
+   "CIEDE2000",
 };
 
 static const char *text_dither[] = 

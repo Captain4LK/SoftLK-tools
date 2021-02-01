@@ -40,22 +40,35 @@ typedef struct
    double s;
    double v;
 }Color_hsv;
+
+typedef struct
+{
+   double h;
+   double s;
+   double l;
+}Color_hsl;
 //-------------------------------------
 
 //Variables
 static SLK_Color palette_dist0[256];
-static Color_hsv palette_dist1[256];
-static Color_lab palette_dist3[256];
+static Color_lab palette_dist1[256]; //and dist2, dist3
 //-------------------------------------
 
 //Function prototypes
 static Color_lab color_to_lab(SLK_Color c);
-static Color_hsv color_to_hsv(SLK_Color c);
+//static Color_hsv color_to_hsv(SLK_Color c);
+//static Color_hsl color_to_hsl(SLK_Color c);
 static SLK_Color palette_find_closest_dist0(SLK_Palette *pal, Big_pixel c);
+//static SLK_Color palette_find_closest_dist1(SLK_Palette *pal, Big_pixel c);
+//static SLK_Color palette_find_closest_dist2(SLK_Palette *pal, Big_pixel c);
 static SLK_Color palette_find_closest_dist1(SLK_Palette *pal, Big_pixel c);
+static SLK_Color palette_find_closest_dist2(SLK_Palette *pal, Big_pixel c);
 static SLK_Color palette_find_closest_dist3(SLK_Palette *pal, Big_pixel c);
 static int64_t dist0_color_dist2(Big_pixel c0, SLK_Color c1);
-static double dist1_color_dist2(Color_hsv c0, Color_hsv c1);
+//static double dist1_color_dist2(Color_hsv c0, Color_hsv c1);
+//static double dist2_color_dist2(Color_hsl c0, Color_hsl c1);
+static double dist1_color_dist2(Color_lab c0, Color_lab c1);
+static double dist2_color_dist2(Color_lab c0, Color_lab c1);
 static double dist3_color_dist2(Color_lab c0, Color_lab c1);
 //-------------------------------------
 
@@ -69,13 +82,19 @@ void palette_setup(SLK_Palette *pal, int distance_mode)
       for(int i = 0;i<pal->used;i++)
          palette_dist0[i] = pal->colors[i];
       break;
-   case 1: //HSV
+   /*case 1: //HSV
       for(int i = 0;i<pal->used;i++)
          palette_dist1[i] = color_to_hsv(pal->colors[i]);
       break;
+   case 2: //HSL
+      for(int i = 0;i<pal->used;i++)
+         palette_dist2[i] = color_to_hsl(pal->colors[i]);
+      break;*/
+   case 1: //Lab
+   case 2: //Lab
    case 3: //Lab
       for(int i = 0;i<pal->used;i++)
-         palette_dist3[i] = color_to_lab(pal->colors[i]);
+         palette_dist1[i] = color_to_lab(pal->colors[i]);
       break;
    }
 }
@@ -89,10 +108,19 @@ SLK_Color palette_find_closest(SLK_Palette *pal, Big_pixel c, int distance_mode)
    case 0: //RGB
       out = palette_find_closest_dist0(pal,c);
       break;
-   case 1: //HSV
+   /*case 1: //HSV
       out = palette_find_closest_dist1(pal,c);
       break;
-   case 3: //Lab
+   case 2: //HSL
+      out = palette_find_closest_dist2(pal,c);
+      break;*/
+   case 1: //CIE76
+      out = palette_find_closest_dist1(pal,c);
+      break;
+   case 2: //CIE94
+      out = palette_find_closest_dist2(pal,c);
+      break;
+   case 3: //CIEDE200
       out = palette_find_closest_dist3(pal,c);
       break;
    }
@@ -100,13 +128,16 @@ SLK_Color palette_find_closest(SLK_Palette *pal, Big_pixel c, int distance_mode)
    return out;
 }
 
-static Color_hsv color_to_hsv(SLK_Color c)
+/*static Color_hsv color_to_hsv(SLK_Color c)
 {
    Color_hsv h;
    double min,max,delta;
+   double r = (double)c.r/255.0f;
+   double g = (double)c.g/255.0f;
+   double b = (double)c.b/255.0f;
 
-   min = MIN(c.r,MIN(c.g,c.b));
-   max = MAX(c.r,MAX(c.g,c.b));
+   min = MIN(r,MIN(g,b));
+   max = MAX(r,MAX(g,b));
 
    h.v = max;
    delta = max-min;
@@ -118,7 +149,7 @@ static Color_hsv color_to_hsv(SLK_Color c)
    }
    if(max>0.0f)
    {
-      h.s = delta/max;
+      h.s = 1.0f-(min/max);
    }
    else
    {
@@ -127,18 +158,60 @@ static Color_hsv color_to_hsv(SLK_Color c)
       return h;
    }
 
-   if(c.r>=max)
-      h.h = (double)(c.g-c.b)/delta;
-   else if(c.g>=max)
-      h.h = 2.0f+(double)(c.b-c.r)/delta;
+   if(r>=max&&g>=b)
+      h.h = 60.0f*(g-b)/delta;
+   else if(r>=max&&g<b)
+      h.h = 60.0f*(g-b)/delta+360.0f;
+   else if(g>=max)
+      h.h = 60.0f*(b-r)/delta+120.0f;
    else
-      h.h = 4.0f+(double)(c.r-c.g)/delta;
-   h.h*=60.f;
-   if(h.h<0.0f)
-      h.h+=360.0f;
+      h.h = 60.0f*(r-g)/delta+240.0f;
    
    return h;
 }
+
+static Color_hsl color_to_hsl(SLK_Color c)
+{
+   Color_hsl h;
+   double min,max,delta;
+   double r = (double)c.r/255.0f;
+   double g = (double)c.g/255.0f;
+   double b = (double)c.b/255.0f;
+
+   min = MIN(r,MIN(g,b));
+   max = MAX(r,MAX(g,b));
+
+   h.l = (max+min)/2.0f;
+   delta = max-min;
+   if(delta<0.00001f)
+   {
+      h.s = 0.0f;
+      h.h = 0.0f;
+      return h;
+   }
+   if(max>0.0f)
+   {
+      h.s = 1.0f-(min/max);
+   }
+   else
+   {
+      h.s = 0.0f;
+      h.h = 0.0f;
+      return h;
+   }
+
+   if(r>=max&&g>=b)
+      h.h = 60.0f*(g-b)/delta;
+   else if(r>=max&&g<b)
+      h.h = 60.0f*(g-b)/delta+360.0f;
+   else if(g>=max)
+      h.h = 60.0f*(b-r)/delta+120.0f;
+   else
+      h.h = 60.0f*(r-g)/delta+240.0f;
+   
+   return h;
+
+}*/
 
 static Color_lab color_to_lab(SLK_Color c)
 {
@@ -217,7 +290,7 @@ static SLK_Color palette_find_closest_dist0(SLK_Palette *pal, Big_pixel c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_dist1(SLK_Palette *pal, Big_pixel c)
+/*static SLK_Color palette_find_closest_dist1(SLK_Palette *pal, Big_pixel c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -243,6 +316,84 @@ static SLK_Color palette_find_closest_dist1(SLK_Palette *pal, Big_pixel c)
    return pal->colors[min_index];
 }
 
+static SLK_Color palette_find_closest_dist2(SLK_Palette *pal, Big_pixel c)
+{
+   if(c.a==0)
+      return pal->colors[0];
+
+   double min_dist = 10000000000000.0f;
+   int min_index = 0;
+   SLK_Color cin;
+   cin.r = MAX(0,MIN(0xff,c.r));
+   cin.g = MAX(0,MIN(0xff,c.g));
+   cin.b = MAX(0,MIN(0xff,c.b));
+   Color_hsl in = color_to_hsl(cin);
+
+   for(int i = 0;i<pal->used;i++)
+   {   
+      double dist = dist2_color_dist2(in,palette_dist2[i]);
+      if(dist<min_dist)
+      {
+         min_dist = dist;
+         min_index = i;
+      }
+   }
+
+   return pal->colors[min_index];
+}*/
+
+static SLK_Color palette_find_closest_dist1(SLK_Palette *pal, Big_pixel c)
+{
+   if(c.a==0)
+      return pal->colors[0];
+
+   double min_dist = 10000000000000.0f;
+   int min_index = 0;
+   SLK_Color cin;
+   cin.r = MAX(0,MIN(0xff,c.r));
+   cin.g = MAX(0,MIN(0xff,c.g));
+   cin.b = MAX(0,MIN(0xff,c.b));
+   Color_lab in = color_to_lab(cin);
+
+   for(int i = 0;i<pal->used;i++)
+   {   
+      double dist = dist1_color_dist2(in,palette_dist1[i]);
+      if(dist<min_dist)
+      {
+         min_dist = dist;
+         min_index = i;
+      }
+   }
+
+   return pal->colors[min_index];
+}
+
+static SLK_Color palette_find_closest_dist2(SLK_Palette *pal, Big_pixel c)
+{
+   if(c.a==0)
+      return pal->colors[0];
+
+   double min_dist = 10000000000000.0f;
+   int min_index = 0;
+   SLK_Color cin;
+   cin.r = MAX(0,MIN(0xff,c.r));
+   cin.g = MAX(0,MIN(0xff,c.g));
+   cin.b = MAX(0,MIN(0xff,c.b));
+   Color_lab in = color_to_lab(cin);
+
+   for(int i = 0;i<pal->used;i++)
+   {   
+      double dist = dist2_color_dist2(in,palette_dist1[i]);
+      if(dist<min_dist)
+      {
+         min_dist = dist;
+         min_index = i;
+      }
+   }
+
+   return pal->colors[min_index];
+}
+
 static SLK_Color palette_find_closest_dist3(SLK_Palette *pal, Big_pixel c)
 {
    if(c.a==0)
@@ -258,7 +409,7 @@ static SLK_Color palette_find_closest_dist3(SLK_Palette *pal, Big_pixel c)
 
    for(int i = 0;i<pal->used;i++)
    {   
-      double dist = dist3_color_dist2(in,palette_dist3[i]);
+      double dist = dist3_color_dist2(in,palette_dist1[i]);
       if(dist<min_dist)
       {
          min_dist = dist;
@@ -278,16 +429,65 @@ static int64_t dist0_color_dist2(Big_pixel c0, SLK_Color c1)
    return (diff_r*diff_r+diff_g*diff_g+diff_b*diff_b);
 }
 
-static double dist1_color_dist2(Color_hsv c0, Color_hsv c1)
+/*static double dist1_color_dist2(Color_hsv c0, Color_hsv c1)
 {
-   double diff_h = MIN(fabs(c1.h-c0.h),360.0f-fabs(c1.h-c0.h))/180.0f;
+   //double diff_h = MIN(fabs(c1.h-c0.h),360.0f-fabs(c1.h-c0.h))/180.0f;
+
+   //c0.h*=0.017453293f;
+   //c1.h*=0.017453293f;
+   double diff_h = fabs(c1.h-c0.h)/360.0f;
+   if(diff_h>0.5f)
+      diff_h = 1.0f-diff_h;
+   diff_h*=2.0f;
    double diff_s = c1.s-c0.s;
-   double diff_v = (c1.v-c0.v)*(1.0f/255.0f);
+   double diff_v = c1.v-c0.v;
 
    return (diff_h*diff_h+diff_s*diff_s+diff_v*diff_v);
+   
+   //c0.h*=0.017453293f;
+   //c1.h*=0.017453293f;
+   //c0.v/=255.0f;
+   //c1.v/=255.0f;
+   //return (sin(c0.h)*c0.s*c0.v-sin(c1.h)*c1.s*c1.v)*(sin(c0.h)*c0.s*c0.v-sin(c1.h)*c1.s*c1.v)+(cos(c0.h)*c0.s*c0.v-cos(c1.h)*c1.s*c1.v)*(cos(c0.h)*c0.s*c0.v-cos(c1.h)*c1.s*c1.v)+(c0.v-c1.v)*(c0.v-c1.v);
 }
 
-static double dist3_color_dist2(Color_lab c0, Color_lab c1)
+static double dist2_color_dist2(Color_hsl c0, Color_hsl c1)
+{
+   double diff_h = MIN(fabs(c1.h-c0.h),360.0f-fabs(c1.h-c0.h))/180.0f;
+
+   //c0.h*=0.017453293f;
+   //c1.h*=0.017453293f;
+   //double diff_h = fabs(c1.h-c0.h)/360.0f;
+   //if(diff_h>0.5f)
+      //diff_h = 1.0f-diff_h;
+   diff_h*=2.0f;
+   double diff_s = c1.s-c0.s;
+   double diff_l = c1.l-c0.l;
+
+   return (diff_h*diff_h+diff_s*diff_s+diff_l*diff_l);
+   
+   if(c0.h>180)
+      c0.h = 360-c0.h;
+   if(c1.h>180)
+      c1.h = 360-c1.h;
+   c0.h*=0.017453293f;
+   c1.h*=0.017453293f;
+   c0.l/=255.0f;
+   c1.l/=255.0f;
+   return (sin(c0.h)*c0.s*c0.l-sin(c1.h)*c1.s*c1.l)*(sin(c0.h)*c0.s*c0.l-sin(c1.h)*c1.s*c1.l)+(cos(c0.h)*c0.s*c0.l-cos(c1.h)*c1.s*c1.l)*(cos(c0.h)*c0.s*c0.l-cos(c1.h)*c1.s*c1.l)+(c0.l-c1.l)*(c0.l-c1.l);
+
+}*/
+
+static double dist1_color_dist2(Color_lab c0, Color_lab c1)
+{
+   double diff_l = c1.l-c0.l;
+   double diff_a = c1.a-c0.a;
+   double diff_b = c1.b-c0.b;
+
+   return diff_l*diff_l+diff_a*diff_a+diff_b*diff_b;
+}
+
+static double dist2_color_dist2(Color_lab c0, Color_lab c1)
 {
    double L = c0.l-c1.l;
    double C1 = sqrt(c0.a*c0.a+c0.b*c0.b);
@@ -299,5 +499,30 @@ static double dist3_color_dist2(Color_lab c0, Color_lab c1)
    double r3 = H/(1.0f+0.015f*C1);
 
    return r1*r1+r2*r2+r3*r3;
+}
+
+static double dist3_color_dist2(Color_lab c0, Color_lab c1)
+{
+   double C1 = sqrt(c0.a*c0.a+c0.b*c0.b);
+   double C2 = sqrt(c1.a*c1.a+c1.b*c1.b);
+   double L = c1.l-c0.l;
+   double L_ = (c0.l+c1.l)/2.0f;
+   double C_ = (C1+C2)/2.0f;
+   double a1 = c0.a+(c0.a/2.0f)*(1.0f-sqrt((C_*C_*C_*C_*C_*C_*C_)/(C_*C_*C_*C_*C_*C_*C_+6103515625)));
+   double a2 = c1.a+(c1.a/2.0f)*(1.0f-sqrt((C_*C_*C_*C_*C_*C_*C_)/(C_*C_*C_*C_*C_*C_*C_+6103515625)));
+   double Cs1 = sqrt(a1*a1+c0.b*c0.b);
+   double Cs2 = sqrt(a2*a2+c1.b*c1.b);
+   double Cs_ = (Cs1+Cs2)/2.0f;
+   double Cs = Cs2-Cs1;
+   double h1 = fmod(atan2(c0.b,a1)*57.29578f,360.0f);
+   double h2 = fmod(atan2(c1.b,a2)*57.29578f,360.0f);
+
+   //double C = C1-C2;
+   //double H = sqrt((c0.a-c1.a)*(c0.a-c1.a)+(c0.b-c1.b)*(c0.b-c1.b)-C*C);
+   //double r1 = L;
+   //double r2 = C/(1.0f+0.045f*C1);
+   //double r3 = H/(1.0f+0.015f*C1);
+
+   //return r1*r1+r2*r2+r3*r3;
 }
 //-------------------------------------
