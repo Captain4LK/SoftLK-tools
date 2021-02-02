@@ -19,11 +19,19 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //#defines
+#define PI 3.14159265358979323846
+
 #define MIN(a,b) \
    ((a)<(b)?(a):(b))
  
 #define MAX(a,b) \
    ((a)>(b)?(a):(b))
+
+#define DEG2RAD(a) \
+   ((a)*PI/180.0f)
+
+#define RAD2DEG(a) \
+   ((a)*180.0f/PI)
 //-------------------------------------
 
 //Typedefs
@@ -505,24 +513,65 @@ static double dist3_color_dist2(Color_lab c0, Color_lab c1)
 {
    double C1 = sqrt(c0.a*c0.a+c0.b*c0.b);
    double C2 = sqrt(c1.a*c1.a+c1.b*c1.b);
-   double L = c1.l-c0.l;
-   double L_ = (c0.l+c1.l)/2.0f;
    double C_ = (C1+C2)/2.0f;
-   double a1 = c0.a+(c0.a/2.0f)*(1.0f-sqrt((C_*C_*C_*C_*C_*C_*C_)/(C_*C_*C_*C_*C_*C_*C_+6103515625)));
-   double a2 = c1.a+(c1.a/2.0f)*(1.0f-sqrt((C_*C_*C_*C_*C_*C_*C_)/(C_*C_*C_*C_*C_*C_*C_+6103515625)));
+
+   double C_p2 = pow(C_,7.0f);
+   double v = 0.5f*(1.0f-sqrt(C_p2/(C_p2+6103515625.0f)));
+   double a1 = (1.0f+v)*c0.a;
+   double a2 = (1.0f+v)*c1.a;
+
    double Cs1 = sqrt(a1*a1+c0.b*c0.b);
    double Cs2 = sqrt(a2*a2+c1.b*c1.b);
-   double Cs_ = (Cs1+Cs2)/2.0f;
+
+   double h1 = 0.0f;
+   if(c0.b!=0&&a1!=0)
+   {
+      h1 = atan2(c0.b,a1);
+      if(h1<0)
+         h1+=2.0f*PI;
+   }
+   double h2 = 0.0f;
+   if(c1.b!=0&&a2!=0)
+   {
+      h2 = atan2(c1.b,a2);
+      if(h2<0)
+         h2+=2.0f*PI;
+   }
+
+   double L = c1.l-c0.l;
    double Cs = Cs2-Cs1;
-   double h1 = fmod(atan2(c0.b,a1)*57.29578f,360.0f);
-   double h2 = fmod(atan2(c1.b,a2)*57.29578f,360.0f);
+   double h = 0.0f;
+   if(Cs1*Cs2!=0.0f)
+   {
+      h = h2-h1;
+      if(h<-PI)
+         h+=2*PI;
+      else if(h>PI)
+         h-=2*PI;
+   }
+   double H = 2.0f*sqrt(Cs1*Cs2)*sin(h/2.0f);
 
-   //double C = C1-C2;
-   //double H = sqrt((c0.a-c1.a)*(c0.a-c1.a)+(c0.b-c1.b)*(c0.b-c1.b)-C*C);
-   //double r1 = L;
-   //double r2 = C/(1.0f+0.045f*C1);
-   //double r3 = H/(1.0f+0.015f*C1);
+   double L_ = (c0.l+c1.l)/2.0f;
+   double Cs_ = (Cs1+Cs2)/2.0f;
+   double H_ = h1+h2;
+   if(Cs1*Cs2!=0.0f)
+   {
+      if(fabs(h1-h2)<=PI)
+         H_ = (h1+h2)/2.0f;
+      else if(h1+h2<2*PI)
+         H_ = (h1+h2+2*PI)/2.0f;
+      else
+         H_ = (h1+h2-2*PI)/2.0f;
+   }
 
-   //return r1*r1+r2*r2+r3*r3;
+   double T = 1.0f-0.17f*cos(H_-DEG2RAD(30.0f))+0.24f*cos(2.0f*H_)+0.32f*cos(3.0f*H_+6.0f+DEG2RAD(6.0f))-0.2f*cos(4.0f*H_-DEG2RAD(63.0f));
+   v = DEG2RAD(30.0f)*exp(-1.0f*((H_-DEG2RAD(270.0f))/DEG2RAD(25.0f))*((H_-DEG2RAD(270.0f))/DEG2RAD(25.0f)));
+   double RC = 2.0f*sqrt((Cs_*Cs_*Cs_*Cs_*Cs_*Cs_*Cs_)/(Cs_*Cs_*Cs_*Cs_*Cs_*Cs_*Cs_+6103515625.0f));
+   double RT = -1.0f*sin(2.0f*v)*RC;
+   double SL = 1.0f+(0.015f*(L_-50.0f)*(L_-50.0f))/sqrt(20.0f+(L_-50.0f)*(L_-50.0f));
+   double SC = 1.0f+0.045f*Cs_;
+   double SH = 1.0f+0.015f*Cs_*T;
+
+   return (L/SL)*(L/SL)+(Cs/SC)*(Cs/SC)+(H/SH)*(H/SH)+RT*(Cs/SC)*(H_/SH);
 }
 //-------------------------------------
