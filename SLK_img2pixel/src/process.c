@@ -35,15 +35,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Variables
 static const int16_t dither_threshold_normal[64] = 
 {
-   //Old dither patterns
-   /*0 ,48,12,60, 3,51,15,63,
-   32,16,44,28,35,19,47,31,
-   8 ,56, 4,52,11,59, 7,55,
-   40,24,36,20,43,27,39,23, 
-   2 ,50,14,62, 1,49,13,61, 
-   34,18,46,30,33,17,45,29, 
-   10,58, 6,54, 9,57, 5,53, 
-   42,26,38,22,41,25,37,21*/
    0,32,8,40,2,34,10,42,
    48,16,56,24,50,18,58,26,
    12,44,4,36,14,46,6,38,
@@ -87,7 +78,7 @@ void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *p
    palette_setup(palette,distance_mode);
 
    //Downsample image before processing it. 
-   //Every image operation except kernel based ones (sharpness)
+   //Every image operation except kernel based ones (sharpness, gaussian blur)
    //is done after downsampling.
    sample_image(in,tmp_data,sample_mode,out->width,out->height);
 

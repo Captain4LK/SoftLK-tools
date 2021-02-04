@@ -967,6 +967,7 @@ void preset_save(FILE *f)
       ULK_json_array_add_integer(&array,palette->colors[i].n);
    ULK_json_object_add_object(&object,"colors",array);
    ULK_json_object_add_object(&root->root,"palette",object);
+   ULK_json_object_add_integer(&root->root,"distance_mode",pixel_distance_mode);
    ULK_json_object_add_integer(&root->root,"width",gui_out_width);
    ULK_json_object_add_integer(&root->root,"height",gui_out_height);
    ULK_json_object_add_integer(&root->root,"swidth",gui_out_swidth);
@@ -1007,6 +1008,8 @@ void preset_load(FILE *f)
    elements.palette_bar_b->slider.value = palette->colors[palette_selected].b;
    palette_draw();
    palette_labels();
+   pixel_distance_mode = ULK_json_get_object_integer(&root->root,"distance_mode",0);
+      SLK_gui_label_set_text(elements.palette_label_space,text_space[pixel_distance_mode]);
    elements.general_bar_width->slider.value = ULK_json_get_object_integer(&root->root,"width",1);
       gui_out_width = elements.general_bar_width->slider.value;
       char ctmp[16];
@@ -1027,8 +1030,9 @@ void preset_load(FILE *f)
    elements.general_tab_scale->tabbar.current_tab = ULK_json_get_object_integer(&root->root,"scale_mode",1);
       pixel_scale_mode = elements.general_tab_scale->tabbar.current_tab;
    pixel_process_mode = ULK_json_get_object_integer(&root->root,"dither_mode",0);
-   SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);
+      SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);
    elements.general_bar_dither->slider.value = ULK_json_get_object_integer(&root->root,"dither_amount",1);
+      dither_amount = elements.general_bar_dither->slider.value;
    pixel_sample_mode = ULK_json_get_object_integer(&root->root,"sample_mode",0);
       SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
    elements.general_bar_alpha->slider.value = ULK_json_get_object_integer(&root->root,"alpha_threshold",128);
