@@ -157,6 +157,10 @@ static const char *text_space[] =
    "CIE76",
    "CIE94",
    "CIEDE2000",
+   "XYZ",
+   "YCC",
+   "YIQ",
+   "YUV",
 };
 
 static const char *text_dither[] = 
@@ -632,14 +636,14 @@ static void gui_buttons()
       {
          pixel_distance_mode--;
          if(pixel_distance_mode<0)
-            pixel_distance_mode = 3;
+            pixel_distance_mode = 7;
          update = 1;
          SLK_gui_label_set_text(elements.palette_label_space,text_space[pixel_distance_mode]);
       }
       else if(elements.palette_space_right->button.state.pressed)
       {
          pixel_distance_mode++;
-         if(pixel_distance_mode>3)
+         if(pixel_distance_mode>7)
             pixel_distance_mode = 0;
          update = 1;
          SLK_gui_label_set_text(elements.palette_label_space,text_space[pixel_distance_mode]);
