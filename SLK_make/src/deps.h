@@ -12,6 +12,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _DEPS_H_
 
-Name_table *get_deps(char *filename,Name_table *includes);
+Name_table *get_deps(char *filename, Name_table * includes);
 
 #endif

@@ -18,18 +18,18 @@ typedef struct
    int used;
    int entries;
    int grow;
-}Name_table;
+} Name_table;
 
 typedef Name_table list;
 
-int         table_size(const Name_table *t);
-char       *table_element(Name_table *t, int index);
+int table_size(const Name_table * t);
+char *table_element(Name_table * t, int index);
 Name_table *table_create(int entries, int grow);
-int         table_add(Name_table *t, char *item, int ref);
-int         table_add_table(Name_table *t, const Name_table *tab, int ref);
-void        table_destroy(Name_table *t);
-void        table_remove(Name_table *t, int ref);
-void        table_clear(Name_table *t);
-int         table_find(Name_table *t, char *item);
+int table_add(Name_table * t, char *item, int ref);
+int table_add_table(Name_table * t, const Name_table * tab, int ref);
+void table_destroy(Name_table * t);
+void table_remove(Name_table * t, int ref);
+void table_clear(Name_table * t);
+int table_find(Name_table * t, char *item);
 
 #endif

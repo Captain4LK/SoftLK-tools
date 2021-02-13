@@ -12,6 +12,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _STRINGS_H_
 
-char *form(char *form, ... );
+char *form(char *form, ...);
 
 #endif

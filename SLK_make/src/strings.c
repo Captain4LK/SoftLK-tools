@@ -33,15 +33,16 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function implementations
 
-char *form(char *form, ... )
+char *form(char *form, ...)
 {
    va_list args;
    char buf[1024];
 
-   va_start(args,form);
-   vsprintf(buf,form,args);
+   va_start(args, form);
+   vsprintf(buf, form, args);
    va_end(args);
 
    return strdup(buf);
 }
+
 //-------------------------------------

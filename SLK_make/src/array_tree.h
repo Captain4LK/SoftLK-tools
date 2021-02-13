@@ -8,18 +8,25 @@ To the extent possible under law, the author(s) have dedicated all copyright and
 You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
 */
 
-#ifndef _ERROR_H_
+#ifndef _ARRAY_TREE_H_
 
-#define _ERROR_H_
+#define _ARRAY_TREE_H_
 
-extern int line_on;
-extern char *file_on;
-extern char *file_contents;
-extern int mk_debug_on;
+typedef struct
+{
+   int left, right;
+   unsigned long checksum;
+   unsigned long mod_time;
+} mk_file_mod_node;
 
-void mk_error(char *format, ...);
-void mk_debug(char *format, ...);
+typedef struct
+{
+   int used;
+   mk_file_mod_node nodes[5000];
+} Array_tree;
 
-#define assert(cond,mess) if (!(cond)) mk_error("%s:%d - %s\n",__FILE__,__LINE__,mess)
+void array_tree_add(Array_tree * t, mk_file_mod_node n);
+int array_tree_find(Array_tree * t, mk_file_mod_node n);
+mk_file_mod_node *array_tree_get(Array_tree * t, int n);
 
 #endif

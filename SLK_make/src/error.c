@@ -37,27 +37,27 @@ char *file_contents = 0;
 
 //Function implementations
 
-void mk_error(char *format,...)
+void mk_error(char *format, ...)
 {
    if(file_on)
       fprintf(stderr, "%s:%d: ", file_on, line_on);
 
    va_list args;
 
-   va_start(args,format);
+   va_start(args, format);
    vfprintf(stderr, format, args);
    va_end(args);
 
    exit(1);
 }
 
-void mk_debug(char *format,...)
+void mk_debug(char *format, ...)
 {
    if(mk_debug_on)
    {
       va_list args;
 
-      va_start(args,format);
+      va_start(args, format);
       vfprintf(stderr, format, args);
       va_end(args);
    }
