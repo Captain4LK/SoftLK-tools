@@ -60,6 +60,9 @@ list *failed_targets;
 list *files_to_clean;
 list *files_to_backup;
 Array_tree mod_tree;
+
+const char *compiler = "g++";
+const char *extension = ".cc";
 //-------------------------------------
 
 //Function prototypes
@@ -251,6 +254,11 @@ void mk_get(mk_options_struct * mk, int argc, char **argv)
          mk->verbose = 0;
          mk->quiet = 0;
       }
+      else if(strcmp(argv[i], "-c") == 0)
+      {
+         extension = ".c";
+         compiler = "gcc";
+      }
       else if(strcmp(argv[i], "-extract") == 0)
          extract(argv[i + 1]);
       else if(strcmp(argv[i], "-q") == 0)
@@ -299,8 +307,8 @@ void mk_get(mk_options_struct * mk, int argc, char **argv)
                 "  -no_compile/-nc runs through the make process without compiling/linking\n"
                 "  -static  don't make libraries shared (unix only)\n"
                 "  -no_syms don't include any symbol information in the object files or exes\n"
-                "  -extract filename   extracts a backup into files (use i4_make backup)\n",
-                argv[0], argv[0]);
+                "  -extract filename   extracts a backup into files (use i4_make backup)\n"
+                "  -c c mode\n", argv[0], argv[0]);
          exit(0);
       }
       else
@@ -502,6 +510,8 @@ char *make_out_name(char *filename, int ext_type, int use_full_path,
          else if(filename[l - 3] == '.' && filename[l - 2] == 'c'
                  && filename[l - 1] == 'c')
             ext_type = EXT_O;
+         else if(filename[l - 2] == '.' && filename[l - 1] == 'c')
+            ext_type = EXT_O;
          else
          {
             printf("make_out_name : don't know what extension to use for %s",
@@ -625,7 +635,7 @@ char *make_out_name(char *filename, int ext_type, int use_full_path,
          strcpy(d, ".dll");
          break;
       case EXT_RAM_FILE:
-         strcpy(d, ".cc");
+         strcpy(d, extension);
          break;
       }
    }
@@ -656,7 +666,7 @@ char *make_out_name(char *filename, int ext_type, int use_full_path,
          strcpy(d, ".dll");
          break;
       case EXT_RAM_FILE:
-         strcpy(d, ".cc");
+         strcpy(d, extension);
          break;
       case EXT_RC_RES:
          strcpy(d, ".res");
@@ -785,7 +795,7 @@ int build_file(char *filename,
 
    if(last_dot)
    {
-      if(strcmp(last_dot, ".cc") == 0)
+      if(strcmp(last_dot, extension) == 0)
       {
          char *source_name = get_abs_path(filename, 0);
 
@@ -860,7 +870,7 @@ int build_file(char *filename,
 
                      char *sym_string = mk_options.no_syms ? "" : "-g ";
 
-                     sprintf(cmd, "g++ %s%s%s%s-c %s -o %s", sym_string, current_build_type == BUILD_DEBUG ? "-DDEBUG " : current_build_type == BUILD_OPT ? "-O2 " : "-O2 -pg ",        // profile version
+                     sprintf(cmd, "%s %s%s%s%s-c %s -o %s", compiler, sym_string, current_build_type == BUILD_DEBUG ? "-DDEBUG " : current_build_type == BUILD_OPT ? "-O2 " : "-O2 -pg ",       // profile version
                              def, inc, source_name, outname);
                   }
                   else
@@ -1026,7 +1036,8 @@ int build_lib(int object_files_have_changed,
          shared_string[0] = 0;
 
       if(dll || mk_options.unix_libs_are_shared)
-         sprintf(tmp, "g++ %s%s -g -o %s ", sym_string, shared_string, lname);
+         sprintf(tmp, "%s %s%s -g -o %s ", compiler, sym_string,
+                 shared_string, lname);
       else
          sprintf(tmp, "ar rucs %s ", lname);
 
@@ -1146,9 +1157,8 @@ int build_exe(int deps_have_changed, mk_target_struct * target)
    char tmp[50000];
    int i;
 
-   char *ename =
-      make_out_name(get_abs_path(target->target, 0), EXT_EXE, 0,
-                    target->outdir);
+   char *ename = make_out_name(get_abs_path(target->target, 0), EXT_EXE, 0,
+                               target->outdir);
    int etime = get_mod_time(ename, 0);
    if(!etime)
       deps_have_changed = 1;
@@ -1159,8 +1169,8 @@ int build_exe(int deps_have_changed, mk_target_struct * target)
       char *sym_str = mk_options.no_syms ? "" : "-g ";
 
 
-      sprintf(tmp, "g++ -rdynamic %s%s-o %s ",
-              sym_str,
+      sprintf(tmp, "%s -rdynamic %s%s-o %s ",
+              compiler, sym_str,
               current_build_type == BUILD_DEBUG ? "" :
               current_build_type == BUILD_OPT ? "-O2 " : "-O2 -pg ", ename);
    }
@@ -1493,7 +1503,7 @@ int build_ram_file(char *name, char *out_name, mk_target_struct * top_target)
    int m1 = get_mod_time(cc_name, 0);
    if(!m1 || m1 < get_mod_time(data_name, 0))
    {
-      show_command(form("Generating ram file .cc %s", cc_name), 0);
+      show_command(form("Generating ram file %s %s", extension, cc_name), 0);
 
       FILE *fp = fopen(data_name, "rb");
       if(!fp)
