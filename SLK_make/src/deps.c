@@ -15,8 +15,11 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#define CUTE_PATH_IMPLEMENTATION
+#include "../../external/cute_path.h"
 #include "table.h"
 #include "deps.h"
+#include "SLK_make.h"
 //-------------------------------------
 
 //#defines
@@ -68,7 +71,7 @@ Name_table *get_deps(char *filename, Name_table * includes)
    int x = table_add(src_files, strdup(filename), -1);
    table_add(src_deps[x], strdup(filename), -1);
 
-   char *p = mem, name2[100], *s;
+   char *p = mem, name2[100], *s, name3[255];
 
    while(*p)
    {
@@ -95,8 +98,11 @@ Name_table *get_deps(char *filename, Name_table * includes)
                *p = 0;
                p++;
             }
-
-            Name_table *ret = get_deps(s, includes);
+            
+            path_pop(filename,name3,NULL);
+            strcat(name3,"/");
+            strcat(name3,s);
+            Name_table *ret = get_deps(name3, includes);
 
             for(int j = 0; !ret && j < table_size(includes); j++)
             {

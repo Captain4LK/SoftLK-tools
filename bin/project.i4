@@ -1,0 +1,17 @@
+[executable SLK_img2pixel]
+   "../SLK_img2pixel/src/main.c"
+   "../SLK_img2pixel/src/gui.c"
+   "../SLK_img2pixel/src/assets.c"
+   "../SLK_img2pixel/src/palette.c"
+   "../SLK_img2pixel/src/process.c"
+   "../SLK_img2pixel/src/sample.c"
+   "../SLK_img2pixel/src/utility.c"
+   "../external/UtilityLK/src/ULK_json.c"
+   "../external/tinyfiledialogs.c"
+   "../external/gifenc.c"
+   "../external/gifdec.c"
+
+   linux add_to_executable "-lm"
+   linux add_to_executable "-lSDL2"
+   linux add_to_executable "-lSLK"
+   linux add_to_executable "-lSLK_gui"

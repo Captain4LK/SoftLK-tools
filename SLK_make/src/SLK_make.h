@@ -81,6 +81,7 @@ typedef struct
 int mk_is_unix(mk_options_struct mk);
 void mk_get(mk_options_struct * mk, int argc, char **argv);
 void mk_reset(mk_target_struct * mk);
+char *get_abs_path(char *filename, int force);
 
 extern mk_options_struct mk_options;
 

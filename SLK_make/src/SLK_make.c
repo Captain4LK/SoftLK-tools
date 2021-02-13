@@ -343,8 +343,6 @@ char *buf_alloc(char *p, int len)
    return buf + boff - len;
 }
 
-char *get_abs_path(char *filename, int force);
-
 void add_to_backup(char *fname)
 {
    char *full_name = get_abs_path(fname, 1);    // force a full name
@@ -870,7 +868,7 @@ int build_file(char *filename,
 
                      char *sym_string = mk_options.no_syms ? "" : "-g ";
 
-                     sprintf(cmd, "%s %s%s%s%s-c %s -o %s", compiler, sym_string, current_build_type == BUILD_DEBUG ? "-DDEBUG " : current_build_type == BUILD_OPT ? "-O2 " : "-O2 -pg ",       // profile version
+                     sprintf(cmd, "%s %s%s%s%s-c %s -o %s", compiler, sym_string, current_build_type == BUILD_DEBUG ? "-DDEBUG " : current_build_type == BUILD_OPT ? "-O3 " : "-O3 -pg ",       // profile version
                              def, inc, source_name, outname);
                   }
                   else
@@ -1172,7 +1170,7 @@ int build_exe(int deps_have_changed, mk_target_struct * target)
       sprintf(tmp, "%s -rdynamic %s%s-o %s ",
               compiler, sym_str,
               current_build_type == BUILD_DEBUG ? "" :
-              current_build_type == BUILD_OPT ? "-O2 " : "-O2 -pg ", ename);
+              current_build_type == BUILD_OPT ? "-O3 " : "-O3 -pg ", ename);
    }
    else
    {
@@ -1715,29 +1713,37 @@ int get_target(mk_target_struct * target,
                else if(strcmp(t, "add_to_executable") == 0)
                {
                   char *fn = get_token(p);
-
-                  char *file = get_abs_path(fn, 0);
-                  char *d = file + strlen(file);
-                  while(d > file && *d != '.')
-                     d--;
-
-                  if(strcmp(top_target->target_type, "executable") == 0 ||
-                     strcmp(top_target->target_type, "plugin") == 0)
+                  if(fn[0]=='-'&&fn[1]=='l')
                   {
-                     if(strcmp(d, ".def") == 0)
-                        top_target->def_file = file;
-                     else if(strcmp(d, ".a") == 0 ||
-                             (strstr(file, ".so") != 0) ||
-                             strcmp(d, ".lib") == 0 || strcmp(d, ".res") == 0)
-                     {
-                        if(strcmp(d, ".res") == 0)
-                           add_to_backup(file);
+                     if(table_find(top_target->libs, fn) == -1)
+                        table_add(top_target->libs, strdup(fn), -1);
+                  }
+                  else
+                  {
 
-                        if(table_find(top_target->libs, file) == -1)
-                           table_add(top_target->libs, file, -1);
+                     char *file = get_abs_path(fn, 0);
+                     char *d = file + strlen(file);
+                     while(d > file && *d != '.')
+                        d--;
+
+                     if(strcmp(top_target->target_type, "executable") == 0 ||
+                        strcmp(top_target->target_type, "plugin") == 0)
+                     {
+                        if(strcmp(d, ".def") == 0)
+                           top_target->def_file = file;
+                        else if(strcmp(d, ".a") == 0 ||
+                                (strstr(file, ".so") != 0) ||
+                                strcmp(d, ".lib") == 0 || strcmp(d, ".res") == 0)
+                        {
+                           if(strcmp(d, ".res") == 0)
+                              add_to_backup(file);
+
+                           if(table_find(top_target->libs, file) == -1)
+                              table_add(top_target->libs, file, -1);
+                        }
+                        else if(table_find(top_target->src, file) == -1)
+                           table_add(top_target->src, file, -1);
                      }
-                     else if(table_find(top_target->src, file) == -1)
-                        table_add(top_target->src, file, -1);
                   }
                }
                else if(strcmp(t, "backup") == 0)
