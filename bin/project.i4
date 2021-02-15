@@ -1,4 +1,6 @@
 [executable SLK_img2pixel]
+   target_dir "./"
+
    "../SLK_img2pixel/src/main.c"
    "../SLK_img2pixel/src/gui.c"
    "../SLK_img2pixel/src/assets.c"
@@ -12,6 +14,6 @@
    "../external/gifdec.c"
 
    linux add_to_executable "-lm"
-   linux add_to_executable "-lSDL2"
-   linux add_to_executable "-lSLK"
-   linux add_to_executable "-lSLK_gui"
+   add_to_executable "-lSDL2"
+   add_to_executable "-lSLK"
+   add_to_executable "-lSLK_gui"

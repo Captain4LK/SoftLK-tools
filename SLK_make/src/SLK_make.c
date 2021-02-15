@@ -254,11 +254,6 @@ void mk_get(mk_options_struct * mk, int argc, char **argv)
          mk->verbose = 0;
          mk->quiet = 0;
       }
-      else if(strcmp(argv[i], "-c") == 0)
-      {
-         extension = ".c";
-         compiler = "gcc";
-      }
       else if(strcmp(argv[i], "-extract") == 0)
          extract(argv[i + 1]);
       else if(strcmp(argv[i], "-q") == 0)
@@ -281,6 +276,16 @@ void mk_get(mk_options_struct * mk, int argc, char **argv)
       {
          i++;
          mk->tmp_dir = argv[i];
+      }
+      else if(strcmp(argv[i],"-compiler")==0)
+      {
+         i++;
+         compiler = argv[i];
+      }
+      else if(strcmp(argv[i],"-extension")==0)
+      {
+         i++;
+         extension = argv[i];
       }
       else if((strcmp(argv[i], "-no_compile") == 0)
               || (strcmp(argv[i], "-nc") == 0))
@@ -308,7 +313,8 @@ void mk_get(mk_options_struct * mk, int argc, char **argv)
                 "  -static  don't make libraries shared (unix only)\n"
                 "  -no_syms don't include any symbol information in the object files or exes\n"
                 "  -extract filename   extracts a backup into files (use i4_make backup)\n"
-                "  -c c mode\n", argv[0], argv[0]);
+                "  -compiler compiler  sets the compiler to use\n"
+                "  -extension ext      sets the extension of the source files\n",argv[0], argv[0]);
          exit(0);
       }
       else
