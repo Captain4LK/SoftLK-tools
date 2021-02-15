@@ -68,8 +68,9 @@ Name_table *get_deps(char *filename, Name_table * includes)
    fclose(fp);
    mem[size] = 0;
 
-   int x = table_add(src_files, strdup(filename), -1);
-   table_add(src_deps[x], strdup(filename), -1);
+   char *fname = strdup(filename);
+   int x = table_add(src_files, fname, -1);
+   table_add(src_deps[x], fname, -1);
 
    char *p = mem, name2[100], *s, name3[255];
 
@@ -98,10 +99,10 @@ Name_table *get_deps(char *filename, Name_table * includes)
                *p = 0;
                p++;
             }
-            
-            path_pop(filename,name3,NULL);
-            strcat(name3,"/");
-            strcat(name3,s);
+
+            path_pop(filename, name3, NULL);
+            strcat(name3, "/");
+            strcat(name3, s);
             Name_table *ret = get_deps(name3, includes);
 
             for(int j = 0; !ret && j < table_size(includes); j++)

@@ -130,6 +130,13 @@ void table_destroy(Name_table * t)
    free(t);
 }
 
+void table_destroy_elements(Name_table * t)
+{
+   for(int i = 0; i < t->used; i++)
+      if(t->entry[i])
+         free(t->entry[i]);
+}
+
 void table_remove(Name_table * t, int ref)
 {
    assert(ref >= 0 && ref < t->used, "table bad item deletion");

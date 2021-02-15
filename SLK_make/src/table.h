@@ -28,6 +28,7 @@ Name_table *table_create(int entries, int grow);
 int table_add(Name_table * t, char *item, int ref);
 int table_add_table(Name_table * t, const Name_table * tab, int ref);
 void table_destroy(Name_table * t);
+void table_destroy_elements(Name_table * t);
 void table_remove(Name_table * t, int ref);
 void table_clear(Name_table * t);
 int table_find(Name_table * t, char *item);

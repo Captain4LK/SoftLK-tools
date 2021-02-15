@@ -277,12 +277,12 @@ void mk_get(mk_options_struct * mk, int argc, char **argv)
          i++;
          mk->tmp_dir = argv[i];
       }
-      else if(strcmp(argv[i],"-compiler")==0)
+      else if(strcmp(argv[i], "-compiler") == 0)
       {
          i++;
          compiler = argv[i];
       }
-      else if(strcmp(argv[i],"-extension")==0)
+      else if(strcmp(argv[i], "-extension") == 0)
       {
          i++;
          extension = argv[i];
@@ -314,7 +314,8 @@ void mk_get(mk_options_struct * mk, int argc, char **argv)
                 "  -no_syms don't include any symbol information in the object files or exes\n"
                 "  -extract filename   extracts a backup into files (use i4_make backup)\n"
                 "  -compiler compiler  sets the compiler to use\n"
-                "  -extension ext      sets the extension of the source files\n",argv[0], argv[0]);
+                "  -extension ext      sets the extension of the source files\n",
+                argv[0], argv[0]);
          exit(0);
       }
       else
@@ -891,10 +892,9 @@ int build_file(char *filename,
                         sprintf(def + strlen(def), "/D%s ",
                                 table_element(&mk_global_defines, i));
 
-                     char *dll_def = (strcmp(target->target_type, "dll") == 0
-                                      || strcmp(target->target_type,
-                                                "plugin") ==
-                                      0) ? "/DBUILDING_DLL " : "";
+                     char *dll_def =
+                        (strcmp(target->target_type, "dll") ==
+                         0) ? "/DBUILDING_DLL " : "";
 
                      sprintf(cmd, "cl /GX /EHa /D_WINDOWS %s%s%s%s/c /Tp %s /Fo%s /Fd%s", dll_def, current_build_type == BUILD_DEBUG ? "/MD /Zi /Od /DDEBUG /nologo " : current_build_type == BUILD_OPT ? "/MD /Zi /Ox /nologo " : "/MD /Zi /Ox /nologo /Gh "   // profile version
                              , def, inc, source_name, outname,
@@ -1269,11 +1269,6 @@ int build_exe(int deps_have_changed, mk_target_struct * target)
 }
 
 int build_target(mk_target_struct * target, mk_target_struct * top_target)
-//                  list &exe_src,
-//                  list &exe_inc,
-//                  list &exe_def,
-//                  list &lib_files,
-//                  list &dll_libs)
 {
    int i;
    int change = 0;
@@ -1291,18 +1286,6 @@ int build_target(mk_target_struct * target, mk_target_struct * top_target)
                table_add(top_target->src, fname, -1);
          }
       }
-
-//     if (strcmp(target.target_type,"executable")==0 || strcmp(target.target_type,"plugin")==0)
-//     {
-//       for (i=0; i<target.src.size(); i++)
-//       {
-//         char *fn=target.src[i];
-//         if (fn[strlen(fn)-1]=='.')
-//           printf("adding to src_file with no extension\n");
-
-//         target.src+=exe_src[i];
-//       }
-//     }
 
       int ret = ALREADY_UP_TO_DATE;
 
@@ -1359,19 +1342,6 @@ int build_target(mk_target_struct * target, mk_target_struct * top_target)
 
 
       if(strcmp(target->target_type, "dll") == 0)
-      {
-         switch (build_lib(change, target, top_target, 1))
-         {
-         case BUILD_ERROR:
-            return BUILD_ERROR;
-            break;
-         case CHANGED:
-            change = 1;
-            break;
-         }
-      }
-
-      if(strcmp(target->target_type, "plugin") == 0)
       {
          switch (build_lib(change, target, top_target, 1))
          {
@@ -1551,6 +1521,7 @@ int build_ram_file(char *name, char *out_name, mk_target_struct * top_target)
 
       get_mod_time(cc_name, 1);
 
+      free(buf);
       return CHANGED;
    }
    else
@@ -1689,37 +1660,10 @@ int get_target(mk_target_struct * target,
                   MKDIR(dir);
                   target->outdir = form("%s/", dir);
                }
-               else if(strcmp(t, "add_to_plugin") == 0)
-               {
-                  char *fn = get_token(p);
-
-                  char *file = get_abs_path(fn, 0);
-                  char *d = file + strlen(file);
-                  while(d > file && *d != '.')
-                     d--;
-
-                  if(strcmp(top_target->target_type, "plugin") == 0)
-                  {
-                     if(strcmp(d, ".def") == 0)
-                        top_target->def_file = file;
-                     else if(strcmp(d, ".a") == 0 ||
-                             (strstr(file, ".so") != 0) ||
-                             strcmp(d, ".lib") == 0 || strcmp(d, ".res") == 0)
-                     {
-                        if(strcmp(d, ".res") == 0)
-                           add_to_backup(file);
-
-                        if(table_find(top_target->libs, file) == -1)
-                           table_add(top_target->libs, file, -1);
-                     }
-                     else if(table_find(top_target->src, file) == -1)
-                        table_add(top_target->src, file, -1);
-                  }
-               }
                else if(strcmp(t, "add_to_executable") == 0)
                {
                   char *fn = get_token(p);
-                  if(fn[0]=='-'&&fn[1]=='l')
+                  if(fn[0] == '-' && fn[1] == 'l')
                   {
                      if(table_find(top_target->libs, fn) == -1)
                         table_add(top_target->libs, strdup(fn), -1);
@@ -1732,14 +1676,14 @@ int get_target(mk_target_struct * target,
                      while(d > file && *d != '.')
                         d--;
 
-                     if(strcmp(top_target->target_type, "executable") == 0 ||
-                        strcmp(top_target->target_type, "plugin") == 0)
+                     if(strcmp(top_target->target_type, "executable") == 0)
                      {
                         if(strcmp(d, ".def") == 0)
                            top_target->def_file = file;
                         else if(strcmp(d, ".a") == 0 ||
                                 (strstr(file, ".so") != 0) ||
-                                strcmp(d, ".lib") == 0 || strcmp(d, ".res") == 0)
+                                strcmp(d, ".lib") == 0
+                                || strcmp(d, ".res") == 0)
                         {
                            if(strcmp(d, ".res") == 0)
                               add_to_backup(file);
@@ -1851,6 +1795,7 @@ int get_target(mk_target_struct * target,
 
                      strcpy(old_abs, abs_path);
                      set_abs_path(use_file);
+                     free(f);
                   }
                   else
                      f = file_contents;
@@ -2073,6 +2018,16 @@ int i4_make_main(int argc, char **argv)
 
    table_destroy(mk_options.targets_to_build);
    table_destroy(mk_options.targets_built);
+   table_destroy_elements(src_files);
+   table_destroy(src_files);
+   for(int i = 0; i < MAX_SRC; i++)
+      table_destroy(src_deps[i]);
+
+   if(file_start)
+      free(file_start);
+
+   if(buf)
+      free(buf);
 
    return 0;
 }
