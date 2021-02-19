@@ -38,6 +38,7 @@ Warning: SLK_make is still very much experimental, it will not work for any oper
 # License
 
 All code in this repository (except the 'external' directory containing source code not by me) is released into the public domain (CC0), see COPYING for more info.
+Optionally you can use this code under the terms of the 3-clause-bsd license, in case cc0 is causing any problems, see LICENSE for more info.
 
 # Planned tools / ideas
 
