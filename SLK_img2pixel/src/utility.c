@@ -141,7 +141,37 @@ void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
          p->data[i].mask = img->data[i].a==0?255:0;
          p->data[i].index = find_palette(img->data[i],pal);
       }
-      SLK_pal_sprite_save(path,p,0);
+
+      //Optimize image by brute forcing image rle encoding mode
+      int min_size = INT32_MAX;
+      int min_mode = 0;
+      for(int i = 0;i<4;i++)
+      {
+         char *ptr = NULL;
+         size_t size = 0;
+         FILE *in = open_memstream(&ptr,&size);
+         if(in==NULL)
+            printf("Error: Failedd to open memstream!\n");
+         SLK_pal_sprite_save_file(in,p,i);
+         fflush(in);
+         FILE *out = fmemopen(ptr,size,"r");
+         int fsize;
+         fseek(out,0,SEEK_END);
+         fsize = ftell(out);
+         if(fsize<min_size)
+         {
+            min_size = fsize;
+            min_mode = i;
+         }
+         fclose(out);
+         fclose(in);
+         free(ptr);
+      }
+
+      //Save image as smallest type
+      FILE *in = fopen("out.slk","wb");
+      SLK_pal_sprite_save_file(in,p,min_mode);
+      fclose(in); 
       SLK_pal_sprite_destroy(p);
 
       return;
