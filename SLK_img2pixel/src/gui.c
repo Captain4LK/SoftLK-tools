@@ -236,7 +236,7 @@ void gui_init()
 {
    //Load entry palette and font
    assets_init();
-   palette = SLK_palette_load("palette/aurora.pal");
+   palette = assets_load_pal_default();
 
    //Setup windows
    //Preview window

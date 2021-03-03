@@ -169,7 +169,7 @@ void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
       }
 
       //Save image as smallest type
-      FILE *in = fopen("out.slk","wb");
+      FILE *in = fopen(path,"wb");
       SLK_pal_sprite_save_file(in,p,min_mode);
       fclose(in); 
       SLK_pal_sprite_destroy(p);

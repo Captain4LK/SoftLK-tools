@@ -33,6 +33,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 int main(int argc, char **argv)
 {
+   //Use 800x500 resolution to force 2x pixel scale on 1080 resolution.
    SLK_setup(800,500,4,"SLK_img2pixel",0,SLK_WINDOW_MAX,1);
    SLK_timer_set_fps(30);
 

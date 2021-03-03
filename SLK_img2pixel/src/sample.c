@@ -258,7 +258,7 @@ static float cubic_hermite (float a, float b, float c, float d, float t)
    return a_*t*t*t+b_*t*t+c_*t+d_;
 }
 
-//Supersampling --> works best in most cases
+//Supersampling --> works best without gaussian blur
 static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
 {
    float fw = (float)(in->width-1)/(float)width;
