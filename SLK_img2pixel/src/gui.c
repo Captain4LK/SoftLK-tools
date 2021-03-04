@@ -478,6 +478,13 @@ void gui_init()
    elements.special_gif_save = SLK_gui_button_create(158,64,164,14,"Save gif");
    SLK_gui_vtabbar_add_element(settings_tabs,19,elements.special_gif_save);
    //-------------------------------------
+
+   //Load default json
+   const char *env_def = getenv("IMG2PIXEL_CONF");
+   if(!env_def)
+      env_def = "./default.json";
+   FILE *f = fopen(env_def,"r");
+   preset_load(f);
 }
 
 void gui_update()
