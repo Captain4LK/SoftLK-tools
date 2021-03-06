@@ -64,14 +64,14 @@ SLK_RGB_sprite *image_select()
 void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
 {
    const char *filter_patterns[2] = {"*.png","*.slk"};
-   const char *file_path = tinyfd_saveFileDialog("Save image","",2,filter_patterns,"(*.png *.slk)");
+   const char *file_path = tinyfd_saveFileDialog("Save image","",2,filter_patterns,NULL);
    image_save(file_path,img,pal);
 }
 
 FILE *json_select()
 {
    const char *filter_patterns[2] = {"*.json"};
-   const char *file_path = tinyfd_openFileDialog("Select a preset","",1,filter_patterns,"(*.json)",0);
+   const char *file_path = tinyfd_openFileDialog("Select a preset","",1,filter_patterns,NULL,0);
    if(file_path!=NULL)
       return fopen(file_path,"r");
    return NULL;
@@ -80,7 +80,7 @@ FILE *json_select()
 FILE *json_write()
 {
    const char *filter_patterns[2] = {"*.json"};
-   const char *file_path = tinyfd_saveFileDialog("Save preset","",1,filter_patterns,"(*.json)");
+   const char *file_path = tinyfd_saveFileDialog("Save preset","",1,filter_patterns,NULL);
    if(file_path!=NULL)
       return fopen(file_path,"w");
    return NULL;
@@ -89,7 +89,7 @@ FILE *json_write()
 SLK_Palette *palette_select()
 {
    const char *filter_patterns[] = {"*.pal","*.png","*.gpl","*.hex"};
-   const char *file_path = tinyfd_openFileDialog("Load a palette","",4,filter_patterns,"(*.pal *.png *.gpl *.hex)",0);
+   const char *file_path = tinyfd_openFileDialog("Load a palette","",4,filter_patterns,NULL,0);
    if(file_path!=NULL)
    {
       SLK_Palette *p = NULL;
@@ -119,7 +119,7 @@ SLK_Palette *palette_select()
 void palette_write(SLK_Palette *pal)
 {
    const char *filter_patterns[2] = {"*.pal"};
-   const char *file_path = tinyfd_saveFileDialog("Save palette","",1,filter_patterns,"(*.pal)");
+   const char *file_path = tinyfd_saveFileDialog("Save palette","",1,filter_patterns,NULL);
    if(file_path!=NULL)
       SLK_palette_save(file_path,pal);
 }
@@ -275,7 +275,7 @@ void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int 
 void gif_input_select()
 {
    const char *filter_patterns[2] = {"*.gif"};
-   const char *path = tinyfd_openFileDialog("Select a gif file","",1,filter_patterns,"(*.gif)",0);
+   const char *path = tinyfd_openFileDialog("Select a gif file","",1,filter_patterns,NULL,0);
    if(path==NULL)
    {
       input_gif[0] = '\0';
@@ -287,7 +287,7 @@ void gif_input_select()
 void gif_output_select(int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal)
 {
    const char *filter_patterns[2] = {"*.gif"};
-   const char *path = tinyfd_saveFileDialog("Save gif","",1,filter_patterns,"(*.gif)");
+   const char *path = tinyfd_saveFileDialog("Save gif","",1,filter_patterns,NULL);
    if(path==NULL)
    {
       output_gif[0] = '\0';
