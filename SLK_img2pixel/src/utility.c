@@ -56,14 +56,14 @@ static int chartoi(char in);
 
 SLK_RGB_sprite *image_select()
 {
-   const char *filter_patterns[2] = {"(*.png)"};
+   const char *filter_patterns[2] = {"*.png"};
    const char *file_path = tinyfd_openFileDialog("Select a file","",0,filter_patterns,NULL,0);
    return image_load(file_path);
 }
 
 void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
 {
-   const char *filter_patterns[2] = {"(*.png)","(*.slk)"};
+   const char *filter_patterns[2] = {"*.png","*.slk"};
    const char *file_path = tinyfd_saveFileDialog("Save image","",2,filter_patterns,"(*.png *.slk)");
    image_save(file_path,img,pal);
 }
