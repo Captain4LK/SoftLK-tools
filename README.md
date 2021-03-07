@@ -30,14 +30,13 @@ In general, I try to keep the amount of external dependencies as low as possible
 
 ### SoftLK-lib
 
-Most of the tools in this repository need SoftLK-lib. Since SoftLK-lib is a separate project the source has not been included in this repository. Separate install instructions can be found in its directory: [SoftLK-lib](https://codeberg.org/Captain4LK/SoftLK-lib) (both libSLK.a and libSLK_gui.a). 
+Most of the tools in this repository need SoftLK-lib. Since SoftLK-lib is a separate project the source has not been included in this repository. Separate install instructions can be found in its directory: [SoftLK-lib](https://codeberg.org/Captain4LK/SoftLK-lib). All of the makefiles assume it to be installed globally, so I recommend running ``sudo make install`` for installing it on your system.
 
-SoftLK-lib offers different backends, however only the sdl2 and sdl2_gl backends are supported by the tools in this repository. All of the makefiles assume it to be installed globally, so I recommend running ``sudo make install`` for installing it on your system.
-
-Some tools depend on extensions of SoftLK-lib, so you need to build all of the needed ones as listed above too. Here is a list of all makefile targets for building SoftLK-lib and its extensions:
+Some tools depend on extensions of SoftLK-lib, so you need to build all of the needed ones as listed above, too. Here is a list of all makefile targets for building SoftLK-lib and its extensions:
 
 * libSLK.a (``make backend_sdl2`` or ``make backend_sdl2_gl``)
 * libSLK_gui.a (``make SLK_gui``)
+* global install, will build all the extensions, too (``sudo make install``, Unix only)
 
 ## Using makefiles
 
