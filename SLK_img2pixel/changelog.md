@@ -1,5 +1,16 @@
 # Changelog
 
+Current development version: SLK_img2pixel 1.1-dev
+
+----------------------------------------
+Version:                SLK_img2pixel 1.1 (tba)
+----------------------------------------
+
+CHANGES:
+
+* added support for changing default settings
+* fixed kdialog support
+
 ----------------------------------------
 Version:                SLK_img2pixel 1.0 - initial release (14.02.2021)
 ----------------------------------------
