@@ -15,17 +15,38 @@ Warning: SLK_make is still very much experimental, it will not work for any oper
 
 # Building from source
 
-* First you need to have [SoftLK-lib](https://codeberg.org/Captain4LK/SoftLK-lib) installed on your system, more instructions can be found in its repo.
-* Then, clone this repository (note: the --recursive): ``git clone https://codeberg.org/Captain4LK/SoftLK-tools.git --recursive``
+* First, clone this repository (important: the --recursive): ``git clone https://codeberg.org/Captain4LK/SoftLK-tools.git --recursive``
 
-### Using makefiles
+## Dependencies
+
+In general, I try to keep the amount of external dependencies as low as possible, but some are still needed, as listed below.
+
+* SLK_img2pixel:
+   * on Linux ONE of the following is needed for creating file dialogs: zenity, matedialog, qarma, kdialog, Xdialog, python2/tkinter or dialog
+   * libSLK.a and libSLK_gui.a, as explained below 
+
+* SLK_make
+   * None
+
+### SoftLK-lib
+
+Most of the tools in this repository need SoftLK-lib. Since SoftLK-lib is a separate project the source has not been included in this repository. Separate install instructions can be found in its directory: [SoftLK-lib](https://codeberg.org/Captain4LK/SoftLK-lib) (both libSLK.a and libSLK_gui.a). 
+
+SoftLK-lib offers different backends, however only the sdl2 and sdl2_gl backends are supported by the tools in this repository. All of the makefiles assume it to be installed globally, so I recommend running ``sudo make install`` for installing it on your system.
+
+Some tools depend on extensions of SoftLK-lib, so you need to build all of the needed ones as listed above too. Here is a list of all makefile targets for building SoftLK-lib and its extensions:
+
+* libSLK.a (``make backend_sdl2`` or ``make backend_sdl2_gl``)
+* libSLK_gui.a (``make SLK_gui``)
+
+## Using makefiles
 
 * cd into the directory of the tool you want to build
 * cd into its bin/unix directory
 * ...and build it: ``make``
 * The binary can be found at the top level of the repo in the bin directory
 
-### Using SLK_make
+## Using SLK_make
 
 * build SLK_make (a shell fill can be found in the SLK_make/bin/unix directory)
 * cd into the bin directory 
