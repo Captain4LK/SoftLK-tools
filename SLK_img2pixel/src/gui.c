@@ -10,8 +10,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //External includes
 #include <SLK/SLK.h>
-#include <SLK/SLK_gui.h>
 #include "../../external/UtilityLK/include/ULK_json.h"
+#define SLK_GUI_IMPLEMENTATION
+#include "../../external/SLK_gui.h"
 //-------------------------------------
 
 //Internal includes

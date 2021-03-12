@@ -1,5 +1,5 @@
 CC = i686-w64-mingw32-gcc
-CFLAGS+=-L../../../../SoftLK-lib/lib/windows_cross/ -I ../../../../SoftLK-lib/include/ -lcomdlg32 -lole32 -lSLK -lSLK_gui -lmingw32 -lSDL2main -lSDL2 -mwindows -Wall 
+CFLAGS+=-L../../../../SoftLK-lib/lib/windows_cross/ -I ../../../../SoftLK-lib/include/ -lcomdlg32 -lole32 -lSLK -lmingw32 -lSDL2main -lSDL2 -mwindows -Wall 
 
 SLK_img2pix: main.o assets.o gui.o process.o sample.o utility_win.o palette.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
 	$(CC) -o SLK_img2pix $^ $(CFLAGS)
@@ -35,7 +35,6 @@ gifenc.o: ../../../external/gifenc.c
 gifdec.o: ../../../external/gifdec.c
 	$(CC) -O3 -c $< $(CFLAGS) 
 
-ULK_json.o: ../../../external/UtilityLK/src/ULK_json.c
 ULK_json.o: ../../../external/UtilityLK/src/ULK_json.c
 	$(CC) -O3 -c $< $(CFLAGS) 
 

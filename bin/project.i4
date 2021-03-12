@@ -16,4 +16,3 @@
    linux add_to_executable "-lm"
    add_to_executable "-lSDL2"
    add_to_executable "-lSLK"
-   add_to_executable "-lSLK_gui"
