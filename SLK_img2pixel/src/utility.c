@@ -138,8 +138,9 @@ void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
       SLK_Pal_sprite *p = SLK_pal_sprite_create(img->width,img->height);
       for(int i = 0;i<p->width*p->height;i++)
       {
-         p->data[i].mask = img->data[i].a==0?255:0;
-         p->data[i].index = find_palette(img->data[i],pal);
+         p->data[i] = find_palette(img->data[i],pal);
+         if(!img->data[i].a)
+            p->data[i] = 0;
       }
 
       //Optimize image by brute forcing image rle encoding mode
