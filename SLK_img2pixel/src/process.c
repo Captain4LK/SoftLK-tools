@@ -9,6 +9,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
+#include <stdlib.h>
 #include <stdint.h>
 #include <limits.h>
 #include <math.h>

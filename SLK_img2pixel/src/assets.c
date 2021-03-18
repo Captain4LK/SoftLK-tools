@@ -9,6 +9,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
+#include <stdlib.h>
+#include <string.h>
 #include <SLK/SLK.h>
 //-------------------------------------
 
