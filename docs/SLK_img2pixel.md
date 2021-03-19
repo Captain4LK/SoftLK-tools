@@ -1,4 +1,6 @@
-The user interface is divided into two windows. 
+# SLK_img2pixel documentation (WIP)
+
+The user interface is divided into two moveable windows. 
 
 # Preview
 
