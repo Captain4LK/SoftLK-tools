@@ -1,5 +1,16 @@
 # SLK_img2pixel documentation (WIP)
 
+# Table of contents
+
+* [User interface](#user-interface)
+   * [Preview](#preview)
+   * [Settings](#settings)
+   * [Save/Load](#save/load)
+   * [Palette](#palette)
+   * [General](#general)
+   * [Process](#process)
+   * [Special](#special)
+
 # User interface
 
 The user interface is divided into two moveable windows. 
