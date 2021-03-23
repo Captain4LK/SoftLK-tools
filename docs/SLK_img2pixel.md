@@ -5,7 +5,7 @@
 * [User interface](#user-interface)
    * [Preview](#preview)
    * [Settings](#settings)
-   * [Save/Load](#save/load)
+   * [Save/Load](#save-load)
    * [Palette](#palette)
    * [General](#general)
    * [Process](#process)
@@ -23,7 +23,7 @@ The window titled "Preview" serves as a preview window for both the input and th
 
 The other window is titled "Settings" and is were you actually interact with the program. The window is divided into five tabs, aligned vertically on the left of the window.
 
-### Save/Load
+### Save Load
 
 **Load image**
 
