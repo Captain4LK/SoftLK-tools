@@ -1,18 +1,20 @@
 # SLK_img2pixel documentation (WIP)
 
+# User interface
+
 The user interface is divided into two moveable windows. 
 
-# Preview
+## Preview
 
 The window titled "Preview" serves as a preview window for both the input and the output image. You can switch between the input and output image by clicking the specific tab at the top of the window.
 
-# Settings
+## Settings
 
 The other window is titled "Settings" and is were you actually interact with the program. The window is divided into five tabs, aligned vertically on the left of the window.
 
-## Save/Load
+### Save/Load
 
-### Load image
+**Load image**
 
 Load an image from disc, supported formats (same as stb_image): 
 
@@ -26,35 +28,35 @@ Load an image from disc, supported formats (same as stb_image):
    * PIC (Softimage PIC)
    * PNM (PPM and PGM binary only)
 
-### Save image
+***Save image***
 
 Save the created image to disk. Only png files are supported for now.
 
-### Load preset
+***Load preset***
 
 Loads a preset in from a json file. Presets store the current settings and palette for later use.
 
-### Save preset
+***Save preset***
 
 Save the current settings and palette to a json file. Presets can be loaded again later.
 
-### Select input dir
+***Select input dir***
 
 Use for selecting the input directory for batch processing an entire directory (non-recursive). After selecting an input directory the batch processing will start once you select an output directory.
 
-### Select output dir
+***Select output dir***
 
 Use to select the output directory for batch processing. After selecting an output directory, all files in the directory will be processed and placed into the output directory.
 
-## Palette
+### Palette
 
 This tab contains a list of all palette colors. You can click a color and edit it with the sliders.
 
-### red/green/blue
+***red/green/blue***
 
 Change the red/green/blue color components of the currently selected color.
 
-### dist
+***dist***
 
 Set which color distance calculation mode to use. 
 To figure out which color to use for a specific pixel, SLK_img2pixel needs to find the distance between two colors. There are many different ways of calculating this distance, some better, some worse. The following modes are available:
@@ -68,7 +70,7 @@ To figure out which color to use for a specific pixel, SLK_img2pixel needs to fi
 * YUV
 * YIQ
 
-### Load palette
+***Load palette***
 
 Load a palette from disk, the following formats are supported: 
 
@@ -77,17 +79,17 @@ Load a palette from disk, the following formats are supported:
    * png
    * gpl
 
-### Save palette
+***Save palette***
 
 Save the current palette to disk, only the pal format is supported
 
-## General
+### General
 
-### Absolute/Relative
+***Absolute/Relative***
 
 Use to select the output image dimensions. On the top you can select wether to use relative or absoulte image dimensions. If you use absolute dimensions, you can choose an image size between 1 and 256. If you use relative dimensions, you can select an image downscaling factor between 1 and 32.
 
-### Dither
+***Dither***
 
 Set the dithering mode. Availible modes:
 
@@ -97,11 +99,11 @@ Set the dithering mode. Availible modes:
    * FloydSteinberg 1
    * FloydSteinberg 2
 
-### Amount
+***Amount***
 
 Set the dithering amount. Only affects orederd dithering modes.
 
-### Sample
+***Sample***
 
 Set the downsampling mode to use. Availible modes:
 
@@ -113,42 +115,42 @@ Set the downsampling mode to use. Availible modes:
    * Box sampling (use without gaussian blur for best results)
    * Lanczos
 
-### Gauss
+***Gauss***
 
 Set the gaussian blur amount. Higher means more blurring, lower means less. Set to value of 1 to disable.
 
-### Alpha
+***Alpha***
 
 Set the alpha threshold. SLK_img2pixel only supports outputing alpha values of 255 and 0. All alpha values above the threshold will be set to 255, all below to 0.
 
-## Process
+### Process
 
-### Bright
+***Bright***
 
 Tweak the brightness. (-255 = -1.0; 255 = 1.0)
 
-### Contra
+***Contra***
 
 Tweak the contrast. (-255 = -1.0; 255 = 1.0)
 
-### Satura
+***Satura***
 
 Tweak the saturation. (100 = 1.0; 200 = 2.0)
 
-### Gamma
+***Gamma***
 
 Tweak the gamma level (100 = 1.0; 200 = 2.0)
 
-### Sharp
+***Sharp***
 
 Sharpen the image. Sharpening is done on the input image, SLK_img2pixel might slow done on large input images.
 
-## Special
+### Special
 
-### Load gif
+***Load gif***
 
 Select a gif  to process, processing will start once a target file has been selcted with "Save gif"
 
-### Save gif
+***Save gif***
 
 Select the output file for gif processing. If you have selected an input gif, it will be processed after selecting an output gif.
