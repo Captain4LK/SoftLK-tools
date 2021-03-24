@@ -10,6 +10,8 @@
    * [General](#general)
    * [Process](#process)
    * [Special](#special)
+* [Presets](#presets)
+   * [Default preset](#default-preset)
 
 # User interface
 
@@ -165,3 +167,11 @@ Select a gif  to process, processing will start once a target file has been selc
 ***Save gif***
 
 Select the output file for gif processing. If you have selected an input gif, it will be processed after selecting an output gif.
+
+# Presets
+
+Presets allow you to save your current settings, including the currently loaded palette to disk for later use. See [Save/Load](#save-load) for how to save and load presets
+
+## Default preset
+
+By placing a json file named default.json in the current working directory you can change the default values of SLK_img2pixel.
