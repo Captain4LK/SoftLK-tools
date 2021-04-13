@@ -212,6 +212,12 @@ void lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    SLK_RGB_sprite *tmp_data2 = SLK_rgb_sprite_create(out->width,out->height);
    if(tmp_data2==NULL)
       return;
+
+   if(gauss==0)
+   {
+      SLK_rgb_sprite_copy(out,in);
+      return;
+   }
    
    SLK_rgb_sprite_copy(tmp_data2,in);
 

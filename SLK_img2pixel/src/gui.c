@@ -404,7 +404,7 @@ void gui_init()
    SLK_gui_tabbar_add_element(settings_tabs,2,elements.general_gauss_plus);
    elements.general_gauss_minus = SLK_gui_button_create(160,227,14,14,"-");
    SLK_gui_tabbar_add_element(settings_tabs,2,elements.general_gauss_minus);
-   elements.general_bar_gauss = SLK_gui_slider_create(174,227,170,14,1,500);
+   elements.general_bar_gauss = SLK_gui_slider_create(174,227,170,14,0,500);
    elements.general_bar_gauss->slider.value = 80;
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_gauss);
    elements.general_label_gauss = SLK_gui_label_create(354,230,32,12,"80");
