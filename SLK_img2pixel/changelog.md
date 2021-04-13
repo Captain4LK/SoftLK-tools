@@ -10,6 +10,7 @@ CHANGES:
 
 * added support for changing default settings
 * fixed kdialog support
+* added support for exporting upscaled images
 
 ----------------------------------------
 Version:                SLK_img2pixel 1.0 - initial release (14.02.2021)

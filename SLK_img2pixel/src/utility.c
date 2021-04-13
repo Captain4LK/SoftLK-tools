@@ -41,6 +41,8 @@ static char input_dir[256];
 static char output_dir[256];
 static char input_gif[256];
 static char output_gif[256];
+
+int upscale = 1;
 //-------------------------------------
 
 //Function prototypes
@@ -179,7 +181,14 @@ void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
    }
 
    //anything else --> png
-   SLK_rgb_sprite_save(path,img);
+   SLK_RGB_sprite *tmp_up = SLK_rgb_sprite_create(upscale*img->width,upscale*img->height);
+   for(int y = 0;y<img->height;y++)
+      for(int x = 0;x<img->width;x++)
+         for(int y_ = 0;y_<upscale;y_++)
+            for(int x_ = 0;x_<upscale;x_++)
+               SLK_rgb_sprite_set_pixel(tmp_up,x*upscale+x_,y*upscale+y_,SLK_rgb_sprite_get_pixel(img,x,y));
+   SLK_rgb_sprite_save(path,tmp_up);
+   SLK_rgb_sprite_destroy(tmp_up);
 }
 
 SLK_RGB_sprite *image_load(const char *path)
