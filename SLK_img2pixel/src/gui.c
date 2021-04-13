@@ -42,6 +42,11 @@ struct Elements
    SLK_gui_element *save_save_preset;
    SLK_gui_element *save_load_folder;
    SLK_gui_element *save_save_folder;
+   SLK_gui_element *save_upscale_plus;
+   SLK_gui_element *save_upscale_minus;
+   SLK_gui_element *save_bar_upscale;
+   SLK_gui_element *save_label_upscale;
+
 
    //Palette tab
    SLK_gui_element *palette_save;
@@ -77,8 +82,6 @@ struct Elements
    SLK_gui_element *general_sheight_minus;
    SLK_gui_element *general_alpha_plus;
    SLK_gui_element *general_alpha_minus;
-   SLK_gui_element *general_upscale_plus;
-   SLK_gui_element *general_upscale_minus;
    SLK_gui_element *general_gauss_plus;
    SLK_gui_element *general_gauss_minus;
    SLK_gui_element *general_dither_left;
@@ -92,7 +95,6 @@ struct Elements
    SLK_gui_element *general_bar_dither;
    SLK_gui_element *general_bar_gauss;
    SLK_gui_element *general_bar_alpha;
-   SLK_gui_element *general_bar_upscale;
    SLK_gui_element *general_label_width;
    SLK_gui_element *general_label_height;
    SLK_gui_element *general_label_swidth;
@@ -101,7 +103,6 @@ struct Elements
    SLK_gui_element *general_label_sample;
    SLK_gui_element *general_label_gauss;
    SLK_gui_element *general_label_alpha;
-   SLK_gui_element *general_label_upscale;
 
    //Process tab
    SLK_gui_element *process_bar_brightness;
@@ -269,14 +270,25 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_load);
    elements.save_save = SLK_gui_button_create(158,64,164,14,"Save image");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_save);
-   elements.save_load_preset = SLK_gui_button_create(158,128,164,14,"Load preset");
+   elements.save_load_preset = SLK_gui_button_create(158,112,164,14,"Load preset");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_load_preset);
-   elements.save_save_preset = SLK_gui_button_create(158,160,164,14,"Save preset");
+   elements.save_save_preset = SLK_gui_button_create(158,144,164,14,"Save preset");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_save_preset);
-   elements.save_load_folder = SLK_gui_button_create(158,224,164,14,"Select input dir");
+   elements.save_load_folder = SLK_gui_button_create(158,192,164,14,"Select input dir");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_load_folder);
-   elements.save_save_folder = SLK_gui_button_create(158,256,164,14,"Select output dir");
+   elements.save_save_folder = SLK_gui_button_create(158,224,164,14,"Select output dir");
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_save_folder);
+   label = SLK_gui_label_create(100,278,64,12,"Scale");
+   SLK_gui_vtabbar_add_element(settings_tabs,0,label);
+   elements.save_upscale_plus = SLK_gui_button_create(344,275,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_upscale_plus);
+   elements.save_upscale_minus = SLK_gui_button_create(160,275,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_upscale_minus);
+   elements.save_bar_upscale = SLK_gui_slider_create(174,275,170,14,1,16);
+   elements.save_bar_upscale->slider.value = 1;
+   SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_bar_upscale);
+   elements.save_label_upscale = SLK_gui_label_create(354,278,32,12,"1");
+   SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_label_upscale);
 
    //Palette tab
    elements.palette_load = SLK_gui_button_create(158,244,164,14,"Load palette");
@@ -410,29 +422,17 @@ void gui_init()
    elements.general_label_gauss = SLK_gui_label_create(354,230,32,12,"80");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_gauss);
 
-   label = SLK_gui_label_create(104,254,56,12,"Alpha");
+   label = SLK_gui_label_create(104,278,56,12,"Alpha");
    SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_alpha_plus = SLK_gui_button_create(344,251,14,14,"+");
+   elements.general_alpha_plus = SLK_gui_button_create(344,275,14,14,"+");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_alpha_plus);
-   elements.general_alpha_minus = SLK_gui_button_create(160,251,14,14,"-");
+   elements.general_alpha_minus = SLK_gui_button_create(160,275,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_alpha_minus);
-   elements.general_bar_alpha = SLK_gui_slider_create(174,251,170,14,0,255);
+   elements.general_bar_alpha = SLK_gui_slider_create(174,275,170,14,0,255);
    elements.general_bar_alpha->slider.value = 128;
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_alpha);
-   elements.general_label_alpha = SLK_gui_label_create(354,254,32,12,"128");
+   elements.general_label_alpha = SLK_gui_label_create(354,278,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_alpha);
-
-   label = SLK_gui_label_create(100,278,64,12,"Upscale");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_upscale_plus = SLK_gui_button_create(344,275,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_upscale_plus);
-   elements.general_upscale_minus = SLK_gui_button_create(160,275,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_upscale_minus);
-   elements.general_bar_upscale = SLK_gui_slider_create(174,275,170,14,1,16);
-   elements.general_bar_upscale->slider.value = 1;
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_upscale);
-   elements.general_label_upscale = SLK_gui_label_create(354,278,32,12,"1");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_upscale);
 
    //Process tab
    label = SLK_gui_label_create(104,24,56,12,"Bright");
@@ -542,6 +542,18 @@ static void gui_buttons()
    switch(settings_tabs->vtabbar.current_tab)
    {
    case 0: //Save/Load tab
+      if(elements.save_upscale_plus->button.state.pressed&&elements.save_bar_upscale->slider.value<elements.save_bar_upscale->slider.max)
+         elements.save_bar_upscale->slider.value++;
+      else if(elements.save_upscale_minus->button.state.pressed&&elements.save_bar_upscale->slider.value>elements.save_bar_upscale->slider.min)
+         elements.save_bar_upscale->slider.value--;
+
+      if(elements.save_bar_upscale->slider.value!=upscale)
+      {
+         upscale = elements.save_bar_upscale->slider.value;
+         char tmp[16];
+         sprintf(tmp,"%d",upscale);
+         SLK_gui_label_set_text(elements.save_label_upscale,tmp);
+      }
       if(elements.save_load->button.state.released)
       {
          SLK_rgb_sprite_destroy(sprite_in);
@@ -700,10 +712,6 @@ static void gui_buttons()
          elements.general_bar_gauss->slider.value++;
       else if(elements.general_gauss_minus->button.state.pressed&&elements.general_bar_gauss->slider.value>elements.general_bar_gauss->slider.min)
          elements.general_bar_gauss->slider.value--;
-      else if(elements.general_upscale_plus->button.state.pressed&&elements.general_bar_upscale->slider.value<elements.general_bar_upscale->slider.max)
-         elements.general_bar_upscale->slider.value++;
-      else if(elements.general_upscale_minus->button.state.pressed&&elements.general_bar_upscale->slider.value>elements.general_bar_upscale->slider.min)
-         elements.general_bar_upscale->slider.value--;
 
       if(elements.general_dither_left->button.state.pressed)
       {
@@ -782,13 +790,6 @@ static void gui_buttons()
          sprintf(tmp,"%d",alpha_threshold);
          SLK_gui_label_set_text(elements.general_label_alpha,tmp);
          update = 1;
-      }
-      if(elements.general_bar_upscale->slider.value!=upscale)
-      {
-         upscale = elements.general_bar_upscale->slider.value;
-         char tmp[16];
-         sprintf(tmp,"%d",upscale);
-         SLK_gui_label_set_text(elements.general_label_upscale,tmp);
       }
       if(elements.general_bar_gauss->slider.value!=gauss)
       {
@@ -1082,10 +1083,10 @@ void preset_load(FILE *f)
       alpha_threshold = elements.general_bar_alpha->slider.value;
       sprintf(ctmp,"%d",alpha_threshold);
       SLK_gui_label_set_text(elements.general_label_alpha,ctmp);
-   elements.general_bar_upscale->slider.value = ULK_json_get_object_integer(&root->root,"upscale",1);
-      upscale = elements.general_bar_upscale->slider.value;
+   elements.save_bar_upscale->slider.value = ULK_json_get_object_integer(&root->root,"upscale",1);
+      upscale = elements.save_bar_upscale->slider.value;
       sprintf(ctmp,"%d",upscale);
-      SLK_gui_label_set_text(elements.general_label_upscale,ctmp);
+      SLK_gui_label_set_text(elements.save_label_upscale,ctmp);
    elements.general_bar_gauss->slider.value= ULK_json_get_object_integer(&root->root,"gaussian_blur",128);
       gauss = elements.general_bar_gauss->slider.value;
       sprintf(ctmp,"%d",gauss);
