@@ -57,17 +57,21 @@ struct Elements
    SLK_gui_element *palette_bar_r;
    SLK_gui_element *palette_bar_g;
    SLK_gui_element *palette_bar_b;
+   SLK_gui_element *palette_bar_colors;
    SLK_gui_element *palette_plus_r;
    SLK_gui_element *palette_minus_r;
    SLK_gui_element *palette_plus_g;
    SLK_gui_element *palette_minus_g;
    SLK_gui_element *palette_plus_b;
    SLK_gui_element *palette_minus_b;
+   SLK_gui_element *palette_plus_colors;
+   SLK_gui_element *palette_minus_colors;
    SLK_gui_element *palette_space_left;
    SLK_gui_element *palette_space_right;
    SLK_gui_element *palette_label_r;
    SLK_gui_element *palette_label_g;
    SLK_gui_element *palette_label_b;
+   SLK_gui_element *palette_label_colors;
    SLK_gui_element *palette_label_space;
 
    //General tab
@@ -305,39 +309,49 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_minus_r);
    elements.palette_plus_r = SLK_gui_button_create(344,109,14,14,"+");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_plus_r);
-   elements.palette_minus_g = SLK_gui_button_create(160,141,14,14,"-");
+   elements.palette_minus_g = SLK_gui_button_create(160,125,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_minus_g);
-   elements.palette_plus_g = SLK_gui_button_create(344,141,14,14,"+");
+   elements.palette_plus_g = SLK_gui_button_create(344,125,14,14,"+");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_plus_g);
-   elements.palette_minus_b = SLK_gui_button_create(160,173,14,14,"-");
+   elements.palette_minus_b = SLK_gui_button_create(160,141,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_minus_b);
-   elements.palette_plus_b = SLK_gui_button_create(344,173,14,14,"+");
+   elements.palette_plus_b = SLK_gui_button_create(344,141,14,14,"+");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_plus_b);
-   elements.palette_space_left = SLK_gui_button_create(160,205,14,14,"<");
+   elements.palette_minus_colors = SLK_gui_button_create(160,157,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_minus_colors);
+   elements.palette_plus_colors = SLK_gui_button_create(344,157,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_plus_colors);
+   elements.palette_space_left = SLK_gui_button_create(160,189,14,14,"<");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_space_left);
-   elements.palette_space_right = SLK_gui_button_create(344,205,14,14,">");
+   elements.palette_space_right = SLK_gui_button_create(344,189,14,14,">");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_space_right);
    elements.palette_bar_r = SLK_gui_slider_create(174,109,170,14,0,255);
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_bar_r);
-   elements.palette_bar_g = SLK_gui_slider_create(174,141,170,14,0,255);
+   elements.palette_bar_g = SLK_gui_slider_create(174,125,170,14,0,255);
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_bar_g);
-   elements.palette_bar_b = SLK_gui_slider_create(174,173,170,14,0,255);
+   elements.palette_bar_b = SLK_gui_slider_create(174,141,170,14,0,255);
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_bar_b);
+   elements.palette_bar_colors = SLK_gui_slider_create(174,157,170,14,1,256);
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_bar_colors);
    label = SLK_gui_label_create(104,112,48,12,"red");
    SLK_gui_vtabbar_add_element(settings_tabs,1,label);
-   label = SLK_gui_label_create(104,144,48,12,"green");
+   label = SLK_gui_label_create(104,128,48,12,"green");
    SLK_gui_vtabbar_add_element(settings_tabs,1,label);
-   label = SLK_gui_label_create(104,176,48,12,"blue");
+   label = SLK_gui_label_create(104,144,48,12,"blue");
    SLK_gui_vtabbar_add_element(settings_tabs,1,label);
-   label = SLK_gui_label_create(104,208,48,12,"dist");
+   label = SLK_gui_label_create(100,160,56,12,"colors");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,label);
+   label = SLK_gui_label_create(104,192,48,12,"dist");
    SLK_gui_vtabbar_add_element(settings_tabs,1,label);
    elements.palette_label_r = SLK_gui_label_create(354,112,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_r);
-   elements.palette_label_g = SLK_gui_label_create(354,144,32,12,"128");
+   elements.palette_label_g = SLK_gui_label_create(354,128,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_g);
-   elements.palette_label_b = SLK_gui_label_create(354,176,32,12,"128");
+   elements.palette_label_b = SLK_gui_label_create(354,144,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_b);
-   elements.palette_label_space = SLK_gui_label_create(174,208,170,12,text_space[0]);
+   elements.palette_label_colors = SLK_gui_label_create(354,160,32,12,"256");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_colors);
+   elements.palette_label_space = SLK_gui_label_create(174,192,170,12,text_space[0]);
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_space);
    palette_labels();
 
@@ -504,6 +518,11 @@ void gui_init()
       env_def = "./default.json";
    FILE *f = fopen(env_def,"r");
    preset_load(f);
+
+   elements.palette_bar_colors->slider.value = palette->used;
+   char ctmp[16];
+   sprintf(ctmp,"%d",palette->used);
+   SLK_gui_label_set_text(elements.palette_label_colors,ctmp);
 }
 
 void gui_update()
@@ -631,6 +650,10 @@ static void gui_buttons()
             elements.palette_bar_b->slider.value = p->colors[palette_selected].b;
             palette_draw();
             palette_labels();
+            elements.palette_bar_colors->slider.value = palette->used;
+            char ctmp[16];
+            sprintf(ctmp,"%d",palette->used);
+            SLK_gui_label_set_text(elements.palette_label_colors,ctmp);
          }
          elements.palette_load->button.state.released = 0;
       }
@@ -658,6 +681,10 @@ static void gui_buttons()
          elements.palette_bar_b->slider.value--;
       else if(elements.palette_plus_b->button.state.pressed&&palette->colors[palette_selected].b<255)
          elements.palette_bar_b->slider.value++;
+      else if(elements.palette_minus_colors->button.state.pressed&&palette->used>1)
+         elements.palette_bar_colors->slider.value--;
+      else if(elements.palette_plus_colors->button.state.pressed&&palette->used<256)
+         elements.palette_bar_colors->slider.value++;
       if(elements.palette_bar_r->slider.value!=palette->colors[palette_selected].r||elements.palette_bar_g->slider.value!=palette->colors[palette_selected].g||elements.palette_bar_b->slider.value!=palette->colors[palette_selected].b)
       {
          palette->colors[palette_selected].r = elements.palette_bar_r->slider.value;
@@ -685,6 +712,14 @@ static void gui_buttons()
             pixel_distance_mode = 0;
          update = 1;
          SLK_gui_label_set_text(elements.palette_label_space,text_space[pixel_distance_mode]);
+      }
+      if(elements.palette_bar_colors->slider.value!=palette->used)
+      {
+         palette->used = elements.palette_bar_colors->slider.value;
+         char tmp[16];
+         sprintf(tmp,"%d",palette->used);
+         SLK_gui_label_set_text(elements.palette_label_colors,tmp);
+         update = 1;
       }
       break;
    case 2: //General tab
@@ -1112,6 +1147,10 @@ void preset_load(FILE *f)
       sprintf(ctmp,"%d",sharpen);
       SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
    ULK_json_free(root);
+
+   elements.palette_bar_colors->slider.value = palette->used;
+   sprintf(ctmp,"%d",palette->used);
+   SLK_gui_label_set_text(elements.palette_label_colors,ctmp);
 
    lowpass_image(sprite_in_org,sprite_in);   
    sharpen_image(sprite_in,sprite_in);
