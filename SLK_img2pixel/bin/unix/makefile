@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS+=-lm -Wall
 
-SLK_img2pix: main.o assets.o gui.o process.o sample.o utility.o palette.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
+SLK_img2pix: main.o assets.o gui.o process.o sample.o utility.o palette.o quantization.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
 	gcc -o SLK_img2pix $^ -lSLK -lm -lSDL2 -Wall -lGL
 	chmod +x SLK_img2pix 
 	mv SLK_img2pix ../../../bin/
@@ -12,7 +12,7 @@ main.o: ../../src/main.c ../../src/gui.h
 assets.o: ../../src/assets.c ../../src/assets.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
-gui.o: ../../src/gui.c ../../src/gui.h ../../src/assets.h ../../src/process.h ../../src/sample.h ../../src/utility.h
+gui.o: ../../src/gui.c ../../src/gui.h ../../src/quantization.h ../../src/assets.h ../../src/process.h ../../src/sample.h ../../src/utility.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 process.o: ../../src/process.c ../../src/process.h ../../src/sample.h ../../src/palette.h
@@ -25,6 +25,9 @@ utility.o: ../../src/utility.c ../../src/utility.h ../../src/process.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 palette.o: ../../src/palette.c ../../src/palette.h ../../src/process.h
+	$(CC) -O3 -c $< $(CFLAGS) 
+
+quantization.o: ../../src/quantization.c ../../src/quantization.h
 	$(CC) -O3 -c $< $(CFLAGS) 
 
 tinyfiledialogs.o: ../../../external/tinyfiledialogs.c

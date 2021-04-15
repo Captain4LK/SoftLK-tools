@@ -21,6 +21,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "process.h"
 #include "sample.h"
 #include "utility.h"
+#include "quantization.h"
 //-------------------------------------
 
 //#defines
@@ -51,6 +52,7 @@ struct Elements
    //Palette tab
    SLK_gui_element *palette_save;
    SLK_gui_element *palette_load;
+   SLK_gui_element *palette_generate;
    SLK_gui_element *palette_palette;
    SLK_RGB_sprite *palette_sprite;
    SLK_gui_element *palette_button;
@@ -295,10 +297,12 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,0,elements.save_label_upscale);
 
    //Palette tab
-   elements.palette_load = SLK_gui_button_create(158,244,164,14,"Load palette");
+   elements.palette_load = SLK_gui_button_create(158,221,164,14,"Load palette");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_load);
-   elements.palette_save = SLK_gui_button_create(158,276,164,14,"Save palette");
+   elements.palette_save = SLK_gui_button_create(158,245,164,14,"Save palette");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_save);
+   elements.palette_generate = SLK_gui_button_create(158,269,164,14,"Generate palette");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_generate);
    elements.palette_sprite = SLK_rgb_sprite_create(279,81);
    elements.palette_palette = SLK_gui_image_create(100,15,279,81,elements.palette_sprite,(SLK_gui_rectangle){0,0,279,81});
    palette_draw();
@@ -661,6 +665,22 @@ static void gui_buttons()
       {
          palette_write(palette);
          elements.palette_save->button.state.released = 0;
+      }
+      else if(elements.palette_generate->button.state.released)
+      {
+         elements.palette_save->button.state.released = 0;
+         quantize(palette,palette->used,sprite_in_org);
+
+         update = 1;
+         elements.palette_bar_r->slider.value = palette->colors[palette_selected].r;
+         elements.palette_bar_g->slider.value = palette->colors[palette_selected].g;
+         elements.palette_bar_b->slider.value = palette->colors[palette_selected].b;
+         palette_draw();
+         palette_labels();
+         elements.palette_bar_colors->slider.value = palette->used;
+         char ctmp[16];
+         sprintf(ctmp,"%d",palette->used);
+         SLK_gui_label_set_text(elements.palette_label_colors,ctmp);
       }
       else if(elements.palette_button->icon.state.pressed)
       {
