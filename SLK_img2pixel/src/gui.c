@@ -70,11 +70,14 @@ struct Elements
    SLK_gui_element *palette_minus_colors;
    SLK_gui_element *palette_space_left;
    SLK_gui_element *palette_space_right;
+   SLK_gui_element *palette_quant_left;
+   SLK_gui_element *palette_quant_right;
    SLK_gui_element *palette_label_r;
    SLK_gui_element *palette_label_g;
    SLK_gui_element *palette_label_b;
    SLK_gui_element *palette_label_colors;
    SLK_gui_element *palette_label_space;
+   SLK_gui_element *palette_label_quant;
 
    //General tab
    SLK_gui_element *general_tab_scale;
@@ -173,6 +176,11 @@ static const char *text_space[] =
    "YCC",
    "YIQ",
    "YUV",
+};
+
+static const char *text_quant[] = 
+{
+   "Octree",
 };
 
 static const char *text_dither[] = 
@@ -329,6 +337,10 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_space_left);
    elements.palette_space_right = SLK_gui_button_create(344,189,14,14,">");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_space_right);
+   elements.palette_quant_left = SLK_gui_button_create(160,173,14,14,"<");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_quant_left);
+   elements.palette_quant_right = SLK_gui_button_create(344,173,14,14,">");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_quant_right);
    elements.palette_bar_r = SLK_gui_slider_create(174,109,170,14,0,255);
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_bar_r);
    elements.palette_bar_g = SLK_gui_slider_create(174,125,170,14,0,255);
@@ -345,6 +357,8 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,1,label);
    label = SLK_gui_label_create(100,160,56,12,"colors");
    SLK_gui_vtabbar_add_element(settings_tabs,1,label);
+   label = SLK_gui_label_create(104,176,48,12,"quant");
+   SLK_gui_vtabbar_add_element(settings_tabs,1,label);
    label = SLK_gui_label_create(104,192,48,12,"dist");
    SLK_gui_vtabbar_add_element(settings_tabs,1,label);
    elements.palette_label_r = SLK_gui_label_create(354,112,32,12,"128");
@@ -357,6 +371,8 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_colors);
    elements.palette_label_space = SLK_gui_label_create(174,192,170,12,text_space[0]);
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_space);
+   elements.palette_label_quant = SLK_gui_label_create(174,176,170,12,text_quant[0]);
+   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_quant);
    palette_labels();
 
    //General tab

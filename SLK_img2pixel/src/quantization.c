@@ -93,6 +93,8 @@ static void octree_free_node(octree_node *node);
 
 void quantize(SLK_Palette *pal, int colors, SLK_RGB_sprite *in)
 {
+   if(in==NULL||pal==NULL)
+      return;
    memset(pal->colors,0,sizeof(*pal->colors)*256);
    pal->colors[0].r = 255;
    pal->colors[0].g = 0;
