@@ -79,13 +79,13 @@ typedef struct octree_tree
 //-------------------------------------
 
 //Function prototypes
+static void octree_quant(SLK_Palette *pal, int colors, SLK_RGB_sprite *in);
 static octree_node* octree_create_node(octree_node *parent);
 static int octree_insert_pixel(octree_tree *tree, int r, int g, int b);
 static uint32_t octree_calc_counters(octree_node *node);
 static struct octree_node* octree_find_smallest(octree_tree *tree, uint32_t *last_min);
 static void octree_reduce(octree_tree *tree, int colors);
 static void octree_fill_palette(SLK_Palette *pal, int *index, octree_tree *tree);
-static int octree_get_index(octree_node *node, int r, int g, int b, int i);
 static void octree_free_node(octree_node *node);
 //-------------------------------------
 
@@ -103,10 +103,29 @@ void quantize(SLK_Palette *pal, int colors, SLK_RGB_sprite *in)
    if(colors<=1)
       return;
 
+   SLK_RGB_sprite *down_in = SLK_rgb_sprite_create(512,512);
+   float fw = (float)(in->width-1)/(float)512;
+   float fh = (float)(in->height-1)/(float)512;
+   for(int y = 0;y<512;y++)
+   {
+      for(int x = 0;x<512;x++)
+      {
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,((float)x*fw),((float)y*fh));
+         down_in->data[y*512+x].r = c.r;
+         down_in->data[y*512+x].b = c.b;
+         down_in->data[y*512+x].g = c.g;
+         down_in->data[y*512+x].a = c.a;
+      }
+   }
+   octree_quant(pal,colors,down_in);
+   SLK_rgb_sprite_destroy(down_in);
+}
+
+static void octree_quant(SLK_Palette *pal, int colors, SLK_RGB_sprite *in)
+{
    struct octree_tree tree;
    int x,y;
    int i = 0;
-   //int bpp;
    int r,g,b;
 
    tree.number_of_leaves = 0;
@@ -120,9 +139,6 @@ void quantize(SLK_Palette *pal, int colors, SLK_RGB_sprite *in)
          r = in->data[y*in->width+x].r;
          g = in->data[y*in->width+x].g;
          b = in->data[y*in->width+x].b;
-         //r = bmp->line[y][x * 4 + _rgb_r_shift_32 / 8] / 4;
-         //g = bmp->line[y][x * 4 + _rgb_g_shift_32 / 8] / 4;
-         //b = bmp->line[y][x * 4 + _rgb_b_shift_32 / 8] / 4;
          if(!octree_insert_pixel(&tree,r,g,b))
          {
             octree_free_node(tree.root);
@@ -201,7 +217,7 @@ static uint32_t octree_calc_counters(octree_node *node)
    return node->counter;
 }
 
-static struct octree_node* octree_find_smallest(octree_tree *tree, uint32_t *last_min)
+static struct octree_node *octree_find_smallest(octree_tree *tree, uint32_t *last_min)
 {
    octree_node *min = tree->leaves_parents;
    octree_node *n = tree->leaves_parents->next;
@@ -286,23 +302,6 @@ static void octree_fill_palette(SLK_Palette *pal, int *index, octree_tree *tree)
       }
       n = n->next;
    }
-}
-
-static int octree_get_index(octree_node *node, int r, int g, int b, int i)
-{
-   int mask, index;
-   int r_bit, g_bit, b_bit;
-   restart:
-   if(node->leaf)
-      return node->palette_entry;
-   mask =  1<<i;
-   r_bit = (r&mask)>>i;
-   g_bit = (g&mask)>>i;
-   b_bit = (b&mask)>>i;
-   index = (r_bit<<2)+(g_bit<<1)+b_bit;
-   i--;
-   node = node->subnodes[index];
-   goto restart;
 }
 
 static void octree_free_node(octree_node *node)
