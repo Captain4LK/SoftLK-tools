@@ -670,6 +670,7 @@ static void gui_buttons()
       {
          elements.palette_save->button.state.released = 0;
          quantize(palette,palette->used,sprite_in_org);
+         quantize(palette,palette->used,sprite_in_org);
 
          update = 1;
          elements.palette_bar_r->slider.value = palette->colors[palette_selected].r;

@@ -1,8 +1,8 @@
 CC = gcc
-CFLAGS+=-lm -Wall
+CFLAGS+=-lm -Wall -g
 
 SLK_img2pix: main.o assets.o gui.o process.o sample.o utility.o palette.o quantization.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
-	gcc -o SLK_img2pix $^ -lSLK -lm -lSDL2 -Wall -lGL
+	gcc -o SLK_img2pix $^ -lSLK -lm -lSDL2 -Wall -lGL $(CFLAGS)
 	chmod +x SLK_img2pix 
 	mv SLK_img2pix ../../../bin/
 
