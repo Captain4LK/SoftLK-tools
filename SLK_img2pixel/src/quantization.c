@@ -48,7 +48,7 @@ static int octree_depth = 0;
 static int octree_size = 0;
 static Node *octree;
 static int allocs = 0;
-static Node **reduce_list[MAX_DEPTH+1];
+static Node **reduce_list[MAX_DEPTH];
 //-------------------------------------
 
 //Function prototypes
@@ -56,11 +56,11 @@ static int get_bit(uint8_t bit, int value);
 static int branch(Color rgb, int depth);
 static void octree_init(Node **tree, int depth);
 static void octree_insert(Node **tree, Color rgb, int depth);
-static void get_reducible(Node **tree);
-static void make_reducible(int level, Node **node);
+static void octree_get_reducible(Node **tree);
+static void octree_make_reducible(int level, Node **node);
 static void octree_reduce();
-static void fill_palette(Node **node, SLK_Palette *pal);
-static void tree_free(Node *node);
+static void octree_fill_palette(Node **node, SLK_Palette *pal);
+static void octree_free(Node *node);
 //-------------------------------------
 
 //Function implementations
@@ -102,8 +102,8 @@ void quantize(SLK_Palette *pal, int colors, SLK_RGB_sprite *in)
       while(octree_size>colors) octree_reduce();
    }
    pal->used = 0;
-   fill_palette(&octree,pal);
-   tree_free(octree);
+   octree_fill_palette(&octree,pal);
+   octree_free(octree);
    SLK_rgb_sprite_destroy(down_in);
 }
 
@@ -142,7 +142,7 @@ static void octree_init(Node **tree, int depth)
    }
    else
    {
-      make_reducible(depth,tree);
+      octree_make_reducible(depth,tree);
    }
 }
 
@@ -166,16 +166,15 @@ static void octree_insert(Node **tree, Color rgb, int depth)
    }
 }
 
-static void get_reducible(Node **tree)
+static void octree_get_reducible(Node **tree)
 {
    while(reduce_list[octree_depth-1]==NULL)
       octree_depth--;
-   if(octree_depth<=0) octree_depth = 1;
    *tree = *reduce_list[octree_depth-1];
    reduce_list[octree_depth-1] = (*reduce_list[octree_depth-1])->next_node;
 }
 
-static void make_reducible(int level, Node **node)
+static void octree_make_reducible(int level, Node **node)
 {
    Node **n = reduce_list[level];
    (*node)->next_node = n;
@@ -188,7 +187,7 @@ static void octree_reduce()
    int children = 0;
    Color sum = {0};
 
-   get_reducible(&tree);
+   octree_get_reducible(&tree);
    for(int i = 0;i<8;i++)
    {
       if(tree->next[i]!=NULL)
@@ -205,7 +204,7 @@ static void octree_reduce()
    octree_size = octree_size-children+1;
 }
 
-static void fill_palette(Node **node, SLK_Palette *pal)
+static void octree_fill_palette(Node **node, SLK_Palette *pal)
 {
    if((*node)!=NULL)
    {
@@ -219,23 +218,21 @@ static void fill_palette(Node **node, SLK_Palette *pal)
             pal->colors[pal->used].a = 255;
             pal->used++;
          }
-         else
-            puts("FAIL");
       }
       else
       {
          for(int i = 0;i<8;i++)
-            fill_palette(&((*node)->next[i]),pal);
+            octree_fill_palette(&((*node)->next[i]),pal);
       }
    }
 }
 
-static void tree_free(Node *node)
+static void octree_free(Node *node)
 {
    if((node)!=NULL)
    {
       for(int i = 0;i<8;i++)
-         tree_free(((node)->next[i]));
+         octree_free(((node)->next[i]));
       free(node);
    }
 }

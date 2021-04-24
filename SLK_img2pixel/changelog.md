@@ -1,9 +1,15 @@
 # Changelog
 
-Current development version: SLK_img2pixel 1.1-dev
+Current development version: SLK_img2pixel 1.2-dev
 
 ----------------------------------------
-Version:                SLK_img2pixel 1.1 (tba)
+Version:                SLK_img2pixel 1.2 (tba)
+----------------------------------------
+
+CHANGES:
+
+----------------------------------------
+Version:                SLK_img2pixel 1.1 - color quantization (24.04.2021)
 ----------------------------------------
 
 CHANGES:
