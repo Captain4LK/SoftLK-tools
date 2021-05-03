@@ -16,7 +16,7 @@ Warning: SLK_make is still very much experimental, it will not work for any oper
 
 # Building from source
 
-* First, clone this repository (important: the --recursive): ``git clone https://codeberg.org/Captain4LK/SoftLK-tools.git --recursive``
+* First, clone this repository (important: the --recursive): ``https://github.com/Captain4LK/SoftLK-tools.git --recursive``
 
 ## Dependencies
 
@@ -31,7 +31,7 @@ In general, I try to keep the amount of external dependencies as low as possible
 
 ### SoftLK-lib
 
-Most of the tools in this repository need SoftLK-lib. Since SoftLK-lib is a separate project the source has not been included in this repository. Separate install instructions can be found in its directory: [SoftLK-lib](https://codeberg.org/Captain4LK/SoftLK-lib). All of the makefiles assume it to be installed globally, so I recommend running ``sudo make install`` for installing it on your system.
+Most of the tools in this repository need SoftLK-lib. Since SoftLK-lib is a separate project the source has not been included in this repository. Separate install instructions can be found in its directory: [SoftLK-lib](https://github.com/Captain4LK/SoftLK-lib). All of the makefiles assume it to be installed globally, so I recommend running ``sudo make install`` for installing it on your system.
 
 Here is a list of all makefile targets for building SoftLK-lib:
 
