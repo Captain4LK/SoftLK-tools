@@ -2,13 +2,14 @@
 
 This repo hosts the source code for different (currently two) tools that were made to be used with SoftLK-lib.
 
-## SLK_img2pixel (v1.0)
+## SLK_img2pixel (v1.1)
 
 A tool for transforming images into pixel art.
 
 ![SLK_img2pixel_preview](screenshots/SLK_img2pixel.png)
+![anim](screenshots/crate.gif)
 
-## SLK_make
+## SLK_make (WIP)
 
 A build system based on the one used by golgotha (which was cancelled and released into the public domain).
 Warning: SLK_make is still very much experimental, it will not work for any operating system except linux.
