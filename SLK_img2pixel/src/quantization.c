@@ -8,6 +8,8 @@ To the extent possible under law, the author(s) have dedicated all copyright and
 You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
 */
 
+//Based on Golgotha public domain release
+
 //External includes
 #include <stdlib.h>
 #include <string.h>
@@ -26,41 +28,39 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Typedefs
+enum
+{
+   HIST_SIZE = 0x10000,
+   MAX_COLORS = 256,
+};
+
 typedef struct
 {
-   int r,g,b;
-}Color;
+   uint16_t reference[HIST_SIZE];
+   uint32_t counts[HIST_SIZE];
+   uint32_t tcolors;              // total original colors in the histogram [length of reference]
+   uint32_t total_pixels;     
+}Histogramm;
 
-typedef struct Node
+typedef struct
 {
-   int level;
-   uint8_t leaf;
-   struct Node *next[8];
-   int color_count;
-   int color_index;
-   Color rgb;
-   struct Node **next_node;
-}Node;
+   uint32_t index;
+   uint32_t colors;
+   uint32_t sum;
+}Box;
 //-------------------------------------
 
 //Variables
-static int octree_depth = 0;
-static int octree_size = 0;
-static Node *octree;
-static int allocs = 0;
-static Node **reduce_list[MAX_DEPTH];
+static uint32_t *counts;
 //-------------------------------------
 
 //Function prototypes
-static int get_bit(uint8_t bit, int value);
-static int branch(Color rgb, int depth);
-static void octree_init(Node **tree, int depth);
-static void octree_insert(Node **tree, Color rgb, int depth);
-static void octree_get_reducible(Node **tree);
-static void octree_make_reducible(int level, Node **node);
-static void octree_reduce();
-static void octree_fill_palette(Node **node, SLK_Palette *pal);
-static void octree_free(Node *node);
+static void increment_color(Histogramm *h, uint16_t color, uint32_t count);
+static inline void _16_to_rgb(uint32_t rgb, uint8_t *r, uint8_t *g, uint8_t *b);
+static int red_compare(const void *a, const void *b);
+static int green_compare(const void *a, const void *b);
+static int blue_compare(const void *a, const void *b);
+static int box_compare(const void *a, const void *b);
 //-------------------------------------
 
 //Function implementations
@@ -69,171 +69,215 @@ void quantize(SLK_Palette *pal, int colors, SLK_RGB_sprite *in)
 {
    if(in==NULL||pal==NULL)
       return;
-   memset(pal->colors,0,sizeof(*pal->colors)*256);
-   pal->colors[0].r = 255;
-   pal->colors[0].g = 0;
-   pal->colors[0].b = 255;
-   colors = MIN(256,colors); 
-   if(colors<=1)
-      return;
 
-   SLK_RGB_sprite *down_in = SLK_rgb_sprite_create(512,512);
-   float fw = (float)(in->width-1)/(float)512;
-   float fh = (float)(in->height-1)/(float)512;
-   for(int y = 0;y<512;y++)
+   Histogramm *hist = malloc(sizeof(*hist));
+   memset(hist,0,sizeof(*hist));
+   pal->used = colors;
+
+   //Add colors to histogram
+   uint32_t loop_count = in->width*in->height;
+   SLK_Color *pixel = in->data;
+   for(;loop_count;loop_count--)
    {
-      for(int x = 0;x<512;x++)
+      SLK_Color c = *pixel;
+      //convert the color to 16 bit
+      uint16_t col = (((uint16_t)c.b>>3)<<11)|
+                     (((uint16_t)c.g>>2)<<5)|
+                     ((uint16_t)c.r>>3);
+
+      increment_color(hist,col,1);
+
+      //move to the next pixel in the image
+      ++pixel;
+   }
+
+   //Median cut
+   counts = hist->counts;
+
+   Box *box_list = malloc(sizeof(Box)*MAX_COLORS);
+
+   //setup the initial box
+   uint32_t total_boxes    = 1;
+   box_list[0].index  = 0;
+   box_list[0].colors = hist->tcolors;
+   box_list[0].sum    = hist->total_pixels;
+
+   uint32_t box_index;
+
+   // split boxes until we have all the colors
+   while(total_boxes<colors-0/*skip_colors*/)
+   {
+      // Find the first splittable box.
+      for(box_index = 0; box_index < total_boxes; ++box_index )
+         if (box_list[box_index].colors >= 2)
+            break;
+
+      if( box_index == total_boxes)
+         break;	/* ran out of colors! */
+
+
+      uint32_t start = box_list[box_index].index;
+      uint32_t end   = start + box_list[box_index].colors;
+
+      uint8_t  min_r=0xff, max_r=0x00,
+      min_g=0xff, max_g=0x00,
+      min_b=0xff, max_b=0x00,
+      r,g,b;
+
+
+      // now find the minimum and maximum r g b values for this box
+      for (loop_count = start; loop_count<end; loop_count++)
       {
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,((float)x*fw),((float)y*fh));
-         down_in->data[y*512+x].r = c.r;
-         down_in->data[y*512+x].b = c.b;
-         down_in->data[y*512+x].g = c.g;
-         down_in->data[y*512+x].a = c.a;
+         _16_to_rgb(hist->reference[loop_count],&r,&g,&b);
+
+         if (r>max_r) max_r=r;
+         if (r<min_r) min_r=r;
+
+         if (g>max_g) max_g=g;
+         if (g<min_g) min_g=g;
+
+         if (b>max_b) max_b=b;
+         if (b<min_b) min_b=b;
       }
-   }
-   octree_depth = 8;
-   octree_size = 0;
-   octree = NULL;
-   allocs = 0;
-   memset(reduce_list,0,sizeof(reduce_list));
-   for(int i = 0;i<512*512;i++)
-   {
-      octree_insert(&octree,(Color){down_in->data[i].r,down_in->data[i].g,down_in->data[i].b},1);
-      while(octree_size>colors) octree_reduce();
-   }
-   pal->used = 0;
-   octree_fill_palette(&octree,pal);
-   octree_free(octree);
-   SLK_rgb_sprite_destroy(down_in);
-}
 
-static int get_bit(uint8_t bit, int value)
-{
-   return (value&(1<<bit))!=0;
-}
 
-static int branch(Color rgb, int depth)
-{
-   return get_bit(MAX_DEPTH-depth,rgb.r)*4+get_bit(MAX_DEPTH-depth,rgb.g)*2+get_bit(MAX_DEPTH-depth,rgb.b);
-}
-
-static void octree_init(Node **tree, int depth)
-{
-   *tree = malloc(sizeof(**tree));
-   (*tree)->level = depth;
-   (*tree)->leaf = depth>=octree_depth;
-   (*tree)->next_node = NULL;
-   (*tree)->color_count = 0;
-   (*tree)->rgb.r = 0;
-   (*tree)->rgb.g = 0;
-   (*tree)->rgb.b = 0;
-   for(int i = 0;i<8;i++)
-      (*tree)->next[i] = NULL;
-   if((*tree)->leaf)
-   {
-      octree_size++;
-
-      allocs++;
-      if(allocs>=(1<<24))
-      {
-         puts("Too many allocs, something went wrong");
-         exit(-1);
-      }
-   }
-   else
-   {
-      octree_make_reducible(depth,tree);
-   }
-}
-
-static void octree_insert(Node **tree, Color rgb, int depth)
-{
-   if(*tree==NULL)
-   {
-      octree_init(tree,depth);
-   }
-
-   if((*tree)->leaf)
-   {
-      (*tree)->color_count++;
-      (*tree)->rgb.r+=rgb.r;
-      (*tree)->rgb.g+=rgb.g;
-      (*tree)->rgb.b+=rgb.b;
-   }
-   else
-   {
-      octree_insert(&((*tree)->next[branch(rgb,depth)]),rgb,depth+1);
-   }
-}
-
-static void octree_get_reducible(Node **tree)
-{
-   while(reduce_list[octree_depth-1]==NULL)
-      octree_depth--;
-   *tree = *reduce_list[octree_depth-1];
-   reduce_list[octree_depth-1] = (*reduce_list[octree_depth-1])->next_node;
-}
-
-static void octree_make_reducible(int level, Node **node)
-{
-   Node **n = reduce_list[level];
-   (*node)->next_node = n;
-   reduce_list[level] = node;
-}
-
-static void octree_reduce()
-{
-   Node *tree = NULL;
-   int children = 0;
-   Color sum = {0};
-
-   octree_get_reducible(&tree);
-   for(int i = 0;i<8;i++)
-   {
-      if(tree->next[i]!=NULL)
-      {
-         children++; 
-         sum.r+=(*tree->next[i]).rgb.r;
-         sum.g+=(*tree->next[i]).rgb.g;
-         sum.b+=(*tree->next[i]).rgb.b;
-         tree->color_count++;
-      }
-   }
-   tree->leaf = 1;
-   tree->rgb = sum;
-   octree_size = octree_size-children+1;
-}
-
-static void octree_fill_palette(Node **node, SLK_Palette *pal)
-{
-   if((*node)!=NULL)
-   {
-      if((*node)->leaf)
-      {
-         if((*node)->color_count!=0)
-         {
-            pal->colors[pal->used].r = (*node)->rgb.r/(*node)->color_count;
-            pal->colors[pal->used].g = (*node)->rgb.g/(*node)->color_count;
-            pal->colors[pal->used].b = (*node)->rgb.b/(*node)->color_count;
-            pal->colors[pal->used].a = 255;
-            pal->used++;
-         }
-      }
+      // Find the largest dimension, and sort by that component. 
+      if (((max_r - min_r) >= (max_g - min_g)) && ((max_r - min_r) >= (max_b - min_b)))
+         qsort(hist->reference + start,
+               end-start,             // total elements to sort
+               sizeof(uint16_t),
+               red_compare);
+      else if ( (max_g - min_g) >= (max_b - min_b) )
+         qsort(hist->reference + start,
+               end-start,             // total elements to sort
+               sizeof(uint16_t),
+               green_compare);
       else
+         qsort(hist->reference + start,
+               end-start,             // total elements to sort
+               sizeof(uint16_t),
+               blue_compare);
+
+
+
+      // now find the division which closest divides into an equal number of pixels
+      uint32_t low_count= counts[hist->reference[start]];
+      uint32_t mid_number=box_list[box_index].sum/2;
+
+      for(loop_count = start+1; loop_count<end-1&&low_count<mid_number;loop_count++)
+         low_count+=counts[hist->reference[loop_count]];
+
+
+      // now split the box
+      box_list[total_boxes].index  = loop_count;
+      box_list[total_boxes].colors = end-loop_count;
+      box_list[total_boxes].sum    = box_list[box_index].sum-low_count;
+      total_boxes++;
+
+      box_list[box_index].colors= loop_count-start;
+      box_list[box_index].sum   = low_count;
+
+      // sort to bring the biggest boxes to the top
+      //qsort(box_list, total_boxes, sizeof(Box), box_compare );    
+
+      /*    for (int z=0;z<total_boxes;z++)
       {
-         for(int i = 0;i<8;i++)
-            octree_fill_palette(&((*node)->next[i]),pal);
-      }
+      printf("box #%d : index = %d, colors= %d, sum=%d\n",z, 
+      box_list[z].index, box_list[z].colors, box_list[z].sum);
+      } */
+
    }
+
+
+   // we should have 256 boxes, we now need to choose a color for each box
+   // we do this by averaging all the colors within the box
+   uint32_t r_tot, g_tot, b_tot;
+   for (box_index = 0; box_index<total_boxes-0/*skip_colors*/; box_index++)
+   {
+      r_tot = g_tot = b_tot = 0;
+
+      uint32_t start = box_list[box_index].index;
+      uint32_t end   = start + box_list[box_index].colors;
+
+      uint8_t r,g,b;
+      for (loop_count = start; loop_count < end; loop_count++)
+      {
+         _16_to_rgb(hist->reference[loop_count],&r,&g,&b);
+
+         r_tot+=r;
+         g_tot+=g;
+         b_tot+=b;
+      }
+
+      r_tot/=(end-start);
+      g_tot/=(end-start);
+      b_tot/=(end-start);
+
+      pal->colors[box_index+0/*skip_colors*/].n = (r_tot<<16)|
+      (g_tot<<8) |
+      b_tot;
+      pal->colors[box_index+0/*skip_colors*/].a = 255;
+   }
+
+   for(;box_index+0/*skip_colors*/<colors; box_index++)
+      pal->colors[box_index+0/*skip_colors*/].n = 0;
+
+   free(box_list);
 }
 
-static void octree_free(Node *node)
+static void increment_color(Histogramm *h, uint16_t color, uint32_t count)
 {
-   if((node)!=NULL)
+   if(!h->counts[color])            // is this an original color?
    {
-      for(int i = 0;i<8;i++)
-         octree_free(((node)->next[i]));
-      free(node);
+      h->reference[h->tcolors] = color;    // add this color to the reference list
+      h->tcolors++;
    }
+   h->counts[color]+=count;          // increment the counter for this color
+   h->total_pixels+=count;           // count total pixels we've looked at
+}
+
+static inline void _16_to_rgb(uint32_t rgb, uint8_t *r, uint8_t *g, uint8_t *b)
+{
+  *b=(rgb & (1 | 2 | 4 | 8 | 16))<<3;
+  rgb>>=5;
+
+  *g=(rgb & (1 | 2 | 4 | 8 | 16 | 32))<<2;
+  rgb>>=6;
+
+  *r=(rgb & (1 | 2 | 4 | 8 | 16))<<3;
+}
+
+static int red_compare(const void *a, const void *b)
+{
+  uint16_t color1=counts[*((uint16_t *)a)],
+      color2=counts[*((uint16_t *)b)];
+
+  return ((int32_t) ((color1 & (  (1 | 2 | 4 | 8 | 16) << 11))>>11))-
+    ((int32_t) ((color2 & (  (1 | 2 | 4 | 8 | 16) << 11))>>11));
+}
+
+
+static int green_compare(const void *a, const void *b)
+{
+  uint16_t color1=counts[*((uint16_t *)a)],
+      color2=counts[*((uint16_t *)b)];
+
+  return ((int32_t) (color1 & (  (1 | 2 | 4 | 8 | 16 | 32) << 5)))-
+         ((int32_t) (color2 & (  (1 | 2 | 4 | 8 | 16 | 32) << 5)));
+}
+
+
+static int blue_compare(const void *a, const void *b)
+{
+  uint16_t color1=counts[*((uint16_t *)a)],
+      color2=counts[*((uint16_t *)b)];
+
+  return ((int32_t) (color1 & (  (1 | 2 | 4 | 8 | 16) << 0)))-
+         ((int32_t) (color2 & (  (1 | 2 | 4 | 8 | 16) << 0)));
+}
+
+static int box_compare(const void *a, const void *b)
+{
+  return ((Box *)b)->sum-((Box *)a)->sum;
 }
 //-------------------------------------
