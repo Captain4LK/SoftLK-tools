@@ -14,7 +14,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdlib.h>
 #include <string.h>
 #include <SLK/SLK.h>
-#include "../../external/SLK_gui.h"
+#include <SLK/SLK_gui.h>
 //-------------------------------------
 
 //Internal includes
