@@ -60,7 +60,7 @@ static inline void _16_to_rgb(uint32_t rgb, uint8_t *r, uint8_t *g, uint8_t *b);
 static int red_compare(const void *a, const void *b);
 static int green_compare(const void *a, const void *b);
 static int blue_compare(const void *a, const void *b);
-static int box_compare(const void *a, const void *b);
+//static int box_compare(const void *a, const void *b);
 //-------------------------------------
 
 //Function implementations
@@ -276,8 +276,8 @@ static int blue_compare(const void *a, const void *b)
          ((int32_t) (color2 & (  (1 | 2 | 4 | 8 | 16) << 0)));
 }
 
-static int box_compare(const void *a, const void *b)
+/*static int box_compare(const void *a, const void *b)
 {
   return ((Box *)b)->sum-((Box *)a)->sum;
-}
+}*/
 //-------------------------------------

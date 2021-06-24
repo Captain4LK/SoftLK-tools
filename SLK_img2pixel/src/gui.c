@@ -531,7 +531,7 @@ void gui_init()
 
 void gui_update()
 {
-   int mx,my;
+   int mx = 0,my = 0;
    SLK_mouse_get_layer_pos(2,&mx,&my);
    if(settings->moveable!=2)
       SLK_gui_window_update_input(preview,SLK_mouse_get_state(SLK_BUTTON_LEFT),SLK_mouse_get_state(SLK_BUTTON_RIGHT),mx,my);
@@ -558,7 +558,7 @@ void gui_update()
 //Big boy function
 static void gui_buttons()
 {
-   int mx,my;
+   int mx = 0,my = 0;
    SLK_mouse_get_layer_pos(2,&mx,&my);
    int update = 0;
 
