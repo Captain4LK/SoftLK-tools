@@ -83,15 +83,15 @@ static Color_xyz color_to_xyz(SLK_Color c);
 static Color_ycc color_to_ycc(SLK_Color c);
 static Color_yiq color_to_yiq(SLK_Color c);
 static Color_yuv color_to_yuv(SLK_Color c);
-static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, Big_pixel c);
-static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, Big_pixel c);
-static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, Big_pixel c);
-static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, Big_pixel c);
-static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, Big_pixel c);
-static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, Big_pixel c);
-static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, Big_pixel c);
-static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, Big_pixel c);
-static int64_t rgb_color_dist2(Big_pixel c0, SLK_Color c1);
+static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, SLK_Color c);
+static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, SLK_Color c);
+static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, SLK_Color c);
+static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, SLK_Color c);
+static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, SLK_Color c);
+static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, SLK_Color c);
+static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, SLK_Color c);
+static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, SLK_Color c);
+static int64_t rgb_color_dist2(SLK_Color c0, SLK_Color c1);
 static double cie94_color_dist2(Color_lab c0, Color_lab c1);
 static double ciede2000_color_dist2(Color_lab c0, Color_lab c1);
 static double color_dist2(double a0, double a1, double a2, double b0, double b1, double b2);
@@ -132,7 +132,7 @@ void palette_setup(SLK_Palette *pal, int distance_mode)
    }
 }
 
-SLK_Color palette_find_closest(SLK_Palette *pal, Big_pixel c, int distance_mode)
+SLK_Color palette_find_closest(SLK_Palette *pal, SLK_Color c, int distance_mode)
 {
    SLK_Color out = {0};
 
@@ -273,7 +273,7 @@ static Color_yuv color_to_yuv(SLK_Color c)
    return y;
 }
 
-static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, Big_pixel c)
+static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -294,7 +294,7 @@ static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, Big_pixel c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, Big_pixel c)
+static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -320,7 +320,7 @@ static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, Big_pixel c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, Big_pixel c)
+static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -346,7 +346,7 @@ static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, Big_pixel c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, Big_pixel c)
+static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -372,7 +372,7 @@ static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, Big_pixel c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, Big_pixel c)
+static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -398,7 +398,7 @@ static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, Big_pixel c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, Big_pixel c)
+static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -424,7 +424,7 @@ static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, Big_pixel c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, Big_pixel c)
+static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -450,7 +450,7 @@ static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, Big_pixel c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, Big_pixel c)
+static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -476,7 +476,7 @@ static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, Big_pixel c)
    return pal->colors[min_index];
 }
 
-static int64_t rgb_color_dist2(Big_pixel c0, SLK_Color c1)
+static int64_t rgb_color_dist2(SLK_Color c0, SLK_Color c1)
 {
    int64_t diff_r = c1.r-c0.r;
    int64_t diff_g = c1.g-c0.g;

@@ -1,5 +1,5 @@
 CC = gcc -flto -O3 -s
-CFLAGS+=-lm -Wall
+CFLAGS+=-lm -Wall -Wextra -Wno-sign-compare -Wno-unused-parameter
 
 SLK_img2pix: main.o assets.o gui.o process.o sample.o utility.o palette.o quantization.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
 	$(CC) -o SLK_img2pix $^ -lSLK -lm -lSDL2 -Wall -lGL $(CFLAGS)

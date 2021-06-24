@@ -58,11 +58,11 @@ int gauss = 80;
 //-------------------------------------
 
 //Function prototypes
-static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold, int distance_mode);
-static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
-static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
-static void floyd_apply_error(Big_pixel *d, double error_r, double error_g, double error_b, int x, int y, int width, int height);
-static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height, int distance_mode);
+static void orderd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold, int distance_mode);
+static void floyd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
+static void floyd2_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
+static void floyd_apply_error(SLK_Color *d, double error_r, double error_g, double error_b, int x, int y, int width, int height);
+static void dither_image(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height, int distance_mode);
 static double gauss_calc(double x, double y, double sigma);
 static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_RGB_sprite *data);
 //-------------------------------------
@@ -72,7 +72,7 @@ static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_
 //"Glue" function, samples, processes and dithers the input image
 void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *palette, int sample_mode, int process_mode, int distance_mode)
 {
-   Big_pixel *tmp_data = malloc(sizeof(*tmp_data)*out->width*out->height);
+   SLK_Color *tmp_data = malloc(sizeof(*tmp_data)*out->width*out->height);
    if(tmp_data==NULL)
       return;
 
@@ -120,7 +120,7 @@ void process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out, SLK_Palette *p
    {
       for(int x = 0;x<out->width;x++)
       {
-         Big_pixel in = tmp_data[y*out->width+x];
+         SLK_Color in = tmp_data[y*out->width+x];
 
          //Saturation, brightness and contrast
          float r = (float)in.r;
@@ -301,7 +301,7 @@ static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_
 }
 
 //Dithers an image to the provided palette using the specified mode
-static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height, int distance_mode)
+static void dither_image(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height, int distance_mode)
 {
    switch(process_mode)
    {
@@ -334,13 +334,13 @@ static void dither_image(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *palette
 }
 
 //Applies ordered dithering to the input
-static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold, int distance_mode)
+static void orderd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold, int distance_mode)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       { 
-         Big_pixel in = d[y*width+x];
+         SLK_Color in = d[y*width+x];
          if(in.a<alpha_threshold)
          {
             out->data[y*width+x] = SLK_color_create(0,0,0,0);
@@ -350,7 +350,7 @@ static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
          //Add a value to the color depending on the position,
          //this creates the dithering effect
          uint8_t tresshold_id = ((y&7)<<3)+(x&7);
-         Big_pixel c;
+         SLK_Color c;
          c.r = MAX(0,MIN(0xff,(in.r+dither_threshold[tresshold_id])));
          c.g = MAX(0,MIN(0xff,(in.g+dither_threshold[tresshold_id])));
          c.b = MAX(0,MIN(0xff,(in.b+dither_threshold[tresshold_id])));
@@ -364,13 +364,13 @@ static void orderd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
 //Applies Floyd-Steinberg dithering to the input
 //This version uses per color component errror values,
 //this usually does not work well with most palettes
-static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+static void floyd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         Big_pixel in = d[y*width+x];
+         SLK_Color in = d[y*width+x];
          if(in.a<alpha_threshold)
          {
             out->data[y*width+x] = SLK_color_create(0,0,0,0);
@@ -395,13 +395,13 @@ static void floyd_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, in
 //Applies Floyd-Steinberg dithering to the input
 //This version uses distributed error values,
 //this results in better results for most palettes
-static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+static void floyd2_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         Big_pixel in = d[y*width+x];
+         SLK_Color in = d[y*width+x];
          if(in.a<alpha_threshold)
          {
             out->data[y*width+x] = SLK_color_create(0,0,0,0);
@@ -425,12 +425,12 @@ static void floyd2_dither(Big_pixel *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
 }
 
 //Helper function for floyd_dither and floyd2_dither
-static void floyd_apply_error(Big_pixel *d, double error_r, double error_g, double error_b, int x, int y, int width, int height)
+static void floyd_apply_error(SLK_Color *d, double error_r, double error_g, double error_b, int x, int y, int width, int height)
 {
    if(x>width-1||x<0||y>height-1||y<0)
       return;
 
-   Big_pixel *in = &d[y*width+x];
+   SLK_Color *in = &d[y*width+x];
    in->r = in->r+error_r;
    in->g = in->g+error_g;
    in->b = in->b+error_b;

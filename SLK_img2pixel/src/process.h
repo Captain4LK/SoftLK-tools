@@ -12,21 +12,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _PROCESS_H_
 
-typedef struct
-{
-   union
-   {
-      struct
-      {
-         int16_t r;
-         int16_t g;
-         int16_t b;
-         int16_t a;
-      };
-      uint64_t n;
-   };
-}Big_pixel;
-
 extern int brightness;
 extern int contrast;
 extern int img_gamma;

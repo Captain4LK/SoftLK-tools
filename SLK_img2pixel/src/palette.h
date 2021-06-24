@@ -13,6 +13,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define _PALETTE_H_
 
 void palette_setup(SLK_Palette *pal, int distance_mode);
-SLK_Color palette_find_closest(SLK_Palette *pal, Big_pixel c, int distance_mode);
+SLK_Color palette_find_closest(SLK_Palette *pal, SLK_Color c, int distance_mode);
 
 #endif

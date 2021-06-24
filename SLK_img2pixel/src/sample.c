@@ -34,21 +34,21 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static void sample_round(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
-static void sample_floor(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
-static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
-static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
-static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
+static void sample_round(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
+static void sample_floor(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
+static void sample_ceil(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
+static void sample_linear(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
+static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
 static float cubic_hermite (float a, float b, float c, float d, float t);
-static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
-static void sample_lanczos(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height);
+static void sample_supersample(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
+static void sample_lanczos(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
 static double lanczos(double v);
 //-------------------------------------
 
 //Function implementations
 
 //Downsamples an image to the specified dimensions
-void sample_image(const SLK_RGB_sprite *in, Big_pixel *out, int sample_mode, int width, int height)
+void sample_image(const SLK_RGB_sprite *in, SLK_Color *out, int sample_mode, int width, int height)
 {
    switch(sample_mode)
    {
@@ -64,7 +64,7 @@ void sample_image(const SLK_RGB_sprite *in, Big_pixel *out, int sample_mode, int
 
 //Nearest neighbour sampling,
 //rounding the position
-static void sample_round(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+static void sample_round(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
@@ -84,7 +84,7 @@ static void sample_round(const SLK_RGB_sprite *in, Big_pixel *out, int width, in
 
 //Nearest neighbour sampling,
 //flooring the position
-static void sample_floor(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+static void sample_floor(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
@@ -104,7 +104,7 @@ static void sample_floor(const SLK_RGB_sprite *in, Big_pixel *out, int width, in
 
 //Nearest neighbour sampling,
 //ceiling the position
-static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+static void sample_ceil(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
@@ -123,7 +123,7 @@ static void sample_ceil(const SLK_RGB_sprite *in, Big_pixel *out, int width, int
 }
 
 //Bilinear sampling
-static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+static void sample_linear(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
@@ -173,7 +173,7 @@ static void sample_linear(const SLK_RGB_sprite *in, Big_pixel *out, int width, i
 }
 
 //Bicubic sampling
-static void sample_bicubic(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
@@ -259,7 +259,7 @@ static float cubic_hermite (float a, float b, float c, float d, float t)
 }
 
 //Supersampling --> works best without gaussian blur
-static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+static void sample_supersample(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
@@ -268,7 +268,7 @@ static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int wid
    {
       for(int x = 0;x<width;x++)
       {
-         Big_pixel p = {0};
+         SLK_Color p = {0};
          float n = 0.0f;
          float r = 0.0f;
          float g = 0.0f;
@@ -312,7 +312,7 @@ static void sample_supersample(const SLK_RGB_sprite *in, Big_pixel *out, int wid
 //Lanczos downsampling
 //The only one to use doubles 
 //for best possible result
-static void sample_lanczos(const SLK_RGB_sprite *in, Big_pixel *out, int width, int height)
+static void sample_lanczos(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    double fw = (double)(in->width-1)/(double)width;
    double fh = (double)(in->height-1)/(double)height;
@@ -325,7 +325,7 @@ static void sample_lanczos(const SLK_RGB_sprite *in, Big_pixel *out, int width, 
          int iy = (int)((double)y*fh);
          double sx = ((double)x*fw)-(double)ix;
          double sy = ((double)y*fh)-(double)iy;
-         Big_pixel p = {0};
+         SLK_Color p = {0};
 
          double a0 = lanczos(sx+2.0f);
          double a1 = lanczos(sx+1.0f);

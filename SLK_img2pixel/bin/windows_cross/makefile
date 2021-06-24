@@ -1,5 +1,5 @@
 CC = i686-w64-mingw32-gcc
-CFLAGS+=-L../../../../SoftLK-lib/lib/windows_cross/ -I ../../../../SoftLK-lib/include/ -lcomdlg32 -lole32 -lSLK -lmingw32 -lSDL2main -lSDL2 -mwindows -Wall 
+CFLAGS+=-L../../../../SoftLK-lib/lib/windows_cross/ -I ../../../../SoftLK-lib/include/ -lcomdlg32 -lole32 -lSLK -lmingw32 -lSDL2main -lSDL2 -mwindows -Wall -Wno-sign-compare -Wno-unused-parameter
 
 SLK_img2pix: main.o assets.o gui.o process.o sample.o utility_win.o palette.o quantization.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
 	$(CC) -o SLK_img2pix $^ $(CFLAGS)
