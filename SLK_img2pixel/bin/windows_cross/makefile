@@ -1,6 +1,6 @@
 CC = i686-w64-mingw32-gcc -flto -O3 -s
 CFLAGS+=-L../../../../SoftLK-lib/lib/windows_cross/ -I ../../../../SoftLK-lib/include/ -lcomdlg32 -lole32 -lSLK -lmingw32 -lSDL2main -lSDL2 -mwindows -Wall -Wno-sign-compare -Wno-unused-parameter
-DEPENDENCIES = assets.o gui.o process.o sample.o utility_win.o palette.o quantization.o image2pixel.o tinyfiledialogs.o ULK_json.o gifenc.o gifdec.o
+DEPENDENCIES = assets.o gui.o process.o sample.o utility_win.o palette.o quantization.o image2pixel.o tinyfiledialogs.o gifenc.o gifdec.o
 
 SLK_img2pix: main.o $(DEPENDENCIES)
 	$(CC) -o SLK_img2pix $^ $(CFLAGS)
@@ -44,9 +44,6 @@ gifenc.o: ../../../external/gifenc.c
 	$(CC) -c $< $(CFLAGS) 
 
 gifdec.o: ../../../external/gifdec.c
-	$(CC) -c $< $(CFLAGS) 
-
-ULK_json.o: ../../../external/UtilityLK/src/ULK_json.c
 	$(CC) -c $< $(CFLAGS) 
 
 clean:

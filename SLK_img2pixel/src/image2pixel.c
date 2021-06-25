@@ -11,7 +11,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //External includes
 #include <SLK/SLK.h>
 #include <SLK/SLK_gui.h>
-#include "../../external/UtilityLK/include/ULK_json.h"
+
+#define HLH_JSON_IMPLEMENTATION
+#include "../../external/HLH_json.h"
 //-------------------------------------
 
 //Internal includes
@@ -58,34 +60,34 @@ void img2pixel_preset_load(FILE *f)
    if(!f)
       return;
 
-   ULK_json5 fallback = {0};
-   ULK_json5_root *root = ULK_json_parse_file_stream(f);
+   HLH_json5 fallback = {0};
+   HLH_json5_root *root = HLH_json_parse_file_stream(f);
    fclose(f);
 
-   ULK_json5 *o = ULK_json_get_object_object(&root->root,"palette",&fallback);
-   palette->used = ULK_json_get_object_integer(o,"used",0);
-   ULK_json5 *array = ULK_json_get_object(o,"colors");
+   HLH_json5 *o = HLH_json_get_object_object(&root->root,"palette",&fallback);
+   palette->used = HLH_json_get_object_integer(o,"used",0);
+   HLH_json5 *array = HLH_json_get_object(o,"colors");
    for(int i = 0;i<256;i++)
-      palette->colors[i].n = ULK_json_get_array_integer(array,i,0);
-   pixel_distance_mode = ULK_json_get_object_integer(&root->root,"distance_mode",0);
-   image_out_width = ULK_json_get_object_integer(&root->root,"width",1);
-   image_out_height = ULK_json_get_object_integer(&root->root,"height",1);
-   image_out_swidth = ULK_json_get_object_integer(&root->root,"swidth",1);
-   image_out_sheight = ULK_json_get_object_integer(&root->root,"sheight",1);
-   pixel_scale_mode = ULK_json_get_object_integer(&root->root,"scale_mode",1);
-   pixel_process_mode = ULK_json_get_object_integer(&root->root,"dither_mode",0);
-   dither_amount = ULK_json_get_object_integer(&root->root,"dither_amount",1);
-   pixel_sample_mode = ULK_json_get_object_integer(&root->root,"sample_mode",0);
-   alpha_threshold = ULK_json_get_object_integer(&root->root,"alpha_threshold",128);
-   upscale = ULK_json_get_object_integer(&root->root,"upscale",1);
-   gauss = ULK_json_get_object_integer(&root->root,"gaussian_blur",128);
-   brightness = ULK_json_get_object_integer(&root->root,"brightness",0);
-   contrast = ULK_json_get_object_integer(&root->root,"contrast",0);
-   saturation = ULK_json_get_object_integer(&root->root,"saturation",0);
-   img_gamma = ULK_json_get_object_integer(&root->root,"gamma",0);
-   sharpen = ULK_json_get_object_integer(&root->root,"sharpness",0);
+      palette->colors[i].n = HLH_json_get_array_integer(array,i,0);
+   pixel_distance_mode = HLH_json_get_object_integer(&root->root,"distance_mode",0);
+   image_out_width = HLH_json_get_object_integer(&root->root,"width",1);
+   image_out_height = HLH_json_get_object_integer(&root->root,"height",1);
+   image_out_swidth = HLH_json_get_object_integer(&root->root,"swidth",1);
+   image_out_sheight = HLH_json_get_object_integer(&root->root,"sheight",1);
+   pixel_scale_mode = HLH_json_get_object_integer(&root->root,"scale_mode",1);
+   pixel_process_mode = HLH_json_get_object_integer(&root->root,"dither_mode",0);
+   dither_amount = HLH_json_get_object_integer(&root->root,"dither_amount",1);
+   pixel_sample_mode = HLH_json_get_object_integer(&root->root,"sample_mode",0);
+   alpha_threshold = HLH_json_get_object_integer(&root->root,"alpha_threshold",128);
+   upscale = HLH_json_get_object_integer(&root->root,"upscale",1);
+   gauss = HLH_json_get_object_integer(&root->root,"gaussian_blur",128);
+   brightness = HLH_json_get_object_integer(&root->root,"brightness",0);
+   contrast = HLH_json_get_object_integer(&root->root,"contrast",0);
+   saturation = HLH_json_get_object_integer(&root->root,"saturation",0);
+   img_gamma = HLH_json_get_object_integer(&root->root,"gamma",0);
+   sharpen = HLH_json_get_object_integer(&root->root,"sharpness",0);
 
-   ULK_json_free(root);
+   HLH_json_free(root);
 }
 
 void img2pixel_preset_save(FILE *f)
@@ -93,34 +95,34 @@ void img2pixel_preset_save(FILE *f)
    if(!f)
       return;
 
-   ULK_json5_root *root = ULK_json_create_root();
-   ULK_json5 object = ULK_json_create_object();
-   ULK_json_object_add_integer(&object,"used",palette->used);
-   ULK_json5 array = ULK_json_create_array();
+   HLH_json5_root *root = HLH_json_create_root();
+   HLH_json5 object = HLH_json_create_object();
+   HLH_json_object_add_integer(&object,"used",palette->used);
+   HLH_json5 array = HLH_json_create_array();
    for(int i = 0;i<256;i++)
-      ULK_json_array_add_integer(&array,palette->colors[i].n);
-   ULK_json_object_add_object(&object,"colors",array);
-   ULK_json_object_add_object(&root->root,"palette",object);
-   ULK_json_object_add_integer(&root->root,"distance_mode",pixel_distance_mode);
-   ULK_json_object_add_integer(&root->root,"width",image_out_width);
-   ULK_json_object_add_integer(&root->root,"height",image_out_height);
-   ULK_json_object_add_integer(&root->root,"swidth",image_out_swidth);
-   ULK_json_object_add_integer(&root->root,"sheight",image_out_sheight);
-   ULK_json_object_add_integer(&root->root,"scale_mode",pixel_scale_mode);
-   ULK_json_object_add_integer(&root->root,"dither_mode",pixel_process_mode);
-   ULK_json_object_add_integer(&root->root,"dither_amount",dither_amount);
-   ULK_json_object_add_integer(&root->root,"sample_mode",pixel_sample_mode);
-   ULK_json_object_add_integer(&root->root,"gaussian_blur",gauss);
-   ULK_json_object_add_integer(&root->root,"alpha_threshold",alpha_threshold);
-   ULK_json_object_add_integer(&root->root,"upscale",upscale);
-   ULK_json_object_add_integer(&root->root,"brightness",brightness);
-   ULK_json_object_add_integer(&root->root,"contrast",contrast);
-   ULK_json_object_add_integer(&root->root,"gamma",img_gamma);
-   ULK_json_object_add_integer(&root->root,"saturation",saturation);
-   ULK_json_object_add_integer(&root->root,"sharpness",sharpen);
+      HLH_json_array_add_integer(&array,palette->colors[i].n);
+   HLH_json_object_add_object(&object,"colors",array);
+   HLH_json_object_add_object(&root->root,"palette",object);
+   HLH_json_object_add_integer(&root->root,"distance_mode",pixel_distance_mode);
+   HLH_json_object_add_integer(&root->root,"width",image_out_width);
+   HLH_json_object_add_integer(&root->root,"height",image_out_height);
+   HLH_json_object_add_integer(&root->root,"swidth",image_out_swidth);
+   HLH_json_object_add_integer(&root->root,"sheight",image_out_sheight);
+   HLH_json_object_add_integer(&root->root,"scale_mode",pixel_scale_mode);
+   HLH_json_object_add_integer(&root->root,"dither_mode",pixel_process_mode);
+   HLH_json_object_add_integer(&root->root,"dither_amount",dither_amount);
+   HLH_json_object_add_integer(&root->root,"sample_mode",pixel_sample_mode);
+   HLH_json_object_add_integer(&root->root,"gaussian_blur",gauss);
+   HLH_json_object_add_integer(&root->root,"alpha_threshold",alpha_threshold);
+   HLH_json_object_add_integer(&root->root,"upscale",upscale);
+   HLH_json_object_add_integer(&root->root,"brightness",brightness);
+   HLH_json_object_add_integer(&root->root,"contrast",contrast);
+   HLH_json_object_add_integer(&root->root,"gamma",img_gamma);
+   HLH_json_object_add_integer(&root->root,"saturation",saturation);
+   HLH_json_object_add_integer(&root->root,"sharpness",sharpen);
  
-   ULK_json_write_file(f,&root->root);
-   ULK_json_free(root);
+   HLH_json_write_file(f,&root->root);
+   HLH_json_free(root);
    fclose(f);
 }
 

@@ -16,7 +16,7 @@ Warning: SLK_make is still very much experimental, it will not work for any oper
 
 # Building from source
 
-* First, clone this repository (important: the --recursive): ``https://github.com/Captain4LK/SoftLK-tools.git --recursive``
+* First, clone this repository: ``https://github.com/Captain4LK/SoftLK-tools.git``
 
 ## Dependencies
 
