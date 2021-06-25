@@ -12,16 +12,13 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdlib.h>
 #include <SLK/SLK.h>
 #include <SLK/SLK_gui.h>
-#include "../../external/UtilityLK/include/ULK_json.h"
 //-------------------------------------
 
 //Internal includes
 #include "assets.h"
 #include "gui.h"
-#include "process.h"
-#include "sample.h"
+#include "image2pixel.h"
 #include "utility.h"
-#include "quantization.h"
 //-------------------------------------
 
 //#defines
@@ -143,25 +140,16 @@ struct Elements
 static SLK_RGB_sprite *sprite_in = NULL;
 static SLK_RGB_sprite *sprite_in_org = NULL;
 static SLK_RGB_sprite *sprite_out = NULL;
-static SLK_Palette *palette = NULL;
 static int palette_selected = 0;
 static SLK_gui_window *preview = NULL;
 static SLK_gui_element *preview_tabs = NULL;
 static SLK_gui_window *settings = NULL;
 static SLK_gui_element *settings_tabs = NULL;
 static struct Elements elements = {0};
-static int gui_out_width = 128;
-static int gui_out_height = 128;
-static int gui_out_swidth = 2;
-static int gui_out_sheight = 2;
 static int gui_in_x = 0;
 static int gui_in_y = 0;
 static int gui_out_x = 0;
 static int gui_out_y = 0;
-static int pixel_scale_mode = 0;
-static int pixel_sample_mode = 0;
-static int pixel_process_mode = 1;
-static int pixel_distance_mode = 0;
 
 static const char *text_space[] = 
 {
@@ -238,7 +226,6 @@ static void gui_draw();
 static void update_output();
 static void palette_draw();
 static void palette_labels();
-static void preset_save(FILE *f);
 static void preset_load(FILE *f);
 //-------------------------------------
 
@@ -540,17 +527,17 @@ void gui_update()
    gui_buttons();
 
    if(SLK_key_down(SLK_KEY_LEFT))
-      if(gui_out_width>0)
-         gui_out_width-=8;
+      if(image_out_width>0)
+         image_out_width-=8;
    if(SLK_key_down(SLK_KEY_RIGHT))
-      if(gui_out_width<256)
-         gui_out_width+=8;
+      if(image_out_width<256)
+         image_out_width+=8;
    if(SLK_key_down(SLK_KEY_DOWN))
-      if(gui_out_height>0)
-         gui_out_height-=8;
+      if(image_out_height>0)
+         image_out_height-=8;
    if(SLK_key_down(SLK_KEY_UP))
-      if(gui_out_height<256)
-         gui_out_height+=8;
+      if(image_out_height<256)
+         image_out_height+=8;
 
    gui_draw();
 }
@@ -592,8 +579,8 @@ static void gui_buttons()
             SLK_draw_rgb_clear();
             SLK_draw_rgb_sprite(sprite_in,0,0);
             SLK_draw_rgb_set_changed(1);
-            lowpass_image(sprite_in_org,sprite_in);
-            sharpen_image(sprite_in,sprite_in);
+            img2pixel_lowpass_image(sprite_in_org,sprite_in);
+            img2pixel_sharpen_image(sprite_in,sprite_in);
             float scale;
             if(sprite_in->width>sprite_in->height)
                scale = 256.0f/sprite_in->width;
@@ -622,15 +609,15 @@ static void gui_buttons()
       else if(elements.save_save_preset->button.state.released)
       {
          FILE *f = json_write();
-         preset_save(f);
+         img2pixel_preset_save(f);
          elements.save_save_preset->button.state.released = 0;
       }
       else if(elements.save_save_folder->button.state.released)
       {
          if(pixel_scale_mode==0)
-            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,gui_out_width,gui_out_height,palette);
+            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,image_out_width,image_out_height,palette);
          else
-            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,gui_out_swidth,gui_out_sheight,palette);
+            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,image_out_swidth,image_out_sheight,palette);
          elements.save_save_folder->button.state.released = 0;
       }
       else if(elements.save_load_folder->button.state.released)
@@ -669,8 +656,10 @@ static void gui_buttons()
       else if(elements.palette_generate->button.state.released)
       {
          elements.palette_save->button.state.released = 0;
-         quantize(palette,palette->used,sprite_in_org);
-         quantize(palette,palette->used,sprite_in_org);
+
+         //Yes, this gets called twice, don't question it, just keep it this way
+         img2pixel_quantize(palette->used,sprite_in_org);
+         img2pixel_quantize(palette->used,sprite_in_org);
 
          update = 1;
          elements.palette_bar_r->slider.value = palette->colors[palette_selected].r;
@@ -785,35 +774,35 @@ static void gui_buttons()
          update = 1;
          SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);
       }
-      if(elements.general_bar_width->slider.value!=gui_out_width)
+      if(elements.general_bar_width->slider.value!=image_out_width)
       {
-         gui_out_width = elements.general_bar_width->slider.value;
+         image_out_width = elements.general_bar_width->slider.value;
          char tmp[16];
-         sprintf(tmp,"%d",gui_out_width);
+         sprintf(tmp,"%d",image_out_width);
          SLK_gui_label_set_text(elements.general_label_width,tmp);
          update = 1;
       }
-      if(elements.general_bar_height->slider.value!=gui_out_height)
+      if(elements.general_bar_height->slider.value!=image_out_height)
       {
-         gui_out_height = elements.general_bar_height->slider.value;
+         image_out_height = elements.general_bar_height->slider.value;
          char tmp[16];
-         sprintf(tmp,"%d",gui_out_height);
+         sprintf(tmp,"%d",image_out_height);
          SLK_gui_label_set_text(elements.general_label_height,tmp);
          update = 1;
       }
-      if(elements.general_bar_swidth->slider.value!=gui_out_swidth)
+      if(elements.general_bar_swidth->slider.value!=image_out_swidth)
       {
-         gui_out_swidth = elements.general_bar_swidth->slider.value;
+         image_out_swidth = elements.general_bar_swidth->slider.value;
          char tmp[16];
-         sprintf(tmp,"%d",gui_out_swidth);
+         sprintf(tmp,"%d",image_out_swidth);
          SLK_gui_label_set_text(elements.general_label_swidth,tmp);
          update = 1;
       }
-      if(elements.general_bar_sheight->slider.value!=gui_out_sheight)
+      if(elements.general_bar_sheight->slider.value!=image_out_sheight)
       {
-         gui_out_sheight = elements.general_bar_sheight->slider.value;
+         image_out_sheight = elements.general_bar_sheight->slider.value;
          char tmp[16];
-         sprintf(tmp,"%d",gui_out_sheight);
+         sprintf(tmp,"%d",image_out_sheight);
          SLK_gui_label_set_text(elements.general_label_sheight,tmp);
          update = 1;
       }
@@ -853,8 +842,8 @@ static void gui_buttons()
          char tmp[16];
          sprintf(tmp,"%d",gauss);
          SLK_gui_label_set_text(elements.general_label_gauss,tmp);
-         lowpass_image(sprite_in_org,sprite_in);
-         sharpen_image(sprite_in,sprite_in);
+         img2pixel_lowpass_image(sprite_in_org,sprite_in);
+         img2pixel_sharpen_image(sprite_in,sprite_in);
          update = 1;
       }
       if(elements.general_tab_scale->tabbar.current_tab!=pixel_scale_mode)
@@ -922,8 +911,8 @@ static void gui_buttons()
          char ctmp[16];
          sprintf(ctmp,"%d",sharpen);
          SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
-         lowpass_image(sprite_in_org,sprite_in);
-         sharpen_image(sprite_in,sprite_in);
+         img2pixel_lowpass_image(sprite_in_org,sprite_in);
+         img2pixel_sharpen_image(sprite_in,sprite_in);
          update = 1;
       }
       break;
@@ -931,9 +920,9 @@ static void gui_buttons()
       if(elements.special_gif_save->button.state.released)
       {
          if(pixel_scale_mode==0)
-            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,gui_out_width,gui_out_height,palette);
+            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,image_out_width,image_out_height,palette);
          else
-            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,gui_out_swidth,gui_out_sheight,palette);
+            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,image_out_swidth,image_out_sheight,palette);
          elements.special_gif_save->button.state.released = 0;
       }
       else if(elements.special_gif_load->button.state.released)
@@ -985,13 +974,13 @@ static void update_output()
    int height;
    if(pixel_scale_mode==0)
    {
-      width = gui_out_width;
-      height = gui_out_height;
+      width = image_out_width;
+      height = image_out_height;
    }
    else
    {
-      width = sprite_in->width/gui_out_swidth;
-      height = sprite_in->height/gui_out_sheight;
+      width = sprite_in->width/image_out_swidth;
+      height = sprite_in->height/image_out_sheight;
    }
 
    if(sprite_out==NULL||sprite_out->width!=width||sprite_out->height!=height)
@@ -1004,7 +993,7 @@ static void update_output()
    if(sprite_in==NULL)
       return;
 
-   process_image(sprite_in,sprite_out,palette,pixel_sample_mode,pixel_process_mode,pixel_distance_mode);
+   img2pixel_process_image(sprite_in,sprite_out);
 
    SLK_layer_set_current(1);
    SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));
@@ -1053,128 +1042,64 @@ static void palette_labels()
    elements.palette_bar_b->slider.value = palette->colors[palette_selected].b;
 }
 
-void preset_save(FILE *f)
-{
-   if(!f)
-      return;
-
-   ULK_json5_root *root = ULK_json_create_root();
-   ULK_json5 object = ULK_json_create_object();
-   ULK_json_object_add_integer(&object,"used",palette->used);
-   ULK_json5 array = ULK_json_create_array();
-   for(int i = 0;i<256;i++)
-      ULK_json_array_add_integer(&array,palette->colors[i].n);
-   ULK_json_object_add_object(&object,"colors",array);
-   ULK_json_object_add_object(&root->root,"palette",object);
-   ULK_json_object_add_integer(&root->root,"distance_mode",pixel_distance_mode);
-   ULK_json_object_add_integer(&root->root,"width",gui_out_width);
-   ULK_json_object_add_integer(&root->root,"height",gui_out_height);
-   ULK_json_object_add_integer(&root->root,"swidth",gui_out_swidth);
-   ULK_json_object_add_integer(&root->root,"sheight",gui_out_sheight);
-   ULK_json_object_add_integer(&root->root,"scale_mode",pixel_scale_mode);
-   ULK_json_object_add_integer(&root->root,"dither_mode",pixel_process_mode);
-   ULK_json_object_add_integer(&root->root,"dither_amount",dither_amount);
-   ULK_json_object_add_integer(&root->root,"sample_mode",pixel_sample_mode);
-   ULK_json_object_add_integer(&root->root,"gaussian_blur",gauss);
-   ULK_json_object_add_integer(&root->root,"alpha_threshold",alpha_threshold);
-   ULK_json_object_add_integer(&root->root,"upscale",upscale);
-   ULK_json_object_add_integer(&root->root,"brightness",brightness);
-   ULK_json_object_add_integer(&root->root,"contrast",contrast);
-   ULK_json_object_add_integer(&root->root,"gamma",img_gamma);
-   ULK_json_object_add_integer(&root->root,"saturation",saturation);
-   ULK_json_object_add_integer(&root->root,"sharpness",sharpen);
- 
-   ULK_json_write_file(f,&root->root);
-   ULK_json_free(root);
-   fclose(f);
-}
-
 void preset_load(FILE *f)
 {
-   if(!f)
-      return;
+   char ctmp[16];
+   img2pixel_preset_load(f);
 
    //The unnecessary indentations are for my own sanity
-   ULK_json5 fallback = {0};
-   ULK_json5_root *root = ULK_json_parse_file_stream(f);
-   fclose(f);
-   ULK_json5 *o = ULK_json_get_object_object(&root->root,"palette",&fallback);
-   palette->used = ULK_json_get_object_integer(o,"used",0);
-   ULK_json5 *array = ULK_json_get_object(o,"colors");
-   for(int i = 0;i<256;i++)
-      palette->colors[i].n = ULK_json_get_array_integer(array,i,0);
    elements.palette_bar_r->slider.value = palette->colors[palette_selected].r;
    elements.palette_bar_g->slider.value = palette->colors[palette_selected].g;
    elements.palette_bar_b->slider.value = palette->colors[palette_selected].b;
    palette_draw();
    palette_labels();
-   pixel_distance_mode = ULK_json_get_object_integer(&root->root,"distance_mode",0);
-      SLK_gui_label_set_text(elements.palette_label_space,text_space[pixel_distance_mode]);
-   elements.general_bar_width->slider.value = ULK_json_get_object_integer(&root->root,"width",1);
-      gui_out_width = elements.general_bar_width->slider.value;
-      char ctmp[16];
-      sprintf(ctmp,"%d",gui_out_width);
+   SLK_gui_label_set_text(elements.palette_label_space,text_space[pixel_distance_mode]);
+   elements.general_bar_width->slider.value = image_out_width;
+      sprintf(ctmp,"%d",image_out_width);
       SLK_gui_label_set_text(elements.general_label_width,ctmp);
-   elements.general_bar_height->slider.value = ULK_json_get_object_integer(&root->root,"height",1);
-      gui_out_height = elements.general_bar_height->slider.value;
-      sprintf(ctmp,"%d",gui_out_height);
+   elements.general_bar_height->slider.value = image_out_height;
+      sprintf(ctmp,"%d",image_out_height);
       SLK_gui_label_set_text(elements.general_label_height,ctmp);
-   elements.general_bar_swidth->slider.value = ULK_json_get_object_integer(&root->root,"swidth",1);
-      gui_out_swidth = elements.general_bar_swidth->slider.value;
-      sprintf(ctmp,"%d",gui_out_swidth);
+   elements.general_bar_swidth->slider.value = image_out_swidth;
+      sprintf(ctmp,"%d",image_out_swidth);
       SLK_gui_label_set_text(elements.general_label_swidth,ctmp);
-   elements.general_bar_sheight->slider.value = ULK_json_get_object_integer(&root->root,"sheight",1);
-      gui_out_sheight = elements.general_bar_sheight->slider.value;
-      sprintf(ctmp,"%d",gui_out_sheight);
+   elements.general_bar_sheight->slider.value = image_out_sheight;
+      sprintf(ctmp,"%d",image_out_sheight);
       SLK_gui_label_set_text(elements.general_label_sheight,ctmp);
-   elements.general_tab_scale->tabbar.current_tab = ULK_json_get_object_integer(&root->root,"scale_mode",1);
-      pixel_scale_mode = elements.general_tab_scale->tabbar.current_tab;
-   pixel_process_mode = ULK_json_get_object_integer(&root->root,"dither_mode",0);
-      SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);
-   elements.general_bar_dither->slider.value = ULK_json_get_object_integer(&root->root,"dither_amount",1);
-      dither_amount = elements.general_bar_dither->slider.value;
-   pixel_sample_mode = ULK_json_get_object_integer(&root->root,"sample_mode",0);
-      SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
-   elements.general_bar_alpha->slider.value = ULK_json_get_object_integer(&root->root,"alpha_threshold",128);
-      alpha_threshold = elements.general_bar_alpha->slider.value;
+   elements.general_tab_scale->tabbar.current_tab = pixel_scale_mode;
+   SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);
+   elements.general_bar_dither->slider.value = dither_amount;
+   SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
+   elements.general_bar_alpha->slider.value = alpha_threshold;
       sprintf(ctmp,"%d",alpha_threshold);
       SLK_gui_label_set_text(elements.general_label_alpha,ctmp);
-   elements.save_bar_upscale->slider.value = ULK_json_get_object_integer(&root->root,"upscale",1);
-      upscale = elements.save_bar_upscale->slider.value;
+   elements.save_bar_upscale->slider.value = upscale;
       sprintf(ctmp,"%d",upscale);
       SLK_gui_label_set_text(elements.save_label_upscale,ctmp);
-   elements.general_bar_gauss->slider.value= ULK_json_get_object_integer(&root->root,"gaussian_blur",128);
-      gauss = elements.general_bar_gauss->slider.value;
+   elements.general_bar_gauss->slider.value = gauss;
       sprintf(ctmp,"%d",gauss);
       SLK_gui_label_set_text(elements.general_label_gauss,ctmp);
-   elements.process_bar_brightness->slider.value = ULK_json_get_object_integer(&root->root,"brightness",0);
-      brightness = elements.process_bar_brightness->slider.value;
+   elements.process_bar_brightness->slider.value = brightness;
       sprintf(ctmp,"%d",brightness);
       SLK_gui_label_set_text(elements.process_label_brightness,ctmp);
-   elements.process_bar_contrast->slider.value = ULK_json_get_object_integer(&root->root,"contrast",0);
-      contrast = elements.process_bar_contrast->slider.value;
+   elements.process_bar_contrast->slider.value = contrast;
       sprintf(ctmp,"%d",contrast);
       SLK_gui_label_set_text(elements.process_label_contrast,ctmp);
-   elements.process_bar_saturation->slider.value = ULK_json_get_object_integer(&root->root,"saturation",0);
-      saturation = elements.process_bar_saturation->slider.value;
+   elements.process_bar_saturation->slider.value = saturation;
       sprintf(ctmp,"%d",saturation);
       SLK_gui_label_set_text(elements.process_label_saturation,ctmp);
-   elements.process_bar_gamma->slider.value = ULK_json_get_object_integer(&root->root,"gamma",0);
-      img_gamma = elements.process_bar_gamma->slider.value;
+   elements.process_bar_gamma->slider.value = img_gamma;
       sprintf(ctmp,"%d",img_gamma);
       SLK_gui_label_set_text(elements.process_label_gamma,ctmp);
-   elements.process_bar_sharpen->slider.value = ULK_json_get_object_integer(&root->root,"sharpness",0);
-      sharpen = elements.process_bar_sharpen->slider.value;
+   elements.process_bar_sharpen->slider.value = sharpen;
       sprintf(ctmp,"%d",sharpen);
       SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
-   ULK_json_free(root);
-
    elements.palette_bar_colors->slider.value = palette->used;
    sprintf(ctmp,"%d",palette->used);
    SLK_gui_label_set_text(elements.palette_label_colors,ctmp);
 
-   lowpass_image(sprite_in_org,sprite_in);   
-   sharpen_image(sprite_in,sprite_in);
+   img2pixel_lowpass_image(sprite_in_org,sprite_in);   
+   img2pixel_sharpen_image(sprite_in,sprite_in);
    update_output();
 }
 //-------------------------------------

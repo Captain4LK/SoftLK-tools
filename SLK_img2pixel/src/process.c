@@ -17,6 +17,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#include "image2pixel.h"
 #include "process.h"
 #include "palette.h"
 #include "sample.h"
@@ -46,15 +47,6 @@ static const int16_t dither_threshold_normal[64] =
    63,31,55,23,61,29,53,21,
 };
 static const int16_t dither_threshold_none[64] = {0};
-
-int brightness = 0;
-int contrast = 0;
-int img_gamma = 100;
-int saturation = 100;
-int dither_amount = 250;
-int alpha_threshold = 128;
-int sharpen = 0;
-int gauss = 80;
 //-------------------------------------
 
 //Function prototypes
