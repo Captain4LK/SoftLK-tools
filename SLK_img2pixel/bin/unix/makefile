@@ -1,6 +1,6 @@
 CC = gcc -flto -O3 -s
 CFLAGS+=-lm -Wall -Wextra -Wno-sign-compare -Wno-unused-parameter -lSLK -lm -lSDL2 -Wall -lGL
-DEPENDENCIES = assets.o gui.o process.o sample.o utility.o palette.o quantization.o image2pixel.o tinyfiledialogs.o gifenc.o gifdec.o
+DEPENDENCIES = assets.o gui.o utility.o image2pixel.o tinyfiledialogs.o gifenc.o gifdec.o
 
 SLK_img2pix: main.o $(DEPENDENCIES)
 	$(CC) -o SLK_img2pix $^ $(CFLAGS)
@@ -21,22 +21,10 @@ assets.o: ../../src/assets.c ../../src/assets.h
 gui.o: ../../src/gui.c ../../src/gui.h ../../src/assets.h ../../src/image2pixel.h ../../src/utility.h
 	$(CC) -c $< $(CFLAGS) 
 
-process.o: ../../src/process.c ../../src/process.h ../../src/sample.h ../../src/image2pixel.h ../../src/palette.h
+utility.o: ../../src/utility.c ../../src/utility.h
 	$(CC) -c $< $(CFLAGS) 
 
-sample.o: ../../src/sample.c ../../src/sample.h ../../src/process.h
-	$(CC) -c $< $(CFLAGS) 
-
-utility.o: ../../src/utility.c ../../src/utility.h ../../src/process.h
-	$(CC) -c $< $(CFLAGS) 
-
-palette.o: ../../src/palette.c ../../src/palette.h ../../src/process.h
-	$(CC) -c $< $(CFLAGS) 
-
-quantization.o: ../../src/quantization.c ../../src/quantization.h
-	$(CC) -c $< $(CFLAGS) 
-
-image2pixel.o:  ../../src/image2pixel.c ../../src/image2pixel.h ../../src/quantization.h ../../src/process.h ../../src/sample.h ../../src/utility.h
+image2pixel.o:  ../../src/image2pixel.c ../../src/image2pixel.h ../../src/utility.h
 	$(CC) -c $< $(CFLAGS) 
 
 tinyfiledialogs.o: ../../../external/tinyfiledialogs.c

@@ -235,7 +235,7 @@ void gui_init()
 {
    //Load entry palette and font
    assets_init();
-   palette = assets_load_pal_default();
+   img2pixel_set_palette(assets_load_pal_default());
 
    //Setup windows
    //Preview window
@@ -510,9 +510,9 @@ void gui_init()
    FILE *f = fopen(env_def,"r");
    preset_load(f);
 
-   elements.palette_bar_colors->slider.value = palette->used;
+   elements.palette_bar_colors->slider.value = img2pixel_get_palette()->used;
    char ctmp[16];
-   sprintf(ctmp,"%d",palette->used);
+   sprintf(ctmp,"%d",img2pixel_get_palette()->used);
    SLK_gui_label_set_text(elements.palette_label_colors,ctmp);
 }
 
@@ -525,19 +525,6 @@ void gui_update()
    if(preview->moveable!=2)
       SLK_gui_window_update_input(settings,SLK_mouse_get_state(SLK_BUTTON_LEFT),SLK_mouse_get_state(SLK_BUTTON_RIGHT),mx,my);
    gui_buttons();
-
-   if(SLK_key_down(SLK_KEY_LEFT))
-      if(image_out_width>0)
-         image_out_width-=8;
-   if(SLK_key_down(SLK_KEY_RIGHT))
-      if(image_out_width<256)
-         image_out_width+=8;
-   if(SLK_key_down(SLK_KEY_DOWN))
-      if(image_out_height>0)
-         image_out_height-=8;
-   if(SLK_key_down(SLK_KEY_UP))
-      if(image_out_height<256)
-         image_out_height+=8;
 
    gui_draw();
 }
@@ -597,7 +584,7 @@ static void gui_buttons()
       }
       else if(elements.save_save->button.state.released)
       {
-         image_write(sprite_out,palette);
+         image_write(sprite_out,img2pixel_get_palette());
          elements.save_save->button.state.released = 0;
       }
       else if(elements.save_load_preset->button.state.released)
@@ -614,10 +601,10 @@ static void gui_buttons()
       }
       else if(elements.save_save_folder->button.state.released)
       {
-         if(pixel_scale_mode==0)
-            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,image_out_width,image_out_height,palette);
+         if(img2pixel_get_scale_mode()==0)
+            dir_output_select(img2pixel_get_process_mode(),img2pixel_get_sample_mode(),img2pixel_get_distance_mode(),img2pixel_get_scale_mode(),img2pixel_get_out_width(),img2pixel_get_out_height(),img2pixel_get_palette());
          else
-            dir_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,image_out_swidth,image_out_sheight,palette);
+            dir_output_select(img2pixel_get_process_mode(),img2pixel_get_sample_mode(),img2pixel_get_distance_mode(),img2pixel_get_scale_mode(),img2pixel_get_out_swidth(),img2pixel_get_out_sheight(),img2pixel_get_palette());
          elements.save_save_folder->button.state.released = 0;
       }
       else if(elements.save_load_folder->button.state.released)
@@ -632,25 +619,25 @@ static void gui_buttons()
          SLK_Palette *p = palette_select();
          if(p!=NULL)
          {
-            if(palette)
-               free(palette);
-            palette = p;
+            if(img2pixel_get_palette())
+               free(img2pixel_get_palette());
+            img2pixel_set_palette(p);
             update = 1;
             elements.palette_bar_r->slider.value = p->colors[palette_selected].r;
             elements.palette_bar_g->slider.value = p->colors[palette_selected].g;
             elements.palette_bar_b->slider.value = p->colors[palette_selected].b;
             palette_draw();
             palette_labels();
-            elements.palette_bar_colors->slider.value = palette->used;
+            elements.palette_bar_colors->slider.value = img2pixel_get_palette()->used;
             char ctmp[16];
-            sprintf(ctmp,"%d",palette->used);
+            sprintf(ctmp,"%d",img2pixel_get_palette()->used);
             SLK_gui_label_set_text(elements.palette_label_colors,ctmp);
          }
          elements.palette_load->button.state.released = 0;
       }
       else if(elements.palette_save->button.state.released)
       {
-         palette_write(palette);
+         palette_write(img2pixel_get_palette());
          elements.palette_save->button.state.released = 0;
       }
       else if(elements.palette_generate->button.state.released)
@@ -658,18 +645,18 @@ static void gui_buttons()
          elements.palette_save->button.state.released = 0;
 
          //Yes, this gets called twice, don't question it, just keep it this way
-         img2pixel_quantize(palette->used,sprite_in_org);
-         img2pixel_quantize(palette->used,sprite_in_org);
+         img2pixel_quantize(img2pixel_get_palette()->used,sprite_in_org);
+         img2pixel_quantize(img2pixel_get_palette()->used,sprite_in_org);
 
          update = 1;
-         elements.palette_bar_r->slider.value = palette->colors[palette_selected].r;
-         elements.palette_bar_g->slider.value = palette->colors[palette_selected].g;
-         elements.palette_bar_b->slider.value = palette->colors[palette_selected].b;
+         elements.palette_bar_r->slider.value = img2pixel_get_palette()->colors[palette_selected].r;
+         elements.palette_bar_g->slider.value = img2pixel_get_palette()->colors[palette_selected].g;
+         elements.palette_bar_b->slider.value = img2pixel_get_palette()->colors[palette_selected].b;
          palette_draw();
          palette_labels();
-         elements.palette_bar_colors->slider.value = palette->used;
+         elements.palette_bar_colors->slider.value = img2pixel_get_palette()->used;
          char ctmp[16];
-         sprintf(ctmp,"%d",palette->used);
+         sprintf(ctmp,"%d",img2pixel_get_palette()->used);
          SLK_gui_label_set_text(elements.palette_label_colors,ctmp);
       }
       else if(elements.palette_button->icon.state.pressed)
@@ -679,55 +666,55 @@ static void gui_buttons()
          palette_selected = MIN(255,(ny/9)*31+nx/9);
          palette_labels();
       }
-      if(elements.palette_minus_r->button.state.pressed&&palette->colors[palette_selected].r>0)
+      if(elements.palette_minus_r->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].r>0)
          elements.palette_bar_r->slider.value--;
-      else if(elements.palette_plus_r->button.state.pressed&&palette->colors[palette_selected].r<255)
+      else if(elements.palette_plus_r->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].r<255)
          elements.palette_bar_r->slider.value++;
-      else if(elements.palette_minus_g->button.state.pressed&&palette->colors[palette_selected].g>0)
+      else if(elements.palette_minus_g->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].g>0)
          elements.palette_bar_g->slider.value--;
-      else if(elements.palette_plus_g->button.state.pressed&&palette->colors[palette_selected].g<255)
+      else if(elements.palette_plus_g->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].g<255)
          elements.palette_bar_g->slider.value++;
-      else if(elements.palette_minus_b->button.state.pressed&&palette->colors[palette_selected].b>0)
+      else if(elements.palette_minus_b->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].b>0)
          elements.palette_bar_b->slider.value--;
-      else if(elements.palette_plus_b->button.state.pressed&&palette->colors[palette_selected].b<255)
+      else if(elements.palette_plus_b->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].b<255)
          elements.palette_bar_b->slider.value++;
-      else if(elements.palette_minus_colors->button.state.pressed&&palette->used>1)
+      else if(elements.palette_minus_colors->button.state.pressed&&img2pixel_get_palette()->used>1)
          elements.palette_bar_colors->slider.value--;
-      else if(elements.palette_plus_colors->button.state.pressed&&palette->used<256)
+      else if(elements.palette_plus_colors->button.state.pressed&&img2pixel_get_palette()->used<256)
          elements.palette_bar_colors->slider.value++;
-      if(elements.palette_bar_r->slider.value!=palette->colors[palette_selected].r||elements.palette_bar_g->slider.value!=palette->colors[palette_selected].g||elements.palette_bar_b->slider.value!=palette->colors[palette_selected].b)
+      if(elements.palette_bar_r->slider.value!=img2pixel_get_palette()->colors[palette_selected].r||elements.palette_bar_g->slider.value!=img2pixel_get_palette()->colors[palette_selected].g||elements.palette_bar_b->slider.value!=img2pixel_get_palette()->colors[palette_selected].b)
       {
-         palette->colors[palette_selected].r = elements.palette_bar_r->slider.value;
-         palette->colors[palette_selected].g = elements.palette_bar_g->slider.value;
-         palette->colors[palette_selected].b = elements.palette_bar_b->slider.value;
+         img2pixel_get_palette()->colors[palette_selected].r = elements.palette_bar_r->slider.value;
+         img2pixel_get_palette()->colors[palette_selected].g = elements.palette_bar_g->slider.value;
+         img2pixel_get_palette()->colors[palette_selected].b = elements.palette_bar_b->slider.value;
          if(palette_selected!=0)
-            palette->colors[palette_selected].a = 255;
-         palette->used = MAX(palette->used,palette_selected+1);
+            img2pixel_get_palette()->colors[palette_selected].a = 255;
+         img2pixel_get_palette()->used = MAX(img2pixel_get_palette()->used,palette_selected+1);
          palette_draw();
          palette_labels();
          update = 1;
       }
       if(elements.palette_space_left->button.state.pressed)
       {
-         pixel_distance_mode--;
-         if(pixel_distance_mode<0)
-            pixel_distance_mode = 7;
+         img2pixel_set_distance_mode(img2pixel_get_distance_mode()-1);;
+         if(img2pixel_get_distance_mode()<0)
+            img2pixel_set_distance_mode(7);
          update = 1;
-         SLK_gui_label_set_text(elements.palette_label_space,text_space[pixel_distance_mode]);
+         SLK_gui_label_set_text(elements.palette_label_space,text_space[img2pixel_get_distance_mode()]);
       }
       else if(elements.palette_space_right->button.state.pressed)
       {
-         pixel_distance_mode++;
-         if(pixel_distance_mode>7)
-            pixel_distance_mode = 0;
+         img2pixel_set_distance_mode(img2pixel_get_distance_mode()+1);;
+         if(img2pixel_get_distance_mode()>7)
+            img2pixel_set_distance_mode(0);
          update = 1;
-         SLK_gui_label_set_text(elements.palette_label_space,text_space[pixel_distance_mode]);
+         SLK_gui_label_set_text(elements.palette_label_space,text_space[img2pixel_get_distance_mode()]);
       }
-      else if(elements.palette_bar_colors->slider.value!=palette->used)
+      else if(elements.palette_bar_colors->slider.value!=img2pixel_get_palette()->used)
       {
-         palette->used = elements.palette_bar_colors->slider.value;
+         img2pixel_get_palette()->used = elements.palette_bar_colors->slider.value;
          char tmp[16];
-         sprintf(tmp,"%d",palette->used);
+         sprintf(tmp,"%d",img2pixel_get_palette()->used);
          SLK_gui_label_set_text(elements.palette_label_colors,tmp);
          update = 1;
       }
@@ -760,95 +747,95 @@ static void gui_buttons()
 
       if(elements.general_dither_left->button.state.pressed)
       {
-         pixel_process_mode--;
-         if(pixel_process_mode<0)
-            pixel_process_mode = 4;
+         img2pixel_set_process_mode(img2pixel_get_process_mode()-1);
+         if(img2pixel_get_process_mode()<0)
+            img2pixel_set_process_mode(4);
          update = 1;
-         SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);
+         SLK_gui_label_set_text(elements.general_label_dither,text_dither[img2pixel_get_process_mode()]);
       }
       else if(elements.general_dither_right->button.state.pressed)
       {
-         pixel_process_mode++;
-         if(pixel_process_mode>4)
-            pixel_process_mode = 0;
+         img2pixel_set_process_mode(img2pixel_get_process_mode()+1);
+         if(img2pixel_get_process_mode()>4)
+            img2pixel_set_process_mode(0);
          update = 1;
-         SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);
+         SLK_gui_label_set_text(elements.general_label_dither,text_dither[img2pixel_get_process_mode()]);
       }
-      if(elements.general_bar_width->slider.value!=image_out_width)
+      if(elements.general_bar_width->slider.value!=img2pixel_get_out_width())
       {
-         image_out_width = elements.general_bar_width->slider.value;
+         img2pixel_set_out_width(elements.general_bar_width->slider.value);
          char tmp[16];
-         sprintf(tmp,"%d",image_out_width);
+         sprintf(tmp,"%d",img2pixel_get_out_width());
          SLK_gui_label_set_text(elements.general_label_width,tmp);
          update = 1;
       }
-      if(elements.general_bar_height->slider.value!=image_out_height)
+      if(elements.general_bar_height->slider.value!=img2pixel_get_out_height())
       {
-         image_out_height = elements.general_bar_height->slider.value;
+         img2pixel_set_out_height(elements.general_bar_height->slider.value);
          char tmp[16];
-         sprintf(tmp,"%d",image_out_height);
+         sprintf(tmp,"%d",img2pixel_get_out_height());
          SLK_gui_label_set_text(elements.general_label_height,tmp);
          update = 1;
       }
-      if(elements.general_bar_swidth->slider.value!=image_out_swidth)
+      if(elements.general_bar_swidth->slider.value!=img2pixel_get_out_swidth())
       {
-         image_out_swidth = elements.general_bar_swidth->slider.value;
+         img2pixel_set_out_swidth(elements.general_bar_swidth->slider.value);
          char tmp[16];
-         sprintf(tmp,"%d",image_out_swidth);
+         sprintf(tmp,"%d",img2pixel_get_out_swidth());
          SLK_gui_label_set_text(elements.general_label_swidth,tmp);
          update = 1;
       }
-      if(elements.general_bar_sheight->slider.value!=image_out_sheight)
+      if(elements.general_bar_sheight->slider.value!=img2pixel_get_out_sheight())
       {
-         image_out_sheight = elements.general_bar_sheight->slider.value;
+         img2pixel_set_out_sheight(elements.general_bar_sheight->slider.value);
          char tmp[16];
-         sprintf(tmp,"%d",image_out_sheight);
+         sprintf(tmp,"%d",img2pixel_get_out_sheight());
          SLK_gui_label_set_text(elements.general_label_sheight,tmp);
          update = 1;
       }
 
-      if(elements.general_bar_dither->slider.value!=dither_amount)
+      if(elements.general_bar_dither->slider.value!=img2pixel_get_dither_amount())
       {
-         dither_amount = elements.general_bar_dither->slider.value;
+         img2pixel_set_dither_amount(elements.general_bar_dither->slider.value);
          update = 1;
       }
       if(elements.general_sample_left->button.state.pressed)
       {
-         pixel_sample_mode--;
-         if(pixel_sample_mode<0)
-            pixel_sample_mode = 6;
+         img2pixel_set_sample_mode(img2pixel_get_sample_mode()-1);
+         if(img2pixel_get_sample_mode()<0)
+            img2pixel_set_sample_mode(6);
          update = 1;
-         SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
+         SLK_gui_label_set_text(elements.general_label_sample,text_sample[img2pixel_get_sample_mode()]);
       }
       else if(elements.general_sample_right->button.state.pressed)
       {
-         pixel_sample_mode++;
-         if(pixel_sample_mode>6)
-            pixel_sample_mode = 0;
+         img2pixel_set_sample_mode(img2pixel_get_sample_mode()+1);
+         if(img2pixel_get_sample_mode()>6)
+            img2pixel_set_sample_mode(0);
          update = 1;
-         SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
+         SLK_gui_label_set_text(elements.general_label_sample,text_sample[img2pixel_get_sample_mode()]);
       }
-      if(elements.general_bar_alpha->slider.value!=alpha_threshold)
+      if(elements.general_bar_alpha->slider.value!=img2pixel_get_alpha_threshold())
       {
-         alpha_threshold = elements.general_bar_alpha->slider.value;
+         img2pixel_set_alpha_threshold(elements.general_bar_alpha->slider.value);
          char tmp[16];
-         sprintf(tmp,"%d",alpha_threshold);
+         sprintf(tmp,"%d",img2pixel_get_alpha_threshold());
          SLK_gui_label_set_text(elements.general_label_alpha,tmp);
          update = 1;
       }
-      if(elements.general_bar_gauss->slider.value!=gauss)
+      if(elements.general_bar_gauss->slider.value!=img2pixel_get_gauss())
       {
-         gauss = elements.general_bar_gauss->slider.value;
+         img2pixel_set_gauss(elements.general_bar_gauss->slider.value);
          char tmp[16];
-         sprintf(tmp,"%d",gauss);
+         sprintf(tmp,"%d",img2pixel_get_gauss());
          SLK_gui_label_set_text(elements.general_label_gauss,tmp);
          img2pixel_lowpass_image(sprite_in_org,sprite_in);
          img2pixel_sharpen_image(sprite_in,sprite_in);
          update = 1;
       }
-      if(elements.general_tab_scale->tabbar.current_tab!=pixel_scale_mode)
+      if(elements.general_tab_scale->tabbar.current_tab!=img2pixel_get_scale_mode())
       {
-         pixel_scale_mode = elements.general_tab_scale->tabbar.current_tab;
+         img2pixel_set_scale_mode(elements.general_tab_scale->tabbar.current_tab);
          update = 1;
       }
       break;
@@ -873,43 +860,43 @@ static void gui_buttons()
          elements.process_bar_sharpen->slider.value--;
       else if(elements.process_plus_sharpen->button.state.pressed&&elements.process_bar_sharpen->slider.value<elements.process_bar_sharpen->slider.max)
          elements.process_bar_sharpen->slider.value++;
-      if(brightness!=elements.process_bar_brightness->slider.value)
+      if(img2pixel_get_brightness()!=elements.process_bar_brightness->slider.value)
       {
-         brightness = elements.process_bar_brightness->slider.value;
+         img2pixel_set_brightness(elements.process_bar_brightness->slider.value);
          char ctmp[16];
-         sprintf(ctmp,"%d",brightness);
+         sprintf(ctmp,"%d",img2pixel_get_brightness());
          SLK_gui_label_set_text(elements.process_label_brightness,ctmp);
          update = 1;
       }
-      if(contrast!=elements.process_bar_contrast->slider.value)
+      if(img2pixel_get_contrast()!=elements.process_bar_contrast->slider.value)
       {
-         contrast = elements.process_bar_contrast->slider.value;
+         img2pixel_set_contrast(elements.process_bar_contrast->slider.value);
          char ctmp[16];
-         sprintf(ctmp,"%d",contrast);
+         sprintf(ctmp,"%d",img2pixel_get_contrast());
          SLK_gui_label_set_text(elements.process_label_contrast,ctmp);
          update = 1;
       }
-      if(saturation!=elements.process_bar_saturation->slider.value)
+      if(img2pixel_get_saturation()!=elements.process_bar_saturation->slider.value)
       {
-         saturation = elements.process_bar_saturation->slider.value;
+         img2pixel_set_saturation(elements.process_bar_saturation->slider.value);
          char ctmp[16];
-         sprintf(ctmp,"%d",saturation);
+         sprintf(ctmp,"%d",img2pixel_get_saturation());
          SLK_gui_label_set_text(elements.process_label_saturation,ctmp);
          update = 1;
       }
-      if(img_gamma!=elements.process_bar_gamma->slider.value)
+      if(img2pixel_get_gamma()!=elements.process_bar_gamma->slider.value)
       {
-         img_gamma = elements.process_bar_gamma->slider.value;
+         img2pixel_set_gamma(elements.process_bar_gamma->slider.value);
          char ctmp[16];
-         sprintf(ctmp,"%d",img_gamma);
+         sprintf(ctmp,"%d",img2pixel_get_gamma());
          SLK_gui_label_set_text(elements.process_label_gamma,ctmp);
          update = 1;
       }
-      if(sharpen!=elements.process_bar_sharpen->slider.value)
+      if(img2pixel_get_sharpen()!=elements.process_bar_sharpen->slider.value)
       {
-         sharpen = elements.process_bar_sharpen->slider.value;
+         img2pixel_set_sharpen(elements.process_bar_sharpen->slider.value);
          char ctmp[16];
-         sprintf(ctmp,"%d",sharpen);
+         sprintf(ctmp,"%d",img2pixel_get_sharpen());
          SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
          img2pixel_lowpass_image(sprite_in_org,sprite_in);
          img2pixel_sharpen_image(sprite_in,sprite_in);
@@ -919,10 +906,10 @@ static void gui_buttons()
    case 19: //Special tab
       if(elements.special_gif_save->button.state.released)
       {
-         if(pixel_scale_mode==0)
-            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,image_out_width,image_out_height,palette);
+         if(img2pixel_get_scale_mode()==0)
+            gif_output_select(img2pixel_get_process_mode(),img2pixel_get_sample_mode(),img2pixel_get_distance_mode(),img2pixel_get_scale_mode(),img2pixel_get_out_width(),img2pixel_get_out_height(),img2pixel_get_palette());
          else
-            gif_output_select(pixel_process_mode,pixel_sample_mode,pixel_distance_mode,pixel_scale_mode,image_out_swidth,image_out_sheight,palette);
+            gif_output_select(img2pixel_get_process_mode(),img2pixel_get_sample_mode(),img2pixel_get_distance_mode(),img2pixel_get_scale_mode(),img2pixel_get_out_swidth(),img2pixel_get_out_sheight(),img2pixel_get_palette());
          elements.special_gif_save->button.state.released = 0;
       }
       else if(elements.special_gif_load->button.state.released)
@@ -972,15 +959,15 @@ static void update_output()
       return;
    int width;
    int height;
-   if(pixel_scale_mode==0)
+   if(img2pixel_get_scale_mode()==0)
    {
-      width = image_out_width;
-      height = image_out_height;
+      width = img2pixel_get_out_width();
+      height = img2pixel_get_out_height();
    }
    else
    {
-      width = sprite_in->width/image_out_swidth;
-      height = sprite_in->height/image_out_sheight;
+      width = sprite_in->width/img2pixel_get_out_swidth();
+      height = sprite_in->height/img2pixel_get_out_sheight();
    }
 
    if(sprite_out==NULL||sprite_out->width!=width||sprite_out->height!=height)
@@ -1021,8 +1008,8 @@ static void palette_draw()
 
    for(int y = 0;y<9;y++)
       for(int x = 0;x<31;x++)
-         if(y*31+x<palette->used)
-            SLK_draw_rgb_fill_rectangle(x*9,y*9,9,9,palette->colors[y*31+x]);
+         if(y*31+x<img2pixel_get_palette()->used)
+            SLK_draw_rgb_fill_rectangle(x*9,y*9,9,9,img2pixel_get_palette()->colors[y*31+x]);
 
    SLK_draw_rgb_set_target(old);
    SLK_gui_image_update(elements.palette_palette,elements.palette_sprite,(SLK_gui_rectangle){0,0,279,81});
@@ -1031,15 +1018,15 @@ static void palette_draw()
 static void palette_labels()
 {
    char ctmp[16];
-   sprintf(ctmp,"%d",palette->colors[palette_selected].r);
+   sprintf(ctmp,"%d",img2pixel_get_palette()->colors[palette_selected].r);
    SLK_gui_label_set_text(elements.palette_label_r,ctmp);
-   elements.palette_bar_r->slider.value = palette->colors[palette_selected].r;
-   sprintf(ctmp,"%d",palette->colors[palette_selected].g);
+   elements.palette_bar_r->slider.value = img2pixel_get_palette()->colors[palette_selected].r;
+   sprintf(ctmp,"%d",img2pixel_get_palette()->colors[palette_selected].g);
    SLK_gui_label_set_text(elements.palette_label_g,ctmp);
-   elements.palette_bar_g->slider.value = palette->colors[palette_selected].g;
-   sprintf(ctmp,"%d",palette->colors[palette_selected].b);
+   elements.palette_bar_g->slider.value = img2pixel_get_palette()->colors[palette_selected].g;
+   sprintf(ctmp,"%d",img2pixel_get_palette()->colors[palette_selected].b);
    SLK_gui_label_set_text(elements.palette_label_b,ctmp);
-   elements.palette_bar_b->slider.value = palette->colors[palette_selected].b;
+   elements.palette_bar_b->slider.value = img2pixel_get_palette()->colors[palette_selected].b;
 }
 
 void preset_load(FILE *f)
@@ -1048,54 +1035,54 @@ void preset_load(FILE *f)
    img2pixel_preset_load(f);
 
    //The unnecessary indentations are for my own sanity
-   elements.palette_bar_r->slider.value = palette->colors[palette_selected].r;
-   elements.palette_bar_g->slider.value = palette->colors[palette_selected].g;
-   elements.palette_bar_b->slider.value = palette->colors[palette_selected].b;
+   elements.palette_bar_r->slider.value = img2pixel_get_palette()->colors[palette_selected].r;
+   elements.palette_bar_g->slider.value = img2pixel_get_palette()->colors[palette_selected].g;
+   elements.palette_bar_b->slider.value = img2pixel_get_palette()->colors[palette_selected].b;
    palette_draw();
    palette_labels();
-   SLK_gui_label_set_text(elements.palette_label_space,text_space[pixel_distance_mode]);
-   elements.general_bar_width->slider.value = image_out_width;
-      sprintf(ctmp,"%d",image_out_width);
+   SLK_gui_label_set_text(elements.palette_label_space,text_space[img2pixel_get_distance_mode()]);
+   elements.general_bar_width->slider.value = img2pixel_get_out_width();
+      sprintf(ctmp,"%d",img2pixel_get_out_width());
       SLK_gui_label_set_text(elements.general_label_width,ctmp);
-   elements.general_bar_height->slider.value = image_out_height;
-      sprintf(ctmp,"%d",image_out_height);
+   elements.general_bar_height->slider.value = img2pixel_get_out_height();
+      sprintf(ctmp,"%d",img2pixel_get_out_height());
       SLK_gui_label_set_text(elements.general_label_height,ctmp);
-   elements.general_bar_swidth->slider.value = image_out_swidth;
-      sprintf(ctmp,"%d",image_out_swidth);
+   elements.general_bar_swidth->slider.value = img2pixel_get_out_swidth();
+      sprintf(ctmp,"%d",img2pixel_get_out_swidth());
       SLK_gui_label_set_text(elements.general_label_swidth,ctmp);
-   elements.general_bar_sheight->slider.value = image_out_sheight;
-      sprintf(ctmp,"%d",image_out_sheight);
+   elements.general_bar_sheight->slider.value = img2pixel_get_out_sheight();
+      sprintf(ctmp,"%d",img2pixel_get_out_sheight());
       SLK_gui_label_set_text(elements.general_label_sheight,ctmp);
-   elements.general_tab_scale->tabbar.current_tab = pixel_scale_mode;
-   SLK_gui_label_set_text(elements.general_label_dither,text_dither[pixel_process_mode]);
-   elements.general_bar_dither->slider.value = dither_amount;
-   SLK_gui_label_set_text(elements.general_label_sample,text_sample[pixel_sample_mode]);
-   elements.general_bar_alpha->slider.value = alpha_threshold;
-      sprintf(ctmp,"%d",alpha_threshold);
+   elements.general_tab_scale->tabbar.current_tab = img2pixel_get_scale_mode();
+   SLK_gui_label_set_text(elements.general_label_dither,text_dither[img2pixel_get_process_mode()]);
+   elements.general_bar_dither->slider.value = img2pixel_get_dither_amount();
+   SLK_gui_label_set_text(elements.general_label_sample,text_sample[img2pixel_get_sample_mode()]);
+   elements.general_bar_alpha->slider.value = img2pixel_get_alpha_threshold();
+      sprintf(ctmp,"%d",img2pixel_get_alpha_threshold());
       SLK_gui_label_set_text(elements.general_label_alpha,ctmp);
    elements.save_bar_upscale->slider.value = upscale;
       sprintf(ctmp,"%d",upscale);
       SLK_gui_label_set_text(elements.save_label_upscale,ctmp);
-   elements.general_bar_gauss->slider.value = gauss;
-      sprintf(ctmp,"%d",gauss);
+   elements.general_bar_gauss->slider.value = img2pixel_get_gauss();
+      sprintf(ctmp,"%d",img2pixel_get_gauss());
       SLK_gui_label_set_text(elements.general_label_gauss,ctmp);
-   elements.process_bar_brightness->slider.value = brightness;
-      sprintf(ctmp,"%d",brightness);
+   elements.process_bar_brightness->slider.value = img2pixel_get_brightness();
+      sprintf(ctmp,"%d",img2pixel_get_brightness());
       SLK_gui_label_set_text(elements.process_label_brightness,ctmp);
-   elements.process_bar_contrast->slider.value = contrast;
-      sprintf(ctmp,"%d",contrast);
+   elements.process_bar_contrast->slider.value = img2pixel_get_contrast();
+      sprintf(ctmp,"%d",img2pixel_get_contrast());
       SLK_gui_label_set_text(elements.process_label_contrast,ctmp);
-   elements.process_bar_saturation->slider.value = saturation;
-      sprintf(ctmp,"%d",saturation);
+   elements.process_bar_saturation->slider.value = img2pixel_get_saturation();
+      sprintf(ctmp,"%d",img2pixel_get_saturation());
       SLK_gui_label_set_text(elements.process_label_saturation,ctmp);
-   elements.process_bar_gamma->slider.value = img_gamma;
-      sprintf(ctmp,"%d",img_gamma);
+   elements.process_bar_gamma->slider.value = img2pixel_get_gamma();
+      sprintf(ctmp,"%d",img2pixel_get_gamma());
       SLK_gui_label_set_text(elements.process_label_gamma,ctmp);
-   elements.process_bar_sharpen->slider.value = sharpen;
-      sprintf(ctmp,"%d",sharpen);
+   elements.process_bar_sharpen->slider.value = img2pixel_get_sharpen();
+      sprintf(ctmp,"%d",img2pixel_get_sharpen());
       SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
-   elements.palette_bar_colors->slider.value = palette->used;
-   sprintf(ctmp,"%d",palette->used);
+   elements.palette_bar_colors->slider.value = img2pixel_get_palette()->used;
+   sprintf(ctmp,"%d",img2pixel_get_palette()->used);
    SLK_gui_label_set_text(elements.palette_label_colors,ctmp);
 
    img2pixel_lowpass_image(sprite_in_org,sprite_in);   
