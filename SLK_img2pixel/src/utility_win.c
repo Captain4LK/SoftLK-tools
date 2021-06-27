@@ -29,7 +29,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "utility.h"
-#include "process.h"
+#include "image2pixel.h"
 //-------------------------------------
 
 //#defines
@@ -262,13 +262,13 @@ void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int 
             char tmp[1028];
             sprintf(tmp,"%s/%s",buffer,file.name);
             SLK_RGB_sprite *in = image_load(tmp);
-            lowpass_image(in,in);
-            sharpen_image(in,in);
+            img2pixel_lowpass_image(in,in);
+            img2pixel_sharpen_image(in,in);
             if(in!=NULL)
             {
                if(scale_mode==1)
                   out = SLK_rgb_sprite_create(in->width/width,in->height/height);
-               process_image(in,out,pal,sample_mode,dither_mode,distance_mode);
+               img2pixel_process_image(in,out);
                char buffer[512];
                stbi_convert_wchar_to_utf8(buffer,512,output_dir);
                sprintf(tmp,"%s/%s.png",buffer,file.name);
@@ -350,9 +350,9 @@ void gif_output_select(int dither_mode, int sample_mode, int distance_mode, int 
             in->data[i].b = frame[i*3+2];
             in->data[i].a = 255;
          }
-         lowpass_image(in,in);
-         sharpen_image(in,in);
-         process_image(in,out,pal,sample_mode,dither_mode,distance_mode);
+         img2pixel_lowpass_image(in,in);
+         img2pixel_sharpen_image(in,in);
+         img2pixel_process_image(in,out);
          for(int i = 0;i<out->width*out->height;i++)
             gif_out->frame[i] = find_palette(out->data[i],pal);
          ge_add_frame(gif_out,gif->gce.delay);

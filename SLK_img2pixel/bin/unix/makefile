@@ -21,7 +21,7 @@ assets.o: ../../src/assets.c ../../src/assets.h
 gui.o: ../../src/gui.c ../../src/gui.h ../../src/assets.h ../../src/image2pixel.h ../../src/utility.h
 	$(CC) -c $< $(CFLAGS) 
 
-utility.o: ../../src/utility.c ../../src/utility.h
+utility.o: ../../src/utility.c ../../src/utility.h ../../src/image2pixel.h
 	$(CC) -c $< $(CFLAGS) 
 
 image2pixel.o:  ../../src/image2pixel.c ../../src/image2pixel.h ../../src/utility.h
