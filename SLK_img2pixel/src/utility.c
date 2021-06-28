@@ -47,7 +47,6 @@ int upscale = 1;
 
 //Function prototypes
 static uint8_t find_palette(SLK_Color in, SLK_Palette *pal);
-static void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal);
 static SLK_Palette *palette_png(FILE *f);
 static SLK_Palette *palette_gpl(FILE *f);
 static SLK_Palette *palette_hex(FILE *f);

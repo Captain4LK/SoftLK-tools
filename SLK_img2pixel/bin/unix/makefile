@@ -1,4 +1,4 @@
-CC = gcc -flto -O3 -s
+CC = gcc -O3 -flto -s
 CFLAGS+=-lm -Wall -Wextra -Wno-sign-compare -Wno-unused-parameter -lSLK -lm -lSDL2 -Wall -lGL
 DEPENDENCIES = assets.o gui.o utility.o image2pixel.o tinyfiledialogs.o gifenc.o gifdec.o
 
@@ -15,7 +15,7 @@ SLK_img2pix_cmd: main_cmd.o $(DEPENDENCIES)
 main.o: ../../src/main.c ../../src/gui.h ../../src/utility.h
 	$(CC) -c $< $(CFLAGS) 
 
-main_cmd.o: ../../src/main_cmd.c ../../src/image2pixel.h
+main_cmd.o: ../../src/main_cmd.c ../../src/image2pixel.h ../../src/assets.h
 	$(CC) -c $< $(CFLAGS) 
 
 assets.o: ../../src/assets.c ../../src/assets.h

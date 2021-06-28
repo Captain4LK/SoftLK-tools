@@ -509,6 +509,7 @@ void gui_init()
       env_def = "./default.json";
    FILE *f = fopen(env_def,"r");
    preset_load(f);
+   fclose(f);
 
    elements.palette_bar_colors->slider.value = img2pixel_get_palette()->used;
    char ctmp[16];

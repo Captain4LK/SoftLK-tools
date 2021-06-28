@@ -18,6 +18,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "utility.h"
+#include "assets.h"
 #include "image2pixel.h"
 //-------------------------------------
 
@@ -43,6 +44,9 @@ static void parse_option(const char *name, const char *value);
 
 int main(int argc, char **argv)
 {
+   //Load default palette
+   img2pixel_set_palette(assets_load_pal_default());
+
    //parse args
    for(int i = 1;i<argc;i++)
    {
@@ -66,6 +70,12 @@ int main(int argc, char **argv)
          img2pixel_preset_load(f);
          fclose(f);
       }
+      else if(strcmp(argv[i],"-quantize")==0)
+      {
+         const char *next = READ_ARG(i);
+         int colors = atoi(next);
+         img2pixel_quantize(colors,sprite_in);
+      }
       else if(strcmp(argv[i],"-set")==0)
       {
          const char *name = READ_ARG(i); 
@@ -88,8 +98,23 @@ int main(int argc, char **argv)
    //process image
    img2pixel_lowpass_image(sprite_in,sprite_in);
    img2pixel_sharpen_image(sprite_in,sprite_in);
+   int width;
+   int height;
+   if(img2pixel_get_scale_mode()==0)
+   {
+      width = img2pixel_get_out_width();
+      height = img2pixel_get_out_height();
+   }
+   else
+   {
+      width = sprite_in->width/img2pixel_get_out_swidth();
+      height = sprite_in->height/img2pixel_get_out_sheight();
+   }
+   SLK_RGB_sprite *out = SLK_rgb_sprite_create(width,height);
+   img2pixel_process_image(sprite_in,out);
 
    //Write image to output path
+   image_save(path_out,out,img2pixel_get_palette());
 
    return 0;
 }
@@ -97,13 +122,14 @@ int main(int argc, char **argv)
 static void print_help(int argc, char **argv)
 {
    printf("%s usage:\n"
-          "%s -fin filename -fout filename [-fpre filename] {-set option value}\n"
-          "   -help\tprint this text\n"
-          "   -fin\t\timage file to process\n"
-          "   -fout\tfile to write output to (.png or .slk)\n"
-          "   -fpre\tpreset to use\n"
-          "   -set\t\tmanually set parameters\n"
-          "   option\tone of the following parameters\n"
+          "%s -fin filename -fout filename [-fpre filename] [-quantize colors] {-set option value}\n"
+          "   -help\t\tprint this text\n"
+          "   -fin\t\t\timage file to process\n"
+          "   -fout\t\tfile to write output to (.png or .slk)\n"
+          "   -fpre\t\tpreset to use\n"
+          "   -quantize [1,255]\ttry to automatically create a palette from the input image\n"
+          "   -set\t\t\tmanually set parameters\n"
+          "   option\t\tone of the following parameters\n"
           "      brightness [-255,255]\tbrightness adjustment\n"
           "      contrast [1,600]\t\tcontrast adjustment\n"
           "      gamma [1,800]\t\tgamma adjustment\n"
@@ -120,7 +146,8 @@ static void print_help(int argc, char **argv)
           "      width [1,infinity[\timage output width, only used if scale_mode is set to 0\n"
           "      height [1,infinity[\timage output height, only used if scale_mode is set to 0\n"
           "      scale_x [1,infinity[\timage output scale factor x-axis, only used if scale_mode is set to 1\n"
-          "      scale_y [1,infinity[\timage output scale factor y-axis, only used if scale_mode is set to 1\n",
+          "      scale_y [1,infinity[\timage output scale factor y-axis, only used if scale_mode is set to 1\n"
+          "      upscale [1,infinity[\tfactor to nearest neighbour upscale the output image\n",
          argv[0],argv[0]);
 }
 
@@ -160,5 +187,7 @@ static void parse_option(const char *name, const char *value)
       img2pixel_set_out_swidth(atoi(value));
    else if(strcmp(name,"scale_y")==0)
       img2pixel_set_out_sheight(atoi(value));
+   else if(strcmp(name,"upscale")==0)
+      upscale = atoi(value);
 }
 //-------------------------------------

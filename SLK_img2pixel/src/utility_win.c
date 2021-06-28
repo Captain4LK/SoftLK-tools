@@ -219,6 +219,45 @@ void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)
    SLK_rgb_sprite_destroy(tmp_up);
 }
 
+void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
+{
+   if(img==NULL||path==NULL)
+      return;
+
+   cf_file_t file; //Not ment to be used this way, but since it's possible, who cares
+   strcpy(file.name,path);
+
+   //slk file
+   if(strcmp(cf_get_ext(&file),".slk")==0)
+   {
+      SLK_Pal_sprite *p = SLK_pal_sprite_create(img->width,img->height);
+      for(int i = 0;i<p->width*p->height;i++)
+      {
+         p->data[i] = find_palette(img->data[i],pal);
+         if(!img->data[i].a)
+            p->data[i] = 0;
+      }
+
+      //Save image as smallest type
+      FILE *in = fopen(path,"wb");
+      SLK_pal_sprite_save_file(in,p,0);
+      fclose(in); 
+      SLK_pal_sprite_destroy(p);
+
+      return;
+   }
+
+   //anything else --> png
+   SLK_RGB_sprite *tmp_up = SLK_rgb_sprite_create(upscale*img->width,upscale*img->height);
+   for(int y = 0;y<img->height;y++)
+      for(int x = 0;x<img->width;x++)
+         for(int y_ = 0;y_<upscale;y_++)
+            for(int x_ = 0;x_<upscale;x_++)
+               SLK_rgb_sprite_set_pixel(tmp_up,x*upscale+x_,y*upscale+y_,SLK_rgb_sprite_get_pixel(img,x,y));
+   SLK_rgb_sprite_save(path,tmp_up);
+   SLK_rgb_sprite_destroy(tmp_up);
+}
+
 SLK_RGB_sprite *image_load(const char *path)
 {
    unsigned char *data = NULL;

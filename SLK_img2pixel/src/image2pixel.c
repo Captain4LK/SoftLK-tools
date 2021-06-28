@@ -195,7 +195,6 @@ void img2pixel_preset_load(FILE *f)
 
    HLH_json5 fallback = {0};
    HLH_json5_root *root = HLH_json_parse_file_stream(f);
-   fclose(f);
 
    HLH_json5 *o = HLH_json_get_object_object(&root->root,"palette",&fallback);
    palette->used = HLH_json_get_object_integer(o,"used",0);
