@@ -118,6 +118,34 @@ SLK_Palette *palette_select()
    return NULL;
 }
 
+SLK_Palette *palette_load(const char *path)
+{
+   if(path!=NULL)
+   {
+      SLK_Palette *p = NULL;
+      FILE *f = fopen(path,"rb");
+      if(f)
+      {
+         cf_file_t file; //Not ment to be used this way, but since it's possible, who cares
+         strcpy(file.name,path);
+         cf_get_ext(&file);
+
+         if(strcmp(file.ext,".pal")==0)
+            p = SLK_palette_load_file(f);
+         else if(strcmp(file.ext,".png")==0)
+            p = palette_png(f);
+         else if(strcmp(file.ext,".gpl")==0)
+            p = palette_gpl(f);
+         else if(strcmp(file.ext,".hex")==0)
+            p = palette_hex(f);
+         
+         fclose(f);
+         return p;
+      }
+   }
+   return NULL;
+}
+
 void palette_write(SLK_Palette *pal)
 {
    const char *filter_patterns[2] = {"*.pal"};

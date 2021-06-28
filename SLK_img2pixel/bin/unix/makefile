@@ -12,7 +12,10 @@ SLK_img2pix_cmd: main_cmd.o $(DEPENDENCIES)
 	chmod +x SLK_img2pix_cmd 
 	mv SLK_img2pix_cmd ../../../bin/
 
-main.o: ../../src/main.c ../../src/gui.h
+main.o: ../../src/main.c ../../src/gui.h ../../src/utility.h
+	$(CC) -c $< $(CFLAGS) 
+
+main_cmd.o: ../../src/main_cmd.c ../../src/image2pixel.h
 	$(CC) -c $< $(CFLAGS) 
 
 assets.o: ../../src/assets.c ../../src/assets.h
