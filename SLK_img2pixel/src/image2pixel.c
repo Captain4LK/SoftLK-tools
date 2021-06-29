@@ -609,6 +609,16 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
       {
          SLK_Color in = tmp_data[y*out->width+x];
 
+         //Hue
+         //Only ajust if not the default value --> better performance
+         if(hue!=0)
+         {
+            float huef = (float)hue;
+            Color_hsv hsv = color_to_hsv(in);
+            hsv.h+=huef;
+            in = hsv_to_color(hsv);
+         }
+
          //Saturation, brightness and contrast
          float r = (float)in.r;
          float g = (float)in.g;
@@ -626,15 +636,6 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
             in.b = MAX(0,MIN(0xff,(int)(255.0f*pow((float)in.b/255.0f,gamma_factor))));
          }
 
-         //Hue
-         //Only ajust if not the default value --> better performance
-         if(hue!=0)
-         {
-            float huef = (float)hue;
-            Color_hsv hsv = color_to_hsv(in);
-            hsv.h+=huef;
-            in = hsv_to_color(hsv);
-         }
 
          tmp_data[y*out->width+x] = in;
       }
