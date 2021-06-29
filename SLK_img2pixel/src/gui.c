@@ -128,6 +128,10 @@ struct Elements
    SLK_gui_element *process_minus_sharpen;
    SLK_gui_element *process_plus_sharpen;
    SLK_gui_element *process_label_sharpen;
+   SLK_gui_element *process_bar_hue;
+   SLK_gui_element *process_minus_hue;
+   SLK_gui_element *process_plus_hue;
+   SLK_gui_element *process_label_hue;
 
    //Special tab
    SLK_gui_element *special_gif_load;
@@ -450,6 +454,8 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
    label = SLK_gui_label_create(104,152,56,12,"Sharp");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   label = SLK_gui_label_create(104,184,56,12,"Hue");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
    elements.process_bar_brightness = SLK_gui_slider_create(174,21,162,14,-255,255);
    elements.process_bar_brightness->slider.value = 0;
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_brightness);
@@ -495,6 +501,15 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_sharpen);
    elements.process_minus_sharpen = SLK_gui_button_create(160,150,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_sharpen);
+   elements.process_bar_hue = SLK_gui_slider_create(174,182,162,14,-360,360);
+   elements.process_bar_hue->slider.value = 0;
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_hue);
+   elements.process_label_hue = SLK_gui_label_create(346,184,40,12,"0");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_hue);
+   elements.process_plus_hue = SLK_gui_button_create(336,182,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_hue);
+   elements.process_minus_hue = SLK_gui_button_create(160,182,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_hue);
 
    //Special tab
    elements.special_gif_load = SLK_gui_button_create(158,32,164,14,"Load gif");
@@ -864,6 +879,11 @@ static void gui_buttons()
          elements.process_bar_sharpen->slider.value--;
       else if(elements.process_plus_sharpen->button.state.pressed&&elements.process_bar_sharpen->slider.value<elements.process_bar_sharpen->slider.max)
          elements.process_bar_sharpen->slider.value++;
+      if(elements.process_minus_hue->button.state.pressed&&elements.process_bar_hue->slider.value>elements.process_bar_hue->slider.min)
+         elements.process_bar_hue->slider.value--;
+      else if(elements.process_plus_hue->button.state.pressed&&elements.process_bar_hue->slider.value<elements.process_bar_hue->slider.max)
+         elements.process_bar_hue->slider.value++;
+
       if(img2pixel_get_brightness()!=elements.process_bar_brightness->slider.value)
       {
          img2pixel_set_brightness(elements.process_bar_brightness->slider.value);
@@ -904,6 +924,14 @@ static void gui_buttons()
          SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
          img2pixel_lowpass_image(sprite_in_org,sprite_in);
          img2pixel_sharpen_image(sprite_in,sprite_in);
+         update = 1;
+      }
+      if(img2pixel_get_hue()!=elements.process_bar_hue->slider.value)
+      {
+         img2pixel_set_hue(elements.process_bar_hue->slider.value);
+         char ctmp[16];
+         sprintf(ctmp,"%d",img2pixel_get_hue());
+         SLK_gui_label_set_text(elements.process_label_hue,ctmp);
          update = 1;
       }
       break;
@@ -1085,6 +1113,9 @@ void preset_load(FILE *f)
    elements.process_bar_sharpen->slider.value = img2pixel_get_sharpen();
       sprintf(ctmp,"%d",img2pixel_get_sharpen());
       SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
+   elements.process_bar_hue->slider.value = img2pixel_get_hue();
+      sprintf(ctmp,"%d",img2pixel_get_hue());
+      SLK_gui_label_set_text(elements.process_label_hue,ctmp);
    elements.palette_bar_colors->slider.value = img2pixel_get_palette()->used;
    sprintf(ctmp,"%d",img2pixel_get_palette()->used);
    SLK_gui_label_set_text(elements.palette_label_colors,ctmp);

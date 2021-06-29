@@ -30,6 +30,8 @@ int          img2pixel_get_saturation();
 void         img2pixel_set_saturation(int nsaturation);
 int          img2pixel_get_sharpen();
 void         img2pixel_set_sharpen(int nsharpen);
+int          img2pixel_get_hue();
+void         img2pixel_set_hue(int nhue);
 int          img2pixel_get_dither_amount();
 void         img2pixel_set_dither_amount(int namount);
 int          img2pixel_get_alpha_threshold();

@@ -9,6 +9,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
+#include <math.h>
 #include <SLK/SLK.h>
 #include <SLK/SLK_gui.h>
 
@@ -71,6 +72,13 @@ typedef struct
    double v;
 }Color_yuv;
 
+typedef struct
+{
+   double h;
+   double s;
+   double v;
+}Color_hsv;
+
 enum
 {
    HIST_SIZE = 0x10000,
@@ -121,6 +129,7 @@ static int saturation = 100;
 static int dither_amount = 250;
 static int alpha_threshold = 128;
 static int sharpen = 0;
+static int hue = 0;
 static int gauss = 80;
 static int pixel_scale_mode = 0;
 static int pixel_sample_mode = 0;
@@ -153,6 +162,8 @@ static Color_xyz color_to_xyz(SLK_Color c);
 static Color_ycc color_to_ycc(SLK_Color c);
 static Color_yiq color_to_yiq(SLK_Color c);
 static Color_yuv color_to_yuv(SLK_Color c);
+static Color_hsv color_to_hsv(SLK_Color c);
+static SLK_Color hsv_to_color(Color_hsv hsv);
 static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, SLK_Color c);
 static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, SLK_Color c);
 static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, SLK_Color c);
@@ -218,6 +229,7 @@ void img2pixel_preset_load(FILE *f)
    saturation = HLH_json_get_object_integer(&root->root,"saturation",0);
    img_gamma = HLH_json_get_object_integer(&root->root,"gamma",0);
    sharpen = HLH_json_get_object_integer(&root->root,"sharpness",0);
+   hue = HLH_json_get_object_integer(&root->root,"hue",0);
 
    HLH_json_free(root);
 }
@@ -252,6 +264,7 @@ void img2pixel_preset_save(FILE *f)
    HLH_json_object_add_integer(&root->root,"gamma",img_gamma);
    HLH_json_object_add_integer(&root->root,"saturation",saturation);
    HLH_json_object_add_integer(&root->root,"sharpness",sharpen);
+   HLH_json_object_add_integer(&root->root,"hue",hue);
  
    HLH_json_write_file(f,&root->root);
    HLH_json_free(root);
@@ -613,6 +626,16 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
             in.b = MAX(0,MIN(0xff,(int)(255.0f*pow((float)in.b/255.0f,gamma_factor))));
          }
 
+         //Hue
+         //Only ajust if not the default value --> better performance
+         if(hue!=0)
+         {
+            float huef = (float)hue;
+            Color_hsv hsv = color_to_hsv(in);
+            hsv.h+=huef;
+            in = hsv_to_color(hsv);
+         }
+
          tmp_data[y*out->width+x] = in;
       }
    }
@@ -635,6 +658,7 @@ void img2pixel_reset_to_defaults()
    dither_amount = 250;
    alpha_threshold = 128;
    sharpen = 0;
+   hue = 0;
    gauss = 80;
    pixel_scale_mode = 0;
    pixel_sample_mode = 0;
@@ -694,6 +718,16 @@ int img2pixel_get_sharpen()
 void img2pixel_set_sharpen(int nsharpen)
 {
    sharpen = nsharpen;
+}
+
+int img2pixel_get_hue()
+{
+   return hue;
+}
+
+void img2pixel_set_hue(int nhue)
+{
+   hue = nhue;
 }
 
 int img2pixel_get_dither_amount()
@@ -1146,6 +1180,88 @@ static Color_yuv color_to_yuv(SLK_Color c)
    y.v = 0.887f*(r-y.y);
 
    return y;
+}
+
+static Color_hsv color_to_hsv(SLK_Color c)
+{
+   float r = (float)c.r/255.0f;
+   float g = (float)c.g/255.0f;
+   float b = (float)c.b/255.0f;
+   float cmax = MAX(r,MAX(g,b));
+   float cmin = MIN(r,MIN(g,b));
+   float diff = cmax-cmin;
+   Color_hsv hsv = {0};
+
+   if(cmax==cmin)
+      hsv.h = 0.0f;
+   else if(cmax==r)
+      hsv.h = fmod(((g-b)/diff),6.0f);
+   else if(cmax==g)
+      hsv.h = (b-r)/diff+2.0f;
+   else if(cmax==b)
+      hsv.h = (r-g)/diff+4.0f;
+
+   hsv.v = cmax;
+   hsv.h*=60.0f;
+   hsv.s = diff/hsv.v;
+
+   return hsv;
+}
+
+static SLK_Color hsv_to_color(Color_hsv hsv)
+{
+   SLK_Color rgb;
+   float r = 0.0f,g = 0.0f,b = 0.0f;
+
+   while(hsv.h<0.0f)
+      hsv.h+=360.0f;
+   hsv.h = fmod(hsv.h,360.0f);
+   float c = hsv.v*hsv.s;
+   float x = c*(1.0f-fabs(fmod(hsv.h/60.0f,2.0f)-1.0f));
+   float m = hsv.v-c;
+
+   if(hsv.h>=0.0f&&hsv.h<60.0f)
+   {
+      r = c+m;
+      g = x+m;
+      b = m;
+   }
+   else if(hsv.h>=60.0f&&hsv.h<120.0f)
+   {
+      r = x+m;
+      g = c+m;
+      b = m;
+   }
+   else if(hsv.h>=120.0f&&hsv.h<180.0f)
+   {
+      r = m;
+      g = c+m;
+      b = x+m;
+   }
+   else if(hsv.h>=180.0f&&hsv.h<240.0f)
+   {
+      r = m;
+      g = x+m;
+      b = c+m;
+   }
+   else if(hsv.h>=240.0f&&hsv.h<300.0f)
+   {
+      r = x+m;
+      g = m;
+      b = c+m;
+   }
+   else if(hsv.h>=300.0f&&hsv.h<360.0f)
+   {
+      r = c+m;
+      g = m;
+      b = x+m;
+   }
+
+   rgb.r = (uint8_t)(r*255.0f);
+   rgb.g = (uint8_t)(g*255.0f);
+   rgb.b = (uint8_t)(b*255.0f);
+
+   return rgb;
 }
 
 static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, SLK_Color c)

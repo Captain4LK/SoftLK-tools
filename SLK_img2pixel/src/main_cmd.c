@@ -135,6 +135,7 @@ static void print_help(int argc, char **argv)
           "      gamma [1,800]\t\tgamma adjustment\n"
           "      saturation [1,600]\tsaturation adjustment\n"
           "      sharpen [0,100]\t\tsharpen kernel strength\n"
+          "      hue [-360,360]\t\thue adjustment\n"
           "      dither [0,1000]\t\tdithering amount\n"
           "      alpha_threshold [0,255]\talpha threshold\n"
           "      gauss [0,500]\t\tgaussian blur strength\n"
@@ -163,6 +164,8 @@ static void parse_option(const char *name, const char *value)
       img2pixel_set_saturation(atoi(value));
    else if(strcmp(name,"sharpen")==0)
       img2pixel_set_sharpen(atoi(value));
+   else if(strcmp(name,"hue")==0)
+      img2pixel_set_hue(atoi(value));
    else if(strcmp(name,"dither")==0)
       img2pixel_set_dither_amount(atoi(value));
    else if(strcmp(name,"alpha_threshold")==0)
