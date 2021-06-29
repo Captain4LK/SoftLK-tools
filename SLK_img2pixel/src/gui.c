@@ -509,7 +509,8 @@ void gui_init()
       env_def = "./default.json";
    FILE *f = fopen(env_def,"r");
    preset_load(f);
-   fclose(f);
+   if(f!=NULL)
+      fclose(f);
 
    elements.palette_bar_colors->slider.value = img2pixel_get_palette()->used;
    char ctmp[16];
@@ -592,6 +593,8 @@ static void gui_buttons()
       {
          FILE *f = json_select();
          preset_load(f);
+         if(f!=NULL)
+            fclose(f);
          elements.save_load_preset->button.state.released = 0;
       }
       else if(elements.save_save_preset->button.state.released)
