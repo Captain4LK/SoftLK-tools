@@ -663,8 +663,6 @@ static void gui_buttons()
       {
          elements.palette_save->button.state.released = 0;
 
-         //Yes, this gets called twice, don't question it, just keep it this way
-         img2pixel_quantize(img2pixel_get_palette()->used,sprite_in_org);
          img2pixel_quantize(img2pixel_get_palette()->used,sprite_in_org);
 
          update = 1;

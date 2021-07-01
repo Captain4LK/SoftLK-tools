@@ -8,6 +8,8 @@ To the extent possible under law, the author(s) have dedicated all copyright and
 You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
 */
 
+//Quantization algorithm based on: https://github.com/ogus/kmeans-quantizer (wtfpl)
+
 //External includes
 #include <math.h>
 #include <SLK/SLK.h>
@@ -23,6 +25,18 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //#defines
+#define dyn_array_init(type, array, space) \
+   do { ((dyn_array *)(array))->size = (space); ((dyn_array *)(array))->used = 0; ((dyn_array *)(array))->data = malloc(sizeof(type)*(((dyn_array *)(array))->size)); } while(0)
+
+#define dyn_array_free(type, array) \
+   do { if(((dyn_array *)(array))->data) { free(((dyn_array *)(array))->data); ((dyn_array *)(array))->data = NULL; ((dyn_array *)(array))->used = 0; ((dyn_array *)(array))->size = 0; }} while(0)
+
+#define dyn_array_add(type, array, grow, element) \
+   do { ((type *)((dyn_array *)(array)->data))[((dyn_array *)(array))->used] = (element); ((dyn_array *)(array))->used++; if(((dyn_array *)(array))->used==((dyn_array *)(array))->size) { ((dyn_array *)(array))->size+=grow; ((dyn_array *)(array))->data = realloc(((dyn_array *)(array))->data,sizeof(type)*(((dyn_array *)(array))->size)); } } while(0)
+
+#define dyn_array_element(type, array, index) \
+   (((type *)((dyn_array *)(array)->data))[index])
+
 #define MIN(a,b) \
    ((a)<(b)?(a):(b))
  
@@ -37,6 +51,13 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Typedefs
+typedef struct
+{
+   uint32_t used;
+   uint32_t size;
+   void *data;
+}dyn_array;
+
 typedef struct
 {
    double l;
@@ -141,7 +162,10 @@ static int image_out_swidth = 2;
 static int image_out_sheight = 2;
 static SLK_Palette *palette = NULL;
 
-static uint32_t *counts;
+static dyn_array *quant_cluster_list = NULL;
+static SLK_Color *quant_centroid_list = NULL;
+static int *quant_assignment = NULL;
+static int quant_k = 16;
 //-------------------------------------
 
 //Function prototypes
@@ -190,11 +214,16 @@ static void sample_lanczos(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
 static double lanczos(double v);
 
 //Functions needed for color quantization
-static void increment_color(Histogramm *h, uint16_t color, uint32_t count);
-static inline void _16_to_rgb(uint32_t rgb, uint8_t *r, uint8_t *g, uint8_t *b);
-static int red_compare(const void *a, const void *b);
-static int green_compare(const void *a, const void *b);
-static int blue_compare(const void *a, const void *b);
+static void quant_cluster_list_init();
+static void quant_cluster_list_free();
+static void quant_compute_kmeans(SLK_RGB_sprite *data);
+static void quant_get_cluster_centroid(SLK_RGB_sprite *data);
+static SLK_Color quant_colors_mean(dyn_array *color_list);
+static SLK_Color quant_pick_random_color(SLK_RGB_sprite *data);
+static int quant_nearest_color_idx(SLK_Color color, SLK_Color *color_list);
+static float quant_distance(SLK_Color color0, SLK_Color color1);
+static float quant_distancef(SLK_Color color0, SLK_Color color1);
+static float quant_colors_variance(dyn_array *color_list);
 //-------------------------------------
 
 //Function implementations
@@ -402,159 +431,23 @@ void img2pixel_quantize(int colors, SLK_RGB_sprite *in)
    if(in==NULL||palette==NULL)
       return;
 
-   Histogramm *hist = malloc(sizeof(*hist));
-   memset(hist,0,sizeof(*hist));
+   SLK_RGB_sprite *tmp = SLK_rgb_sprite_create(512,512);
+   sample_image(in,tmp->data,0,512,512);
+
+   quant_k = colors;
+   quant_compute_kmeans(tmp);
    palette->used = colors;
-
-   //Add colors to histogram
-   uint32_t loop_count = in->width*in->height;
-   SLK_Color *pixel = in->data;
-   for(;loop_count;loop_count--)
+   for(int i = 0;i<colors;i++)
    {
-      SLK_Color c = *pixel;
-      //convert the color to 16 bit
-      uint16_t col = (((uint16_t)c.b>>3)<<11)|
-                     (((uint16_t)c.g>>2)<<5)|
-                     ((uint16_t)c.r>>3);
-
-      increment_color(hist,col,1);
-
-      //move to the next pixel in the image
-      ++pixel;
-   }
-
-   //Median cut
-   counts = hist->counts;
-
-   Box *box_list = malloc(sizeof(Box)*MAX_COLORS);
-
-   //setup the initial box
-   uint32_t total_boxes    = 1;
-   box_list[0].index  = 0;
-   box_list[0].colors = hist->tcolors;
-   box_list[0].sum    = hist->total_pixels;
-
-   uint32_t box_index;
-
-   // split boxes until we have all the colors
-   while(total_boxes<colors-0/*skip_colors*/)
-   {
-      // Find the first splittable box.
-      for(box_index = 0; box_index < total_boxes; ++box_index )
-         if (box_list[box_index].colors >= 2)
-            break;
-
-      if( box_index == total_boxes)
-         break;   /* ran out of colors! */
-
-
-      uint32_t start = box_list[box_index].index;
-      uint32_t end   = start + box_list[box_index].colors;
-
-      uint8_t  min_r=0xff, max_r=0x00,
-      min_g=0xff, max_g=0x00,
-      min_b=0xff, max_b=0x00,
-      r,g,b;
-
-
-      // now find the minimum and maximum r g b values for this box
-      for (loop_count = start; loop_count<end; loop_count++)
-      {
-         _16_to_rgb(hist->reference[loop_count],&r,&g,&b);
-
-         if (r>max_r) max_r=r;
-         if (r<min_r) min_r=r;
-
-         if (g>max_g) max_g=g;
-         if (g<min_g) min_g=g;
-
-         if (b>max_b) max_b=b;
-         if (b<min_b) min_b=b;
-      }
-
-
-      // Find the largest dimension, and sort by that component. 
-      if (((max_r - min_r) >= (max_g - min_g)) && ((max_r - min_r) >= (max_b - min_b)))
-         qsort(hist->reference + start,
-               end-start,             // total elements to sort
-               sizeof(uint16_t),
-               red_compare);
-      else if ( (max_g - min_g) >= (max_b - min_b) )
-         qsort(hist->reference + start,
-               end-start,             // total elements to sort
-               sizeof(uint16_t),
-               green_compare);
-      else
-         qsort(hist->reference + start,
-               end-start,             // total elements to sort
-               sizeof(uint16_t),
-               blue_compare);
-
-
-
-      // now find the division which closest divides into an equal number of pixels
-      uint32_t low_count= counts[hist->reference[start]];
-      uint32_t mid_number=box_list[box_index].sum/2;
-
-      for(loop_count = start+1; loop_count<end-1&&low_count<mid_number;loop_count++)
-         low_count+=counts[hist->reference[loop_count]];
-
-
-      // now split the box
-      box_list[total_boxes].index  = loop_count;
-      box_list[total_boxes].colors = end-loop_count;
-      box_list[total_boxes].sum    = box_list[box_index].sum-low_count;
-      total_boxes++;
-
-      box_list[box_index].colors= loop_count-start;
-      box_list[box_index].sum   = low_count;
-
-      // sort to bring the biggest boxes to the top
-      //qsort(box_list, total_boxes, sizeof(Box), box_compare );    
-
-      /*    for (int z=0;z<total_boxes;z++)
-      {
-      printf("box #%d : index = %d, colors= %d, sum=%d\n",z, 
-      box_list[z].index, box_list[z].colors, box_list[z].sum);
-      } */
-
+      palette->colors[i] = quant_centroid_list[i];
+      palette->colors[i].a = 255;
    }
 
 
-   // we should have 256 boxes, we now need to choose a color for each box
-   // we do this by averaging all the colors within the box
-   uint32_t r_tot, g_tot, b_tot;
-   for (box_index = 0; box_index<total_boxes-0/*skip_colors*/; box_index++)
-   {
-      r_tot = g_tot = b_tot = 0;
-
-      uint32_t start = box_list[box_index].index;
-      uint32_t end   = start + box_list[box_index].colors;
-
-      uint8_t r,g,b;
-      for (loop_count = start; loop_count < end; loop_count++)
-      {
-         _16_to_rgb(hist->reference[loop_count],&r,&g,&b);
-
-         r_tot+=r;
-         g_tot+=g;
-         b_tot+=b;
-      }
-
-      r_tot/=(end-start);
-      g_tot/=(end-start);
-      b_tot/=(end-start);
-
-      palette->colors[box_index+0/*skip_colors*/].n = (r_tot<<16)|
-      (g_tot<<8) |
-      b_tot;
-      palette->colors[box_index+0/*skip_colors*/].a = 255;
-   }
-
-   for(;box_index+0/*skip_colors*/<colors; box_index++)
-      palette->colors[box_index+0/*skip_colors*/].n = 0;
-
-   free(box_list);
+   quant_cluster_list_free();
+   free(quant_centroid_list);
+   free(quant_assignment);
+   SLK_rgb_sprite_destroy(tmp);
 }
 
 void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
@@ -635,7 +528,6 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
             in.g = MAX(0,MIN(0xff,(int)(255.0f*pow((float)in.g/255.0f,gamma_factor))));
             in.b = MAX(0,MIN(0xff,(int)(255.0f*pow((float)in.b/255.0f,gamma_factor))));
          }
-
 
          tmp_data[y*out->width+x] = in;
       }
@@ -1901,54 +1793,156 @@ static double lanczos(double v)
    return ((3.0f*sin(M_PI*v)*sin(M_PI*v/3.0f))/(M_PI*M_PI*v*v));
 }
 
-static void increment_color(Histogramm *h, uint16_t color, uint32_t count)
+static void quant_cluster_list_init()
 {
-   if(!h->counts[color])            // is this an original color?
+   quant_cluster_list_free(quant_k);
+   
+   quant_cluster_list = malloc(sizeof(*quant_cluster_list)*quant_k);
+   for(int i = 0;i<quant_k;i++)
+      dyn_array_init(SLK_Color,&quant_cluster_list[i],2);
+}
+
+static void quant_cluster_list_free()
+{
+   if(quant_cluster_list==NULL)
+      return;
+
+   for(int i = 0;i<quant_k;i++)
+      dyn_array_free(SLK_Color,&quant_cluster_list[i]);
+
+   free(quant_cluster_list);
+   quant_cluster_list = NULL;
+}
+
+static void quant_compute_kmeans(SLK_RGB_sprite *data)
+{
+   quant_cluster_list_init();
+   quant_centroid_list = malloc(sizeof(*quant_centroid_list)*quant_k);
+   quant_assignment = malloc(sizeof(*quant_assignment)*(data->width*data->height));
+   for(int i = 0;i<(data->width*data->height);i++)
+      quant_assignment[i] = 0;
+
+   int iter = 0;
+   int max_iter = 16;
+   float *previous_variance = malloc(sizeof(*previous_variance)*quant_k);
+   float variance = 0.0f;
+   float delta = 0.0f;
+   float delta_max = 0.0f;
+   float threshold = 0.00005f;
+   for(int i = 0;i<quant_k;i++)
+      previous_variance[i] = 1.0f;
+
+   for(;;)
    {
-      h->reference[h->tcolors] = color;    // add this color to the reference list
-      h->tcolors++;
+      quant_get_cluster_centroid(data);
+      quant_cluster_list_init();
+      for(int i = 0;i<data->width*data->height;i++)
+      {
+         SLK_Color color = data->data[i];
+         quant_assignment[i] = quant_nearest_color_idx(color,quant_centroid_list);
+         dyn_array_add(SLK_Color,&quant_cluster_list[quant_assignment[i]],1,color);
+      }
+
+      delta_max = 0.0f;
+      for(int i = 0;i<quant_k;i++)
+      {
+         variance = quant_colors_variance(&quant_cluster_list[i]);
+         delta = fabs(previous_variance[i]-variance);
+         delta_max = MAX(delta,delta_max);
+         previous_variance[i] = variance;
+      }
+
+      if(delta_max<threshold||iter++>max_iter)
+         break;
    }
-   h->counts[color]+=count;          // increment the counter for this color
-   h->total_pixels+=count;           // count total pixels we've looked at
+
+   free(previous_variance);
 }
 
-static inline void _16_to_rgb(uint32_t rgb, uint8_t *r, uint8_t *g, uint8_t *b)
+static void quant_get_cluster_centroid(SLK_RGB_sprite *data)
 {
-  *b=(rgb & (1 | 2 | 4 | 8 | 16))<<3;
-  rgb>>=5;
-
-  *g=(rgb & (1 | 2 | 4 | 8 | 16 | 32))<<2;
-  rgb>>=6;
-
-  *r=(rgb & (1 | 2 | 4 | 8 | 16))<<3;
+   for(int i = 0;i<quant_k;i++)
+   {
+      if(quant_cluster_list[i].used>0)
+         quant_centroid_list[i] = quant_colors_mean(&quant_cluster_list[i]);
+      else
+         quant_centroid_list[i] = quant_pick_random_color(data);
+   }
 }
 
-static int red_compare(const void *a, const void *b)
+static SLK_Color quant_colors_mean(dyn_array *color_list)
 {
-  uint16_t color1=counts[*((uint16_t *)a)],
-      color2=counts[*((uint16_t *)b)];
+   int r = 0,g = 0,b = 0;
+   int length = color_list->used;
+   for(int i = 0;i<length;i++)
+   {
+      r+=dyn_array_element(SLK_Color,color_list,i).r;
+      g+=dyn_array_element(SLK_Color,color_list,i).g;
+      b+=dyn_array_element(SLK_Color,color_list,i).b;
+   }
 
-  return ((int32_t) ((color1 & (  (1 | 2 | 4 | 8 | 16) << 11))>>11))-
-    ((int32_t) ((color2 & (  (1 | 2 | 4 | 8 | 16) << 11))>>11));
+   r/=length;
+   g/=length;
+   b/=length;
+
+   return (SLK_Color){.r = r, .g = g, .b = b};
 }
 
-
-static int green_compare(const void *a, const void *b)
+static SLK_Color quant_pick_random_color(SLK_RGB_sprite *data)
 {
-  uint16_t color1=counts[*((uint16_t *)a)],
-      color2=counts[*((uint16_t *)b)];
-
-  return ((int32_t) (color1 & (  (1 | 2 | 4 | 8 | 16 | 32) << 5)))-
-         ((int32_t) (color2 & (  (1 | 2 | 4 | 8 | 16 | 32) << 5)));
+   return data->data[(int)(((float)rand()/(float)RAND_MAX)*data->width*data->height)];
 }
 
-
-static int blue_compare(const void *a, const void *b)
+static int quant_nearest_color_idx(SLK_Color color, SLK_Color *color_list)
 {
-  uint16_t color1=counts[*((uint16_t *)a)],
-      color2=counts[*((uint16_t *)b)];
+   float dist_min = 0xffff;
+   float dist = 0.0f;
+   int idx = 0;
+   for(int i = 0;i<quant_k;i++)
+   {
+      dist = quant_distancef(color,color_list[i]);
+      if(dist<dist_min)
+      {
+         dist_min = dist;
+         idx = i;
+      }
+   }
 
-  return ((int32_t) (color1 & (  (1 | 2 | 4 | 8 | 16) << 0)))-
-         ((int32_t) (color2 & (  (1 | 2 | 4 | 8 | 16) << 0)));
+   return idx;
+}
+
+static float quant_distance(SLK_Color color0, SLK_Color color1)
+{
+   float mr = 0.5f*(color0.r+color1.r),
+      dr = color0.r-color1.r,
+      dg = color0.g-color1.g,
+      db = color0.b-color1.b;
+   float distance = (2*dr*dr)+(4*dg*dg)+(3*db*db)+(mr*((dr*dr)-(db*db))/256.0f);
+   return sqrt(distance)/(3.0f*255.0f);
+}
+
+static float quant_distancef(SLK_Color color0, SLK_Color color1)
+{
+   float mr = 0.5f*(color0.r+color1.r),
+      dr = color0.r-color1.r,
+      dg = color0.g-color1.g,
+      db = color0.b-color1.b;
+   float distance = (2*dr*dr)+(4*dg*dg)+(3*db*db)+(mr*((dr*dr)-(db*db))/256.0f);
+   return distance/(3.0f*255.0f);
+}
+
+static float quant_colors_variance(dyn_array *color_list)
+{
+   int length = color_list->used;
+   SLK_Color mean = quant_colors_mean(color_list);
+   float dist = 0.0f;
+   float dist_sum = 0.0f;
+   for(int i = 0;i<length;i++)
+   {
+      dist = quant_distance(dyn_array_element(SLK_Color,color_list,i),mean);
+      dist_sum+=dist*dist;
+   }
+
+   return dist_sum/(float)length;
 }
 //-------------------------------------
