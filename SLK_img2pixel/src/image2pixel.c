@@ -45,9 +45,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define DEG2RAD(a) \
    ((a)*M_PI/180.0f)
-
-//Max quantization color depth
-#define MAX_DEPTH 8
 //-------------------------------------
 
 //Typedefs

@@ -27,6 +27,32 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
  
 #define MAX(a,b) \
    ((a)>(b)?(a):(b))
+
+#define BUTTON_BAR_PLUS(a,b) \
+   if((a)->button.state.pressed&&(b)->slider.value<(b)->slider.max) \
+      (b)->slider.value++
+
+#define BUTTON_BAR_MINUS(a,b) \
+   if((a)->button.state.pressed&&(b)->slider.value>(b)->slider.min) \
+      (b)->slider.value--
+
+#define BAR_UPDATE(get,set,bar,label) \
+   if((get)()!=(bar)->slider.value) \
+   { \
+      (set)((bar)->slider.value); \
+      char ctmp[16]; \
+      sprintf(ctmp,"%d",(get)()); \
+      SLK_gui_label_set_text((label),ctmp); \
+      update = 1; \
+   }
+      //if(img2pixel_get_brightness()!=elements.process_bar_brightness->slider.value)
+      //{
+         //img2pixel_set_brightness(elements.process_bar_brightness->slider.value);
+         //char ctmp[16];
+         //sprintf(ctmp,"%d",img2pixel_get_brightness());
+         //SLK_gui_label_set_text(elements.process_label_brightness,ctmp);
+         //update = 1;
+      //}
 //-------------------------------------
 
 //Typedefs
@@ -683,22 +709,19 @@ static void gui_buttons()
          palette_selected = MIN(255,(ny/9)*31+nx/9);
          palette_labels();
       }
-      if(elements.palette_minus_r->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].r>0)
-         elements.palette_bar_r->slider.value--;
-      else if(elements.palette_plus_r->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].r<255)
-         elements.palette_bar_r->slider.value++;
-      else if(elements.palette_minus_g->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].g>0)
-         elements.palette_bar_g->slider.value--;
-      else if(elements.palette_plus_g->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].g<255)
-         elements.palette_bar_g->slider.value++;
-      else if(elements.palette_minus_b->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].b>0)
-         elements.palette_bar_b->slider.value--;
-      else if(elements.palette_plus_b->button.state.pressed&&img2pixel_get_palette()->colors[palette_selected].b<255)
-         elements.palette_bar_b->slider.value++;
-      else if(elements.palette_minus_colors->button.state.pressed&&img2pixel_get_palette()->used>1)
-         elements.palette_bar_colors->slider.value--;
-      else if(elements.palette_plus_colors->button.state.pressed&&img2pixel_get_palette()->used<256)
-         elements.palette_bar_colors->slider.value++;
+
+      BUTTON_BAR_PLUS(elements.palette_plus_r,elements.palette_bar_r);
+      BUTTON_BAR_MINUS(elements.palette_minus_r,elements.palette_bar_r);
+
+      BUTTON_BAR_PLUS(elements.palette_plus_g,elements.palette_bar_g);
+      BUTTON_BAR_MINUS(elements.palette_minus_g,elements.palette_bar_g);
+
+      BUTTON_BAR_PLUS(elements.palette_plus_b,elements.palette_bar_b);
+      BUTTON_BAR_MINUS(elements.palette_minus_b,elements.palette_bar_b);
+
+      BUTTON_BAR_PLUS(elements.palette_plus_colors,elements.palette_bar_colors);
+      BUTTON_BAR_MINUS(elements.palette_minus_colors,elements.palette_bar_colors);
+
       if(elements.palette_bar_r->slider.value!=img2pixel_get_palette()->colors[palette_selected].r||elements.palette_bar_g->slider.value!=img2pixel_get_palette()->colors[palette_selected].g||elements.palette_bar_b->slider.value!=img2pixel_get_palette()->colors[palette_selected].b)
       {
          img2pixel_get_palette()->colors[palette_selected].r = elements.palette_bar_r->slider.value;
@@ -737,30 +760,23 @@ static void gui_buttons()
       }
       break;
    case 2: //General tab
-      if(elements.general_width_plus->button.state.pressed&&elements.general_bar_width->slider.value<elements.general_bar_width->slider.max)
-         elements.general_bar_width->slider.value++;
-      else if(elements.general_width_minus->button.state.pressed&&elements.general_bar_width->slider.value>elements.general_bar_width->slider.min)
-         elements.general_bar_width->slider.value--;
-      else if(elements.general_height_plus->button.state.pressed&&elements.general_bar_height->slider.value<elements.general_bar_height->slider.max)
-         elements.general_bar_height->slider.value++;
-      else if(elements.general_height_minus->button.state.pressed&&elements.general_bar_height->slider.value>elements.general_bar_height->slider.min)
-         elements.general_bar_height->slider.value--;
-      else if(elements.general_swidth_plus->button.state.pressed&&elements.general_bar_swidth->slider.value<elements.general_bar_swidth->slider.max)
-         elements.general_bar_swidth->slider.value++;
-      else if(elements.general_swidth_minus->button.state.pressed&&elements.general_bar_swidth->slider.value>elements.general_bar_swidth->slider.min)
-         elements.general_bar_swidth->slider.value--;
-      else if(elements.general_sheight_plus->button.state.pressed&&elements.general_bar_sheight->slider.value<elements.general_bar_sheight->slider.max)
-         elements.general_bar_sheight->slider.value++;
-      else if(elements.general_sheight_minus->button.state.pressed&&elements.general_bar_sheight->slider.value>elements.general_bar_sheight->slider.min)
-         elements.general_bar_sheight->slider.value--;
-      else if(elements.general_alpha_plus->button.state.pressed&&elements.general_bar_alpha->slider.value<elements.general_bar_alpha->slider.max)
-         elements.general_bar_alpha->slider.value++;
-      else if(elements.general_alpha_minus->button.state.pressed&&elements.general_bar_alpha->slider.value>elements.general_bar_alpha->slider.min)
-         elements.general_bar_alpha->slider.value--;
-      else if(elements.general_gauss_plus->button.state.pressed&&elements.general_bar_gauss->slider.value<elements.general_bar_gauss->slider.max)
-         elements.general_bar_gauss->slider.value++;
-      else if(elements.general_gauss_minus->button.state.pressed&&elements.general_bar_gauss->slider.value>elements.general_bar_gauss->slider.min)
-         elements.general_bar_gauss->slider.value--;
+      BUTTON_BAR_PLUS(elements.general_width_plus,elements.general_bar_width);
+      BUTTON_BAR_MINUS(elements.general_width_minus,elements.general_bar_width);
+
+      BUTTON_BAR_PLUS(elements.general_height_plus,elements.general_bar_height);
+      BUTTON_BAR_MINUS(elements.general_height_minus,elements.general_bar_height);
+
+      BUTTON_BAR_PLUS(elements.general_swidth_plus,elements.general_bar_swidth);
+      BUTTON_BAR_MINUS(elements.general_swidth_minus,elements.general_bar_swidth);
+
+      BUTTON_BAR_PLUS(elements.general_sheight_plus,elements.general_bar_sheight);
+      BUTTON_BAR_MINUS(elements.general_sheight_minus,elements.general_bar_sheight);
+
+      BUTTON_BAR_PLUS(elements.general_alpha_plus,elements.general_bar_alpha);
+      BUTTON_BAR_MINUS(elements.general_alpha_minus,elements.general_bar_alpha);
+
+      BUTTON_BAR_PLUS(elements.general_gauss_plus,elements.general_bar_gauss);
+      BUTTON_BAR_MINUS(elements.general_gauss_minus,elements.general_bar_gauss);
 
       if(elements.general_dither_left->button.state.pressed)
       {
@@ -778,38 +794,12 @@ static void gui_buttons()
          update = 1;
          SLK_gui_label_set_text(elements.general_label_dither,text_dither[img2pixel_get_process_mode()]);
       }
-      if(elements.general_bar_width->slider.value!=img2pixel_get_out_width())
-      {
-         img2pixel_set_out_width(elements.general_bar_width->slider.value);
-         char tmp[16];
-         sprintf(tmp,"%d",img2pixel_get_out_width());
-         SLK_gui_label_set_text(elements.general_label_width,tmp);
-         update = 1;
-      }
-      if(elements.general_bar_height->slider.value!=img2pixel_get_out_height())
-      {
-         img2pixel_set_out_height(elements.general_bar_height->slider.value);
-         char tmp[16];
-         sprintf(tmp,"%d",img2pixel_get_out_height());
-         SLK_gui_label_set_text(elements.general_label_height,tmp);
-         update = 1;
-      }
-      if(elements.general_bar_swidth->slider.value!=img2pixel_get_out_swidth())
-      {
-         img2pixel_set_out_swidth(elements.general_bar_swidth->slider.value);
-         char tmp[16];
-         sprintf(tmp,"%d",img2pixel_get_out_swidth());
-         SLK_gui_label_set_text(elements.general_label_swidth,tmp);
-         update = 1;
-      }
-      if(elements.general_bar_sheight->slider.value!=img2pixel_get_out_sheight())
-      {
-         img2pixel_set_out_sheight(elements.general_bar_sheight->slider.value);
-         char tmp[16];
-         sprintf(tmp,"%d",img2pixel_get_out_sheight());
-         SLK_gui_label_set_text(elements.general_label_sheight,tmp);
-         update = 1;
-      }
+
+      BAR_UPDATE(img2pixel_get_out_width,img2pixel_set_out_width,elements.general_bar_width,elements.general_label_width);
+      BAR_UPDATE(img2pixel_get_out_height,img2pixel_set_out_height,elements.general_bar_height,elements.general_label_height);
+      BAR_UPDATE(img2pixel_get_out_swidth,img2pixel_set_out_swidth,elements.general_bar_swidth,elements.general_label_swidth);
+      BAR_UPDATE(img2pixel_get_out_sheight,img2pixel_set_out_sheight,elements.general_bar_sheight,elements.general_label_sheight);
+      BAR_UPDATE(img2pixel_get_alpha_threshold,img2pixel_set_alpha_threshold,elements.general_bar_alpha,elements.general_label_alpha);
 
       if(elements.general_bar_dither->slider.value!=img2pixel_get_dither_amount())
       {
@@ -832,14 +822,6 @@ static void gui_buttons()
          update = 1;
          SLK_gui_label_set_text(elements.general_label_sample,text_sample[img2pixel_get_sample_mode()]);
       }
-      if(elements.general_bar_alpha->slider.value!=img2pixel_get_alpha_threshold())
-      {
-         img2pixel_set_alpha_threshold(elements.general_bar_alpha->slider.value);
-         char tmp[16];
-         sprintf(tmp,"%d",img2pixel_get_alpha_threshold());
-         SLK_gui_label_set_text(elements.general_label_alpha,tmp);
-         update = 1;
-      }
       if(elements.general_bar_gauss->slider.value!=img2pixel_get_gauss())
       {
          img2pixel_set_gauss(elements.general_bar_gauss->slider.value);
@@ -857,63 +839,30 @@ static void gui_buttons()
       }
       break;
    case 3: //Process tab
-      if(elements.process_minus_brightness->button.state.pressed&&elements.process_bar_brightness->slider.value>elements.process_bar_brightness->slider.min)
-         elements.process_bar_brightness->slider.value--;
-      else if(elements.process_plus_brightness->button.state.pressed&&elements.process_bar_brightness->slider.value<elements.process_bar_brightness->slider.max)
-         elements.process_bar_brightness->slider.value++;
-      if(elements.process_minus_contrast->button.state.pressed&&elements.process_bar_contrast->slider.value>elements.process_bar_contrast->slider.min)
-         elements.process_bar_contrast->slider.value--;
-      else if(elements.process_plus_contrast->button.state.pressed&&elements.process_bar_contrast->slider.value<elements.process_bar_contrast->slider.max)
-         elements.process_bar_contrast->slider.value++;
-      if(elements.process_minus_saturation->button.state.pressed&&elements.process_bar_saturation->slider.value>elements.process_bar_saturation->slider.min)
-         elements.process_bar_saturation->slider.value--;
-      else if(elements.process_plus_saturation->button.state.pressed&&elements.process_bar_saturation->slider.value<elements.process_bar_saturation->slider.max)
-         elements.process_bar_saturation->slider.value++;
-      if(elements.process_minus_gamma->button.state.pressed&&elements.process_bar_gamma->slider.value>elements.process_bar_gamma->slider.min)
-         elements.process_bar_gamma->slider.value--;
-      else if(elements.process_plus_gamma->button.state.pressed&&elements.process_bar_gamma->slider.value<elements.process_bar_gamma->slider.max)
-         elements.process_bar_gamma->slider.value++;
-      if(elements.process_minus_sharpen->button.state.pressed&&elements.process_bar_sharpen->slider.value>elements.process_bar_sharpen->slider.min)
-         elements.process_bar_sharpen->slider.value--;
-      else if(elements.process_plus_sharpen->button.state.pressed&&elements.process_bar_sharpen->slider.value<elements.process_bar_sharpen->slider.max)
-         elements.process_bar_sharpen->slider.value++;
-      if(elements.process_minus_hue->button.state.pressed&&elements.process_bar_hue->slider.value>elements.process_bar_hue->slider.min)
-         elements.process_bar_hue->slider.value--;
-      else if(elements.process_plus_hue->button.state.pressed&&elements.process_bar_hue->slider.value<elements.process_bar_hue->slider.max)
-         elements.process_bar_hue->slider.value++;
+      BUTTON_BAR_PLUS(elements.process_plus_brightness,elements.process_bar_brightness);
+      BUTTON_BAR_MINUS(elements.process_minus_brightness,elements.process_bar_brightness);
 
-      if(img2pixel_get_brightness()!=elements.process_bar_brightness->slider.value)
-      {
-         img2pixel_set_brightness(elements.process_bar_brightness->slider.value);
-         char ctmp[16];
-         sprintf(ctmp,"%d",img2pixel_get_brightness());
-         SLK_gui_label_set_text(elements.process_label_brightness,ctmp);
-         update = 1;
-      }
-      if(img2pixel_get_contrast()!=elements.process_bar_contrast->slider.value)
-      {
-         img2pixel_set_contrast(elements.process_bar_contrast->slider.value);
-         char ctmp[16];
-         sprintf(ctmp,"%d",img2pixel_get_contrast());
-         SLK_gui_label_set_text(elements.process_label_contrast,ctmp);
-         update = 1;
-      }
-      if(img2pixel_get_saturation()!=elements.process_bar_saturation->slider.value)
-      {
-         img2pixel_set_saturation(elements.process_bar_saturation->slider.value);
-         char ctmp[16];
-         sprintf(ctmp,"%d",img2pixel_get_saturation());
-         SLK_gui_label_set_text(elements.process_label_saturation,ctmp);
-         update = 1;
-      }
-      if(img2pixel_get_gamma()!=elements.process_bar_gamma->slider.value)
-      {
-         img2pixel_set_gamma(elements.process_bar_gamma->slider.value);
-         char ctmp[16];
-         sprintf(ctmp,"%d",img2pixel_get_gamma());
-         SLK_gui_label_set_text(elements.process_label_gamma,ctmp);
-         update = 1;
-      }
+      BUTTON_BAR_PLUS(elements.process_plus_contrast,elements.process_bar_contrast);
+      BUTTON_BAR_MINUS(elements.process_minus_contrast,elements.process_bar_contrast);
+
+      BUTTON_BAR_PLUS(elements.process_plus_saturation,elements.process_bar_saturation);
+      BUTTON_BAR_MINUS(elements.process_minus_saturation,elements.process_bar_saturation);
+
+      BUTTON_BAR_PLUS(elements.process_plus_gamma,elements.process_bar_gamma);
+      BUTTON_BAR_MINUS(elements.process_minus_gamma,elements.process_bar_gamma);
+
+      BUTTON_BAR_PLUS(elements.process_plus_sharpen,elements.process_bar_sharpen);
+      BUTTON_BAR_MINUS(elements.process_minus_sharpen,elements.process_bar_sharpen);
+
+      BUTTON_BAR_PLUS(elements.process_plus_hue,elements.process_bar_hue);
+      BUTTON_BAR_MINUS(elements.process_minus_hue,elements.process_bar_hue);
+
+      BAR_UPDATE(img2pixel_get_brightness,img2pixel_set_brightness,elements.process_bar_brightness,elements.process_label_brightness);
+      BAR_UPDATE(img2pixel_get_contrast,img2pixel_set_contrast,elements.process_bar_contrast,elements.process_label_contrast);
+      BAR_UPDATE(img2pixel_get_saturation,img2pixel_set_saturation,elements.process_bar_saturation,elements.process_label_saturation);
+      BAR_UPDATE(img2pixel_get_gamma,img2pixel_set_gamma,elements.process_bar_gamma,elements.process_label_gamma);
+      BAR_UPDATE(img2pixel_get_hue,img2pixel_set_hue,elements.process_bar_hue,elements.process_label_hue);
+
       if(img2pixel_get_sharpen()!=elements.process_bar_sharpen->slider.value)
       {
          img2pixel_set_sharpen(elements.process_bar_sharpen->slider.value);
@@ -922,14 +871,6 @@ static void gui_buttons()
          SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
          img2pixel_lowpass_image(sprite_in_org,sprite_in);
          img2pixel_sharpen_image(sprite_in,sprite_in);
-         update = 1;
-      }
-      if(img2pixel_get_hue()!=elements.process_bar_hue->slider.value)
-      {
-         img2pixel_set_hue(elements.process_bar_hue->slider.value);
-         char ctmp[16];
-         sprintf(ctmp,"%d",img2pixel_get_hue());
-         SLK_gui_label_set_text(elements.process_label_hue,ctmp);
          update = 1;
       }
       break;
