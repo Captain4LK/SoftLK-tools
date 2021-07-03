@@ -45,14 +45,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
       SLK_gui_label_set_text((label),ctmp); \
       update = 1; \
    }
-      //if(img2pixel_get_brightness()!=elements.process_bar_brightness->slider.value)
-      //{
-         //img2pixel_set_brightness(elements.process_bar_brightness->slider.value);
-         //char ctmp[16];
-         //sprintf(ctmp,"%d",img2pixel_get_brightness());
-         //SLK_gui_label_set_text(elements.process_label_brightness,ctmp);
-         //update = 1;
-      //}
 //-------------------------------------
 
 //Typedefs
@@ -576,17 +568,16 @@ void gui_update()
 static void gui_buttons()
 {
    int mx = 0,my = 0;
-   SLK_mouse_get_layer_pos(2,&mx,&my);
    int update = 0;
+   SLK_mouse_get_layer_pos(2,&mx,&my);
 
    switch(settings_tabs->vtabbar.current_tab)
    {
    case 0: //Save/Load tab
-      if(elements.save_upscale_plus->button.state.pressed&&elements.save_bar_upscale->slider.value<elements.save_bar_upscale->slider.max)
-         elements.save_bar_upscale->slider.value++;
-      else if(elements.save_upscale_minus->button.state.pressed&&elements.save_bar_upscale->slider.value>elements.save_bar_upscale->slider.min)
-         elements.save_bar_upscale->slider.value--;
 
+      //upscale bar and buttons
+      BUTTON_BAR_PLUS(elements.save_upscale_plus,elements.save_bar_upscale);
+      BUTTON_BAR_MINUS(elements.save_upscale_minus,elements.save_bar_upscale);
       if(elements.save_bar_upscale->slider.value!=upscale)
       {
          upscale = elements.save_bar_upscale->slider.value;
@@ -594,23 +585,30 @@ static void gui_buttons()
          sprintf(tmp,"%d",upscale);
          SLK_gui_label_set_text(elements.save_label_upscale,tmp);
       }
+   
+      //Load image button
       if(elements.save_load->button.state.released)
       {
-         SLK_rgb_sprite_destroy(sprite_in);
-         SLK_rgb_sprite_destroy(sprite_in_org);
-         sprite_in = image_select();
-         if(sprite_in)
+         SLK_RGB_sprite *sprite_new = image_select();
+
+         if(sprite_new!=NULL)
          {
+            SLK_rgb_sprite_destroy(sprite_in);
+            SLK_rgb_sprite_destroy(sprite_in_org);
+   
+            sprite_in = sprite_new;
             sprite_in_org = SLK_rgb_sprite_create(sprite_in->width,sprite_in->height);
             SLK_rgb_sprite_copy(sprite_in_org,sprite_in);
+            img2pixel_lowpass_image(sprite_in_org,sprite_in);
+            img2pixel_sharpen_image(sprite_in,sprite_in);
+
+            //Readjust input preview
             SLK_layer_set_size(0,sprite_in->width,sprite_in->height);
             SLK_layer_set_current(0);
             SLK_draw_rgb_set_clear_color(SLK_color_create(0,0,0,0));
             SLK_draw_rgb_clear();
-            SLK_draw_rgb_sprite(sprite_in,0,0);
+            SLK_draw_rgb_sprite(sprite_in_org,0,0);
             SLK_draw_rgb_set_changed(1);
-            img2pixel_lowpass_image(sprite_in_org,sprite_in);
-            img2pixel_sharpen_image(sprite_in,sprite_in);
             float scale;
             if(sprite_in->width>sprite_in->height)
                scale = 256.0f/sprite_in->width;
@@ -622,15 +620,20 @@ static void gui_buttons()
             gui_in_x = (256-fwidth)/2;
             gui_in_y = (256-fheight)/2;
          }
+
          update = 1;
          elements.save_load->button.state.released = 0;
       }
-      else if(elements.save_save->button.state.released)
+
+      //Save image button
+      if(elements.save_save->button.state.released)
       {
          image_write(sprite_out,img2pixel_get_palette());
          elements.save_save->button.state.released = 0;
       }
-      else if(elements.save_load_preset->button.state.released)
+
+      //Load preset button
+      if(elements.save_load_preset->button.state.released)
       {
          FILE *f = json_select();
          preset_load(f);
@@ -638,13 +641,17 @@ static void gui_buttons()
             fclose(f);
          elements.save_load_preset->button.state.released = 0;
       }
-      else if(elements.save_save_preset->button.state.released)
+
+      //Save preset button
+      if(elements.save_save_preset->button.state.released)
       {
          FILE *f = json_write();
          img2pixel_preset_save(f);
          elements.save_save_preset->button.state.released = 0;
       }
-      else if(elements.save_save_folder->button.state.released)
+   
+      //Select input dir button
+      if(elements.save_save_folder->button.state.released)
       {
          if(img2pixel_get_scale_mode()==0)
             dir_output_select(img2pixel_get_process_mode(),img2pixel_get_sample_mode(),img2pixel_get_distance_mode(),img2pixel_get_scale_mode(),img2pixel_get_out_width(),img2pixel_get_out_height(),img2pixel_get_palette());
@@ -652,11 +659,14 @@ static void gui_buttons()
             dir_output_select(img2pixel_get_process_mode(),img2pixel_get_sample_mode(),img2pixel_get_distance_mode(),img2pixel_get_scale_mode(),img2pixel_get_out_swidth(),img2pixel_get_out_sheight(),img2pixel_get_palette());
          elements.save_save_folder->button.state.released = 0;
       }
-      else if(elements.save_load_folder->button.state.released)
+
+      //Select output dir button
+      if(elements.save_load_folder->button.state.released)
       {
          dir_input_select();
          elements.save_load_folder->button.state.released = 0;
       }
+
       break;
    case 1: //Palette tab
       if(elements.palette_load->button.state.released)
