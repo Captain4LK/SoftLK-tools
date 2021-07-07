@@ -8,6 +8,11 @@ Version:                SLK_img2pixel 1.2 (tba)
 
 CHANGES:
 
+* replaced image quantization algorithm with higher quality one
+* added command line version
+* added hue adjustment slider
+* lowered memory consumption by using rgb888 pixel format while processing images
+
 ----------------------------------------
 Version:                SLK_img2pixel 1.1 - color quantization (24.04.2021)
 ----------------------------------------
