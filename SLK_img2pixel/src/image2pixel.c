@@ -892,10 +892,15 @@ static void floyd_apply_error(SLK_Color *d, double error_r, double error_g, doub
    if(x>width-1||x<0||y>height-1||y<0)
       return;
 
+   int r,g,b;
    SLK_Color *in = &d[y*width+x];
-   in->r = in->r+error_r;
-   in->g = in->g+error_g;
-   in->b = in->b+error_b;
+   r = in->r+error_r;
+   g = in->g+error_g;
+   b = in->b+error_b;
+
+   in->r = MAX(0,MIN(r,255));
+   in->g = MAX(0,MIN(g,255));
+   in->b = MAX(0,MIN(b,255));
 }
 
 static void palette_setup(SLK_Palette *pal, int distance_mode)
