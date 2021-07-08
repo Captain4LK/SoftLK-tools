@@ -32,7 +32,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Variables
 static SLK_RGB_sprite *sprite_in = NULL;
-static const char *path_out;
+static const char *path_out = NULL;
+static const char *path_out_pal = NULL;
 //-------------------------------------
 
 //Function prototypes
@@ -63,6 +64,10 @@ int main(int argc, char **argv)
       else if(strcmp(argv[i],"-fout")==0)
       {
          path_out = READ_ARG(i);
+      }
+      else if(strcmp(argv[i],"-foutp")==0)
+      {
+         path_out_pal = READ_ARG(i);
       }
       else if(strcmp(argv[i],"-fpre")==0)
       {
@@ -116,17 +121,22 @@ int main(int argc, char **argv)
    //Write image to output path
    image_save(path_out,out,img2pixel_get_palette());
 
+   //Write palette to output path, if specified
+   if(path_out_pal!=NULL)
+      SLK_palette_save(path_out_pal,img2pixel_get_palette());
+
    return 0;
 }
 
 static void print_help(int argc, char **argv)
 {
    printf("%s usage:\n"
-          "%s -fin filename -fout filename [-fpre filename] [-quantize colors] {-set option value}\n"
+          "%s -fin filename -fout filename [-foutp filename] [-fpre filename] [-quantize colors] {-set option value}\n"
           "   -help\t\tprint this text\n"
           "   -fin\t\t\timage file to process\n"
-          "   -fout\t\tfile to write output to (.png or .slk)\n"
           "   -fpre\t\tpreset to use\n"
+          "   -fout\t\tfile to write output to (.png or .slk)\n"
+          "   -foutp\t\tfile to write palette to (.pal)\n"
           "   -quantize [1,255]\ttry to automatically create a palette from the input image\n"
           "   -set\t\t\tmanually set parameters\n"
           "   option\t\tone of the following parameters\n"
