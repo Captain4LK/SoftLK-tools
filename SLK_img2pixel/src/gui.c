@@ -137,8 +137,10 @@ struct Elements
    SLK_gui_element *sample_swidth_minus;
    SLK_gui_element *sample_sheight_plus;
    SLK_gui_element *sample_sheight_minus;
-   SLK_gui_element *sample_offset_plus;
-   SLK_gui_element *sample_offset_minus;
+   SLK_gui_element *sample_offset_x_plus;
+   SLK_gui_element *sample_offset_x_minus;
+   SLK_gui_element *sample_offset_y_plus;
+   SLK_gui_element *sample_offset_y_minus;
    SLK_gui_element *sample_gauss_plus;
    SLK_gui_element *sample_gauss_minus;
    SLK_gui_element *sample_sample_left;
@@ -147,14 +149,16 @@ struct Elements
    SLK_gui_element *sample_bar_height;
    SLK_gui_element *sample_bar_swidth;
    SLK_gui_element *sample_bar_sheight;
-   SLK_gui_element *sample_bar_offset;
+   SLK_gui_element *sample_bar_offset_x;
+   SLK_gui_element *sample_bar_offset_y;
    SLK_gui_element *sample_bar_gauss;
    SLK_gui_element *sample_label_width;
    SLK_gui_element *sample_label_height;
    SLK_gui_element *sample_label_swidth;
    SLK_gui_element *sample_label_sheight;
    SLK_gui_element *sample_label_sample;
-   SLK_gui_element *sample_label_offset;
+   SLK_gui_element *sample_label_offset_x;
+   SLK_gui_element *sample_label_offset_y;
    SLK_gui_element *sample_label_gauss;
 
    //Special tab
@@ -526,28 +530,40 @@ void gui_init()
    elements.sample_label_sample = SLK_gui_label_create(174,118,170,12,text_sample[0]);
    SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_label_sample);
 
-   label = SLK_gui_label_create(104,150,56,12,"Offset");
+   label = SLK_gui_label_create(104,150,56,12,"x off");
    SLK_gui_vtabbar_add_element(settings_tabs,4,label);
-   elements.sample_bar_offset = SLK_gui_slider_create(174,147,170,14,0,100);
-   elements.sample_bar_offset->slider.value = 0;
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_bar_offset);
-   elements.sample_label_offset = SLK_gui_label_create(354,150,32,12,"100");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_label_offset);
-   elements.sample_offset_plus = SLK_gui_button_create(344,147,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_offset_plus);
-   elements.sample_offset_minus = SLK_gui_button_create(160,147,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_offset_minus);
+   elements.sample_bar_offset_x = SLK_gui_slider_create(174,147,170,14,0,100);
+   elements.sample_bar_offset_x->slider.value = 0;
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_bar_offset_x);
+   elements.sample_label_offset_x = SLK_gui_label_create(354,150,32,12,"0");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_label_offset_x);
+   elements.sample_offset_x_plus = SLK_gui_button_create(344,147,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_offset_x_plus);
+   elements.sample_offset_x_minus = SLK_gui_button_create(160,147,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_offset_x_minus);
 
-   label = SLK_gui_label_create(104,182,56,12,"Gauss");
+   label = SLK_gui_label_create(104,182,56,12,"y off");
    SLK_gui_vtabbar_add_element(settings_tabs,4,label);
-   elements.sample_gauss_plus = SLK_gui_button_create(344,179,14,14,"+");
+   elements.sample_bar_offset_y = SLK_gui_slider_create(174,179,170,14,0,100);
+   elements.sample_bar_offset_y->slider.value = 0;
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_bar_offset_y);
+   elements.sample_label_offset_y = SLK_gui_label_create(354,182,32,12,"0");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_label_offset_y);
+   elements.sample_offset_y_plus = SLK_gui_button_create(344,179,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_offset_y_plus);
+   elements.sample_offset_y_minus = SLK_gui_button_create(160,179,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_offset_y_minus);
+
+   label = SLK_gui_label_create(104,214,56,12,"Gauss");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,label);
+   elements.sample_gauss_plus = SLK_gui_button_create(344,211,14,14,"+");
    SLK_gui_tabbar_add_element(settings_tabs,4,elements.sample_gauss_plus);
-   elements.sample_gauss_minus = SLK_gui_button_create(160,179,14,14,"-");
+   elements.sample_gauss_minus = SLK_gui_button_create(160,211,14,14,"-");
    SLK_gui_tabbar_add_element(settings_tabs,4,elements.sample_gauss_minus);
-   elements.sample_bar_gauss = SLK_gui_slider_create(174,179,170,14,0,500);
+   elements.sample_bar_gauss = SLK_gui_slider_create(174,211,170,14,0,500);
    elements.sample_bar_gauss->slider.value = 80;
    SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_bar_gauss);
-   elements.sample_label_gauss = SLK_gui_label_create(354,182,32,12,"80");
+   elements.sample_label_gauss = SLK_gui_label_create(354,214,32,12,"80");
    SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_label_gauss);
 
    //Special tab
@@ -868,8 +884,11 @@ static void gui_buttons()
       BUTTON_BAR_PLUS(elements.sample_sheight_plus,elements.sample_bar_sheight);
       BUTTON_BAR_MINUS(elements.sample_sheight_minus,elements.sample_bar_sheight);
 
-      BUTTON_BAR_PLUS(elements.sample_offset_plus,elements.sample_bar_offset);
-      BUTTON_BAR_MINUS(elements.sample_offset_minus,elements.sample_bar_offset);
+      BUTTON_BAR_PLUS(elements.sample_offset_x_plus,elements.sample_bar_offset_x);
+      BUTTON_BAR_MINUS(elements.sample_offset_x_minus,elements.sample_bar_offset_x);
+
+      BUTTON_BAR_PLUS(elements.sample_offset_y_plus,elements.sample_bar_offset_y);
+      BUTTON_BAR_MINUS(elements.sample_offset_y_minus,elements.sample_bar_offset_y);
 
       BUTTON_BAR_PLUS(elements.sample_gauss_plus,elements.sample_bar_gauss);
       BUTTON_BAR_MINUS(elements.sample_gauss_minus,elements.sample_bar_gauss);
@@ -878,7 +897,8 @@ static void gui_buttons()
       BAR_UPDATE(img2pixel_get_out_height,img2pixel_set_out_height,elements.sample_bar_height,elements.sample_label_height);
       BAR_UPDATE(img2pixel_get_out_swidth,img2pixel_set_out_swidth,elements.sample_bar_swidth,elements.sample_label_swidth);
       BAR_UPDATE(img2pixel_get_out_sheight,img2pixel_set_out_sheight,elements.sample_bar_sheight,elements.sample_label_sheight);
-      BAR_UPDATE(img2pixel_get_offset,img2pixel_set_offset,elements.sample_bar_offset,elements.sample_label_offset);
+      BAR_UPDATE(img2pixel_get_offset_x,img2pixel_set_offset_x,elements.sample_bar_offset_x,elements.sample_label_offset_x);
+      BAR_UPDATE(img2pixel_get_offset_y,img2pixel_set_offset_y,elements.sample_bar_offset_y,elements.sample_label_offset_y);
 
       if(elements.sample_tab_scale->tabbar.current_tab!=img2pixel_get_scale_mode())
       {
@@ -1077,9 +1097,12 @@ void preset_load(FILE *f)
    elements.sample_bar_gauss->slider.value = img2pixel_get_gauss();
       sprintf(ctmp,"%d",img2pixel_get_gauss());
       SLK_gui_label_set_text(elements.sample_label_gauss,ctmp);
-   elements.sample_bar_offset->slider.value = img2pixel_get_offset();
-      sprintf(ctmp,"%d",img2pixel_get_offset());
-      SLK_gui_label_set_text(elements.sample_label_offset,ctmp);
+   elements.sample_bar_offset_x->slider.value = img2pixel_get_offset_x();
+      sprintf(ctmp,"%d",img2pixel_get_offset_x());
+      SLK_gui_label_set_text(elements.sample_label_offset_x,ctmp);
+   elements.sample_bar_offset_y->slider.value = img2pixel_get_offset_y();
+      sprintf(ctmp,"%d",img2pixel_get_offset_y());
+      SLK_gui_label_set_text(elements.sample_label_offset_y,ctmp);
    elements.process_bar_brightness->slider.value = img2pixel_get_brightness();
       sprintf(ctmp,"%d",img2pixel_get_brightness());
       SLK_gui_label_set_text(elements.process_label_brightness,ctmp);

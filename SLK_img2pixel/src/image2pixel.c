@@ -149,7 +149,8 @@ static int alpha_threshold = 128;
 static int sharpen = 0;
 static int hue = 0;
 static int gauss = 80;
-static int offset = 0;
+static int offset_x = 0;
+static int offset_y = 0;
 static int pixel_scale_mode = 0;
 static int pixel_sample_mode = 0;
 static int pixel_process_mode = 1;
@@ -251,7 +252,8 @@ void img2pixel_preset_load(FILE *f)
    alpha_threshold = HLH_json_get_object_integer(&root->root,"alpha_threshold",128);
    upscale = HLH_json_get_object_integer(&root->root,"upscale",1);
    gauss = HLH_json_get_object_integer(&root->root,"gaussian_blur",128);
-   offset = HLH_json_get_object_integer(&root->root,"offset",0);
+   offset_x = HLH_json_get_object_integer(&root->root,"offset_x",0);
+   offset_y = HLH_json_get_object_integer(&root->root,"offset_y",0);
    brightness = HLH_json_get_object_integer(&root->root,"brightness",0);
    contrast = HLH_json_get_object_integer(&root->root,"contrast",0);
    saturation = HLH_json_get_object_integer(&root->root,"saturation",0);
@@ -285,7 +287,8 @@ void img2pixel_preset_save(FILE *f)
    HLH_json_object_add_integer(&root->root,"dither_amount",dither_amount);
    HLH_json_object_add_integer(&root->root,"sample_mode",pixel_sample_mode);
    HLH_json_object_add_integer(&root->root,"gaussian_blur",gauss);
-   HLH_json_object_add_integer(&root->root,"offset",offset);
+   HLH_json_object_add_integer(&root->root,"offset_x",offset_x);
+   HLH_json_object_add_integer(&root->root,"offset_y",offset_y);
    HLH_json_object_add_integer(&root->root,"alpha_threshold",alpha_threshold);
    HLH_json_object_add_integer(&root->root,"upscale",upscale);
    HLH_json_object_add_integer(&root->root,"brightness",brightness);
@@ -553,7 +556,8 @@ void img2pixel_reset_to_defaults()
    sharpen = 0;
    hue = 0;
    gauss = 80;
-   offset = 0;
+   offset_x = 0;
+   offset_y = 0;
    pixel_scale_mode = 0;
    pixel_sample_mode = 0;
    pixel_process_mode = 1;
@@ -654,14 +658,24 @@ void img2pixel_set_gauss(int ngauss)
    gauss = ngauss;
 }
 
-void img2pixel_set_offset(int noffset)
+void img2pixel_set_offset_x(int noffset)
 {
-   offset = noffset;
+   offset_x = noffset;
 }
 
-int img2pixel_get_offset()
+int img2pixel_get_offset_x()
 {
-   return offset;
+   return offset_x;
+}
+
+void img2pixel_set_offset_y(int noffset)
+{
+   offset_y = noffset;
+}
+
+int img2pixel_get_offset_y()
+{
+   return offset_y;
 }
 
 SLK_Palette *img2pixel_get_palette()
@@ -1496,13 +1510,14 @@ static void sample_round(const SLK_RGB_sprite *in, SLK_Color *out, int width, in
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
-   float foff = (float)offset/100.0f;
+   float foffx = (float)offset_x/100.0f;
+   float foffy = (float)offset_y/100.0f;
 
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,round(((float)x+foff)*fw),round(((float)y+foff)*fh));
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,round(((float)x+foffx)*fw),round(((float)y+foffy)*fh));
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
          out[y*width+x].g = c.g;
@@ -1517,13 +1532,14 @@ static void sample_floor(const SLK_RGB_sprite *in, SLK_Color *out, int width, in
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
-   float foff = (float)offset/100.0f;
+   float foffx = (float)offset_x/100.0f;
+   float foffy = (float)offset_y/100.0f;
 
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,floor(((float)x+foff)*fw),floor(((float)y+foff)*fh));
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,floor(((float)x+foffx)*fw),floor(((float)y+foffy)*fh));
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
          out[y*width+x].g = c.g;
@@ -1538,13 +1554,14 @@ static void sample_ceil(const SLK_RGB_sprite *in, SLK_Color *out, int width, int
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
-   float foff = (float)offset/100.0f;
+   float foffx = (float)offset_x/100.0f;
+   float foffy = (float)offset_y/100.0f;
 
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,ceil(((float)x+foff)*fw),ceil(((float)y+foff)*fh));
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,ceil(((float)x+foffx)*fw),ceil(((float)y+foffy)*fh));
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
          out[y*width+x].g = c.g;
@@ -1558,16 +1575,17 @@ static void sample_linear(const SLK_RGB_sprite *in, SLK_Color *out, int width, i
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
-   float foff = (float)offset/100.0f;
+   float foffx = (float)offset_x/100.0f;
+   float foffy = (float)offset_y/100.0f;
 
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         int ix = (int)(((float)x+foff)*fw);
-         int iy = (int)(((float)y+foff)*fh);
-         float six = (((float)x+foff)*fw)-(float)ix;
-         float siy = (((float)y+foff)*fh)-(float)iy;
+         int ix = (int)(((float)x+foffx)*fw);
+         int iy = (int)(((float)y+foffy)*fh);
+         float six = (((float)x+foffx)*fw)-(float)ix;
+         float siy = (((float)y+foffy)*fh)-(float)iy;
 
          SLK_Color c;
          SLK_Color c1,c2,c3,c4;
@@ -1609,16 +1627,17 @@ static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
-   float foff = (float)offset/100.0f;
+   float foffx = (float)offset_x/100.0f;
+   float foffy = (float)offset_y/100.0f;
 
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         int ix = (int)(((float)x+foff)*fw);
-         int iy = (int)(((float)y+foff)*fh);
-         float six = (((float)x+foff)*fw)-(float)ix;
-         float siy = (((float)y+foff)*fh)-(float)iy;
+         int ix = (int)(((float)x+foffx)*fw);
+         int iy = (int)(((float)y+foffy)*fh);
+         float six = (((float)x+foffx)*fw)-(float)ix;
+         float siy = (((float)y+foffy)*fh)-(float)iy;
 
          SLK_Color c00,c10,c20,c30;
          SLK_Color c01,c11,c21,c31;
@@ -1749,16 +1768,17 @@ static void sample_lanczos(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
 {
    double fw = (double)(in->width-1)/(double)width;
    double fh = (double)(in->height-1)/(double)height;
-   float foff = (float)offset/100.0f;
+   float foffx = (float)offset_x/100.0f;
+   float foffy = (float)offset_y/100.0f;
 
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         int ix = (int)(((double)x+foff)*fw);
-         int iy = (int)(((double)y+foff)*fh);
-         double sx = (((double)x+foff)*fw)-(double)ix;
-         double sy = (((double)y+foff)*fh)-(double)iy;
+         int ix = (int)(((double)x+foffx)*fw);
+         int iy = (int)(((double)y+foffy)*fh);
+         double sx = (((double)x+foffx)*fw)-(double)ix;
+         double sy = (((double)y+foffy)*fh)-(double)iy;
          SLK_Color p = {0};
 
          double a0 = lanczos(sx+2.0f);
