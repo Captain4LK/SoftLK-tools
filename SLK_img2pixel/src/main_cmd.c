@@ -158,6 +158,8 @@ static void print_help(int argc, char **argv)
           "      height [1,infinity[\timage output height, only used if scale_mode is set to 0\n"
           "      scale_x [1,infinity[\timage output scale factor x-axis, only used if scale_mode is set to 1\n"
           "      scale_y [1,infinity[\timage output scale factor y-axis, only used if scale_mode is set to 1\n"
+          "      offset_x [0,100]\t\tsampling x-axis offset\n"
+          "      offset_y [0,100]\t\tsampling y-axis offset\n"
           "      upscale [1,infinity[\tfactor to nearest neighbour upscale the output image\n",
          argv[0],argv[0]);
 }
@@ -200,6 +202,10 @@ static void parse_option(const char *name, const char *value)
       img2pixel_set_out_swidth(atoi(value));
    else if(strcmp(name,"scale_y")==0)
       img2pixel_set_out_sheight(atoi(value));
+   else if(strcmp(name,"offset_x")==0)
+      img2pixel_set_offset_x(atoi(value));
+   else if(strcmp(name,"offset_y")==0)
+      img2pixel_set_offset_y(atoi(value));
    else if(strcmp(name,"upscale")==0)
       upscale = atoi(value);
 }
