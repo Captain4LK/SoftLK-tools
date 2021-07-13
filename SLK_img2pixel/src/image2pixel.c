@@ -1507,7 +1507,7 @@ static void sample_floor(const SLK_RGB_sprite *in, SLK_Color *out, int width, in
    {
       for(int x = 0;x<width;x++)
       {
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,floor((float)x*fw),floor((float)y*fh));
+         SLK_Color c = SLK_rgb_sprite_get_pixel(in,floor(((float)x+0.5f)*fw),floor(((float)y+0.5f)*fh));
          out[y*width+x].r = c.r;
          out[y*width+x].b = c.b;
          out[y*width+x].g = c.g;

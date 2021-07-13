@@ -1,4 +1,4 @@
-CC = gcc -O3 -flto -s
+CC = gcc -O3 -flto=auto -s
 CFLAGS+=-lm -Wall -Wextra -Wno-sign-compare -Wno-unused-parameter -lSLK -lm -lSDL2 -Wall -lGL
 DEPENDENCIES = assets.o gui.o utility.o image2pixel.o tinyfiledialogs.o gifenc.o gifdec.o
 
