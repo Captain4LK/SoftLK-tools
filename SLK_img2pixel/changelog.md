@@ -11,6 +11,8 @@ CHANGES:
 * replaced image quantization algorithm with higher quality one
 * added command line version
 * added hue adjustment slider
+* rearranged the gui, moved all sampling options in separate tab
+* added x and y offset sliders for fine-tuned sampling
 * lowered memory consumption by using rgb888 pixel format while processing images
 
 ----------------------------------------
