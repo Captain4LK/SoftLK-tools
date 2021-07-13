@@ -44,6 +44,8 @@ int          img2pixel_get_scale_mode();
 void         img2pixel_set_scale_mode(int nmode);
 int          img2pixel_get_sample_mode();
 void         img2pixel_set_sample_mode(int nmode);
+void         img2pixel_set_offset(int noffset);
+int          img2pixel_get_offset();
 int          img2pixel_get_process_mode();
 void         img2pixel_set_process_mode(int nmode);
 int          img2pixel_get_distance_mode();
