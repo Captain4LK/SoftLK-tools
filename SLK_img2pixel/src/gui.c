@@ -63,7 +63,6 @@ struct Elements
    SLK_gui_element *save_bar_upscale;
    SLK_gui_element *save_label_upscale;
 
-
    //Palette tab
    SLK_gui_element *palette_save;
    SLK_gui_element *palette_load;
@@ -83,49 +82,10 @@ struct Elements
    SLK_gui_element *palette_minus_b;
    SLK_gui_element *palette_plus_colors;
    SLK_gui_element *palette_minus_colors;
-   SLK_gui_element *palette_space_left;
-   SLK_gui_element *palette_space_right;
    SLK_gui_element *palette_label_r;
    SLK_gui_element *palette_label_g;
    SLK_gui_element *palette_label_b;
    SLK_gui_element *palette_label_colors;
-   SLK_gui_element *palette_label_space;
-
-   //General tab
-   SLK_gui_element *general_alpha_plus;
-   SLK_gui_element *general_alpha_minus;
-   SLK_gui_element *general_dither_left;
-   SLK_gui_element *general_dither_right;
-   SLK_gui_element *general_bar_dither;
-   SLK_gui_element *general_bar_alpha;
-   SLK_gui_element *general_label_dither;
-   SLK_gui_element *general_label_alpha;
-
-   //Process tab
-   SLK_gui_element *process_bar_brightness;
-   SLK_gui_element *process_minus_brightness;
-   SLK_gui_element *process_plus_brightness;
-   SLK_gui_element *process_label_brightness;
-   SLK_gui_element *process_bar_contrast;
-   SLK_gui_element *process_minus_contrast;
-   SLK_gui_element *process_plus_contrast;
-   SLK_gui_element *process_label_contrast;
-   SLK_gui_element *process_bar_saturation;
-   SLK_gui_element *process_minus_saturation;
-   SLK_gui_element *process_plus_saturation;
-   SLK_gui_element *process_label_saturation;
-   SLK_gui_element *process_bar_gamma;
-   SLK_gui_element *process_minus_gamma;
-   SLK_gui_element *process_plus_gamma;
-   SLK_gui_element *process_label_gamma;
-   SLK_gui_element *process_bar_sharpen;
-   SLK_gui_element *process_minus_sharpen;
-   SLK_gui_element *process_plus_sharpen;
-   SLK_gui_element *process_label_sharpen;
-   SLK_gui_element *process_bar_hue;
-   SLK_gui_element *process_minus_hue;
-   SLK_gui_element *process_plus_hue;
-   SLK_gui_element *process_label_hue;
 
    //Sample tab
    SLK_gui_element *sample_tab_scale;
@@ -160,6 +120,46 @@ struct Elements
    SLK_gui_element *sample_label_offset_x;
    SLK_gui_element *sample_label_offset_y;
    SLK_gui_element *sample_label_gauss;
+
+   //Colors tab
+   SLK_gui_element *color_palette;
+   SLK_gui_element *color_alpha_plus;
+   SLK_gui_element *color_alpha_minus;
+   SLK_gui_element *color_dither_left;
+   SLK_gui_element *color_dither_right;
+   SLK_gui_element *color_space_left;
+   SLK_gui_element *color_space_right;
+   SLK_gui_element *color_bar_dither;
+   SLK_gui_element *color_bar_alpha;
+   SLK_gui_element *color_label_dither;
+   SLK_gui_element *color_label_alpha;
+   SLK_gui_element *color_label_space;
+
+   //Process tab
+   SLK_gui_element *process_bar_brightness;
+   SLK_gui_element *process_minus_brightness;
+   SLK_gui_element *process_plus_brightness;
+   SLK_gui_element *process_label_brightness;
+   SLK_gui_element *process_bar_contrast;
+   SLK_gui_element *process_minus_contrast;
+   SLK_gui_element *process_plus_contrast;
+   SLK_gui_element *process_label_contrast;
+   SLK_gui_element *process_bar_saturation;
+   SLK_gui_element *process_minus_saturation;
+   SLK_gui_element *process_plus_saturation;
+   SLK_gui_element *process_label_saturation;
+   SLK_gui_element *process_bar_gamma;
+   SLK_gui_element *process_minus_gamma;
+   SLK_gui_element *process_plus_gamma;
+   SLK_gui_element *process_label_gamma;
+   SLK_gui_element *process_bar_sharpen;
+   SLK_gui_element *process_minus_sharpen;
+   SLK_gui_element *process_plus_sharpen;
+   SLK_gui_element *process_label_sharpen;
+   SLK_gui_element *process_bar_hue;
+   SLK_gui_element *process_minus_hue;
+   SLK_gui_element *process_plus_hue;
+   SLK_gui_element *process_label_hue;
 
    //Special tab
    SLK_gui_element *special_gif_load;
@@ -231,9 +231,9 @@ static const char *text_tab_settings[] =
 {
    "Save/Load",
    "Palette",
-   "General",
-   "Process",
    "Sample",
+   "Colors",
+   "Process",
    "",
    "",
    "",
@@ -344,10 +344,6 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_minus_colors);
    elements.palette_plus_colors = SLK_gui_button_create(344,157,14,14,"+");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_plus_colors);
-   elements.palette_space_left = SLK_gui_button_create(160,189,14,14,"<");
-   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_space_left);
-   elements.palette_space_right = SLK_gui_button_create(344,189,14,14,">");
-   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_space_right);
    elements.palette_bar_r = SLK_gui_slider_create(174,109,170,14,0,255);
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_bar_r);
    elements.palette_bar_g = SLK_gui_slider_create(174,125,170,14,0,255);
@@ -364,8 +360,6 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,1,label);
    label = SLK_gui_label_create(100,160,56,12,"colors");
    SLK_gui_vtabbar_add_element(settings_tabs,1,label);
-   label = SLK_gui_label_create(104,192,48,12,"dist");
-   SLK_gui_vtabbar_add_element(settings_tabs,1,label);
    elements.palette_label_r = SLK_gui_label_create(354,112,32,12,"128");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_r);
    elements.palette_label_g = SLK_gui_label_create(354,128,32,12,"128");
@@ -374,108 +368,11 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_b);
    elements.palette_label_colors = SLK_gui_label_create(354,160,32,12,"256");
    SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_colors);
-   elements.palette_label_space = SLK_gui_label_create(174,192,170,12,text_space[0]);
-   SLK_gui_vtabbar_add_element(settings_tabs,1,elements.palette_label_space);
    palette_labels();
-
-   //General tab
-   elements.general_dither_left = SLK_gui_button_create(160,115,14,14,"<");;
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_dither_left);
-   elements.general_dither_right = SLK_gui_button_create(344,115,14,14,">");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_dither_right);
-   label = SLK_gui_label_create(104,118,56,12,"Dither");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_label_dither = SLK_gui_label_create(174,118,170,12,text_dither[1]);
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_dither);
-   label = SLK_gui_label_create(104,150,56,12,"Amount");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_bar_dither = SLK_gui_slider_create(160,147,198,14,0,1000);
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_dither);
-   elements.general_bar_dither->slider.value = 250;
-
-   label = SLK_gui_label_create(104,278,56,12,"Alpha");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
-   elements.general_alpha_plus = SLK_gui_button_create(344,275,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_alpha_plus);
-   elements.general_alpha_minus = SLK_gui_button_create(160,275,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_alpha_minus);
-   elements.general_bar_alpha = SLK_gui_slider_create(174,275,170,14,0,255);
-   elements.general_bar_alpha->slider.value = 128;
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_bar_alpha);
-   elements.general_label_alpha = SLK_gui_label_create(354,278,32,12,"128");
-   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.general_label_alpha);
-
-   //Process tab
-   label = SLK_gui_label_create(104,24,56,12,"Bright");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
-   label = SLK_gui_label_create(104,56,56,12,"Contra");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
-   label = SLK_gui_label_create(104,88,56,12,"Satura");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
-   label = SLK_gui_label_create(104,120,56,12,"Gamma");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
-   label = SLK_gui_label_create(104,152,56,12,"Sharp");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
-   label = SLK_gui_label_create(104,184,56,12,"Hue");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
-   elements.process_bar_brightness = SLK_gui_slider_create(174,21,162,14,-255,255);
-   elements.process_bar_brightness->slider.value = 0;
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_brightness);
-   elements.process_label_brightness = SLK_gui_label_create(346,24,40,12,"0");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_brightness);
-   elements.process_plus_brightness = SLK_gui_button_create(336,21,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_brightness);
-   elements.process_minus_brightness = SLK_gui_button_create(160,21,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_brightness);
-   elements.process_bar_contrast = SLK_gui_slider_create(174,53,162,14,-255,255);
-   elements.process_bar_contrast->slider.value = 0;
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_contrast);
-   elements.process_label_contrast = SLK_gui_label_create(346,56,40,12,"0");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_contrast);
-   elements.process_plus_contrast = SLK_gui_button_create(336,53,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_contrast);
-   elements.process_minus_contrast = SLK_gui_button_create(160,53,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_contrast);
-   elements.process_bar_saturation = SLK_gui_slider_create(174,85,162,14,1,600);
-   elements.process_bar_saturation->slider.value = 100;
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_saturation);
-   elements.process_label_saturation = SLK_gui_label_create(346,88,40,12,"100");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_saturation);
-   elements.process_plus_saturation = SLK_gui_button_create(336,85,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_saturation);
-   elements.process_minus_saturation = SLK_gui_button_create(160,85,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_saturation);
-   elements.process_bar_gamma = SLK_gui_slider_create(174,118,162,14,1,800);
-   elements.process_bar_gamma->slider.value = 100;
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_gamma);
-   elements.process_label_gamma = SLK_gui_label_create(346,120,40,12,"100");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_gamma);
-   elements.process_plus_gamma = SLK_gui_button_create(336,118,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_gamma);
-   elements.process_minus_gamma = SLK_gui_button_create(160,118,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_gamma);
-   elements.process_bar_sharpen = SLK_gui_slider_create(174,150,162,14,0,100);
-   elements.process_bar_sharpen->slider.value = 0;
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_sharpen);
-   elements.process_label_sharpen = SLK_gui_label_create(346,152,40,12,"0");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_sharpen);
-   elements.process_plus_sharpen = SLK_gui_button_create(336,150,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_sharpen);
-   elements.process_minus_sharpen = SLK_gui_button_create(160,150,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_sharpen);
-   elements.process_bar_hue = SLK_gui_slider_create(174,182,162,14,-360,360);
-   elements.process_bar_hue->slider.value = 0;
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_bar_hue);
-   elements.process_label_hue = SLK_gui_label_create(346,184,40,12,"0");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_label_hue);
-   elements.process_plus_hue = SLK_gui_button_create(336,182,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_plus_hue);
-   elements.process_minus_hue = SLK_gui_button_create(160,182,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.process_minus_hue);
 
    //Sample tab
    elements.sample_tab_scale = SLK_gui_tabbar_create(99,14,283,14,2,text_tab_scale);
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_tab_scale);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_tab_scale);
    elements.sample_width_plus = SLK_gui_button_create(344,35,14,14,"+");
    SLK_gui_tabbar_add_element(elements.sample_tab_scale,0,elements.sample_width_plus);
    elements.sample_width_minus = SLK_gui_button_create(160,35,14,14,"-");
@@ -522,49 +419,161 @@ void gui_init()
    SLK_gui_tabbar_add_element(elements.sample_tab_scale,1,elements.sample_label_sheight);
 
    label = SLK_gui_label_create(104,118,56,12,"Sample");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,label);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
    elements.sample_sample_left = SLK_gui_button_create(160,115,14,14,"<");;
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_sample_left);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_sample_left);
    elements.sample_sample_right = SLK_gui_button_create(344,115,14,14,">");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_sample_right);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_sample_right);
    elements.sample_label_sample = SLK_gui_label_create(174,118,170,12,text_sample[0]);
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_label_sample);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_label_sample);
 
    label = SLK_gui_label_create(104,150,56,12,"x off");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,label);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
    elements.sample_bar_offset_x = SLK_gui_slider_create(174,147,170,14,0,100);
    elements.sample_bar_offset_x->slider.value = 0;
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_bar_offset_x);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_bar_offset_x);
    elements.sample_label_offset_x = SLK_gui_label_create(354,150,32,12,"0");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_label_offset_x);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_label_offset_x);
    elements.sample_offset_x_plus = SLK_gui_button_create(344,147,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_offset_x_plus);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_offset_x_plus);
    elements.sample_offset_x_minus = SLK_gui_button_create(160,147,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_offset_x_minus);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_offset_x_minus);
 
    label = SLK_gui_label_create(104,182,56,12,"y off");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,label);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
    elements.sample_bar_offset_y = SLK_gui_slider_create(174,179,170,14,0,100);
    elements.sample_bar_offset_y->slider.value = 0;
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_bar_offset_y);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_bar_offset_y);
    elements.sample_label_offset_y = SLK_gui_label_create(354,182,32,12,"0");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_label_offset_y);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_label_offset_y);
    elements.sample_offset_y_plus = SLK_gui_button_create(344,179,14,14,"+");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_offset_y_plus);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_offset_y_plus);
    elements.sample_offset_y_minus = SLK_gui_button_create(160,179,14,14,"-");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_offset_y_minus);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_offset_y_minus);
 
    label = SLK_gui_label_create(104,214,56,12,"Gauss");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,label);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,label);
    elements.sample_gauss_plus = SLK_gui_button_create(344,211,14,14,"+");
-   SLK_gui_tabbar_add_element(settings_tabs,4,elements.sample_gauss_plus);
+   SLK_gui_tabbar_add_element(settings_tabs,2,elements.sample_gauss_plus);
    elements.sample_gauss_minus = SLK_gui_button_create(160,211,14,14,"-");
-   SLK_gui_tabbar_add_element(settings_tabs,4,elements.sample_gauss_minus);
+   SLK_gui_tabbar_add_element(settings_tabs,2,elements.sample_gauss_minus);
    elements.sample_bar_gauss = SLK_gui_slider_create(174,211,170,14,0,500);
    elements.sample_bar_gauss->slider.value = 80;
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_bar_gauss);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_bar_gauss);
    elements.sample_label_gauss = SLK_gui_label_create(354,214,32,12,"80");
-   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.sample_label_gauss);
+   SLK_gui_vtabbar_add_element(settings_tabs,2,elements.sample_label_gauss);
+
+   //Colors tab
+   elements.color_dither_left = SLK_gui_button_create(160,109,14,14,"<");;
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_dither_left);
+   elements.color_dither_right = SLK_gui_button_create(344,109,14,14,">");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_dither_right);
+   label = SLK_gui_label_create(104,112,56,12,"Dither");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   elements.color_label_dither = SLK_gui_label_create(174,112,170,12,text_dither[1]);
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_label_dither);
+   label = SLK_gui_label_create(104,144,56,12,"Amount");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   elements.color_bar_dither = SLK_gui_slider_create(160,141,198,14,0,1000);
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_bar_dither);
+   elements.color_bar_dither->slider.value = 250;
+
+   label = SLK_gui_label_create(104,176,56,12,"Alpha");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   elements.color_alpha_plus = SLK_gui_button_create(344,173,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_alpha_plus);
+   elements.color_alpha_minus = SLK_gui_button_create(160,173,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_alpha_minus);
+   elements.color_bar_alpha = SLK_gui_slider_create(174,173,170,14,0,255);
+   elements.color_bar_alpha->slider.value = 128;
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_bar_alpha);
+   elements.color_label_alpha = SLK_gui_label_create(354,176,32,12,"128");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_label_alpha);
+
+   label = SLK_gui_label_create(104,208,48,12,"dist");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   elements.color_label_space = SLK_gui_label_create(174,208,170,12,text_space[0]);
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_label_space);
+   elements.color_space_left = SLK_gui_button_create(160,205,14,14,"<");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_space_left);
+   elements.color_space_right = SLK_gui_button_create(344,205,14,14,">");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_space_right);
+
+   elements.color_palette = SLK_gui_image_create(100,15,279,81,elements.palette_sprite,(SLK_gui_rectangle){0,0,279,81});
+   //This could break, I hope I don't forget about this...
+   //I don't want to manage multiple sprites that have the same content, so I
+   //override this elements sprite by the one of the other element.
+   SLK_rgb_sprite_destroy(elements.color_palette->image.sprite);
+   elements.color_palette->image.sprite = elements.palette_palette->image.sprite;
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_palette);
+
+   //Process tab
+   label = SLK_gui_label_create(104,24,56,12,"Bright");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,label);
+   label = SLK_gui_label_create(104,56,56,12,"Contra");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,label);
+   label = SLK_gui_label_create(104,88,56,12,"Satura");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,label);
+   label = SLK_gui_label_create(104,120,56,12,"Gamma");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,label);
+   label = SLK_gui_label_create(104,152,56,12,"Sharp");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,label);
+   label = SLK_gui_label_create(104,184,56,12,"Hue");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,label);
+   elements.process_bar_brightness = SLK_gui_slider_create(174,21,162,14,-255,255);
+   elements.process_bar_brightness->slider.value = 0;
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_bar_brightness);
+   elements.process_label_brightness = SLK_gui_label_create(346,24,40,12,"0");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_label_brightness);
+   elements.process_plus_brightness = SLK_gui_button_create(336,21,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_plus_brightness);
+   elements.process_minus_brightness = SLK_gui_button_create(160,21,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_minus_brightness);
+   elements.process_bar_contrast = SLK_gui_slider_create(174,53,162,14,-255,255);
+   elements.process_bar_contrast->slider.value = 0;
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_bar_contrast);
+   elements.process_label_contrast = SLK_gui_label_create(346,56,40,12,"0");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_label_contrast);
+   elements.process_plus_contrast = SLK_gui_button_create(336,53,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_plus_contrast);
+   elements.process_minus_contrast = SLK_gui_button_create(160,53,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_minus_contrast);
+   elements.process_bar_saturation = SLK_gui_slider_create(174,85,162,14,1,600);
+   elements.process_bar_saturation->slider.value = 100;
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_bar_saturation);
+   elements.process_label_saturation = SLK_gui_label_create(346,88,40,12,"100");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_label_saturation);
+   elements.process_plus_saturation = SLK_gui_button_create(336,85,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_plus_saturation);
+   elements.process_minus_saturation = SLK_gui_button_create(160,85,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_minus_saturation);
+   elements.process_bar_gamma = SLK_gui_slider_create(174,118,162,14,1,800);
+   elements.process_bar_gamma->slider.value = 100;
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_bar_gamma);
+   elements.process_label_gamma = SLK_gui_label_create(346,120,40,12,"100");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_label_gamma);
+   elements.process_plus_gamma = SLK_gui_button_create(336,118,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_plus_gamma);
+   elements.process_minus_gamma = SLK_gui_button_create(160,118,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_minus_gamma);
+   elements.process_bar_sharpen = SLK_gui_slider_create(174,150,162,14,0,100);
+   elements.process_bar_sharpen->slider.value = 0;
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_bar_sharpen);
+   elements.process_label_sharpen = SLK_gui_label_create(346,152,40,12,"0");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_label_sharpen);
+   elements.process_plus_sharpen = SLK_gui_button_create(336,150,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_plus_sharpen);
+   elements.process_minus_sharpen = SLK_gui_button_create(160,150,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_minus_sharpen);
+   elements.process_bar_hue = SLK_gui_slider_create(174,182,162,14,-360,360);
+   elements.process_bar_hue->slider.value = 0;
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_bar_hue);
+   elements.process_label_hue = SLK_gui_label_create(346,184,40,12,"0");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_label_hue);
+   elements.process_plus_hue = SLK_gui_button_create(336,182,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_plus_hue);
+   elements.process_minus_hue = SLK_gui_button_create(160,182,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_minus_hue);
 
    //Special tab
    elements.special_gif_load = SLK_gui_button_create(158,32,164,14,"Load gif");
@@ -781,23 +790,8 @@ static void gui_buttons()
          palette_labels();
          update = 1;
       }
-      if(elements.palette_space_left->button.state.pressed)
-      {
-         img2pixel_set_distance_mode(img2pixel_get_distance_mode()-1);;
-         if(img2pixel_get_distance_mode()<0)
-            img2pixel_set_distance_mode(7);
-         update = 1;
-         SLK_gui_label_set_text(elements.palette_label_space,text_space[img2pixel_get_distance_mode()]);
-      }
-      else if(elements.palette_space_right->button.state.pressed)
-      {
-         img2pixel_set_distance_mode(img2pixel_get_distance_mode()+1);;
-         if(img2pixel_get_distance_mode()>7)
-            img2pixel_set_distance_mode(0);
-         update = 1;
-         SLK_gui_label_set_text(elements.palette_label_space,text_space[img2pixel_get_distance_mode()]);
-      }
-      else if(elements.palette_bar_colors->slider.value!=img2pixel_get_palette()->used)
+
+      if(elements.palette_bar_colors->slider.value!=img2pixel_get_palette()->used)
       {
          img2pixel_get_palette()->used = elements.palette_bar_colors->slider.value;
          char tmp[16];
@@ -806,72 +800,7 @@ static void gui_buttons()
          update = 1;
       }
       break;
-   case 2: //General tab
-      BUTTON_BAR_PLUS(elements.general_alpha_plus,elements.general_bar_alpha);
-      BUTTON_BAR_MINUS(elements.general_alpha_minus,elements.general_bar_alpha);
-
-      if(elements.general_dither_left->button.state.pressed)
-      {
-         img2pixel_set_process_mode(img2pixel_get_process_mode()-1);
-         if(img2pixel_get_process_mode()<0)
-            img2pixel_set_process_mode(4);
-         update = 1;
-         SLK_gui_label_set_text(elements.general_label_dither,text_dither[img2pixel_get_process_mode()]);
-      }
-      else if(elements.general_dither_right->button.state.pressed)
-      {
-         img2pixel_set_process_mode(img2pixel_get_process_mode()+1);
-         if(img2pixel_get_process_mode()>4)
-            img2pixel_set_process_mode(0);
-         update = 1;
-         SLK_gui_label_set_text(elements.general_label_dither,text_dither[img2pixel_get_process_mode()]);
-      }
-
-      BAR_UPDATE(img2pixel_get_alpha_threshold,img2pixel_set_alpha_threshold,elements.general_bar_alpha,elements.general_label_alpha);
-
-      if(elements.general_bar_dither->slider.value!=img2pixel_get_dither_amount())
-      {
-         img2pixel_set_dither_amount(elements.general_bar_dither->slider.value);
-         update = 1;
-      }
-      break;
-   case 3: //Process tab
-      BUTTON_BAR_PLUS(elements.process_plus_brightness,elements.process_bar_brightness);
-      BUTTON_BAR_MINUS(elements.process_minus_brightness,elements.process_bar_brightness);
-
-      BUTTON_BAR_PLUS(elements.process_plus_contrast,elements.process_bar_contrast);
-      BUTTON_BAR_MINUS(elements.process_minus_contrast,elements.process_bar_contrast);
-
-      BUTTON_BAR_PLUS(elements.process_plus_saturation,elements.process_bar_saturation);
-      BUTTON_BAR_MINUS(elements.process_minus_saturation,elements.process_bar_saturation);
-
-      BUTTON_BAR_PLUS(elements.process_plus_gamma,elements.process_bar_gamma);
-      BUTTON_BAR_MINUS(elements.process_minus_gamma,elements.process_bar_gamma);
-
-      BUTTON_BAR_PLUS(elements.process_plus_sharpen,elements.process_bar_sharpen);
-      BUTTON_BAR_MINUS(elements.process_minus_sharpen,elements.process_bar_sharpen);
-
-      BUTTON_BAR_PLUS(elements.process_plus_hue,elements.process_bar_hue);
-      BUTTON_BAR_MINUS(elements.process_minus_hue,elements.process_bar_hue);
-
-      BAR_UPDATE(img2pixel_get_brightness,img2pixel_set_brightness,elements.process_bar_brightness,elements.process_label_brightness);
-      BAR_UPDATE(img2pixel_get_contrast,img2pixel_set_contrast,elements.process_bar_contrast,elements.process_label_contrast);
-      BAR_UPDATE(img2pixel_get_saturation,img2pixel_set_saturation,elements.process_bar_saturation,elements.process_label_saturation);
-      BAR_UPDATE(img2pixel_get_gamma,img2pixel_set_gamma,elements.process_bar_gamma,elements.process_label_gamma);
-      BAR_UPDATE(img2pixel_get_hue,img2pixel_set_hue,elements.process_bar_hue,elements.process_label_hue);
-
-      if(img2pixel_get_sharpen()!=elements.process_bar_sharpen->slider.value)
-      {
-         img2pixel_set_sharpen(elements.process_bar_sharpen->slider.value);
-         char ctmp[16];
-         sprintf(ctmp,"%d",img2pixel_get_sharpen());
-         SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
-         img2pixel_lowpass_image(sprite_in_org,sprite_in);
-         img2pixel_sharpen_image(sprite_in,sprite_in);
-         update = 1;
-      }
-      break;
-   case 4: //Sample tab
+   case 2: //Sample tab
       BUTTON_BAR_PLUS(elements.sample_width_plus,elements.sample_bar_width);
       BUTTON_BAR_MINUS(elements.sample_width_minus,elements.sample_bar_width);
 
@@ -933,6 +862,89 @@ static void gui_buttons()
          update = 1;
       }
 
+      break;
+   case 3: //Color tab
+      BUTTON_BAR_PLUS(elements.color_alpha_plus,elements.color_bar_alpha);
+      BUTTON_BAR_MINUS(elements.color_alpha_minus,elements.color_bar_alpha);
+
+      if(elements.color_dither_left->button.state.pressed)
+      {
+         img2pixel_set_process_mode(img2pixel_get_process_mode()-1);
+         if(img2pixel_get_process_mode()<0)
+            img2pixel_set_process_mode(4);
+         update = 1;
+         SLK_gui_label_set_text(elements.color_label_dither,text_dither[img2pixel_get_process_mode()]);
+      }
+      else if(elements.color_dither_right->button.state.pressed)
+      {
+         img2pixel_set_process_mode(img2pixel_get_process_mode()+1);
+         if(img2pixel_get_process_mode()>4)
+            img2pixel_set_process_mode(0);
+         update = 1;
+         SLK_gui_label_set_text(elements.color_label_dither,text_dither[img2pixel_get_process_mode()]);
+      }
+
+      BAR_UPDATE(img2pixel_get_alpha_threshold,img2pixel_set_alpha_threshold,elements.color_bar_alpha,elements.color_label_alpha);
+
+      if(elements.color_bar_dither->slider.value!=img2pixel_get_dither_amount())
+      {
+         img2pixel_set_dither_amount(elements.color_bar_dither->slider.value);
+         update = 1;
+      }
+
+      if(elements.color_space_left->button.state.pressed)
+      {
+         img2pixel_set_distance_mode(img2pixel_get_distance_mode()-1);;
+         if(img2pixel_get_distance_mode()<0)
+            img2pixel_set_distance_mode(7);
+         update = 1;
+         SLK_gui_label_set_text(elements.color_label_space,text_space[img2pixel_get_distance_mode()]);
+      }
+      if(elements.color_space_right->button.state.pressed)
+      {
+         img2pixel_set_distance_mode(img2pixel_get_distance_mode()+1);;
+         if(img2pixel_get_distance_mode()>7)
+            img2pixel_set_distance_mode(0);
+         update = 1;
+         SLK_gui_label_set_text(elements.color_label_space,text_space[img2pixel_get_distance_mode()]);
+      }
+
+      break;
+   case 4: //Process tab
+      BUTTON_BAR_PLUS(elements.process_plus_brightness,elements.process_bar_brightness);
+      BUTTON_BAR_MINUS(elements.process_minus_brightness,elements.process_bar_brightness);
+
+      BUTTON_BAR_PLUS(elements.process_plus_contrast,elements.process_bar_contrast);
+      BUTTON_BAR_MINUS(elements.process_minus_contrast,elements.process_bar_contrast);
+
+      BUTTON_BAR_PLUS(elements.process_plus_saturation,elements.process_bar_saturation);
+      BUTTON_BAR_MINUS(elements.process_minus_saturation,elements.process_bar_saturation);
+
+      BUTTON_BAR_PLUS(elements.process_plus_gamma,elements.process_bar_gamma);
+      BUTTON_BAR_MINUS(elements.process_minus_gamma,elements.process_bar_gamma);
+
+      BUTTON_BAR_PLUS(elements.process_plus_sharpen,elements.process_bar_sharpen);
+      BUTTON_BAR_MINUS(elements.process_minus_sharpen,elements.process_bar_sharpen);
+
+      BUTTON_BAR_PLUS(elements.process_plus_hue,elements.process_bar_hue);
+      BUTTON_BAR_MINUS(elements.process_minus_hue,elements.process_bar_hue);
+
+      BAR_UPDATE(img2pixel_get_brightness,img2pixel_set_brightness,elements.process_bar_brightness,elements.process_label_brightness);
+      BAR_UPDATE(img2pixel_get_contrast,img2pixel_set_contrast,elements.process_bar_contrast,elements.process_label_contrast);
+      BAR_UPDATE(img2pixel_get_saturation,img2pixel_set_saturation,elements.process_bar_saturation,elements.process_label_saturation);
+      BAR_UPDATE(img2pixel_get_gamma,img2pixel_set_gamma,elements.process_bar_gamma,elements.process_label_gamma);
+      BAR_UPDATE(img2pixel_get_hue,img2pixel_set_hue,elements.process_bar_hue,elements.process_label_hue);
+
+      if(img2pixel_get_sharpen()!=elements.process_bar_sharpen->slider.value)
+      {
+         img2pixel_set_sharpen(elements.process_bar_sharpen->slider.value);
+         char ctmp[16];
+         sprintf(ctmp,"%d",img2pixel_get_sharpen());
+         SLK_gui_label_set_text(elements.process_label_sharpen,ctmp);
+         img2pixel_lowpass_image(sprite_in_org,sprite_in);
+         img2pixel_sharpen_image(sprite_in,sprite_in);
+         update = 1;
+      }
       break;
    case 19: //Special tab
       if(elements.special_gif_save->button.state.released)
@@ -1071,7 +1083,7 @@ void preset_load(FILE *f)
    elements.palette_bar_b->slider.value = img2pixel_get_palette()->colors[palette_selected].b;
    palette_draw();
    palette_labels();
-   SLK_gui_label_set_text(elements.palette_label_space,text_space[img2pixel_get_distance_mode()]);
+   SLK_gui_label_set_text(elements.color_label_space,text_space[img2pixel_get_distance_mode()]);
    elements.sample_bar_width->slider.value = img2pixel_get_out_width();
       sprintf(ctmp,"%d",img2pixel_get_out_width());
       SLK_gui_label_set_text(elements.sample_label_width,ctmp);
@@ -1085,12 +1097,12 @@ void preset_load(FILE *f)
       sprintf(ctmp,"%d",img2pixel_get_out_sheight());
       SLK_gui_label_set_text(elements.sample_label_sheight,ctmp);
    elements.sample_tab_scale->tabbar.current_tab = img2pixel_get_scale_mode();
-   SLK_gui_label_set_text(elements.general_label_dither,text_dither[img2pixel_get_process_mode()]);
-   elements.general_bar_dither->slider.value = img2pixel_get_dither_amount();
+   SLK_gui_label_set_text(elements.color_label_dither,text_dither[img2pixel_get_process_mode()]);
+   elements.color_bar_dither->slider.value = img2pixel_get_dither_amount();
    SLK_gui_label_set_text(elements.sample_label_sample,text_sample[img2pixel_get_sample_mode()]);
-   elements.general_bar_alpha->slider.value = img2pixel_get_alpha_threshold();
+   elements.color_bar_alpha->slider.value = img2pixel_get_alpha_threshold();
       sprintf(ctmp,"%d",img2pixel_get_alpha_threshold());
-      SLK_gui_label_set_text(elements.general_label_alpha,ctmp);
+      SLK_gui_label_set_text(elements.color_label_alpha,ctmp);
    elements.save_bar_upscale->slider.value = upscale;
       sprintf(ctmp,"%d",upscale);
       SLK_gui_label_set_text(elements.save_label_upscale,ctmp);
