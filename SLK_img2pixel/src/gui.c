@@ -123,6 +123,7 @@ struct Elements
 
    //Colors tab
    SLK_gui_element *color_palette;
+   SLK_gui_element *color_button;
    SLK_gui_element *color_alpha_plus;
    SLK_gui_element *color_alpha_minus;
    SLK_gui_element *color_dither_left;
@@ -506,6 +507,8 @@ void gui_init()
    SLK_rgb_sprite_destroy(elements.color_palette->image.sprite);
    elements.color_palette->image.sprite = elements.palette_palette->image.sprite;
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_palette);
+   elements.color_button = SLK_gui_icon_create(100,15,279,81,tmp,(SLK_gui_rectangle){0,0,1,1},(SLK_gui_rectangle){0,0,1,1});
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_button);
 
    //Process tab
    label = SLK_gui_label_create(104,24,56,12,"Bright");
@@ -908,6 +911,13 @@ static void gui_buttons()
          update = 1;
          SLK_gui_label_set_text(elements.color_label_space,text_space[img2pixel_get_distance_mode()]);
       }
+      if(elements.color_button->icon.state.pressed)
+      {
+         int nx = mx-settings->pos.x-elements.palette_button->icon.pos.x;
+         int ny = my-settings->pos.y-elements.palette_button->icon.pos.y;
+         palette_selected = MIN(255,(ny/9)*31+nx/9);
+         palette_labels();
+      }
 
       break;
    case 4: //Process tab
@@ -975,7 +985,7 @@ static void gui_draw()
    SLK_draw_rgb_clear();
 
    SLK_gui_window_draw(settings);
-   if(settings_tabs->vtabbar.current_tab==1)
+   if(settings_tabs->vtabbar.current_tab==1||settings_tabs->vtabbar.current_tab==3)
    {
       int pos_y = palette_selected/31;
       int pos_x = palette_selected-pos_y*31;
