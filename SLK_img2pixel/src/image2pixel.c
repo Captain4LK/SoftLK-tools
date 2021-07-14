@@ -225,6 +225,9 @@ static int quant_nearest_color_idx(SLK_Color color, SLK_Color *color_list);
 static float quant_distance(SLK_Color color0, SLK_Color color1);
 static float quant_distancef(SLK_Color color0, SLK_Color color1);
 static float quant_colors_variance(dyn_array *color_list);
+
+//Post processing
+static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out);
 //-------------------------------------
 
 //Function implementations
@@ -549,6 +552,9 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 
    //Clean up
    free(tmp_data);
+
+   //Post process
+   post_process_image(out,out);
 }
 
 void img2pixel_reset_to_defaults()
@@ -2014,5 +2020,45 @@ static float quant_colors_variance(dyn_array *color_list)
    }
 
    return dist_sum/(float)length;
+}
+
+static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
+{
+   SLK_RGB_sprite *tmp = SLK_rgb_sprite_create(in->width,in->height);
+   SLK_rgb_sprite_copy(tmp,in);
+
+   for(int y = 0;y<in->height;y++)
+   {
+      for(int x = 0;x<in->width;x++)
+      {
+         int empty;
+
+         //Inline
+         if(img2pixel_get_inline()>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).a!=0)
+         {
+            empty = 0;
+            if(SLK_rgb_sprite_get_pixel(tmp,x,y-1).a==0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x-1,y).a==0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x+1,y).a==0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x,y+1).a==0) empty++;
+
+            if(empty!=0)
+               SLK_rgb_sprite_set_pixel(out,x,y,palette->colors[img2pixel_get_inline()]);
+         }
+         
+         //Outline
+         if(img2pixel_get_outline()>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).a==0)
+         {
+            empty = 0;
+            if(SLK_rgb_sprite_get_pixel(tmp,x,y-1).a!=0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x-1,y).a!=0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x+1,y).a!=0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x,y+1).a!=0) empty++;
+
+            if(empty!=0)
+               SLK_rgb_sprite_set_pixel(out,x,y,palette->colors[img2pixel_get_outline()]);
+         }
+      }
+   }
 }
 //-------------------------------------
