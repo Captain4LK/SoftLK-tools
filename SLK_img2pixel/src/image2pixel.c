@@ -151,6 +151,8 @@ static int hue = 0;
 static int gauss = 80;
 static int offset_x = 0;
 static int offset_y = 0;
+static int image_outline = -1;
+static int image_inline = -1;
 static int pixel_scale_mode = 0;
 static int pixel_sample_mode = 0;
 static int pixel_process_mode = 1;
@@ -254,6 +256,8 @@ void img2pixel_preset_load(FILE *f)
    gauss = HLH_json_get_object_integer(&root->root,"gaussian_blur",128);
    offset_x = HLH_json_get_object_integer(&root->root,"offset_x",0);
    offset_y = HLH_json_get_object_integer(&root->root,"offset_y",0);
+   image_outline = HLH_json_get_object_integer(&root->root,"outline",-1);
+   image_inline = HLH_json_get_object_integer(&root->root,"inline",-1);
    brightness = HLH_json_get_object_integer(&root->root,"brightness",0);
    contrast = HLH_json_get_object_integer(&root->root,"contrast",0);
    saturation = HLH_json_get_object_integer(&root->root,"saturation",0);
@@ -289,6 +293,8 @@ void img2pixel_preset_save(FILE *f)
    HLH_json_object_add_integer(&root->root,"gaussian_blur",gauss);
    HLH_json_object_add_integer(&root->root,"offset_x",offset_x);
    HLH_json_object_add_integer(&root->root,"offset_y",offset_y);
+   HLH_json_object_add_integer(&root->root,"outline",image_outline);
+   HLH_json_object_add_integer(&root->root,"inline",image_inline);
    HLH_json_object_add_integer(&root->root,"alpha_threshold",alpha_threshold);
    HLH_json_object_add_integer(&root->root,"upscale",upscale);
    HLH_json_object_add_integer(&root->root,"brightness",brightness);
@@ -558,6 +564,8 @@ void img2pixel_reset_to_defaults()
    gauss = 80;
    offset_x = 0;
    offset_y = 0;
+   image_outline = -1;
+   image_inline = -1;
    pixel_scale_mode = 0;
    pixel_sample_mode = 0;
    pixel_process_mode = 1;
@@ -676,6 +684,26 @@ void img2pixel_set_offset_y(int noffset)
 int img2pixel_get_offset_y()
 {
    return offset_y;
+}
+
+int img2pixel_get_outline()
+{
+   return image_outline;
+}
+
+void img2pixel_set_outline(int nline)
+{
+   image_outline = nline;
+}
+
+int img2pixel_get_inline()
+{
+   return image_inline;
+}
+
+void img2pixel_set_inline(int nline)
+{
+   image_inline = nline;
 }
 
 SLK_Palette *img2pixel_get_palette()

@@ -124,6 +124,10 @@ struct Elements
    //Colors tab
    SLK_gui_element *color_palette;
    SLK_gui_element *color_button;
+   SLK_gui_element *color_check_inline;
+   SLK_gui_element *color_check_outline;
+   SLK_gui_element *color_button_inline;
+   SLK_gui_element *color_button_outline;
    SLK_gui_element *color_alpha_plus;
    SLK_gui_element *color_alpha_minus;
    SLK_gui_element *color_dither_left;
@@ -509,6 +513,19 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_palette);
    elements.color_button = SLK_gui_icon_create(100,15,279,81,tmp,(SLK_gui_rectangle){0,0,1,1},(SLK_gui_rectangle){0,0,1,1});
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_button);
+
+   label = SLK_gui_label_create(104,240,56,12,"inline");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   label = SLK_gui_label_create(264,240,64,12,"outline");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   elements.color_check_inline = SLK_gui_button_create(184,237,14,14,img2pixel_get_inline()<0?" ":"x");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_check_inline);
+   elements.color_button_inline = SLK_gui_button_create(104,256,94,14,"set color");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_button_inline);
+   elements.color_check_outline = SLK_gui_button_create(344,237,14,14,img2pixel_get_outline()<0?" ":"x");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_check_outline);
+   elements.color_button_outline = SLK_gui_button_create(264,256,94,14,"set color");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_button_outline);
 
    //Process tab
    label = SLK_gui_label_create(104,24,56,12,"Bright");
@@ -919,6 +936,42 @@ static void gui_buttons()
          palette_labels();
       }
 
+      if(elements.color_check_inline->button.state.pressed)
+      {
+         if(elements.color_check_inline->button.text[0]=='x')
+            img2pixel_set_inline(img2pixel_get_inline()-256);
+         else
+            img2pixel_set_inline(img2pixel_get_inline()+256);
+         elements.color_check_inline->button.text[0] = elements.color_check_inline->button.text[0]=='x'?' ':'x';
+         update = 1;
+      }
+      if(elements.color_check_outline->button.state.pressed)
+      {
+         if(elements.color_check_outline->button.text[0]=='x')
+            img2pixel_set_outline(img2pixel_get_outline()-256);
+         else
+            img2pixel_set_outline(img2pixel_get_outline()+256);
+         elements.color_check_outline->button.text[0] = elements.color_check_outline->button.text[0]=='x'?' ':'x';
+         update = 1;
+      }
+
+      if(elements.color_button_inline->button.state.pressed)
+      {
+         if(img2pixel_get_inline()<0)
+            img2pixel_set_inline(palette_selected-256);
+         else
+            img2pixel_set_inline(palette_selected);
+         update = 1;
+      }
+      if(elements.color_button_outline->button.state.pressed)
+      {
+         if(img2pixel_get_outline()<0)
+            img2pixel_set_outline(palette_selected-256);
+         else
+            img2pixel_set_outline(palette_selected);
+         update = 1;
+      }
+
       break;
    case 4: //Process tab
       BUTTON_BAR_PLUS(elements.process_plus_brightness,elements.process_bar_brightness);
@@ -1143,6 +1196,8 @@ void preset_load(FILE *f)
    elements.process_bar_hue->slider.value = img2pixel_get_hue();
       sprintf(ctmp,"%d",img2pixel_get_hue());
       SLK_gui_label_set_text(elements.process_label_hue,ctmp);
+   elements.color_check_inline->button.text[0] = img2pixel_get_inline()<0?' ':'x';
+   elements.color_check_outline->button.text[0] = img2pixel_get_outline()<0?' ':'x';
    elements.palette_bar_colors->slider.value = img2pixel_get_palette()->used;
    sprintf(ctmp,"%d",img2pixel_get_palette()->used);
    SLK_gui_label_set_text(elements.palette_label_colors,ctmp);

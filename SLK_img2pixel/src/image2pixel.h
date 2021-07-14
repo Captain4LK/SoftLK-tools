@@ -48,6 +48,12 @@ void         img2pixel_set_offset_x(int noffset);
 int          img2pixel_get_offset_x();
 void         img2pixel_set_offset_y(int noffset);
 int          img2pixel_get_offset_y();
+
+int          img2pixel_get_outline();
+void         img2pixel_set_outline(int nline);
+int          img2pixel_get_inline();
+void         img2pixel_set_inline(int nline);
+
 int          img2pixel_get_process_mode();
 void         img2pixel_set_process_mode(int nmode);
 int          img2pixel_get_distance_mode();
