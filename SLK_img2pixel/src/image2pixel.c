@@ -359,9 +359,9 @@ void img2pixel_sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
             }
          }
 
-         out->data[y*out->width+x].r = MAX(0,MIN(0xff,(int)r));
-         out->data[y*out->width+x].g = MAX(0,MIN(0xff,(int)g));
-         out->data[y*out->width+x].b = MAX(0,MIN(0xff,(int)b));
+         out->data[y*out->width+x].r = MAX(0x0,MIN(0xff,(int)r));
+         out->data[y*out->width+x].g = MAX(0x0,MIN(0xff,(int)g));
+         out->data[y*out->width+x].b = MAX(0x0,MIN(0xff,(int)b));
          out->data[y*out->width+x].a = in->data[y*out->width+x].a;
       }
    }
@@ -427,9 +427,9 @@ void img2pixel_lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
             }
          }
 
-         out->data[y*out->width+x].r = MAX(0,MIN(0xff,(int)r));
-         out->data[y*out->width+x].g = MAX(0,MIN(0xff,(int)g));
-         out->data[y*out->width+x].b = MAX(0,MIN(0xff,(int)b));
+         out->data[y*out->width+x].r = MAX(0x0,MIN(0xff,(int)r));
+         out->data[y*out->width+x].g = MAX(0x0,MIN(0xff,(int)g));
+         out->data[y*out->width+x].b = MAX(0x0,MIN(0xff,(int)b));
          out->data[y*out->width+x].a = in->data[y*out->width+x].a;
       }
    }
@@ -528,17 +528,17 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
          float r = (float)in.r;
          float g = (float)in.g;
          float b = (float)in.b;
-         in.r = MAX(0,MIN(0xff,(int)(rr*r)+(gr*g)+(br*b)+wr));
-         in.g = MAX(0,MIN(0xff,(int)(rg*r)+(gg*g)+(bg*b)+wg));
-         in.b = MAX(0,MIN(0xff,(int)(rb*r)+(gb*g)+(bb*b)+wb));
+         in.r = MAX(0x0,MIN(0xff,(int)(rr*r)+(gr*g)+(br*b)+wr));
+         in.g = MAX(0x0,MIN(0xff,(int)(rg*r)+(gg*g)+(bg*b)+wg));
+         in.b = MAX(0x0,MIN(0xff,(int)(rb*r)+(gb*g)+(bb*b)+wb));
 
          //Gamma
          //Only ajust if not the default value --> better performance
          if(img_gamma!=100)
          {
-            in.r = MAX(0,MIN(0xff,(int)(255.0f*pow((float)in.r/255.0f,gamma_factor))));
-            in.g = MAX(0,MIN(0xff,(int)(255.0f*pow((float)in.g/255.0f,gamma_factor))));
-            in.b = MAX(0,MIN(0xff,(int)(255.0f*pow((float)in.b/255.0f,gamma_factor))));
+            in.r = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.r/255.0f,gamma_factor))));
+            in.g = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.g/255.0f,gamma_factor))));
+            in.b = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.b/255.0f,gamma_factor))));
          }
 
          tmp_data[y*out->width+x] = in;
@@ -875,9 +875,9 @@ static void orderd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
          //this creates the dithering effect
          uint8_t tresshold_id = ((y&7)<<3)+(x&7);
          SLK_Color c;
-         c.r = MAX(0,MIN(0xff,(in.r+dither_threshold[tresshold_id])));
-         c.g = MAX(0,MIN(0xff,(in.g+dither_threshold[tresshold_id])));
-         c.b = MAX(0,MIN(0xff,(in.b+dither_threshold[tresshold_id])));
+         c.r = MAX(0x0,MIN(0xff,(in.r+dither_threshold[tresshold_id])));
+         c.g = MAX(0x0,MIN(0xff,(in.g+dither_threshold[tresshold_id])));
+         c.b = MAX(0x0,MIN(0xff,(in.b+dither_threshold[tresshold_id])));
          c.a = in.a;
          out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
          out->data[y*width+x].a = 255;
@@ -960,9 +960,9 @@ static void floyd_apply_error(SLK_Color *d, double error_r, double error_g, doub
    g = in->g+error_g;
    b = in->b+error_b;
 
-   in->r = MAX(0,MIN(r,255));
-   in->g = MAX(0,MIN(g,255));
-   in->b = MAX(0,MIN(b,255));
+   in->r = MAX(0x0,MIN(r,0xff));
+   in->g = MAX(0x0,MIN(g,0xff));
+   in->b = MAX(0x0,MIN(b,0xff));
 }
 
 static void palette_setup(SLK_Palette *pal, int distance_mode)
@@ -1250,9 +1250,9 @@ static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, SLK_Color c)
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0,MIN(0xff,c.r));
-   cin.g = MAX(0,MIN(0xff,c.g));
-   cin.b = MAX(0,MIN(0xff,c.b));
+   cin.r = MAX(0x0,MIN(0xff,c.r));
+   cin.g = MAX(0x0,MIN(0xff,c.g));
+   cin.b = MAX(0x0,MIN(0xff,c.b));
    Color_lab in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1276,9 +1276,9 @@ static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, SLK_Color c)
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0,MIN(0xff,c.r));
-   cin.g = MAX(0,MIN(0xff,c.g));
-   cin.b = MAX(0,MIN(0xff,c.b));
+   cin.r = MAX(0x0,MIN(0xff,c.r));
+   cin.g = MAX(0x0,MIN(0xff,c.g));
+   cin.b = MAX(0x0,MIN(0xff,c.b));
    Color_lab in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1302,9 +1302,9 @@ static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, SLK_Color c)
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0,MIN(0xff,c.r));
-   cin.g = MAX(0,MIN(0xff,c.g));
-   cin.b = MAX(0,MIN(0xff,c.b));
+   cin.r = MAX(0x0,MIN(0xff,c.r));
+   cin.g = MAX(0x0,MIN(0xff,c.g));
+   cin.b = MAX(0x0,MIN(0xff,c.b));
    Color_lab in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1328,9 +1328,9 @@ static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, SLK_Color c)
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0,MIN(0xff,c.r));
-   cin.g = MAX(0,MIN(0xff,c.g));
-   cin.b = MAX(0,MIN(0xff,c.b));
+   cin.r = MAX(0x0,MIN(0xff,c.r));
+   cin.g = MAX(0x0,MIN(0xff,c.g));
+   cin.b = MAX(0x0,MIN(0xff,c.b));
    Color_xyz in = color_to_xyz(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1354,9 +1354,9 @@ static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, SLK_Color c)
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0,MIN(0xff,c.r));
-   cin.g = MAX(0,MIN(0xff,c.g));
-   cin.b = MAX(0,MIN(0xff,c.b));
+   cin.r = MAX(0x0,MIN(0xff,c.r));
+   cin.g = MAX(0x0,MIN(0xff,c.g));
+   cin.b = MAX(0x0,MIN(0xff,c.b));
    Color_ycc in = color_to_ycc(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1380,9 +1380,9 @@ static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, SLK_Color c)
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0,MIN(0xff,c.r));
-   cin.g = MAX(0,MIN(0xff,c.g));
-   cin.b = MAX(0,MIN(0xff,c.b));
+   cin.r = MAX(0x0,MIN(0xff,c.r));
+   cin.g = MAX(0x0,MIN(0xff,c.g));
+   cin.b = MAX(0x0,MIN(0xff,c.b));
    Color_yiq in = color_to_yiq(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1406,9 +1406,9 @@ static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, SLK_Color c)
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0,MIN(0xff,c.r));
-   cin.g = MAX(0,MIN(0xff,c.g));
-   cin.b = MAX(0,MIN(0xff,c.b));
+   cin.r = MAX(0x0,MIN(0xff,c.r));
+   cin.g = MAX(0x0,MIN(0xff,c.g));
+   cin.b = MAX(0x0,MIN(0xff,c.b));
    Color_yuv in = color_to_yuv(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1704,7 +1704,7 @@ static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
          float c2 = cubic_hermite((float)c02.r,(float)c12.r,(float)c22.r,(float)c32.r,six);
          float c3 = cubic_hermite((float)c03.r,(float)c13.r,(float)c23.r,(float)c33.r,six);
          float val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].r = MAX(0,MIN(0xff,(int)val));
+         out[y*width+x].r = MAX(0x0,MIN(0xff,(int)val));
 
          //g value
          c0 = cubic_hermite((float)c00.g,(float)c10.g,(float)c20.g,(float)c30.g,six);
@@ -1712,7 +1712,7 @@ static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
          c2 = cubic_hermite((float)c02.g,(float)c12.g,(float)c22.g,(float)c32.g,six);
          c3 = cubic_hermite((float)c03.g,(float)c13.g,(float)c23.g,(float)c33.g,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].g = MAX(0,MIN(0xff,(int)val));
+         out[y*width+x].g = MAX(0x0,MIN(0xff,(int)val));
 
          //b value
          c0 = cubic_hermite((float)c00.b,(float)c10.b,(float)c20.b,(float)c30.b,six);
@@ -1720,7 +1720,7 @@ static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
          c2 = cubic_hermite((float)c02.b,(float)c12.b,(float)c22.b,(float)c32.b,six);
          c3 = cubic_hermite((float)c03.b,(float)c13.b,(float)c23.b,(float)c33.b,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].b = MAX(0,MIN(0xff,(int)val));
+         out[y*width+x].b = MAX(0x0,MIN(0xff,(int)val));
 
          //a value
          c0 = cubic_hermite((float)c00.a,(float)c10.a,(float)c20.a,(float)c30.a,six);
@@ -1728,7 +1728,7 @@ static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
          c2 = cubic_hermite((float)c02.a,(float)c12.a,(float)c22.a,(float)c32.a,six);
          c3 = cubic_hermite((float)c03.a,(float)c13.a,(float)c23.a,(float)c33.a,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].a = MAX(0,MIN(0xff,(int)val));
+         out[y*width+x].a = MAX(0x0,MIN(0xff,(int)val));
       }
    }
 }
@@ -1851,10 +1851,10 @@ static void sample_lanczos(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
             a[i] = a0*(double)p0.a+a1*(double)p1.a+a2*(double)p2.a+a3*(double)p3.a+a4*(double)p4.a+a5*(double)p5.a;
          }
 
-         p.r = MAX(0,MIN(0xff,(int)(b0*r[0]+b1*r[1]+b2*r[2]+b3*r[3]+b4*r[4]+b5*r[5])));
-         p.g = MAX(0,MIN(0xff,(int)(b0*g[0]+b1*g[1]+b2*g[2]+b3*g[3]+b4*g[4]+b5*g[5])));
-         p.b = MAX(0,MIN(0xff,(int)(b0*b[0]+b1*b[1]+b2*b[2]+b3*b[3]+b4*b[4]+b5*b[5])));
-         p.a = MAX(0,MIN(0xff,(int)(b0*a[0]+b1*a[1]+b2*a[2]+b3*a[3]+b4*a[4]+b5*a[5])));
+         p.r = MAX(0x0,MIN(0xff,(int)(b0*r[0]+b1*r[1]+b2*r[2]+b3*r[3]+b4*r[4]+b5*r[5])));
+         p.g = MAX(0x0,MIN(0xff,(int)(b0*g[0]+b1*g[1]+b2*g[2]+b3*g[3]+b4*g[4]+b5*g[5])));
+         p.b = MAX(0x0,MIN(0xff,(int)(b0*b[0]+b1*b[1]+b2*b[2]+b3*b[3]+b4*b[4]+b5*b[5])));
+         p.a = MAX(0x0,MIN(0xff,(int)(b0*a[0]+b1*a[1]+b2*a[2]+b3*a[3]+b4*a[4]+b5*a[5])));
          out[y*width+x] = p;
       }
    }
