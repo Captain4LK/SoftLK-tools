@@ -14,6 +14,12 @@ CHANGES:
 * rearranged the gui, moved all sampling options in separate tab
 * added x and y offset sliders for fine-tuned sampling
 * added option to add inlines/outlines
+* reworked dithering, availible modes: 
+   * no dithering
+   * bayer 8x8
+   * bayer 4x4
+   * bayer 2x2
+   * floyd-steinberg
 * lowered memory consumption by using rgb888 pixel format while processing images
 
 ----------------------------------------
