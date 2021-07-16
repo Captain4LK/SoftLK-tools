@@ -132,12 +132,15 @@ struct Elements
    SLK_gui_element *color_alpha_minus;
    SLK_gui_element *color_dither_left;
    SLK_gui_element *color_dither_right;
+   SLK_gui_element *color_dither_plus;
+   SLK_gui_element *color_dither_minus;
    SLK_gui_element *color_space_left;
    SLK_gui_element *color_space_right;
    SLK_gui_element *color_bar_dither;
    SLK_gui_element *color_bar_alpha;
    SLK_gui_element *color_label_dither;
    SLK_gui_element *color_label_alpha;
+   SLK_gui_element *color_label_dither_amount;
    SLK_gui_element *color_label_space;
 
    //Process tab
@@ -203,8 +206,9 @@ static const char *text_space[] =
 static const char *text_dither[] = 
 {
    "No dithering",
-   "Ordered 1",
-   "Ordered 2",
+   "Bayer 8x8",
+   "Bayer 4x4",
+   "Bayer 2x2",
    "FloydSteinberg 1",
    "FloydSteinberg 2",
 };
@@ -477,11 +481,18 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
    elements.color_label_dither = SLK_gui_label_create(174,112,170,12,text_dither[1]);
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_label_dither);
+
    label = SLK_gui_label_create(104,144,56,12,"Amount");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
-   elements.color_bar_dither = SLK_gui_slider_create(160,141,198,14,0,1000);
+   elements.color_bar_dither = SLK_gui_slider_create(174,141,170,14,0,999);
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_bar_dither);
-   elements.color_bar_dither->slider.value = 250;
+   elements.color_bar_dither->slider.value = 64;
+   elements.color_dither_plus = SLK_gui_button_create(344,141,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_dither_plus);
+   elements.color_dither_minus = SLK_gui_button_create(160,141,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_dither_minus);
+   elements.color_label_dither_amount = SLK_gui_label_create(354,144,32,12,"64");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_label_dither_amount);
 
    label = SLK_gui_label_create(104,176,56,12,"Alpha");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
@@ -884,6 +895,9 @@ static void gui_buttons()
 
       break;
    case 3: //Color tab
+      BUTTON_BAR_PLUS(elements.color_dither_plus,elements.color_bar_dither);
+      BUTTON_BAR_MINUS(elements.color_dither_minus,elements.color_bar_dither);
+
       BUTTON_BAR_PLUS(elements.color_alpha_plus,elements.color_bar_alpha);
       BUTTON_BAR_MINUS(elements.color_alpha_minus,elements.color_bar_alpha);
 
@@ -891,20 +905,21 @@ static void gui_buttons()
       {
          img2pixel_set_process_mode(img2pixel_get_process_mode()-1);
          if(img2pixel_get_process_mode()<0)
-            img2pixel_set_process_mode(4);
+            img2pixel_set_process_mode(5);
          update = 1;
          SLK_gui_label_set_text(elements.color_label_dither,text_dither[img2pixel_get_process_mode()]);
       }
       else if(elements.color_dither_right->button.state.pressed)
       {
          img2pixel_set_process_mode(img2pixel_get_process_mode()+1);
-         if(img2pixel_get_process_mode()>4)
+         if(img2pixel_get_process_mode()>5)
             img2pixel_set_process_mode(0);
          update = 1;
          SLK_gui_label_set_text(elements.color_label_dither,text_dither[img2pixel_get_process_mode()]);
       }
 
       BAR_UPDATE(img2pixel_get_alpha_threshold,img2pixel_set_alpha_threshold,elements.color_bar_alpha,elements.color_label_alpha);
+      BAR_UPDATE(img2pixel_get_dither_amount,img2pixel_set_dither_amount,elements.color_bar_dither,elements.color_label_dither_amount);
 
       if(elements.color_bar_dither->slider.value!=img2pixel_get_dither_amount())
       {

@@ -120,19 +120,6 @@ typedef struct
 //-------------------------------------
 
 //Variables
-static const int16_t dither_threshold_normal[64] = 
-{
-    0,32, 8,40, 2,34,10,42,
-   48,16,56,24,50,18,58,26,
-   12,44, 4,36,14,46, 6,38,
-   60,28,52,20,62,30,54,22,
-    3,35,11,43, 1,33, 9,41,
-   51,19,59,27,49,17,57,25,
-   15,47, 7,39,13,45, 5,37,
-   63,31,55,23,61,29,53,21,
-};
-static const int16_t dither_threshold_none[64] = {0};
-
 static SLK_Color palette_rgb[256];
 static Color_lab palette_lab[256];
 static Color_xyz palette_xyz[256];
@@ -144,7 +131,7 @@ static int brightness = 0;
 static int contrast = 0;
 static int img_gamma = 100;
 static int saturation = 100;
-static int dither_amount = 250;
+static int dither_amount = 64;
 static int alpha_threshold = 128;
 static int sharpen = 0;
 static int hue = 0;
@@ -171,7 +158,10 @@ static int quant_k = 16;
 
 //Function prototypes
 //Functions needed for dithering
-static void orderd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold, int distance_mode);
+static void dither_none(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
+static void dither_bayer8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
+static void dither_bayer4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
+static void dither_bayer2x2(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
 static void floyd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
 static void floyd2_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
 static void floyd_apply_error(SLK_Color *d, double error_r, double error_g, double error_b, int x, int y, int width, int height);
@@ -252,7 +242,7 @@ void img2pixel_preset_load(FILE *f)
    image_out_sheight = HLH_json_get_object_integer(&root->root,"sheight",1);
    pixel_scale_mode = HLH_json_get_object_integer(&root->root,"scale_mode",1);
    pixel_process_mode = HLH_json_get_object_integer(&root->root,"dither_mode",0);
-   dither_amount = HLH_json_get_object_integer(&root->root,"dither_amount",1);
+   dither_amount = HLH_json_get_object_integer(&root->root,"dither_amount",64);
    pixel_sample_mode = HLH_json_get_object_integer(&root->root,"sample_mode",0);
    alpha_threshold = HLH_json_get_object_integer(&root->root,"alpha_threshold",128);
    upscale = HLH_json_get_object_integer(&root->root,"upscale",1);
@@ -563,7 +553,7 @@ void img2pixel_reset_to_defaults()
    contrast = 0;
    img_gamma = 100;
    saturation = 100;
-   dither_amount = 250;
+   dither_amount = 64;
    alpha_threshold = 128;
    sharpen = 0;
    hue = 0;
@@ -830,36 +820,67 @@ static void dither_image(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *palette
    switch(process_mode)
    {
    case 0: //No dithering
-      orderd_dither(d,out,palette,width,height,dither_threshold_none,distance_mode);
+      dither_none(d,out,palette,width,height,distance_mode);
       break;
-   case 1: //Ordered dithering (positiv map --> bias towards lighter colors)
-      {
-      int16_t dither_threshold_tmp[64] = {0};
-      for(int i = 0;i<64;i++)
-         dither_threshold_tmp[i] = (int)((float)dither_threshold_normal[i]*((float)dither_amount/1000.0f));
-      orderd_dither(d,out,palette,width,height,dither_threshold_tmp,distance_mode);
-      }
+   case 1: //Bayer 8x8
+      dither_bayer8x8(d,out,palette,width,height,distance_mode);
       break;
-   case 2: //Ordered dithering (positiv and negativ map --> no bias)
-      {
-      int16_t dither_threshold_tmp[64] = {0};
-      for(int i = 0;i<64;i++)
-         dither_threshold_tmp[i] = (int)((float)(dither_threshold_normal[i]-31)*((float)dither_amount/1000.0f));
-      orderd_dither(d,out,palette,width,height,dither_threshold_tmp,distance_mode);
-      }
+   case 2: //Bayer 4x4
+      dither_bayer4x4(d,out,palette,width,height,distance_mode);
       break;
-   case 3: //Floyd-Steinberg dithering (per color component error)
+   case 3: //Bayer 2x2
+      dither_bayer2x2(d,out,palette,width,height,distance_mode);
+      break;
+   case 4: //Floyd-Steinberg dithering (per color component error)
       floyd_dither(d,out,palette,width,height,distance_mode);
       break;
-   case 4: //Floyd-Steinberg dithering (distributed error)
+   case 5: //Floyd-Steinberg dithering (distributed error)
       floyd2_dither(d,out,palette,width,height,distance_mode);
       break;
    }
 }
 
-//Applies ordered dithering to the input
-static void orderd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, const int16_t *dither_threshold, int distance_mode)
+static void dither_none(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
 {
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      { 
+         SLK_Color in = d[y*width+x];
+         if(in.a<alpha_threshold)
+         {
+            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            continue;
+         }
+
+         //Add a value to the color depending on the position,
+         //this creates the dithering effect
+         SLK_Color c;
+         c.r = in.r;
+         c.g = in.g;
+         c.b = in.b;
+         c.a = in.a;
+         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
+         out->data[y*width+x].a = 255;
+      }
+   }
+}
+
+static void dither_bayer8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+{
+   const float dither_threshold[64] = 
+   {
+       0.0f/64.0f,32.0f/64.0f, 8.0f/64.0f,40.0f/64.0f, 2.0f/64.0f,34.0f/64.0f,10.0f/64.0f,42.0f/64.0f,
+      48.0f/64.0f,16.0f/64.0f,56.0f/64.0f,24.0f/64.0f,50.0f/64.0f,18.0f/64.0f,58.0f/64.0f,26.0f/64.0f,
+      12.0f/64.0f,44.0f/64.0f, 4.0f/64.0f,36.0f/64.0f,14.0f/64.0f,46.0f/64.0f, 6.0f/64.0f,38.0f/64.0f,
+      60.0f/64.0f,28.0f/64.0f,52.0f/64.0f,20.0f/64.0f,62.0f/64.0f,30.0f/64.0f,54.0f/64.0f,22.0f/64.0f,
+       3.0f/64.0f,35.0f/64.0f,11.0f/64.0f,43.0f/64.0f, 1.0f/64.0f,33.0f/64.0f, 9.0f/64.0f,41.0f/64.0f,
+      51.0f/64.0f,19.0f/64.0f,59.0f/64.0f,27.0f/64.0f,49.0f/64.0f,17.0f/64.0f,57.0f/64.0f,25.0f/64.0f,
+      15.0f/64.0f,47.0f/64.0f, 7.0f/64.0f,39.0f/64.0f,13.0f/64.0f,45.0f/64.0f, 5.0f/64.0f,37.0f/64.0f,
+      63.0f/64.0f,31.0f/64.0f,55.0f/64.0f,23.0f/64.0f,61.0f/64.0f,29.0f/64.0f,53.0f/64.0f,21.0f/64.0f
+   };
+   float amount = (float)dither_amount/1000.0f;
+
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -875,9 +896,78 @@ static void orderd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, i
          //this creates the dithering effect
          uint8_t tresshold_id = ((y&7)<<3)+(x&7);
          SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(in.r+dither_threshold[tresshold_id])));
-         c.g = MAX(0x0,MIN(0xff,(in.g+dither_threshold[tresshold_id])));
-         c.b = MAX(0x0,MIN(0xff,(in.b+dither_threshold[tresshold_id])));
+         c.r = MAX(0x0,MIN(0xff,(int)((float)in.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)in.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)in.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.a = in.a;
+         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
+         out->data[y*width+x].a = 255;
+      }
+   }
+}
+
+static void dither_bayer4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+{
+   const float dither_threshold[16] = 
+   {
+      0.0f/16.0f,8.0f/16.0f,2.0f/16.0f,10.0f/16.0f,
+      12.0f/16.0f,4.0f/16.0f,14.0f/16.0f,6.0f/16.0f,
+      3.0f/16.0f,11.0f/16.0f,1.0f/16.0f,9.0f/16.0f,
+      15.0f/16.0f,7.0f/16.0f,13.0f/16.0f,5.0f/16.0f
+   };
+   float amount = (float)dither_amount/1000.0f;
+
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      { 
+         SLK_Color in = d[y*width+x];
+         if(in.a<alpha_threshold)
+         {
+            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            continue;
+         }
+
+         //Add a value to the color depending on the position,
+         //this creates the dithering effect
+         uint8_t tresshold_id = ((y&3)<<2)+(x&3);
+         SLK_Color c;
+         c.r = MAX(0x0,MIN(0xff,(int)((float)in.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)in.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)in.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.a = in.a;
+         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
+         out->data[y*width+x].a = 255;
+      }
+   }
+}
+static void dither_bayer2x2(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+{
+   const float dither_threshold[4] = 
+   {
+      0.0f/4.0f,2.0f/4.0f,
+      3.0f/4.0f,1.0f/4.0f
+   };
+   float amount = (float)dither_amount/1000.0f;
+
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      { 
+         SLK_Color in = d[y*width+x];
+         if(in.a<alpha_threshold)
+         {
+            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            continue;
+         }
+
+         //Add a value to the color depending on the position,
+         //this creates the dithering effect
+         uint8_t tresshold_id = ((y&1)<<1)+(x&1);
+         SLK_Color c;
+         c.r = MAX(0x0,MIN(0xff,(int)((float)in.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)in.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)in.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
          c.a = in.a;
          out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
          out->data[y*width+x].a = 255;
