@@ -209,6 +209,8 @@ static const char *text_dither[] =
    "Bayer 8x8",
    "Bayer 4x4",
    "Bayer 2x2",
+   "Cluster 8x8",
+   "Cluster 4x4",
    "FloydSteinberg 1",
    "FloydSteinberg 2",
 };
@@ -905,14 +907,14 @@ static void gui_buttons()
       {
          img2pixel_set_process_mode(img2pixel_get_process_mode()-1);
          if(img2pixel_get_process_mode()<0)
-            img2pixel_set_process_mode(5);
+            img2pixel_set_process_mode(7);
          update = 1;
          SLK_gui_label_set_text(elements.color_label_dither,text_dither[img2pixel_get_process_mode()]);
       }
       else if(elements.color_dither_right->button.state.pressed)
       {
          img2pixel_set_process_mode(img2pixel_get_process_mode()+1);
-         if(img2pixel_get_process_mode()>5)
+         if(img2pixel_get_process_mode()>7)
             img2pixel_set_process_mode(0);
          update = 1;
          SLK_gui_label_set_text(elements.color_label_dither,text_dither[img2pixel_get_process_mode()]);

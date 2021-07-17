@@ -162,6 +162,8 @@ static void dither_none(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int
 static void dither_bayer8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
 static void dither_bayer4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
 static void dither_bayer2x2(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
+static void dither_cluster8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
+static void dither_cluster4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
 static void floyd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
 static void floyd2_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
 static void floyd_apply_error(SLK_Color *d, double error_r, double error_g, double error_b, int x, int y, int width, int height);
@@ -831,10 +833,16 @@ static void dither_image(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *palette
    case 3: //Bayer 2x2
       dither_bayer2x2(d,out,palette,width,height,distance_mode);
       break;
-   case 4: //Floyd-Steinberg dithering (per color component error)
+   case 4: //Cluster 8x8
+      dither_cluster8x8(d,out,palette,width,height,distance_mode);
+      break;
+   case 5: //Cluster4x4
+      dither_cluster4x4(d,out,palette,width,height,distance_mode);
+      break;
+   case 6: //Floyd-Steinberg dithering (per color component error)
       floyd_dither(d,out,palette,width,height,distance_mode);
       break;
-   case 5: //Floyd-Steinberg dithering (distributed error)
+   case 7: //Floyd-Steinberg dithering (distributed error)
       floyd2_dither(d,out,palette,width,height,distance_mode);
       break;
    }
@@ -964,6 +972,83 @@ static void dither_bayer2x2(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal,
          //Add a value to the color depending on the position,
          //this creates the dithering effect
          uint8_t tresshold_id = ((y&1)<<1)+(x&1);
+         SLK_Color c;
+         c.r = MAX(0x0,MIN(0xff,(int)((float)in.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)in.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)in.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.a = in.a;
+         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
+         out->data[y*width+x].a = 255;
+      }
+   }
+}
+
+static void dither_cluster8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+{
+   const float dither_threshold[64] = 
+   {
+      24.0f/64.0f,10.0f/64.0f,12.0f/64.0f,26.0f/64.0f,35.0f/64.0f,47.0f/64.0f,49.0f/64.0f,37.0f/64.0f,
+      8.0f/64.0f,0.0f/64.0f,2.0f/64.0f,14.0f/64.0f,45.0f/64.0f,59.0f/64.0f,61.0f/64.0f,51.0f/64.0f,
+      22.0f/64.0f,6.0f/64.0f,4.0f/64.0f,16.0f/64.0f,43.0f/64.0f,57.0f/64.0f,63.0f/64.0f,53.0f/64.0f,
+      30.0f/64.0f,20.0f/64.0f,18.0f/64.0f,28.0f/64.0f,33.0f/64.0f,41.0f/64.0f,55.0f/64.0f,39.0f/64.0f,
+      34.0f/64.0f,46.0f/64.0f,48.0f/64.0f,36.0f/64.0f,25.0f/64.0f,11.0f/64.0f,13.0f/64.0f,27.0f/64.0f,
+      44.0f/64.0f,58.0f/64.0f,60.0f/64.0f,50.0f/64.0f,9.0f/64.0f,1.0f/64.0f,3.0f/64.0f,15.0f/64.0f,
+      42.0f/64.0f,56.0f/64.0f,62.0f/64.0f,52.0f/64.0f,23.0f/64.0f,7.0f/64.0f,5.0f/64.0f,17.0f/64.0f,
+      32.0f/64.0f,40.0f/64.0f,54.0f/64.0f,38.0f/64.0f,31.0f/64.0f,21.0f/64.0f,19.0f/64.0f,29.0f/64.0f
+   };
+   float amount = (float)dither_amount/1000.0f;
+
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      { 
+         SLK_Color in = d[y*width+x];
+         if(in.a<alpha_threshold)
+         {
+            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            continue;
+         }
+
+         //Add a value to the color depending on the position,
+         //this creates the dithering effect
+         uint8_t tresshold_id = ((y&7)<<3)+(x&7);
+         SLK_Color c;
+         c.r = MAX(0x0,MIN(0xff,(int)((float)in.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)in.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)in.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.a = in.a;
+         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
+         out->data[y*width+x].a = 255;
+      }
+   }
+}
+
+static void dither_cluster4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+{
+   const float dither_threshold[16] = 
+   {
+      12.0f/16.0f,5.0f/16.0f,6.0f/16.0f,13.0f/16.0f,
+      4.0f/16.0f,0.0f/16.0f,1.0f/16.0f,7.0f/16.0f,
+      11.0f/16.0f,3.0f/16.0f,2.0f/16.0f,8.0f/16.0f,
+      15.0f/16.0f,10.0f/16.0f,9.0f/16.0f,14.0f/16.0f
+   };
+
+   float amount = (float)dither_amount/1000.0f;
+
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      { 
+         SLK_Color in = d[y*width+x];
+         if(in.a<alpha_threshold)
+         {
+            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            continue;
+         }
+
+         //Add a value to the color depending on the position,
+         //this creates the dithering effect
+         uint8_t tresshold_id = ((y&3)<<2)+(x&3);
          SLK_Color c;
          c.r = MAX(0x0,MIN(0xff,(int)((float)in.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
          c.g = MAX(0x0,MIN(0xff,(int)((float)in.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));

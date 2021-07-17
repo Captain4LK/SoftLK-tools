@@ -19,6 +19,8 @@ CHANGES:
    * bayer 8x8
    * bayer 4x4
    * bayer 2x2
+   * cluster 8x8
+   * cluster 4x4
    * floyd-steinberg
 * lowered memory consumption by using rgb888 pixel format while processing images
 
