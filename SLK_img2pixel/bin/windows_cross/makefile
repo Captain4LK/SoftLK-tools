@@ -1,4 +1,4 @@
-CC = i686-w64-mingw32-gcc -flto -O3 -s
+CC = i686-w64-mingw32-gcc -O3 -s -flto=auto
 CFLAGS+=-L../../../../SoftLK-lib/lib/windows_cross/ -I ../../../../SoftLK-lib/include/ -lcomdlg32 -lole32 -lSLK -lmingw32 -lSDL2main -lSDL2 -mwindows -Wall -Wno-sign-compare -Wno-unused-parameter
 DEPENDENCIES = assets.o gui.o utility_win.o image2pixel.o tinyfiledialogs.o gifenc.o gifdec.o
 

@@ -67,8 +67,12 @@ SLK_RGB_sprite *image_select()
 {
    const wchar_t *filter_patterns[2] = {L"*.png"};
    const wchar_t *file_path = tinyfd_openFileDialogW(L"Select a file",L"",0,filter_patterns,NULL,0);
+   if(file_path==NULL)
+      return SLK_rgb_sprite_create(1,1);
+
    char buffer[512];
    stbi_convert_wchar_to_utf8(buffer,512,file_path);
+
    return image_load(buffer);
 }
 
@@ -83,10 +87,14 @@ FILE *json_select()
 {
    const wchar_t *filter_patterns[2] = {L"*.json"};
    const wchar_t *file_path = tinyfd_openFileDialogW(L"Select a preset",L"",1,filter_patterns,NULL,0);
+   if(file_path==NULL)
+      return NULL;
+
    char buffer[512];
    stbi_convert_wchar_to_utf8(buffer,512,file_path);
    if(buffer[0]!='\0')
       return fopen_utf8(buffer,"r");
+
    return NULL;
 }
 
@@ -94,10 +102,14 @@ FILE *json_write()
 {
    const wchar_t *filter_patterns[2] = {L"*.json"};
    const wchar_t *file_path = tinyfd_saveFileDialogW(L"Save preset",L"",1,filter_patterns,NULL);
+   if(file_path==NULL)
+      return NULL;
+
    char buffer[512];
    stbi_convert_wchar_to_utf8(buffer,512,file_path);
    if(buffer[0]!='\0')
       return fopen_utf8(buffer,"w");
+
    return NULL;
 }
 
@@ -105,6 +117,9 @@ SLK_Palette *palette_select()
 {
    const wchar_t *filter_patterns[] = {L"*.pal",L"*.png",L"*.gpl",L"*.hex"};
    const wchar_t *file_path = tinyfd_openFileDialogW(L"Load a palette",L"",4,filter_patterns,NULL,0);
+   if(file_path==NULL)
+      return NULL;
+
    char buffer[512];
    stbi_convert_wchar_to_utf8(buffer,512,file_path);
    if(buffer[0]!='\0')
@@ -165,6 +180,9 @@ void palette_write(SLK_Palette *pal)
 {
    const wchar_t *filter_patterns[2] = {L"*.pal"};
    const wchar_t *file_path = tinyfd_saveFileDialogW(L"Save palette",L"",1,filter_patterns,NULL);
+   if(file_path==NULL)
+      return;
+
    char buffer[512];
    stbi_convert_wchar_to_utf8(buffer,512,file_path);
    if(buffer[0]!='\0')
