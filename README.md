@@ -51,6 +51,10 @@ Here is a list of all makefile targets for building SoftLK-lib:
 * cd into the bin directory 
 * run ``./SLK_make -v opt -no_syms -compiler gcc -extension .c [NAME OF TOOL]``
 
+# Contact
+
+Here is a link to the SLK_img2pixel Discord. Feel free to pop in and make suggestions or ask questions: https://discord.gg/Nch8hjdZ2V
+
 # Download 
 
 * SLK_img2pixel: [itch.io](https://captain4lk.itch.io/slk-img2pixel)
