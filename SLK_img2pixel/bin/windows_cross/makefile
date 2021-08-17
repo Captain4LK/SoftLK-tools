@@ -33,7 +33,7 @@ image2pixel.o:  ../../src/image2pixel.c ../../src/image2pixel.h ../../src/utilit
 #tinyfiledialogs.o: ../../../external/tinyfiledialogs.c
 	#$(CC) -c $< $(CFLAGS) 
 
-nfd_win.o: ../../src/nfd_win.cpp
+nfd_win.o: ../../../external/nfd_win.cpp
 	$(CXX) -c $< $(CFLAGS) 
 
 gifenc.o: ../../../external/gifenc.c

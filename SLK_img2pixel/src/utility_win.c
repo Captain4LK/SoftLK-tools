@@ -31,7 +31,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Internal includes
 #include "utility.h"
 #include "image2pixel.h"
-#include "nfd.h"
+#include "../../external/nfd.h"
 //-------------------------------------
 
 //#defines
