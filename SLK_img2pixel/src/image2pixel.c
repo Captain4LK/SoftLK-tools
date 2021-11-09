@@ -57,45 +57,10 @@ typedef struct
 
 typedef struct
 {
-   double l;
-   double a;
-   double b;
-}Color_lab;
-
-typedef struct
-{
-   double x;
-   double y;
-   double z;
-}Color_xyz;
-
-typedef struct
-{
-   double y;
-   double cb;
-   double cr;
-}Color_ycc;
-
-typedef struct
-{
-   double y;
-   double i;
-   double q;
-}Color_yiq;
-
-typedef struct
-{
-   double y;
-   double u;
-   double v;
-}Color_yuv;
-
-typedef struct
-{
-   double h;
-   double s;
-   double v;
-}Color_hsv;
+   double c0;
+   double c1;
+   double c2;
+}Color_d3;
 
 enum
 {
@@ -120,13 +85,6 @@ typedef struct
 //-------------------------------------
 
 //Variables
-static SLK_Color palette_rgb[256];
-static Color_lab palette_lab[256];
-static Color_xyz palette_xyz[256];
-static Color_ycc palette_ycc[256];
-static Color_yiq palette_yiq[256];
-static Color_yuv palette_yuv[256];
-
 static int brightness = 0;
 static int contrast = 0;
 static int img_gamma = 100;
@@ -157,42 +115,43 @@ static int quant_k = 16;
 //-------------------------------------
 
 //Function prototypes
-//Functions needed for dithering
-static void dither_none(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
-static void dither_bayer8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
-static void dither_bayer4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
-static void dither_bayer2x2(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
-static void dither_cluster8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
-static void dither_cluster4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
-static void floyd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
-static void floyd2_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode);
+
+static void dither_image(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, int process_mode, int distance_mode);
+static void dither_none      (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_bayer8x8  (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_bayer4x4  (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_bayer2x2  (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_cluster8x8(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_cluster4x4(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_floyd     (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_floyd2    (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
 static void floyd_apply_error(SLK_Color *d, double error_r, double error_g, double error_b, int x, int y, int width, int height);
-static void dither_image(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height, int distance_mode);
+
 static double gauss_calc(double x, double y, double sigma);
 static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_RGB_sprite *data);
 
-//Functions needed for finding closest colors
-static void palette_setup(SLK_Palette *pal, int distance_mode);
-static SLK_Color palette_find_closest(SLK_Palette *pal, SLK_Color c, int distance_mode);
-static Color_lab color_to_lab(SLK_Color c);
-static Color_xyz color_to_xyz(SLK_Color c);
-static Color_ycc color_to_ycc(SLK_Color c);
-static Color_yiq color_to_yiq(SLK_Color c);
-static Color_yuv color_to_yuv(SLK_Color c);
-static Color_hsv color_to_hsv(SLK_Color c);
-static SLK_Color hsv_to_color(Color_hsv hsv);
-static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, SLK_Color c);
-static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, SLK_Color c);
-static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, SLK_Color c);
-static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, SLK_Color c);
-static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, SLK_Color c);
-static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, SLK_Color c);
-static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, SLK_Color c);
-static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, SLK_Color c);
-static int64_t rgb_color_dist2(SLK_Color c0, SLK_Color c1);
-static double cie94_color_dist2(Color_lab c0, Color_lab c1);
-static double ciede2000_color_dist2(Color_lab c0, Color_lab c1);
-static double color_dist2(double a0, double a1, double a2, double b0, double b1, double b2);
+static Color_d3  color_to_rgb(SLK_Color c);
+static Color_d3  color_to_lab(SLK_Color c);
+static Color_d3  color_to_xyz(SLK_Color c);
+static Color_d3  color_to_ycc(SLK_Color c);
+static Color_d3  color_to_yiq(SLK_Color c);
+static Color_d3  color_to_yuv(SLK_Color c);
+static Color_d3  color_to_hsv(SLK_Color c);
+static SLK_Color hsv_to_color(Color_d3 hsv);
+
+static SLK_Color palette_find_closest(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c, int distance_mode);
+static SLK_Color palette_find_closest_rgb      (SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c);
+static SLK_Color palette_find_closest_cie76    (SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c);
+static SLK_Color palette_find_closest_cie94    (SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c);
+static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c);
+static SLK_Color palette_find_closest_xyz      (SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c);
+static SLK_Color palette_find_closest_ycc      (SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c);
+static SLK_Color palette_find_closest_yiq      (SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c);
+static SLK_Color palette_find_closest_yuv      (SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c);
+
+static double cie94_color_dist2(Color_d3 c0, Color_d3 c1);
+static double ciede2000_color_dist2(Color_d3 c0, Color_d3 c1);
+static double color_dist2(Color_d3 a, Color_d3 b);
 
 //Functions needed for downsampling image
 static void sample_image(const SLK_RGB_sprite *in, SLK_Color *out, int sample_mode, int width, int height);
@@ -460,8 +419,6 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    if(tmp_data==NULL)
       return;
 
-   palette_setup(palette,pixel_distance_mode);
-
    //Downsample image before processing it. 
    //Every image operation except kernel based ones (sharpness, gaussian blur)
    //is done after downsampling.
@@ -511,8 +468,8 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
          if(hue!=0)
          {
             float huef = (float)hue;
-            Color_hsv hsv = color_to_hsv(in);
-            hsv.h+=huef;
+            Color_d3 hsv = color_to_hsv(in);
+            hsv.c0+=huef;
             in = hsv_to_color(hsv);
          }
 
@@ -540,7 +497,7 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    //Dithering is done after all image processing
    //If it was done at any other time, it would
    //resoult in different colors than the palette
-   dither_image(tmp_data,out,palette,pixel_process_mode,out->width,out->height,pixel_distance_mode);
+   dither_image(tmp_data,out->data,out->width,out->height,palette,pixel_process_mode,pixel_distance_mode);
 
    //Clean up
    free(tmp_data);
@@ -817,64 +774,97 @@ static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_
 }
 
 //Dithers an image to the provided palette using the specified mode
-static void dither_image(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *palette, int process_mode, int width, int height, int distance_mode)
+static void dither_image(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, int process_mode, int distance_mode)
 {
+   //Convert palette to needed format
+   //TODO: cache?
+   Color_d3 palette_d3[256];
+   switch(distance_mode)
+   {
+   case 0: //RGB
+      for(int i = 0;i<pal->used;i++)
+         palette_d3[i] = color_to_rgb(pal->colors[i]); 
+      break;
+   case 1:
+   case 2:
+   case 3: //Lab
+      for(int i = 0;i<pal->used;i++)
+         palette_d3[i] = color_to_lab(pal->colors[i]);
+      break;
+   case 4: //XYZ
+      for(int i = 0;i<pal->used;i++)
+         palette_d3[i] = color_to_xyz(pal->colors[i]);
+      break;
+   case 5: //YCC
+      for(int i = 0;i<pal->used;i++)
+         palette_d3[i] = color_to_ycc(pal->colors[i]);
+      break;
+   case 6: //YIQ
+      for(int i = 0;i<pal->used;i++)
+         palette_d3[i] = color_to_yiq(pal->colors[i]);
+      break;
+   case 7: //YUV
+      for(int i = 0;i<pal->used;i++)
+         palette_d3[i] = color_to_yuv(pal->colors[i]);
+      break;
+   }
+
    switch(process_mode)
    {
    case 0: //No dithering
-      dither_none(d,out,palette,width,height,distance_mode);
+      dither_none(in,out,width,height,pal,palette_d3,distance_mode);
       break;
    case 1: //Bayer 8x8
-      dither_bayer8x8(d,out,palette,width,height,distance_mode);
+      dither_bayer8x8(in,out,width,height,pal,palette_d3,distance_mode);
       break;
    case 2: //Bayer 4x4
-      dither_bayer4x4(d,out,palette,width,height,distance_mode);
+      dither_bayer4x4(in,out,width,height,pal,palette_d3,distance_mode);
       break;
    case 3: //Bayer 2x2
-      dither_bayer2x2(d,out,palette,width,height,distance_mode);
+      dither_bayer2x2(in,out,width,height,pal,palette_d3,distance_mode);
       break;
    case 4: //Cluster 8x8
-      dither_cluster8x8(d,out,palette,width,height,distance_mode);
+      dither_cluster8x8(in,out,width,height,pal,palette_d3,distance_mode);
       break;
    case 5: //Cluster4x4
-      dither_cluster4x4(d,out,palette,width,height,distance_mode);
+      dither_cluster4x4(in,out,width,height,pal,palette_d3,distance_mode);
       break;
    case 6: //Floyd-Steinberg dithering (per color component error)
-      floyd_dither(d,out,palette,width,height,distance_mode);
+      dither_floyd(in,out,width,height,pal,palette_d3,distance_mode);
       break;
    case 7: //Floyd-Steinberg dithering (distributed error)
-      floyd2_dither(d,out,palette,width,height,distance_mode);
+      dither_floyd2(in,out,width,height,pal,palette_d3,distance_mode);
       break;
    }
 }
 
-static void dither_none(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+static void dither_none(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       { 
-         SLK_Color in = d[y*width+x];
-         if(in.a<alpha_threshold)
+         SLK_Color cin = in[y*width+x];
+         if(cin.a<alpha_threshold)
          {
-            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
          }
 
          //Add a value to the color depending on the position,
          //this creates the dithering effect
          SLK_Color c;
-         c.r = in.r;
-         c.g = in.g;
-         c.b = in.b;
-         c.a = in.a;
-         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
-         out->data[y*width+x].a = 255;
+         c.r = cin.r;
+         c.g = cin.g;
+         c.b = cin.b;
+         c.a = cin.a;
+         out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
+         out[y*width+x].a = 255;
       }
    }
 }
 
-static void dither_bayer8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+static void dither_bayer8x8(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
    const float dither_threshold[64] = 
    {
@@ -893,10 +883,10 @@ static void dither_bayer8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal,
    {
       for(int x = 0;x<width;x++)
       { 
-         SLK_Color in = d[y*width+x];
-         if(in.a<alpha_threshold)
+         SLK_Color cin = in[y*width+x];
+         if(cin.a<alpha_threshold)
          {
-            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
          }
 
@@ -904,17 +894,17 @@ static void dither_bayer8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal,
          //this creates the dithering effect
          uint8_t tresshold_id = ((y&7)<<3)+(x&7);
          SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)in.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)in.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)in.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.a = in.a;
-         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
-         out->data[y*width+x].a = 255;
+         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.a = cin.a;
+         out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
+         out[y*width+x].a = 255;
       }
    }
 }
 
-static void dither_bayer4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+static void dither_bayer4x4(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
    const float dither_threshold[16] = 
    {
@@ -929,10 +919,10 @@ static void dither_bayer4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal,
    {
       for(int x = 0;x<width;x++)
       { 
-         SLK_Color in = d[y*width+x];
-         if(in.a<alpha_threshold)
+         SLK_Color cin = in[y*width+x];
+         if(cin.a<alpha_threshold)
          {
-            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
          }
 
@@ -940,16 +930,17 @@ static void dither_bayer4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal,
          //this creates the dithering effect
          uint8_t tresshold_id = ((y&3)<<2)+(x&3);
          SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)in.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)in.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)in.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.a = in.a;
-         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
-         out->data[y*width+x].a = 255;
+         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.a = cin.a;
+         out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
+         out[y*width+x].a = 255;
       }
    }
 }
-static void dither_bayer2x2(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+
+static void dither_bayer2x2(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
    const float dither_threshold[4] = 
    {
@@ -962,10 +953,10 @@ static void dither_bayer2x2(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal,
    {
       for(int x = 0;x<width;x++)
       { 
-         SLK_Color in = d[y*width+x];
-         if(in.a<alpha_threshold)
+         SLK_Color cin = in[y*width+x];
+         if(cin.a<alpha_threshold)
          {
-            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
          }
 
@@ -973,17 +964,17 @@ static void dither_bayer2x2(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal,
          //this creates the dithering effect
          uint8_t tresshold_id = ((y&1)<<1)+(x&1);
          SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)in.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)in.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)in.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.a = in.a;
-         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
-         out->data[y*width+x].a = 255;
+         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.a = cin.a;
+         out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
+         out[y*width+x].a = 255;
       }
    }
 }
 
-static void dither_cluster8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+static void dither_cluster8x8(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
    const float dither_threshold[64] = 
    {
@@ -1002,10 +993,10 @@ static void dither_cluster8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pa
    {
       for(int x = 0;x<width;x++)
       { 
-         SLK_Color in = d[y*width+x];
-         if(in.a<alpha_threshold)
+         SLK_Color cin = in[y*width+x];
+         if(cin.a<alpha_threshold)
          {
-            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
          }
 
@@ -1013,17 +1004,17 @@ static void dither_cluster8x8(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pa
          //this creates the dithering effect
          uint8_t tresshold_id = ((y&7)<<3)+(x&7);
          SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)in.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)in.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)in.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.a = in.a;
-         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
-         out->data[y*width+x].a = 255;
+         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.a = cin.a;
+         out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
+         out[y*width+x].a = 255;
       }
    }
 }
 
-static void dither_cluster4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+static void dither_cluster4x4(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
    const float dither_threshold[16] = 
    {
@@ -1039,10 +1030,10 @@ static void dither_cluster4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pa
    {
       for(int x = 0;x<width;x++)
       { 
-         SLK_Color in = d[y*width+x];
-         if(in.a<alpha_threshold)
+         SLK_Color cin = in[y*width+x];
+         if(cin.a<alpha_threshold)
          {
-            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
          }
 
@@ -1050,12 +1041,12 @@ static void dither_cluster4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pa
          //this creates the dithering effect
          uint8_t tresshold_id = ((y&3)<<2)+(x&3);
          SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)in.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)in.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)in.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.a = in.a;
-         out->data[y*width+x] = palette_find_closest(pal,c,distance_mode);
-         out->data[y*width+x].a = 255;
+         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.a = cin.a;
+         out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
+         out[y*width+x].a = 255;
       }
    }
 }
@@ -1063,30 +1054,30 @@ static void dither_cluster4x4(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pa
 //Applies Floyd-Steinberg dithering to the input
 //This version uses per color component errror values,
 //this usually does not work well with most palettes
-static void floyd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+static void dither_floyd(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         SLK_Color in = d[y*width+x];
-         if(in.a<alpha_threshold)
+         SLK_Color cin = in[y*width+x];
+         if(cin.a<alpha_threshold)
          {
-            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
          }
          
-         SLK_Color p = palette_find_closest(pal,in,distance_mode);
-         double error_r = (double)in.r-(double)p.r;
-         double error_g = (double)in.g-(double)p.g;
-         double error_b = (double)in.b-(double)p.b;
-         floyd_apply_error(d,error_r*(7.0/16.0),error_g*(7.0/16.0),error_b*(7.0/16.0),x+1,y,width,height);
-         floyd_apply_error(d,error_r*(3.0/16.0),error_g*(3.0/16.0),error_b*(3.0/16.0),x-1,y+1,width,height);
-         floyd_apply_error(d,error_r*(5.0/16.0),error_g*(5.0/16.0),error_b*(5.0/16.0),x,y+1,width,height);
-         floyd_apply_error(d,error_r*(1.0/16.0),error_g*(1.0/16.0),error_b*(1.0/16.0),x+1,y+1,width,height);
+         SLK_Color p = palette_find_closest(pal,pal_d3,cin,distance_mode);
+         double error_r = (double)cin.r-(double)p.r;
+         double error_g = (double)cin.g-(double)p.g;
+         double error_b = (double)cin.b-(double)p.b;
+         floyd_apply_error(in,error_r*(7.0/16.0),error_g*(7.0/16.0),error_b*(7.0/16.0),x+1,y,width,height);
+         floyd_apply_error(in,error_r*(3.0/16.0),error_g*(3.0/16.0),error_b*(3.0/16.0),x-1,y+1,width,height);
+         floyd_apply_error(in,error_r*(5.0/16.0),error_g*(5.0/16.0),error_b*(5.0/16.0),x,y+1,width,height);
+         floyd_apply_error(in,error_r*(1.0/16.0),error_g*(1.0/16.0),error_b*(1.0/16.0),x+1,y+1,width,height);
 
-         out->data[y*width+x] = p;
-         out->data[y*width+x].a = 255;
+         out[y*width+x] = p;
+         out[y*width+x].a = 255;
       }
    }
 }
@@ -1094,31 +1085,31 @@ static void floyd_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, in
 //Applies Floyd-Steinberg dithering to the input
 //This version uses distributed error values,
 //this results in better results for most palettes
-static void floyd2_dither(SLK_Color *d, SLK_RGB_sprite *out, SLK_Palette *pal, int width, int height, int distance_mode)
+static void dither_floyd2(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         SLK_Color in = d[y*width+x];
-         if(in.a<alpha_threshold)
+         SLK_Color cin = in[y*width+x];
+         if(cin.a<alpha_threshold)
          {
-            out->data[y*width+x] = SLK_color_create(0,0,0,0);
+            out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
          }
          
-         SLK_Color p = palette_find_closest(pal,in,distance_mode);
-         double error = ((double)in.r-(double)p.r);
-         error+=((double)in.g-(double)p.g);
-         error+=((double)in.b-(double)p.b);
+         SLK_Color p = palette_find_closest(pal,pal_d3,cin,distance_mode);
+         double error = ((double)cin.r-(double)p.r);
+         error+=((double)cin.g-(double)p.g);
+         error+=((double)cin.b-(double)p.b);
          error = error/3.0;
-         floyd_apply_error(d,error*(7.0/16.0),error*(7.0/16.0),error*(7.0/16.0),x+1,y,width,height);
-         floyd_apply_error(d,error*(3.0/16.0),error*(3.0/16.0),error*(3.0/16.0),x-1,y+1,width,height);
-         floyd_apply_error(d,error*(5.0/16.0),error*(5.0/16.0),error*(5.0/16.0),x,y+1,width,height);
-         floyd_apply_error(d,error*(1.0/16.0),error*(1.0/16.0),error*(1.0/16.0),x+1,y+1,width,height);
+         floyd_apply_error(in,error*(7.0/16.0),error*(7.0/16.0),error*(7.0/16.0),x+1,y,width,height);
+         floyd_apply_error(in,error*(3.0/16.0),error*(3.0/16.0),error*(3.0/16.0),x-1,y+1,width,height);
+         floyd_apply_error(in,error*(5.0/16.0),error*(5.0/16.0),error*(5.0/16.0),x,y+1,width,height);
+         floyd_apply_error(in,error*(1.0/16.0),error*(1.0/16.0),error*(1.0/16.0),x+1,y+1,width,height);
 
-         out->data[y*width+x] = p;
-         out->data[y*width+x].a = 255;
+         out[y*width+x] = p;
+         out[y*width+x].a = 255;
       }
    }
 }
@@ -1140,181 +1131,155 @@ static void floyd_apply_error(SLK_Color *d, double error_r, double error_g, doub
    in->b = MAX(0x0,MIN(b,0xff));
 }
 
-static void palette_setup(SLK_Palette *pal, int distance_mode)
-{
-   switch(distance_mode)
-   {
-   case 0: //RGB
-      for(int i = 0;i<pal->used;i++)
-         palette_rgb[i] = pal->colors[i];
-      break;
-   case 1:
-   case 2:
-   case 3: //Lab
-      for(int i = 0;i<pal->used;i++)
-         palette_lab[i] = color_to_lab(pal->colors[i]);
-      break;
-   case 4: //XYZ
-      for(int i = 0;i<pal->used;i++)
-         palette_xyz[i] = color_to_xyz(pal->colors[i]);
-      break;
-   case 5: //YCC
-      for(int i = 0;i<pal->used;i++)
-         palette_ycc[i] = color_to_ycc(pal->colors[i]);
-      break;
-   case 6: //YIQ
-      for(int i = 0;i<pal->used;i++)
-         palette_yiq[i] = color_to_yiq(pal->colors[i]);
-      break;
-   case 7: //YUV
-      for(int i = 0;i<pal->used;i++)
-         palette_yuv[i] = color_to_yuv(pal->colors[i]);
-      break;
-   }
-}
-
-static SLK_Color palette_find_closest(SLK_Palette *pal, SLK_Color c, int distance_mode)
+static SLK_Color palette_find_closest(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c, int distance_mode)
 {
    SLK_Color out = {0};
 
    switch(distance_mode)
    {
    case 0: //RGB
-      out = palette_find_closest_rgb(pal,c);
+      out = palette_find_closest_rgb(pal,pal_d3,c);
       break;
    case 1: //CIE76
-      out = palette_find_closest_cie76(pal,c);
+      out = palette_find_closest_cie76(pal,pal_d3,c);
       break;
    case 2: //CIE94
-      out = palette_find_closest_cie94(pal,c);
+      out = palette_find_closest_cie94(pal,pal_d3,c);
       break;
    case 3: //CIEDE200
-      out = palette_find_closest_ciede2000(pal,c);
+      out = palette_find_closest_ciede2000(pal,pal_d3,c);
       break;
    case 4: //XYZ
-      out = palette_find_closest_xyz(pal,c);
+      out = palette_find_closest_xyz(pal,pal_d3,c);
       break;
    case 5: //YCC
-      out = palette_find_closest_ycc(pal,c);
+      out = palette_find_closest_ycc(pal,pal_d3,c);
       break;
    case 6: //YIQ
-      out = palette_find_closest_yiq(pal,c);
+      out = palette_find_closest_yiq(pal,pal_d3,c);
       break;
    case 7: //YUV
-      out = palette_find_closest_yuv(pal,c);
+      out = palette_find_closest_yuv(pal,pal_d3,c);
       break;
    }
 
    return out;
 }
 
-//Convert to xyz then to lab color space
-static Color_lab color_to_lab(SLK_Color c)
+static Color_d3 color_to_rgb(SLK_Color c)
 {
-   Color_lab l;
-   Color_xyz xyz = color_to_xyz(c) ;
+   Color_d3 d3;
+   d3.c0 = (double)c.r/255.0f;
+   d3.c1 = (double)c.g/255.0f;
+   d3.c2 = (double)c.b/255.0f;
+
+   return d3;
+}
+
+//Convert to xyz then to lab color space
+static Color_d3 color_to_lab(SLK_Color c)
+{
+   Color_d3 l;
+   Color_d3 xyz = color_to_xyz(c) ;
  
    //x component
-   if(xyz.x>0.008856f)
-      xyz.x = pow(xyz.x,1.0f/3.0f);
+   if(xyz.c0>0.008856f)
+      xyz.c0 = pow(xyz.c0,1.0f/3.0f);
    else
-      xyz.x = (7.787f*xyz.x)+(16.0f/116.0f);
+      xyz.c0 = (7.787f*xyz.c0)+(16.0f/116.0f);
 
    //y component
-   if(xyz.y>0.008856f)
-      xyz.y = pow(xyz.y,1.0f/3.0f);
+   if(xyz.c1>0.008856f)
+      xyz.c1 = pow(xyz.c1,1.0f/3.0f);
    else
-      xyz.y = (7.787f*xyz.y)+(16.0f/116.0f);
+      xyz.c1 = (7.787f*xyz.c1)+(16.0f/116.0f);
 
    //z component
-   if(xyz.z>0.008856f)
-      xyz.z = pow(xyz.z,1.0f/3.0f);
+   if(xyz.c2>0.008856f)
+      xyz.c2 = pow(xyz.c2,1.0f/3.0f);
    else
-      xyz.z = (7.787f*xyz.z)+(16.0f/116.0f);
+      xyz.c2 = (7.787f*xyz.c2)+(16.0f/116.0f);
 
-   l.l = 116.0f*xyz.y-16.0f;
-   l.a = 500.0f*(xyz.x-xyz.y);
-   l.b = 200.0f*(xyz.y-xyz.z);
+   l.c0 = 116.0f*xyz.c1-16.0f;
+   l.c1 = 500.0f*(xyz.c0-xyz.c1);
+   l.c2 = 200.0f*(xyz.c1-xyz.c2);
 
    return l;
 }
 
-static Color_xyz color_to_xyz(SLK_Color c)
+static Color_d3 color_to_xyz(SLK_Color c)
 {
-   double r,g,b;
-   Color_xyz x;
+   Color_d3 in = color_to_rgb(c);
+   Color_d3 x;
 
    //red component
-   r = (double)c.r/255.0f; 
-   if(r>0.04045f)
-      r = pow((r+0.055f)/1.055f,2.4f)*100.0f;
+   if(in.c0>0.04045)
+      in.c0 = pow((in.c0+0.055)/1.055,2.4)*100.0;
    else
-      r = (r/12.92f)*100.0f;
+      in.c0 = (in.c0/12.92)*100.0;
   
    //green component
-   g = (double)c.g/255.0f; 
-   if(g>0.04045f)
-      g = pow((g+0.055f)/1.055f,2.4f)*100.0f;
+   if(in.c1>0.04045)
+      in.c1 = pow((in.c1+0.055)/1.055,2.4)*100.0;
    else
-      g = (g/12.92f)*100.0f;
+      in.c1 = (in.c1/12.92)*100.0;
   
    //blue component
-   b = (double)c.b/255.0f; 
-   if(b>0.04045f)
-      b = pow((b+0.055f)/1.055f,2.4f)*100.0f;
+   if(in.c2>0.04045)
+      in.c2 = pow((in.c2+0.055)/1.055,2.4)*100.0;
    else
-      b = (b/12.92f)*100.0f;
+      in.c2 = (in.c2/12.92)*100.0;
 
-   x.x = (r*0.4124f+g*0.3576f+b*0.1805f)/95.047f;
-   x.y = (r*0.2126+g*0.7152+b*0.0722)/100.0f;
-   x.z = (r*0.0193+g*0.1192+b*0.9504)/108.883f;
+   x.c0 = (in.c0*0.4124+in.c1*0.3576+in.c2*0.1805)/95.05;
+   x.c1 = (in.c0*0.2126+in.c1*0.7152+in.c2*0.0722)/100.0;
+   x.c2 = (in.c0*0.0193+in.c1*0.1192+in.c2*0.9504)/108.89;
  
    return x;
 }
 
-static Color_ycc color_to_ycc(SLK_Color c)
+static Color_d3 color_to_ycc(SLK_Color c)
 {
    double r = (double)c.r;
    double g = (double)c.g;
    double b = (double)c.b;
-   Color_ycc y;
+   Color_d3 y;
 
-   y.y = 0.299f*r+0.587f*g+0.114f*b;
-   y.cb = -0.16874f*r-0.33126f*g+0.5f*b;
-   y.cr = 0.5f*r-0.41869f*g-0.08131f*b;
+   y.c0 = 0.299f*r+0.587f*g+0.114f*b;
+   y.c1 = -0.16874f*r-0.33126f*g+0.5f*b;
+   y.c2 = 0.5f*r-0.41869f*g-0.08131f*b;
 
    return y;
 }
 
-static Color_yiq color_to_yiq(SLK_Color c)
+static Color_d3 color_to_yiq(SLK_Color c)
 {
    double r = (double)c.r;
    double g = (double)c.g;
    double b = (double)c.b;
-   Color_yiq y;
+   Color_d3 y;
 
-   y.y = 0.2999f*r+0.587f*g+0.114f*b;
-   y.i = 0.595716f*r-0.274453f*g-0.321264f*b;
-   y.q = 0.211456f*r-0.522591f*g+0.31135f*b;
+   y.c0 = 0.2999f*r+0.587f*g+0.114f*b;
+   y.c1 = 0.595716f*r-0.274453f*g-0.321264f*b;
+   y.c2 = 0.211456f*r-0.522591f*g+0.31135f*b;
 
    return y;
 }
 
-static Color_yuv color_to_yuv(SLK_Color c)
+static Color_d3 color_to_yuv(SLK_Color c)
 {
    double r = (double)c.r;
    double g = (double)c.g;
    double b = (double)c.b;
-   Color_yuv y;
+   Color_d3 y;
 
-   y.y = 0.2999f*r+0.587f*g+0.114f*b;
-   y.u = 0.492f*(b-y.y);
-   y.v = 0.887f*(r-y.y);
+   y.c0 = 0.2999f*r+0.587f*g+0.114f*b;
+   y.c1 = 0.492f*(b-y.c0);
+   y.c2 = 0.887f*(r-y.c0);
 
    return y;
 }
 
-static Color_hsv color_to_hsv(SLK_Color c)
+static Color_d3 color_to_hsv(SLK_Color c)
 {
    float r = (float)c.r/255.0f;
    float g = (float)c.g/255.0f;
@@ -1322,67 +1287,67 @@ static Color_hsv color_to_hsv(SLK_Color c)
    float cmax = MAX(r,MAX(g,b));
    float cmin = MIN(r,MIN(g,b));
    float diff = cmax-cmin;
-   Color_hsv hsv = {0};
+   Color_d3 hsv = {0};
 
    if(cmax==cmin)
-      hsv.h = 0.0f;
+      hsv.c0 = 0.0f;
    else if(cmax==r)
-      hsv.h = fmod(((g-b)/diff),6.0f);
+      hsv.c0 = fmod(((g-b)/diff),6.0f);
    else if(cmax==g)
-      hsv.h = (b-r)/diff+2.0f;
+      hsv.c0 = (b-r)/diff+2.0f;
    else if(cmax==b)
-      hsv.h = (r-g)/diff+4.0f;
+      hsv.c0 = (r-g)/diff+4.0f;
 
-   hsv.v = cmax;
-   hsv.h*=60.0f;
-   hsv.s = diff/hsv.v;
+   hsv.c2 = cmax;
+   hsv.c0*=60.0f;
+   hsv.c1 = diff/hsv.c2;
 
    return hsv;
 }
 
-static SLK_Color hsv_to_color(Color_hsv hsv)
+static SLK_Color hsv_to_color(Color_d3 hsv)
 {
    SLK_Color rgb;
    float r = 0.0f,g = 0.0f,b = 0.0f;
 
-   while(hsv.h<0.0f)
-      hsv.h+=360.0f;
-   hsv.h = fmod(hsv.h,360.0f);
-   float c = hsv.v*hsv.s;
-   float x = c*(1.0f-fabs(fmod(hsv.h/60.0f,2.0f)-1.0f));
-   float m = hsv.v-c;
+   while(hsv.c0<0.0f)
+      hsv.c0+=360.0f;
+   hsv.c0 = fmod(hsv.c0,360.0f);
+   float c = hsv.c2*hsv.c1;
+   float x = c*(1.0f-fabs(fmod(hsv.c0/60.0f,2.0f)-1.0f));
+   float m = hsv.c2-c;
 
-   if(hsv.h>=0.0f&&hsv.h<60.0f)
+   if(hsv.c0>=0.0f&&hsv.c0<60.0f)
    {
       r = c+m;
       g = x+m;
       b = m;
    }
-   else if(hsv.h>=60.0f&&hsv.h<120.0f)
+   else if(hsv.c0>=60.0f&&hsv.c0<120.0f)
    {
       r = x+m;
       g = c+m;
       b = m;
    }
-   else if(hsv.h>=120.0f&&hsv.h<180.0f)
+   else if(hsv.c0>=120.0f&&hsv.c0<180.0f)
    {
       r = m;
       g = c+m;
       b = x+m;
    }
-   else if(hsv.h>=180.0f&&hsv.h<240.0f)
+   else if(hsv.c0>=180.0f&&hsv.c0<240.0f)
    {
       r = m;
       g = x+m;
       b = c+m;
    }
-   else if(hsv.h>=240.0f&&hsv.h<300.0f)
+   else if(hsv.c0>=240.0f&&hsv.c0<300.0f)
    {
       r = x+m;
       g = m;
       b = c+m;
    }
-   else if(hsv.h>=300.0f&&hsv.h<360.0f)
+   else if(hsv.c0>=300.0f&&hsv.c0<360.0f)
    {
       r = c+m;
       g = m;
@@ -1396,17 +1361,18 @@ static SLK_Color hsv_to_color(Color_hsv hsv)
    return rgb;
 }
 
-static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, SLK_Color c)
+static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
 
-   int64_t min_dist = INT64_MAX;
+   double min_dist = 10000000000000.0f;
    int min_index = 0;
+   Color_d3 in = color_to_rgb(c);
 
    for(int i = 0;i<pal->used;i++)
    {   
-      int64_t dist = rgb_color_dist2(c,palette_rgb[i]);
+      double dist = color_dist2(in,pal_d3[i]);
       if(dist<min_dist)
       {
          min_dist = dist;
@@ -1417,7 +1383,7 @@ static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, SLK_Color c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, SLK_Color c)
+static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -1428,11 +1394,11 @@ static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, SLK_Color c)
    cin.r = MAX(0x0,MIN(0xff,c.r));
    cin.g = MAX(0x0,MIN(0xff,c.g));
    cin.b = MAX(0x0,MIN(0xff,c.b));
-   Color_lab in = color_to_lab(cin);
+   Color_d3 in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
    {   
-      double dist = color_dist2(in.l,in.a,in.b,palette_lab[i].l,palette_lab[i].a,palette_lab[i].b);
+      double dist = color_dist2(in,pal_d3[i]);
       if(dist<min_dist)
       {
          min_dist = dist;
@@ -1443,7 +1409,7 @@ static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, SLK_Color c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, SLK_Color c)
+static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -1454,11 +1420,11 @@ static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, SLK_Color c)
    cin.r = MAX(0x0,MIN(0xff,c.r));
    cin.g = MAX(0x0,MIN(0xff,c.g));
    cin.b = MAX(0x0,MIN(0xff,c.b));
-   Color_lab in = color_to_lab(cin);
+   Color_d3 in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
    {   
-      double dist = cie94_color_dist2(in,palette_lab[i]);
+      double dist = cie94_color_dist2(in,pal_d3[i]);
       if(dist<min_dist)
       {
          min_dist = dist;
@@ -1469,7 +1435,7 @@ static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, SLK_Color c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, SLK_Color c)
+static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -1480,11 +1446,11 @@ static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, SLK_Color c)
    cin.r = MAX(0x0,MIN(0xff,c.r));
    cin.g = MAX(0x0,MIN(0xff,c.g));
    cin.b = MAX(0x0,MIN(0xff,c.b));
-   Color_lab in = color_to_lab(cin);
+   Color_d3 in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
    {   
-      double dist = ciede2000_color_dist2(in,palette_lab[i]);
+      double dist = ciede2000_color_dist2(in,pal_d3[i]);
       if(dist<min_dist)
       {
          min_dist = dist;
@@ -1495,7 +1461,7 @@ static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, SLK_Color c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, SLK_Color c)
+static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -1506,11 +1472,11 @@ static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, SLK_Color c)
    cin.r = MAX(0x0,MIN(0xff,c.r));
    cin.g = MAX(0x0,MIN(0xff,c.g));
    cin.b = MAX(0x0,MIN(0xff,c.b));
-   Color_xyz in = color_to_xyz(cin);
+   Color_d3 in = color_to_xyz(cin);
 
    for(int i = 0;i<pal->used;i++)
    {   
-      double dist = color_dist2(in.x,in.y,in.z,palette_xyz[i].x,palette_xyz[i].y,palette_xyz[i].z);
+      double dist = color_dist2(in,pal_d3[i]);
       if(dist<min_dist)
       {
          min_dist = dist;
@@ -1521,7 +1487,7 @@ static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, SLK_Color c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, SLK_Color c)
+static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -1532,11 +1498,11 @@ static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, SLK_Color c)
    cin.r = MAX(0x0,MIN(0xff,c.r));
    cin.g = MAX(0x0,MIN(0xff,c.g));
    cin.b = MAX(0x0,MIN(0xff,c.b));
-   Color_ycc in = color_to_ycc(cin);
+   Color_d3 in = color_to_ycc(cin);
 
    for(int i = 0;i<pal->used;i++)
    {   
-      double dist = color_dist2(in.y,in.cb,in.cr,palette_ycc[i].y,palette_ycc[i].cb,palette_ycc[i].cr);
+      double dist = color_dist2(in,pal_d3[i]);
       if(dist<min_dist)
       {
          min_dist = dist;
@@ -1547,7 +1513,7 @@ static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, SLK_Color c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, SLK_Color c)
+static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -1558,11 +1524,11 @@ static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, SLK_Color c)
    cin.r = MAX(0x0,MIN(0xff,c.r));
    cin.g = MAX(0x0,MIN(0xff,c.g));
    cin.b = MAX(0x0,MIN(0xff,c.b));
-   Color_yiq in = color_to_yiq(cin);
+   Color_d3 in = color_to_yiq(cin);
 
    for(int i = 0;i<pal->used;i++)
    {   
-      double dist = color_dist2(in.y,in.i,in.q,palette_yiq[i].y,palette_yiq[i].i,palette_yiq[i].q);
+      double dist = color_dist2(in,pal_d3[i]);
       if(dist<min_dist)
       {
          min_dist = dist;
@@ -1573,7 +1539,7 @@ static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, SLK_Color c)
    return pal->colors[min_index];
 }
 
-static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, SLK_Color c)
+static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
    if(c.a==0)
       return pal->colors[0];
@@ -1584,11 +1550,11 @@ static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, SLK_Color c)
    cin.r = MAX(0x0,MIN(0xff,c.r));
    cin.g = MAX(0x0,MIN(0xff,c.g));
    cin.b = MAX(0x0,MIN(0xff,c.b));
-   Color_yuv in = color_to_yuv(cin);
+   Color_d3 in = color_to_yuv(cin);
 
    for(int i = 0;i<pal->used;i++)
    {   
-      double dist = color_dist2(in.y,in.u,in.v,palette_yuv[i].y,palette_yuv[i].u,palette_yuv[i].v);
+      double dist = color_dist2(in,pal_d3[i]);
       if(dist<min_dist)
       {
          min_dist = dist;
@@ -1599,22 +1565,13 @@ static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, SLK_Color c)
    return pal->colors[min_index];
 }
 
-static int64_t rgb_color_dist2(SLK_Color c0, SLK_Color c1)
+static double cie94_color_dist2(Color_d3 c0, Color_d3 c1)
 {
-   int64_t diff_r = c1.r-c0.r;
-   int64_t diff_g = c1.g-c0.g;
-   int64_t diff_b = c1.b-c0.b;
-
-   return (diff_r*diff_r+diff_g*diff_g+diff_b*diff_b);
-}
-
-static double cie94_color_dist2(Color_lab c0, Color_lab c1)
-{
-   double L = c0.l-c1.l;
-   double C1 = sqrt(c0.a*c0.a+c0.b*c0.b);
-   double C2 = sqrt(c1.a*c1.a+c1.b*c1.b);
+   double L = c0.c0-c1.c0;
+   double C1 = sqrt(c0.c1*c0.c1+c0.c2*c0.c2);
+   double C2 = sqrt(c1.c1*c1.c1+c1.c2*c1.c2);
    double C = C1-C2;
-   double H = sqrt((c0.a-c1.a)*(c0.a-c1.a)+(c0.b-c1.b)*(c0.b-c1.b)-C*C);
+   double H = sqrt((c0.c1-c1.c1)*(c0.c1-c1.c1)+(c0.c2-c1.c2)*(c0.c2-c1.c2)-C*C);
    double r1 = L;
    double r2 = C/(1.0f+0.045f*C1);
    double r3 = H/(1.0f+0.015f*C1);
@@ -1622,36 +1579,36 @@ static double cie94_color_dist2(Color_lab c0, Color_lab c1)
    return r1*r1+r2*r2+r3*r3;
 }
 
-static double ciede2000_color_dist2(Color_lab c0, Color_lab c1)
+static double ciede2000_color_dist2(Color_d3 c0, Color_d3 c1)
 {
-   double C1 = sqrt(c0.a*c0.a+c0.b*c0.b);
-   double C2 = sqrt(c1.a*c1.a+c1.b*c1.b);
+   double C1 = sqrt(c0.c1*c0.c1+c0.c2*c0.c2);
+   double C2 = sqrt(c1.c1*c1.c1+c1.c2*c1.c2);
    double C_ = (C1+C2)/2.0f;
 
    double C_p2 = pow(C_,7.0f);
    double v = 0.5f*(1.0f-sqrt(C_p2/(C_p2+6103515625.0f)));
-   double a1 = (1.0f+v)*c0.a;
-   double a2 = (1.0f+v)*c1.a;
+   double a1 = (1.0f+v)*c0.c1;
+   double a2 = (1.0f+v)*c1.c1;
 
-   double Cs1 = sqrt(a1*a1+c0.b*c0.b);
-   double Cs2 = sqrt(a2*a2+c1.b*c1.b);
+   double Cs1 = sqrt(a1*a1+c0.c2*c0.c2);
+   double Cs2 = sqrt(a2*a2+c1.c2*c1.c2);
 
    double h1 = 0.0f;
-   if(c0.b!=0||a1!=0)
+   if(c0.c2!=0||a1!=0)
    {
-      h1 = atan2(c0.b,a1);
+      h1 = atan2(c0.c2,a1);
       if(h1<0)
          h1+=2.0f*M_PI;
    }
    double h2 = 0.0f;
-   if(c1.b!=0||a2!=0)
+   if(c1.c2!=0||a2!=0)
    {
-      h2 = atan2(c1.b,a2);
+      h2 = atan2(c1.c2,a2);
       if(h2<0)
          h2+=2.0f*M_PI;
    }
 
-   double L = c1.l-c0.l;
+   double L = c1.c0-c0.c0;
    double Cs = Cs2-Cs1;
    double h = 0.0f;
    if(Cs1*Cs2!=0.0f)
@@ -1664,7 +1621,7 @@ static double ciede2000_color_dist2(Color_lab c0, Color_lab c1)
    }
    double H = 2.0f*sqrt(Cs1*Cs2)*sin(h/2.0f);
 
-   double L_ = (c0.l+c1.l)/2.0f;
+   double L_ = (c0.c0+c1.c0)/2.0f;
    double Cs_ = (Cs1+Cs2)/2.0f;
    double H_ = h1+h2;
    if(Cs1*Cs2!=0.0f)
@@ -1689,11 +1646,11 @@ static double ciede2000_color_dist2(Color_lab c0, Color_lab c1)
    return (L/SL)*(L/SL)+(Cs/SC)*(Cs/SC)+(H/SH)*(H/SH)+RT*(Cs/SC)*(H_/SH);
 }
 
-static double color_dist2(double a0, double a1, double a2, double b0, double b1, double b2)
+static double color_dist2(Color_d3 a, Color_d3 b)
 {
-   double diff_0 = b0-a0;
-   double diff_1 = b1-a1;
-   double diff_2 = b2-a2;
+   double diff_0 = b.c0-a.c0;
+   double diff_1 = b.c1-a.c1;
+   double diff_2 = b.c2-a.c2;
 
    return diff_0*diff_0+diff_1*diff_1+diff_2*diff_2;
 }

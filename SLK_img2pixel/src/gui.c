@@ -396,10 +396,10 @@ void gui_init()
    SLK_gui_tabbar_add_element(elements.sample_tab_scale,0,label);
    label = SLK_gui_label_create(104,70,56,12,"Height");
    SLK_gui_tabbar_add_element(elements.sample_tab_scale,0,label);
-   elements.sample_bar_width = SLK_gui_slider_create(174,35,170,14,0,256);
+   elements.sample_bar_width = SLK_gui_slider_create(174,35,170,14,0,512);
    elements.sample_bar_width->slider.value = 128;
    SLK_gui_tabbar_add_element(elements.sample_tab_scale,0,elements.sample_bar_width);
-   elements.sample_bar_height = SLK_gui_slider_create(174,67,170,14,0,256);;
+   elements.sample_bar_height = SLK_gui_slider_create(174,67,170,14,0,512);;
    elements.sample_bar_height->slider.value = 128;
    SLK_gui_tabbar_add_element(elements.sample_tab_scale,0,elements.sample_bar_height);
    elements.sample_label_width = SLK_gui_label_create(354,38,32,12,"128");
