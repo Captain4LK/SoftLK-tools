@@ -183,9 +183,11 @@ static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out);
 
 //Function implementations
 
+//loads the palette and all configuration values
+//from an external json file.
 void img2pixel_preset_load(FILE *f)
 {
-   if(!f)
+   if(f==NULL)
       return;
 
    HLH_json5 fallback = {0};
@@ -222,9 +224,11 @@ void img2pixel_preset_load(FILE *f)
    HLH_json_free(root);
 }
 
+//Saves the current configuration and palette to a
+//json file.
 void img2pixel_preset_save(FILE *f)
 {
-   if(!f)
+   if(f==NULL)
       return;
 
    HLH_json5_root *root = HLH_json_create_root();
@@ -260,7 +264,6 @@ void img2pixel_preset_save(FILE *f)
  
    HLH_json_write_file(f,&root->root);
    HLH_json_free(root);
-   fclose(f);
 }
 
 //Sharpens an image, input and output dimensions must be equal
@@ -269,21 +272,22 @@ void img2pixel_sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
       return;
 
-   SLK_RGB_sprite *tmp_data2 = SLK_rgb_sprite_create(out->width,out->height);
-   if(tmp_data2==NULL)
-      return;
-
    if(sharpen==0)
    {
       SLK_rgb_sprite_copy(out,in);
       return;
    }
+
+   SLK_RGB_sprite *tmp_data2 = SLK_rgb_sprite_create(out->width,out->height);
+   if(tmp_data2==NULL)
+      return;
    
    SLK_rgb_sprite_copy(tmp_data2,in);
 
    //Setup sharpening kernel
    float sharpen_factor = (float)sharpen/100.0f;
-   float sharpen_kernel[3][3] = {
+   float sharpen_kernel[3][3] =
+   {
       {0.0f,-1.0f*sharpen_factor,0.0f},
       {-1.0f*sharpen_factor,4.0f*sharpen_factor+1.0f,-1.0f*sharpen_factor},
       {0.0f,-1.0f*sharpen_factor,0.0f},
@@ -326,15 +330,15 @@ void img2pixel_lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
       return;
 
-   SLK_RGB_sprite *tmp_data2 = SLK_rgb_sprite_create(out->width,out->height);
-   if(tmp_data2==NULL)
-      return;
-
    if(gauss==0)
    {
       SLK_rgb_sprite_copy(out,in);
       return;
    }
+
+   SLK_RGB_sprite *tmp_data2 = SLK_rgb_sprite_create(out->width,out->height);
+   if(tmp_data2==NULL)
+      return;
    
    SLK_rgb_sprite_copy(tmp_data2,in);
 
@@ -1169,9 +1173,10 @@ static SLK_Color palette_find_closest(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Co
 static Color_d3 color_to_rgb(SLK_Color c)
 {
    Color_d3 d3;
-   d3.c0 = (double)c.r/255.0f;
-   d3.c1 = (double)c.g/255.0f;
-   d3.c2 = (double)c.b/255.0f;
+
+   d3.c0 = (double)c.r/255.0;
+   d3.c1 = (double)c.g/255.0;
+   d3.c2 = (double)c.b/255.0;
 
    return d3;
 }
@@ -1179,30 +1184,30 @@ static Color_d3 color_to_rgb(SLK_Color c)
 //Convert to xyz then to lab color space
 static Color_d3 color_to_lab(SLK_Color c)
 {
-   Color_d3 l;
    Color_d3 xyz = color_to_xyz(c) ;
+   Color_d3 l;
  
    //x component
-   if(xyz.c0>0.008856f)
-      xyz.c0 = pow(xyz.c0,1.0f/3.0f);
+   if(xyz.c0>0.008856)
+      xyz.c0 = pow(xyz.c0,1.0/3.0);
    else
-      xyz.c0 = (7.787f*xyz.c0)+(16.0f/116.0f);
+      xyz.c0 = (7.787*xyz.c0)+(16.0/116.0);
 
    //y component
-   if(xyz.c1>0.008856f)
-      xyz.c1 = pow(xyz.c1,1.0f/3.0f);
+   if(xyz.c1>0.008856)
+      xyz.c1 = pow(xyz.c1,1.0/3.0);
    else
-      xyz.c1 = (7.787f*xyz.c1)+(16.0f/116.0f);
+      xyz.c1 = (7.787*xyz.c1)+(16.0/116.0);
 
    //z component
-   if(xyz.c2>0.008856f)
-      xyz.c2 = pow(xyz.c2,1.0f/3.0f);
+   if(xyz.c2>0.008856)
+      xyz.c2 = pow(xyz.c2,1.0/3.0);
    else
-      xyz.c2 = (7.787f*xyz.c2)+(16.0f/116.0f);
+      xyz.c2 = (7.787*xyz.c2)+(16.0/116.0);
 
-   l.c0 = 116.0f*xyz.c1-16.0f;
-   l.c1 = 500.0f*(xyz.c0-xyz.c1);
-   l.c2 = 200.0f*(xyz.c1-xyz.c2);
+   l.c0 = 116.0*xyz.c1-16.0;
+   l.c1 = 500.0*(xyz.c0-xyz.c1);
+   l.c2 = 200.0*(xyz.c1-xyz.c2);
 
    return l;
 }
@@ -2167,34 +2172,35 @@ static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    {
       for(int x = 0;x<in->width;x++)
       {
-         int empty;
+         int empty = 0;
 
          //Inline
-         if(img2pixel_get_inline()>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).a!=0)
+         if(image_inline>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).a!=0)
          {
-            empty = 0;
             if(SLK_rgb_sprite_get_pixel(tmp,x,y-1).a==0) empty++;
             if(SLK_rgb_sprite_get_pixel(tmp,x-1,y).a==0) empty++;
             if(SLK_rgb_sprite_get_pixel(tmp,x+1,y).a==0) empty++;
             if(SLK_rgb_sprite_get_pixel(tmp,x,y+1).a==0) empty++;
 
             if(empty!=0)
-               SLK_rgb_sprite_set_pixel(out,x,y,palette->colors[img2pixel_get_inline()]);
+               SLK_rgb_sprite_set_pixel(out,x,y,palette->colors[image_inline]);
          }
          
          //Outline
-         if(img2pixel_get_outline()>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).a==0)
+         if(image_outline>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).a==0)
          {
-            empty = 0;
             if(SLK_rgb_sprite_get_pixel(tmp,x,y-1).a!=0) empty++;
             if(SLK_rgb_sprite_get_pixel(tmp,x-1,y).a!=0) empty++;
             if(SLK_rgb_sprite_get_pixel(tmp,x+1,y).a!=0) empty++;
             if(SLK_rgb_sprite_get_pixel(tmp,x,y+1).a!=0) empty++;
 
             if(empty!=0)
-               SLK_rgb_sprite_set_pixel(out,x,y,palette->colors[img2pixel_get_outline()]);
+               SLK_rgb_sprite_set_pixel(out,x,y,palette->colors[image_outline]);
          }
       }
    }
+
+   //Cleanup
+   SLK_rgb_sprite_destroy(tmp);
 }
 //-------------------------------------

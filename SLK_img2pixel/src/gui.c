@@ -726,6 +726,7 @@ static void gui_buttons()
       {
          FILE *f = json_write();
          img2pixel_preset_save(f);
+         fclose(f);
          elements.save_save_preset->button.state.released = 0;
       }
    
