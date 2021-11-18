@@ -161,7 +161,6 @@ static void sample_ceil(const SLK_RGB_sprite *in, SLK_Color *out, int width, int
 static void sample_linear(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
 static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
 static float cubic_hermite (float a, float b, float c, float d, float t);
-static void sample_supersample(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
 static void sample_lanczos(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
 static double lanczos(double v);
 
@@ -1670,8 +1669,7 @@ static void sample_image(const SLK_RGB_sprite *in, SLK_Color *out, int sample_mo
    case 2: sample_ceil(in,out,width,height); break;
    case 3: sample_linear(in,out,width,height); break;
    case 4: sample_bicubic(in,out,width,height); break;
-   case 5: sample_supersample(in,out,width,height); break;
-   case 6: sample_lanczos(in,out,width,height); break;
+   case 5: sample_lanczos(in,out,width,height); break;
    }
 }
 
@@ -1881,64 +1879,7 @@ static float cubic_hermite (float a, float b, float c, float d, float t)
    return a_*t*t*t+b_*t*t+c_*t+d_;
 }
 
-//Supersampling --> works best without gaussian blur
-static void sample_supersample(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
-{
-   float fw = (float)(in->width-1)/(float)width;
-   float fh = (float)(in->height-1)/(float)height;
-   float foffx = (float)offset_x/100.0f;
-   float foffy = (float)offset_y/100.0f;
-
-   for(int y = 0;y<height;y++)
-   {
-      for(int x = 0;x<width;x++)
-      {
-         SLK_Color p = {0};
-         float n = 0.0f;
-         float r = 0.0f;
-         float g = 0.0f;
-         float b = 0.0f;
-         float a = 0.0f;
-         float ox = (float)x+foffx;
-         float oy = (float)y+foffy;
-
-         for(int sy = (int)((float)oy*fh);sy<(int)ceil((float)(oy+1)*fh);sy++)
-         {
-            float wy = 1.0f;
-            if(sy<(int)((float)oy*fh))
-               wy = (float)sy-(float)oy*fh+1.0f;
-            else if((float)sy+1.0f>(float)(oy+1.0f)*fh)
-               wy = (float)(oy+1.0f)*fh-(float)sy;
-
-            for(int sx = (int)((float)ox*fw);sx<(int)ceil((float)(ox+1)*fw);sx++)
-            {
-               float wx = 1.0f;
-               if(sx<(int)((float)ox*fw))
-                  wx = (float)sx-(float)ox*fw+1.0f;
-               else if((float)sx+1.0f>(float)(ox+1.0f)*fw)
-                  wx = (float)(ox+1.0f)*fw-(float)sx;
-               
-               SLK_Color c = SLK_rgb_sprite_get_pixel(in,sx,sy);
-               n+=wx*wy;
-               r+=wx*wy*(float)c.r;
-               g+=wx*wy*(float)c.g;
-               b+=wx*wy*(float)c.b;
-               a+=wx*wy*(float)c.a;
-            }
-         }
-
-         p.r = r/n;
-         p.g = g/n;
-         p.b = b/n;
-         p.a = a/n;
-         out[y*width+x] = p;
-      }
-   }
-}
-
 //Lanczos downsampling
-//The only one to use doubles 
-//for best possible result
 static void sample_lanczos(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    double fw = (double)(in->width-1)/(double)width;

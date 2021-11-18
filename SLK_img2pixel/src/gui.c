@@ -222,7 +222,6 @@ static const char *text_sample[] =
    "Ceil",
    "Bilinear",
    "Bicubic",
-   "Box sampling",
    "Lanczos",
 };
 
@@ -873,14 +872,14 @@ static void gui_buttons()
       {
          img2pixel_set_sample_mode(img2pixel_get_sample_mode()-1);
          if(img2pixel_get_sample_mode()<0)
-            img2pixel_set_sample_mode(6);
+            img2pixel_set_sample_mode(5);
          update = 1;
          SLK_gui_label_set_text(elements.sample_label_sample,text_sample[img2pixel_get_sample_mode()]);
       }
       else if(elements.sample_sample_right->button.state.pressed)
       {
          img2pixel_set_sample_mode(img2pixel_get_sample_mode()+1);
-         if(img2pixel_get_sample_mode()>6)
+         if(img2pixel_get_sample_mode()>5)
             img2pixel_set_sample_mode(0);
          update = 1;
          SLK_gui_label_set_text(elements.sample_label_sample,text_sample[img2pixel_get_sample_mode()]);

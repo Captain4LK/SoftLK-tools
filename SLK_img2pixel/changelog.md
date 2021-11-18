@@ -1,9 +1,18 @@
 # Changelog
 
-Current development version: SLK_img2pixel 1.2-dev
+Current development version: SLK_img2pixel 1.3-dev
 
 ----------------------------------------
-Version:                SLK_img2pixel 1.2 (tba)
+Version:                SLK_img2pixel 1.3 (tba)
+----------------------------------------
+
+CHANGES:
+
+* fixed multiple memory leaks
+* removed supersampling sample mode (virtually the same results can be achieved using a high gauss blurring setting)
+
+----------------------------------------
+Version:                SLK_img2pixel 1.2 (16.08.2021)
 ----------------------------------------
 
 CHANGES:
