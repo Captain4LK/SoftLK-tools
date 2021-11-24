@@ -153,7 +153,7 @@ static void print_help(int argc, char **argv)
           "      scale_mode [0,1]\t\twhether to scale image to fixed dimension (0) or scale down by factor (1)\n"
           "      sample_mode [0,5]\t\twhich downsampling algorithm to use (round,floor,ceil,linear,bicubic,lanczos)\n"
           "      dither_mode [0,7]\t\twhich dithering algorithm to use (none, bayer 8x8, bayer 4x4, bayer 2x2, cluster 8x8, cluster 4x4, steinberg per component, steinberg distributed error)\n"
-          "      distance_mode [0,7]\twhich color space to use for distance calculation (rgb,CIE76,CIE94,CIEDE2000,XYZ,YCC,YIQ,YUV)\n"
+          "      distance_mode [0,8]\twhich color space to use for distance calculation (rgb,CIE76,CIE94,CIEDE2000,XYZ,YCC,YIQ,YUV,K-Means)\n"
           "      width [1,infinity[\timage output width, only used if scale_mode is set to 0\n"
           "      height [1,infinity[\timage output height, only used if scale_mode is set to 0\n"
           "      scale_x [1,infinity[\timage output scale factor x-axis, only used if scale_mode is set to 1\n"

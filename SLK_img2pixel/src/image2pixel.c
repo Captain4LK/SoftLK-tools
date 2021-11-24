@@ -61,27 +61,6 @@ typedef struct
    double c1;
    double c2;
 }Color_d3;
-
-enum
-{
-   HIST_SIZE = 0x10000,
-   MAX_COLORS = 256,
-};
-
-typedef struct
-{
-   uint16_t reference[HIST_SIZE];
-   uint32_t counts[HIST_SIZE];
-   uint32_t tcolors;              //total original colors in the histogram [length of reference]
-   uint32_t total_pixels;     
-}Histogramm;
-
-typedef struct
-{
-   uint32_t index;
-   uint32_t colors;
-   uint32_t sum;
-}Box;
 //-------------------------------------
 
 //Variables
@@ -106,26 +85,67 @@ static int image_out_width = 128;
 static int image_out_height = 128;
 static int image_out_swidth = 2;
 static int image_out_sheight = 2;
+static int palette_weight = 2;
 static SLK_Palette *palette = NULL;
 
 static dyn_array *quant_cluster_list = NULL;
 static SLK_Color *quant_centroid_list = NULL;
 static int *quant_assignment = NULL;
 static int quant_k = 16;
+
+static const float dither_threshold_bayer8x8[64] = 
+{
+    0.0f/64.0f,32.0f/64.0f, 8.0f/64.0f,40.0f/64.0f, 2.0f/64.0f,34.0f/64.0f,10.0f/64.0f,42.0f/64.0f,
+   48.0f/64.0f,16.0f/64.0f,56.0f/64.0f,24.0f/64.0f,50.0f/64.0f,18.0f/64.0f,58.0f/64.0f,26.0f/64.0f,
+   12.0f/64.0f,44.0f/64.0f, 4.0f/64.0f,36.0f/64.0f,14.0f/64.0f,46.0f/64.0f, 6.0f/64.0f,38.0f/64.0f,
+   60.0f/64.0f,28.0f/64.0f,52.0f/64.0f,20.0f/64.0f,62.0f/64.0f,30.0f/64.0f,54.0f/64.0f,22.0f/64.0f,
+    3.0f/64.0f,35.0f/64.0f,11.0f/64.0f,43.0f/64.0f, 1.0f/64.0f,33.0f/64.0f, 9.0f/64.0f,41.0f/64.0f,
+   51.0f/64.0f,19.0f/64.0f,59.0f/64.0f,27.0f/64.0f,49.0f/64.0f,17.0f/64.0f,57.0f/64.0f,25.0f/64.0f,
+   15.0f/64.0f,47.0f/64.0f, 7.0f/64.0f,39.0f/64.0f,13.0f/64.0f,45.0f/64.0f, 5.0f/64.0f,37.0f/64.0f,
+   63.0f/64.0f,31.0f/64.0f,55.0f/64.0f,23.0f/64.0f,61.0f/64.0f,29.0f/64.0f,53.0f/64.0f,21.0f/64.0f,
+};
+static const float dither_threshold_bayer4x4[16] = 
+{
+   0.0f/16.0f,8.0f/16.0f,2.0f/16.0f,10.0f/16.0f,
+   12.0f/16.0f,4.0f/16.0f,14.0f/16.0f,6.0f/16.0f,
+   3.0f/16.0f,11.0f/16.0f,1.0f/16.0f,9.0f/16.0f,
+   15.0f/16.0f,7.0f/16.0f,13.0f/16.0f,5.0f/16.0f,
+};
+static const float dither_threshold_bayer2x2[4] = 
+{
+   0.0f/4.0f,2.0f/4.0f,
+   3.0f/4.0f,1.0f/4.0f
+};
+static const float dither_threshold_cluster8x8[64] = 
+{
+   24.0f/64.0f,10.0f/64.0f,12.0f/64.0f,26.0f/64.0f,35.0f/64.0f,47.0f/64.0f,49.0f/64.0f,37.0f/64.0f,
+   8.0f/64.0f,0.0f/64.0f,2.0f/64.0f,14.0f/64.0f,45.0f/64.0f,59.0f/64.0f,61.0f/64.0f,51.0f/64.0f,
+   22.0f/64.0f,6.0f/64.0f,4.0f/64.0f,16.0f/64.0f,43.0f/64.0f,57.0f/64.0f,63.0f/64.0f,53.0f/64.0f,
+   30.0f/64.0f,20.0f/64.0f,18.0f/64.0f,28.0f/64.0f,33.0f/64.0f,41.0f/64.0f,55.0f/64.0f,39.0f/64.0f,
+   34.0f/64.0f,46.0f/64.0f,48.0f/64.0f,36.0f/64.0f,25.0f/64.0f,11.0f/64.0f,13.0f/64.0f,27.0f/64.0f,
+   44.0f/64.0f,58.0f/64.0f,60.0f/64.0f,50.0f/64.0f,9.0f/64.0f,1.0f/64.0f,3.0f/64.0f,15.0f/64.0f,
+   42.0f/64.0f,56.0f/64.0f,62.0f/64.0f,52.0f/64.0f,23.0f/64.0f,7.0f/64.0f,5.0f/64.0f,17.0f/64.0f,
+   32.0f/64.0f,40.0f/64.0f,54.0f/64.0f,38.0f/64.0f,31.0f/64.0f,21.0f/64.0f,19.0f/64.0f,29.0f/64.0f,
+};
+static const float dither_threshold_cluster4x4[16] = 
+{
+   12.0f/16.0f,5.0f/16.0f,6.0f/16.0f,13.0f/16.0f,
+   4.0f/16.0f,0.0f/16.0f,1.0f/16.0f,7.0f/16.0f,
+   11.0f/16.0f,3.0f/16.0f,2.0f/16.0f,8.0f/16.0f,
+   15.0f/16.0f,10.0f/16.0f,9.0f/16.0f,14.0f/16.0f,
+};
 //-------------------------------------
 
 //Function prototypes
 
-static void dither_image(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, int process_mode, int distance_mode);
-static void dither_none      (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
-static void dither_bayer8x8  (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
-static void dither_bayer4x4  (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
-static void dither_bayer2x2  (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
-static void dither_cluster8x8(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
-static void dither_cluster4x4(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
-static void dither_floyd     (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
-static void dither_floyd2    (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
-static void floyd_apply_error(SLK_Color *d, double error_r, double error_g, double error_b, int x, int y, int width, int height);
+static void dither_image          (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, int process_mode, int distance_mode);
+static void dither_threshold      (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode, const float *threshold, uint8_t dim);
+static void dither_threshold_apply(SLK_Color *in, SLK_Color *out, int width, int height, const float *threshold, uint8_t dim);
+static void dither_none           (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_none_apply     (SLK_Color *in, SLK_Color *out, int width, int height);
+static void dither_floyd          (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_floyd2         (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void floyd_apply_error     (SLK_Color *d, double error_r, double error_g, double error_b, int x, int y, int width, int height);
 
 static double gauss_calc(double x, double y, double sigma);
 static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_RGB_sprite *data);
@@ -167,14 +187,13 @@ static double lanczos(double v);
 //Functions needed for color quantization
 static void quant_cluster_list_init();
 static void quant_cluster_list_free();
-static void quant_compute_kmeans(SLK_RGB_sprite *data);
-static void quant_get_cluster_centroid(SLK_RGB_sprite *data);
-static SLK_Color quant_colors_mean(dyn_array *color_list);
+static void quant_compute_kmeans(SLK_RGB_sprite *data, int pal_in);
+static void quant_get_cluster_centroid(SLK_RGB_sprite *data, int pal_in, int weight_pal);
+static SLK_Color quant_colors_mean(dyn_array *color_list,SLK_Color color, int weight_color);
 static SLK_Color quant_pick_random_color(SLK_RGB_sprite *data);
 static int quant_nearest_color_idx(SLK_Color color, SLK_Color *color_list);
-static float quant_distance(SLK_Color color0, SLK_Color color1);
-static float quant_distancef(SLK_Color color0, SLK_Color color1);
-static float quant_colors_variance(dyn_array *color_list);
+static double quant_distance(SLK_Color color0, SLK_Color color1);
+static double quant_colors_variance(dyn_array *color_list);
 
 //Post processing
 static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out);
@@ -401,14 +420,13 @@ void img2pixel_quantize(int colors, SLK_RGB_sprite *in)
    sample_image(in,tmp->data,0,512,512);
 
    quant_k = colors;
-   quant_compute_kmeans(tmp);
+   quant_compute_kmeans(tmp,0);
    palette->used = colors;
    for(int i = 0;i<colors;i++)
    {
       palette->colors[i] = quant_centroid_list[i];
       palette->colors[i].a = 255;
    }
-
 
    quant_cluster_list_free();
    free(quant_centroid_list);
@@ -674,6 +692,16 @@ void img2pixel_set_palette(SLK_Palette *npalette)
    palette = npalette;
 }
 
+int img2pixel_get_palette_weight()
+{
+   return palette_weight;
+}
+
+void img2pixel_set_palette_weight(int weight)
+{
+   palette_weight = weight;
+}
+
 int img2pixel_get_scale_mode()
 {
    return pixel_scale_mode;
@@ -779,6 +807,55 @@ static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_
 //Dithers an image to the provided palette using the specified mode
 static void dither_image(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, int process_mode, int distance_mode)
 {
+   if(distance_mode==8)
+   {
+      switch(process_mode)
+      {
+      case 1: //Bayer 8x8
+         dither_threshold_apply(in,out,width,height,dither_threshold_bayer8x8,3);
+         break;
+      case 2: //Bayer 4x4
+         dither_threshold_apply(in,out,width,height,dither_threshold_bayer4x4,2);
+         break;
+      case 3: //Bayer 2x2
+         dither_threshold_apply(in,out,width,height,dither_threshold_bayer2x2,1);
+         break;
+      case 4: //Cluster 8x8
+         dither_threshold_apply(in,out,width,height,dither_threshold_cluster8x8,3);
+         break;
+      case 5: //Cluster4x4
+         dither_threshold_apply(in,out,width,height,dither_threshold_cluster4x4,2);
+         break;
+      case 0:
+      case 6:
+      case 7:
+         dither_none_apply(in,out,width,height);
+         break;
+      }
+
+      quant_k = palette->used;
+
+      SLK_RGB_sprite tmp;
+      tmp.width = width;
+      tmp.height = height;
+      tmp.data = out;
+      quant_compute_kmeans(&tmp,1);
+
+      for(int i = 0;i<width*height;i++)
+      {
+         if(out[i].a==0)
+            out[i] = SLK_color_create(0,0,0,0);
+         else
+            out[i] = palette->colors[quant_assignment[i]];
+      }
+
+      quant_cluster_list_free();
+      free(quant_centroid_list);
+      free(quant_assignment);
+
+      return;
+   }
+
    //Convert palette to needed format
    //TODO: cache?
    Color_d3 palette_d3[256];
@@ -818,19 +895,19 @@ static void dither_image(SLK_Color *in, SLK_Color *out, int width, int height, S
       dither_none(in,out,width,height,pal,palette_d3,distance_mode);
       break;
    case 1: //Bayer 8x8
-      dither_bayer8x8(in,out,width,height,pal,palette_d3,distance_mode);
+      dither_threshold(in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_bayer8x8,3);
       break;
    case 2: //Bayer 4x4
-      dither_bayer4x4(in,out,width,height,pal,palette_d3,distance_mode);
+      dither_threshold(in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_bayer4x4,2);
       break;
    case 3: //Bayer 2x2
-      dither_bayer2x2(in,out,width,height,pal,palette_d3,distance_mode);
+      dither_threshold(in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_bayer2x2,1);
       break;
    case 4: //Cluster 8x8
-      dither_cluster8x8(in,out,width,height,pal,palette_d3,distance_mode);
+      dither_threshold(in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_cluster8x8,3);
       break;
    case 5: //Cluster4x4
-      dither_cluster4x4(in,out,width,height,pal,palette_d3,distance_mode);
+      dither_threshold(in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_cluster4x4,2);
       break;
    case 6: //Floyd-Steinberg dithering (per color component error)
       dither_floyd(in,out,width,height,pal,palette_d3,distance_mode);
@@ -867,19 +944,34 @@ static void dither_none(SLK_Color *in, SLK_Color *out, int width, int height, SL
    }
 }
 
-static void dither_bayer8x8(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
+static void dither_none_apply(SLK_Color *in, SLK_Color *out, int width, int height)
 {
-   const float dither_threshold[64] = 
+   for(int y = 0;y<height;y++)
    {
-       0.0f/64.0f,32.0f/64.0f, 8.0f/64.0f,40.0f/64.0f, 2.0f/64.0f,34.0f/64.0f,10.0f/64.0f,42.0f/64.0f,
-      48.0f/64.0f,16.0f/64.0f,56.0f/64.0f,24.0f/64.0f,50.0f/64.0f,18.0f/64.0f,58.0f/64.0f,26.0f/64.0f,
-      12.0f/64.0f,44.0f/64.0f, 4.0f/64.0f,36.0f/64.0f,14.0f/64.0f,46.0f/64.0f, 6.0f/64.0f,38.0f/64.0f,
-      60.0f/64.0f,28.0f/64.0f,52.0f/64.0f,20.0f/64.0f,62.0f/64.0f,30.0f/64.0f,54.0f/64.0f,22.0f/64.0f,
-       3.0f/64.0f,35.0f/64.0f,11.0f/64.0f,43.0f/64.0f, 1.0f/64.0f,33.0f/64.0f, 9.0f/64.0f,41.0f/64.0f,
-      51.0f/64.0f,19.0f/64.0f,59.0f/64.0f,27.0f/64.0f,49.0f/64.0f,17.0f/64.0f,57.0f/64.0f,25.0f/64.0f,
-      15.0f/64.0f,47.0f/64.0f, 7.0f/64.0f,39.0f/64.0f,13.0f/64.0f,45.0f/64.0f, 5.0f/64.0f,37.0f/64.0f,
-      63.0f/64.0f,31.0f/64.0f,55.0f/64.0f,23.0f/64.0f,61.0f/64.0f,29.0f/64.0f,53.0f/64.0f,21.0f/64.0f
-   };
+      for(int x = 0;x<width;x++)
+      { 
+         SLK_Color cin = in[y*width+x];
+         if(cin.a<alpha_threshold)
+         {
+            out[y*width+x] = SLK_color_create(0,0,0,0);
+            continue;
+         }
+
+         //Add a value to the color depending on the position,
+         //this creates the dithering effect
+         SLK_Color c;
+         c.r = cin.r;
+         c.g = cin.g;
+         c.b = cin.b;
+         c.a = cin.a;
+         out[y*width+x] = c;
+         out[y*width+x].a = 255;
+      }
+   }
+}
+
+static void dither_threshold(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode, const float *threshold, uint8_t dim)
+{
    float amount = (float)dither_amount/1000.0f;
 
    for(int y = 0;y<height;y++)
@@ -895,11 +987,12 @@ static void dither_bayer8x8(SLK_Color *in, SLK_Color *out, int width, int height
 
          //Add a value to the color depending on the position,
          //this creates the dithering effect
-         uint8_t tresshold_id = ((y&7)<<3)+(x&7);
+         uint8_t mod = (1<<dim)-1;
+         uint8_t tresshold_id = ((y&mod)<<dim)+(x&mod);
          SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(threshold[tresshold_id]-0.5f))));
          c.a = cin.a;
          out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
          out[y*width+x].a = 255;
@@ -907,15 +1000,8 @@ static void dither_bayer8x8(SLK_Color *in, SLK_Color *out, int width, int height
    }
 }
 
-static void dither_bayer4x4(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
+static void dither_threshold_apply(SLK_Color *in, SLK_Color *out, int width, int height, const float *threshold, uint8_t dim)
 {
-   const float dither_threshold[16] = 
-   {
-      0.0f/16.0f,8.0f/16.0f,2.0f/16.0f,10.0f/16.0f,
-      12.0f/16.0f,4.0f/16.0f,14.0f/16.0f,6.0f/16.0f,
-      3.0f/16.0f,11.0f/16.0f,1.0f/16.0f,9.0f/16.0f,
-      15.0f/16.0f,7.0f/16.0f,13.0f/16.0f,5.0f/16.0f
-   };
    float amount = (float)dither_amount/1000.0f;
 
    for(int y = 0;y<height;y++)
@@ -931,124 +1017,14 @@ static void dither_bayer4x4(SLK_Color *in, SLK_Color *out, int width, int height
 
          //Add a value to the color depending on the position,
          //this creates the dithering effect
-         uint8_t tresshold_id = ((y&3)<<2)+(x&3);
+         uint8_t mod = (1<<dim)-1;
+         uint8_t tresshold_id = ((y&mod)<<dim)+(x&mod);
          SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
+         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(threshold[tresshold_id]-0.5f))));
          c.a = cin.a;
-         out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
-         out[y*width+x].a = 255;
-      }
-   }
-}
-
-static void dither_bayer2x2(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
-{
-   const float dither_threshold[4] = 
-   {
-      0.0f/4.0f,2.0f/4.0f,
-      3.0f/4.0f,1.0f/4.0f
-   };
-   float amount = (float)dither_amount/1000.0f;
-
-   for(int y = 0;y<height;y++)
-   {
-      for(int x = 0;x<width;x++)
-      { 
-         SLK_Color cin = in[y*width+x];
-         if(cin.a<alpha_threshold)
-         {
-            out[y*width+x] = SLK_color_create(0,0,0,0);
-            continue;
-         }
-
-         //Add a value to the color depending on the position,
-         //this creates the dithering effect
-         uint8_t tresshold_id = ((y&1)<<1)+(x&1);
-         SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.a = cin.a;
-         out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
-         out[y*width+x].a = 255;
-      }
-   }
-}
-
-static void dither_cluster8x8(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
-{
-   const float dither_threshold[64] = 
-   {
-      24.0f/64.0f,10.0f/64.0f,12.0f/64.0f,26.0f/64.0f,35.0f/64.0f,47.0f/64.0f,49.0f/64.0f,37.0f/64.0f,
-      8.0f/64.0f,0.0f/64.0f,2.0f/64.0f,14.0f/64.0f,45.0f/64.0f,59.0f/64.0f,61.0f/64.0f,51.0f/64.0f,
-      22.0f/64.0f,6.0f/64.0f,4.0f/64.0f,16.0f/64.0f,43.0f/64.0f,57.0f/64.0f,63.0f/64.0f,53.0f/64.0f,
-      30.0f/64.0f,20.0f/64.0f,18.0f/64.0f,28.0f/64.0f,33.0f/64.0f,41.0f/64.0f,55.0f/64.0f,39.0f/64.0f,
-      34.0f/64.0f,46.0f/64.0f,48.0f/64.0f,36.0f/64.0f,25.0f/64.0f,11.0f/64.0f,13.0f/64.0f,27.0f/64.0f,
-      44.0f/64.0f,58.0f/64.0f,60.0f/64.0f,50.0f/64.0f,9.0f/64.0f,1.0f/64.0f,3.0f/64.0f,15.0f/64.0f,
-      42.0f/64.0f,56.0f/64.0f,62.0f/64.0f,52.0f/64.0f,23.0f/64.0f,7.0f/64.0f,5.0f/64.0f,17.0f/64.0f,
-      32.0f/64.0f,40.0f/64.0f,54.0f/64.0f,38.0f/64.0f,31.0f/64.0f,21.0f/64.0f,19.0f/64.0f,29.0f/64.0f
-   };
-   float amount = (float)dither_amount/1000.0f;
-
-   for(int y = 0;y<height;y++)
-   {
-      for(int x = 0;x<width;x++)
-      { 
-         SLK_Color cin = in[y*width+x];
-         if(cin.a<alpha_threshold)
-         {
-            out[y*width+x] = SLK_color_create(0,0,0,0);
-            continue;
-         }
-
-         //Add a value to the color depending on the position,
-         //this creates the dithering effect
-         uint8_t tresshold_id = ((y&7)<<3)+(x&7);
-         SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.a = cin.a;
-         out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
-         out[y*width+x].a = 255;
-      }
-   }
-}
-
-static void dither_cluster4x4(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
-{
-   const float dither_threshold[16] = 
-   {
-      12.0f/16.0f,5.0f/16.0f,6.0f/16.0f,13.0f/16.0f,
-      4.0f/16.0f,0.0f/16.0f,1.0f/16.0f,7.0f/16.0f,
-      11.0f/16.0f,3.0f/16.0f,2.0f/16.0f,8.0f/16.0f,
-      15.0f/16.0f,10.0f/16.0f,9.0f/16.0f,14.0f/16.0f
-   };
-
-   float amount = (float)dither_amount/1000.0f;
-
-   for(int y = 0;y<height;y++)
-   {
-      for(int x = 0;x<width;x++)
-      { 
-         SLK_Color cin = in[y*width+x];
-         if(cin.a<alpha_threshold)
-         {
-            out[y*width+x] = SLK_color_create(0,0,0,0);
-            continue;
-         }
-
-         //Add a value to the color depending on the position,
-         //this creates the dithering effect
-         uint8_t tresshold_id = ((y&3)<<2)+(x&3);
-         SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(dither_threshold[tresshold_id]-0.5f))));
-         c.a = cin.a;
-         out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
+         out[y*width+x] = c;
          out[y*width+x].a = 255;
       }
    }
@@ -1677,20 +1653,19 @@ static void sample_image(const SLK_RGB_sprite *in, SLK_Color *out, int sample_mo
 //rounding the position
 static void sample_round(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
-   float fw = (float)(in->width-1)/(float)width;
-   float fh = (float)(in->height-1)/(float)height;
-   float foffx = (float)offset_x/100.0f;
-   float foffy = (float)offset_y/100.0f;
+   double w = (double)(in->width-1)/(double)width;
+   double h = (double)(in->height-1)/(double)height;
+   double offx = (double)offset_x/100.0;
+   double offy = (double)offset_y/100.0;
 
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,round(((float)x+foffx)*fw),round(((float)y+foffy)*fh));
-         out[y*width+x].r = c.r;
-         out[y*width+x].b = c.b;
-         out[y*width+x].g = c.g;
-         out[y*width+x].a = c.a;
+         double dx = (double)x+offx;
+         double dy = (double)y+offy;
+
+         out[y*width+x] = SLK_rgb_sprite_get_pixel(in,round(dx*w),round(dy*h));
       }
    }
 }
@@ -1699,20 +1674,19 @@ static void sample_round(const SLK_RGB_sprite *in, SLK_Color *out, int width, in
 //flooring the position
 static void sample_floor(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
-   float fw = (float)(in->width-1)/(float)width;
-   float fh = (float)(in->height-1)/(float)height;
-   float foffx = (float)offset_x/100.0f;
-   float foffy = (float)offset_y/100.0f;
+   double w = (double)(in->width-1)/(double)width;
+   double h = (double)(in->height-1)/(double)height;
+   double offx = (double)offset_x/100.0;
+   double offy = (double)offset_y/100.0;
 
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,floor(((float)x+foffx)*fw),floor(((float)y+foffy)*fh));
-         out[y*width+x].r = c.r;
-         out[y*width+x].b = c.b;
-         out[y*width+x].g = c.g;
-         out[y*width+x].a = c.a;
+         double dx = (double)x+offx;
+         double dy = (double)y+offy;
+
+         out[y*width+x] = SLK_rgb_sprite_get_pixel(in,floor(dx*w),floor(dy*h));
       }
    }
 }
@@ -1721,20 +1695,19 @@ static void sample_floor(const SLK_RGB_sprite *in, SLK_Color *out, int width, in
 //ceiling the position
 static void sample_ceil(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
-   float fw = (float)(in->width-1)/(float)width;
-   float fh = (float)(in->height-1)/(float)height;
-   float foffx = (float)offset_x/100.0f;
-   float foffy = (float)offset_y/100.0f;
+   double w = (double)(in->width-1)/(double)width;
+   double h = (double)(in->height-1)/(double)height;
+   double offx = (double)offset_x/100.0;
+   double offy = (double)offset_y/100.0;
 
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
-         SLK_Color c = SLK_rgb_sprite_get_pixel(in,ceil(((float)x+foffx)*fw),ceil(((float)y+foffy)*fh));
-         out[y*width+x].r = c.r;
-         out[y*width+x].b = c.b;
-         out[y*width+x].g = c.g;
-         out[y*width+x].a = c.a;
+         double dx = (double)x+offx;
+         double dy = (double)y+offy;
+
+         out[y*width+x] = SLK_rgb_sprite_get_pixel(in,ceil(dx*w),ceil(dy*h));
       }
    }
 }
@@ -1972,27 +1945,28 @@ static void quant_cluster_list_free()
    quant_cluster_list = NULL;
 }
 
-static void quant_compute_kmeans(SLK_RGB_sprite *data)
+static void quant_compute_kmeans(SLK_RGB_sprite *data, int pal_in)
 {
    quant_cluster_list_init();
    quant_centroid_list = malloc(sizeof(*quant_centroid_list)*quant_k);
    quant_assignment = malloc(sizeof(*quant_assignment)*(data->width*data->height));
-   for(int i = 0;i<(data->width*data->height);i++)
-      quant_assignment[i] = 0;
+   memset(quant_assignment,0,sizeof(*quant_assignment)*data->width*data->height);
 
    int iter = 0;
    int max_iter = 16;
-   float *previous_variance = malloc(sizeof(*previous_variance)*quant_k);
-   float variance = 0.0f;
-   float delta = 0.0f;
-   float delta_max = 0.0f;
-   float threshold = 0.00005f;
+   //if(pal_in)
+      //max_iter = 2;
+   double *previous_variance = malloc(sizeof(*previous_variance)*quant_k);
+   double variance = 0.0;
+   double delta = 0.0;
+   double delta_max = 0.0;
+   double threshold = 0.00005;
    for(int i = 0;i<quant_k;i++)
-      previous_variance[i] = 1.0f;
+      previous_variance[i] = 1.0;
 
    for(;;)
    {
-      quant_get_cluster_centroid(data);
+      quant_get_cluster_centroid(data,pal_in,1<<palette_weight);
       quant_cluster_list_init();
       for(int i = 0;i<data->width*data->height;i++)
       {
@@ -2001,7 +1975,7 @@ static void quant_compute_kmeans(SLK_RGB_sprite *data)
          dyn_array_add(SLK_Color,&quant_cluster_list[quant_assignment[i]],1,color);
       }
 
-      delta_max = 0.0f;
+      delta_max = 0.0;
       for(int i = 0;i<quant_k;i++)
       {
          variance = quant_colors_variance(&quant_cluster_list[i]);
@@ -2017,18 +1991,28 @@ static void quant_compute_kmeans(SLK_RGB_sprite *data)
    free(previous_variance);
 }
 
-static void quant_get_cluster_centroid(SLK_RGB_sprite *data)
+static void quant_get_cluster_centroid(SLK_RGB_sprite *data, int pal_in, int weight_pal)
 {
    for(int i = 0;i<quant_k;i++)
    {
       if(quant_cluster_list[i].used>0)
-         quant_centroid_list[i] = quant_colors_mean(&quant_cluster_list[i]);
+      {
+         if(pal_in)
+            quant_centroid_list[i] = quant_colors_mean(&quant_cluster_list[i],palette->colors[i],weight_pal);
+         else
+            quant_centroid_list[i] = quant_colors_mean(&quant_cluster_list[i],SLK_color_create(0,0,0,0),0);
+      }
       else
-         quant_centroid_list[i] = quant_pick_random_color(data);
+      {
+         if(pal_in)
+            quant_centroid_list[i] = palette->colors[i];
+         else
+            quant_centroid_list[i] = quant_pick_random_color(data);
+      }
    }
 }
 
-static SLK_Color quant_colors_mean(dyn_array *color_list)
+static SLK_Color quant_colors_mean(dyn_array *color_list,SLK_Color color, int weight_color)
 {
    int r = 0,g = 0,b = 0;
    int length = color_list->used;
@@ -2039,26 +2023,36 @@ static SLK_Color quant_colors_mean(dyn_array *color_list)
       b+=dyn_array_element(SLK_Color,color_list,i).b;
    }
 
-   r/=length;
-   g/=length;
-   b/=length;
+   if(weight_color!=0)
+      weight_color = length/weight_color;
+   length+=weight_color;
+   r+=color.r*weight_color;
+   g+=color.g*weight_color;
+   b+=color.b*weight_color;
+
+   if(length!=0)
+   {
+      r/=length;
+      g/=length;
+      b/=length;
+   }
 
    return (SLK_Color){.r = r, .g = g, .b = b};
 }
 
 static SLK_Color quant_pick_random_color(SLK_RGB_sprite *data)
 {
-   return data->data[(int)(((float)rand()/(float)RAND_MAX)*data->width*data->height)];
+   return data->data[(int)(((double)rand()/(double)RAND_MAX)*data->width*data->height)];
 }
 
 static int quant_nearest_color_idx(SLK_Color color, SLK_Color *color_list)
 {
-   float dist_min = 0xffff;
-   float dist = 0.0f;
+   double dist_min = 0xfff;
+   double dist = 0.0;
    int idx = 0;
    for(int i = 0;i<quant_k;i++)
    {
-      dist = quant_distancef(color,color_list[i]);
+      dist = quant_distance(color,color_list[i]);
       if(dist<dist_min)
       {
          dist_min = dist;
@@ -2069,39 +2063,33 @@ static int quant_nearest_color_idx(SLK_Color color, SLK_Color *color_list)
    return idx;
 }
 
-static float quant_distance(SLK_Color color0, SLK_Color color1)
+static double quant_distance(SLK_Color color0, SLK_Color color1)
 {
-   float mr = 0.5f*(color0.r+color1.r),
+   /*double dr =  (color0.r-color1.r)/255.0;
+   double dg =  (color0.g-color1.g)/255.0;
+   double db =  (color0.b-color1.b)/255.0;
+   return sqrt(dr*dr+dg*dg+db*db);*/
+   double mr = 0.5*(color0.r+color1.r),
       dr = color0.r-color1.r,
       dg = color0.g-color1.g,
       db = color0.b-color1.b;
-   float distance = (2*dr*dr)+(4*dg*dg)+(3*db*db)+(mr*((dr*dr)-(db*db))/256.0f);
-   return sqrt(distance)/(3.0f*255.0f);
+   double distance = (2.0*dr*dr)+(4.0*dg*dg)+(3.0*db*db)+(mr*((dr*dr)-(db*db))/256.0);
+   return sqrt(distance)/(3.0*255.0);
 }
 
-static float quant_distancef(SLK_Color color0, SLK_Color color1)
-{
-   float mr = 0.5f*(color0.r+color1.r),
-      dr = color0.r-color1.r,
-      dg = color0.g-color1.g,
-      db = color0.b-color1.b;
-   float distance = (2*dr*dr)+(4*dg*dg)+(3*db*db)+(mr*((dr*dr)-(db*db))/256.0f);
-   return distance/(3.0f*255.0f);
-}
-
-static float quant_colors_variance(dyn_array *color_list)
+static double quant_colors_variance(dyn_array *color_list)
 {
    int length = color_list->used;
-   SLK_Color mean = quant_colors_mean(color_list);
-   float dist = 0.0f;
-   float dist_sum = 0.0f;
+   SLK_Color mean = quant_colors_mean(color_list,SLK_color_create(0,0,0,0),0);
+   double dist = 0.0;
+   double dist_sum = 0.0;
    for(int i = 0;i<length;i++)
    {
       dist = quant_distance(dyn_array_element(SLK_Color,color_list,i),mean);
       dist_sum+=dist*dist;
    }
 
-   return dist_sum/(float)length;
+   return dist_sum/(double)length;
 }
 
 static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)

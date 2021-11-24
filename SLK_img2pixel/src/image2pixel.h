@@ -40,6 +40,8 @@ int          img2pixel_get_gauss();
 void         img2pixel_set_gauss(int ngauss);
 SLK_Palette *img2pixel_get_palette();
 void         img2pixel_set_palette(SLK_Palette *npalette); //freeing is supposed to be handled by user!
+int          img2pixel_get_palette_weight();
+void         img2pixel_set_palette_weight(int weight);
 int          img2pixel_get_scale_mode();
 void         img2pixel_set_scale_mode(int nmode);
 int          img2pixel_get_sample_mode();

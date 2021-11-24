@@ -130,6 +130,8 @@ struct Elements
    SLK_gui_element *color_button_outline;
    SLK_gui_element *color_alpha_plus;
    SLK_gui_element *color_alpha_minus;
+   SLK_gui_element *color_weight_plus;
+   SLK_gui_element *color_weight_minus;
    SLK_gui_element *color_dither_left;
    SLK_gui_element *color_dither_right;
    SLK_gui_element *color_dither_plus;
@@ -138,8 +140,10 @@ struct Elements
    SLK_gui_element *color_space_right;
    SLK_gui_element *color_bar_dither;
    SLK_gui_element *color_bar_alpha;
+   SLK_gui_element *color_bar_weight;
    SLK_gui_element *color_label_dither;
    SLK_gui_element *color_label_alpha;
+   SLK_gui_element *color_label_weight;
    SLK_gui_element *color_label_dither_amount;
    SLK_gui_element *color_label_space;
 
@@ -201,6 +205,7 @@ static const char *text_space[] =
    "YCC",
    "YIQ",
    "YUV",
+   "K-Means",
 };
 
 static const char *text_dither[] = 
@@ -516,6 +521,18 @@ void gui_init()
    elements.color_space_right = SLK_gui_button_create(344,205,14,14,">");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_space_right);
 
+   label = SLK_gui_label_create(104,230,56,12,"Weight");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   elements.color_weight_plus = SLK_gui_button_create(344,227,14,14,"+");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_weight_plus);
+   elements.color_weight_minus = SLK_gui_button_create(160,227,14,14,"-");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_weight_minus);
+   elements.color_bar_weight = SLK_gui_slider_create(174,227,170,14,0,16);
+   elements.color_bar_weight->slider.value = 2;
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_bar_weight);
+   elements.color_label_weight = SLK_gui_label_create(354,230,32,12,"2");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_label_weight);
+
    elements.color_palette = SLK_gui_image_create(100,15,279,81,elements.palette_sprite,(SLK_gui_rectangle){0,0,279,81});
    //This could break, I hope I don't forget about this...
    //I don't want to manage multiple sprites that have the same content, so I
@@ -526,17 +543,17 @@ void gui_init()
    elements.color_button = SLK_gui_icon_create(100,15,279,81,tmp,(SLK_gui_rectangle){0,0,1,1},(SLK_gui_rectangle){0,0,1,1});
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_button);
 
-   label = SLK_gui_label_create(104,240,56,12,"inline");
+   label = SLK_gui_label_create(104,256,56,12,"inline");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
-   label = SLK_gui_label_create(264,240,64,12,"outline");
+   label = SLK_gui_label_create(264,256,64,12,"outline");
    SLK_gui_vtabbar_add_element(settings_tabs,3,label);
-   elements.color_check_inline = SLK_gui_button_create(184,237,14,14,img2pixel_get_inline()<0?" ":"x");
+   elements.color_check_inline = SLK_gui_button_create(184,253,14,14,img2pixel_get_inline()<0?" ":"x");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_check_inline);
-   elements.color_button_inline = SLK_gui_button_create(104,256,94,14,"set color");
+   elements.color_button_inline = SLK_gui_button_create(104,272,94,14,"set color");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_button_inline);
-   elements.color_check_outline = SLK_gui_button_create(344,237,14,14,img2pixel_get_outline()<0?" ":"x");
+   elements.color_check_outline = SLK_gui_button_create(344,253,14,14,img2pixel_get_outline()<0?" ":"x");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_check_outline);
-   elements.color_button_outline = SLK_gui_button_create(264,256,94,14,"set color");
+   elements.color_button_outline = SLK_gui_button_create(264,272,94,14,"set color");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_button_outline);
 
    //Process tab
@@ -903,6 +920,9 @@ static void gui_buttons()
       BUTTON_BAR_PLUS(elements.color_alpha_plus,elements.color_bar_alpha);
       BUTTON_BAR_MINUS(elements.color_alpha_minus,elements.color_bar_alpha);
 
+      BUTTON_BAR_PLUS(elements.color_weight_plus,elements.color_bar_weight);
+      BUTTON_BAR_MINUS(elements.color_weight_minus,elements.color_bar_weight);
+
       if(elements.color_dither_left->button.state.pressed)
       {
          img2pixel_set_process_mode(img2pixel_get_process_mode()-1);
@@ -922,6 +942,7 @@ static void gui_buttons()
 
       BAR_UPDATE(img2pixel_get_alpha_threshold,img2pixel_set_alpha_threshold,elements.color_bar_alpha,elements.color_label_alpha);
       BAR_UPDATE(img2pixel_get_dither_amount,img2pixel_set_dither_amount,elements.color_bar_dither,elements.color_label_dither_amount);
+      BAR_UPDATE(img2pixel_get_palette_weight,img2pixel_set_palette_weight,elements.color_bar_weight,elements.color_label_weight);
 
       if(elements.color_bar_dither->slider.value!=img2pixel_get_dither_amount())
       {
@@ -933,14 +954,14 @@ static void gui_buttons()
       {
          img2pixel_set_distance_mode(img2pixel_get_distance_mode()-1);;
          if(img2pixel_get_distance_mode()<0)
-            img2pixel_set_distance_mode(7);
+            img2pixel_set_distance_mode(8);
          update = 1;
          SLK_gui_label_set_text(elements.color_label_space,text_space[img2pixel_get_distance_mode()]);
       }
       if(elements.color_space_right->button.state.pressed)
       {
          img2pixel_set_distance_mode(img2pixel_get_distance_mode()+1);;
-         if(img2pixel_get_distance_mode()>7)
+         if(img2pixel_get_distance_mode()>8)
             img2pixel_set_distance_mode(0);
          update = 1;
          SLK_gui_label_set_text(elements.color_label_space,text_space[img2pixel_get_distance_mode()]);
