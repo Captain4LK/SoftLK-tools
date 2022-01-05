@@ -18,6 +18,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "../../external/gifdec.h"
 #include "../../external/gifenc.h"
 #include "../../external/tinyfiledialogs.h"
+#include "../../external/HLH_json.h"
 //-------------------------------------
 
 //Internal includes
@@ -41,6 +42,14 @@ static char input_dir[256];
 static char output_dir[256];
 static char input_gif[256];
 static char output_gif[256];
+static char path_image_load[512] = {0};
+static char path_image_save[512] = {0};
+static char path_preset_load[512] = {0};
+static char path_preset_save[512] = {0};
+static char path_dir_input[512] = {0};
+static char path_dir_output[512] = {0};
+static char path_palette_load[512] = {0};
+static char path_palette_save[512] = {0};
 
 int upscale = 1;
 //-------------------------------------
@@ -58,41 +67,61 @@ static int chartoi(char in);
 SLK_RGB_sprite *image_select()
 {
    const char *filter_patterns[2] = {"*.png"};
-   const char *file_path = tinyfd_openFileDialog("Select a file","",0,filter_patterns,NULL,0);
+   const char *file_path = tinyfd_openFileDialog("Select a file",path_image_load,0,filter_patterns,NULL,0);
+
+   if(file_path!=NULL)
+      strncpy(path_image_load,file_path,512);
+
    return image_load(file_path);
 }
 
 void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
 {
    const char *filter_patterns[2] = {"*.png","*.slk"};
-   const char *file_path = tinyfd_saveFileDialog("Save image","",2,filter_patterns,NULL);
+   const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,2,filter_patterns,NULL);
+
+   if(file_path!=NULL)
+      strncpy(path_image_save,file_path,512);
+
    image_save(file_path,img,pal);
 }
 
 FILE *json_select()
 {
    const char *filter_patterns[2] = {"*.json"};
-   const char *file_path = tinyfd_openFileDialog("Select a preset","",1,filter_patterns,NULL,0);
+   const char *file_path = tinyfd_openFileDialog("Select a preset",path_preset_load,1,filter_patterns,NULL,0);
+
    if(file_path!=NULL)
+   {
+      strncpy(path_preset_load,file_path,512);
       return fopen(file_path,"r");
+   }
+
    return NULL;
 }
 
 FILE *json_write()
 {
    const char *filter_patterns[2] = {"*.json"};
-   const char *file_path = tinyfd_saveFileDialog("Save preset","",1,filter_patterns,NULL);
+   const char *file_path = tinyfd_saveFileDialog("Save preset",path_preset_save,1,filter_patterns,NULL);
+
    if(file_path!=NULL)
+   {
+      strncpy(path_preset_save,file_path,512);
       return fopen(file_path,"w");
+   }
+
    return NULL;
 }
 
 SLK_Palette *palette_select()
 {
    const char *filter_patterns[] = {"*.pal","*.png","*.gpl","*.hex"};
-   const char *file_path = tinyfd_openFileDialog("Load a palette","",4,filter_patterns,NULL,0);
+   const char *file_path = tinyfd_openFileDialog("Load a palette",path_palette_load,4,filter_patterns,NULL,0);
    if(file_path!=NULL)
    {
+      strncpy(path_palette_load,file_path,512);
+
       SLK_Palette *p = NULL;
       FILE *f = fopen(file_path,"rb");
       if(f)
@@ -148,9 +177,13 @@ SLK_Palette *palette_load(const char *path)
 void palette_write(SLK_Palette *pal)
 {
    const char *filter_patterns[2] = {"*.pal"};
-   const char *file_path = tinyfd_saveFileDialog("Save palette","",1,filter_patterns,NULL);
+   const char *file_path = tinyfd_saveFileDialog("Save palette",path_palette_save,1,filter_patterns,NULL);
+
    if(file_path!=NULL)
+   {
+      strncpy(path_palette_save,file_path,512);
       SLK_palette_save(file_path,pal);
+   }
 }
 
 void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
@@ -251,23 +284,28 @@ static uint8_t find_palette(SLK_Color in, SLK_Palette *pal)
 
 void dir_input_select()
 {
-   const char *path = tinyfd_selectFolderDialog("Select input directory",NULL);
+   const char *path = tinyfd_selectFolderDialog("Select input directory",path_dir_input);
    if(path==NULL)
    {
       input_dir[0] = '\0';
       return;
    }
+
+   strncpy(path_dir_input,path,512);
    strcpy(input_dir,path);
 }
 
 void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal)
 {
-   const char *path = tinyfd_selectFolderDialog("Select output directory",NULL);
+   const char *path = tinyfd_selectFolderDialog("Select output directory",path_dir_output);
+
    if(path==NULL)
    {
       output_dir[0] = '\0';
       return;
    }
+
+   strncpy(path_dir_output,path,512);
    strcpy(output_dir,path);
 
    if(output_dir[0]!='\0'&&input_dir[0]!='\0') //Process directory
@@ -459,5 +497,48 @@ static int chartoi(char in)
    if(in>='A'&&in<='F')
       return in-'A'+10;
    return 0;
+}
+
+void utility_init()
+{
+   FILE *f = fopen("settings.json","r");
+   if(f==NULL)
+      return;
+
+   HLH_json5_root *root = HLH_json_parse_file_stream(f);
+
+   strncpy(path_image_load,HLH_json_get_object_string(&root->root,"path_image_load","(NULL)"),512);
+   strncpy(path_image_save,HLH_json_get_object_string(&root->root,"path_image_save","(NULL)"),512);
+   strncpy(path_preset_load,HLH_json_get_object_string(&root->root,"path_preset_load","(NULL)"),512);
+   strncpy(path_preset_save,HLH_json_get_object_string(&root->root,"path_preset_save","(NULL)"),512);
+   strncpy(path_palette_load,HLH_json_get_object_string(&root->root,"path_palette_load","(NULL)"),512);
+   strncpy(path_palette_save,HLH_json_get_object_string(&root->root,"path_palette_save","(NULL)"),512);
+   strncpy(path_dir_input,HLH_json_get_object_string(&root->root,"path_dir_input","(NULL)"),512);
+   strncpy(path_dir_output,HLH_json_get_object_string(&root->root,"path_dir_output","(NULL)"),512);
+
+   HLH_json_free(root);
+}
+
+void utility_exit()
+{
+   FILE *f = fopen("settings.json","w");
+   if(f==NULL)
+      return;
+
+   HLH_json5_root *root = HLH_json_create_root();
+
+   HLH_json_object_add_string(&root->root,"path_image_load",path_image_load);
+   HLH_json_object_add_string(&root->root,"path_image_save",path_image_save);
+   HLH_json_object_add_string(&root->root,"path_preset_load",path_preset_load);
+   HLH_json_object_add_string(&root->root,"path_preset_save",path_preset_save);
+   HLH_json_object_add_string(&root->root,"path_palette_load",path_palette_load);
+   HLH_json_object_add_string(&root->root,"path_palette_save",path_palette_save);
+   HLH_json_object_add_string(&root->root,"path_dir_input",path_dir_input);
+   HLH_json_object_add_string(&root->root,"path_dir_output",path_dir_output);
+
+   HLH_json_write_file(f,&root->root);
+   HLH_json_free(root);
+
+   fclose(f);
 }
 //-------------------------------------

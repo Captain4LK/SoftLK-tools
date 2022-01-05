@@ -15,6 +15,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "gui.h"
+#include "utility.h"
 //-------------------------------------
 
 //#defines
@@ -64,6 +65,7 @@ int main(int argc, char **argv)
    SLK_draw_rgb_set_clear_color(SLK_color_create(20,20,20,255));
    SLK_draw_rgb_clear();
 
+   utility_init();
    gui_init();
 
    while(SLK_core_running())
@@ -74,6 +76,8 @@ int main(int argc, char **argv)
 
       SLK_render_update();
    }
+
+   utility_exit();
 
    return 0;
 }
