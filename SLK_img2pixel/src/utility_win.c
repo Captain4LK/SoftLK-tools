@@ -24,6 +24,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "../../external/stb_image.h"
 #define CUTE_FILES_IMPLEMENTATION
 #include "../../external/cute_files.h"
+#define CUTE_PATH_IMPLEMENTATION
+#include "../../external/cute_path.h"
 #include "../../external/gifdec.h"
 #include "../../external/gifenc.h"
 //#include "../../external/tinyfiledialogs.h"
@@ -52,14 +54,14 @@ static wchar_t input_dir[512];
 static wchar_t output_dir[512];
 static wchar_t input_gif[512];
 static wchar_t output_gif[512];
-static wchar_t path_image_load[512] = {0};
-static wchar_t path_image_save[512] = {0};
-static wchar_t path_preset_load[512] = {0};
-static wchar_t path_preset_save[512] = {0};
-static wchar_t path_dir_input[512] = {0};
-static wchar_t path_dir_output[512] = {0};
-static wchar_t path_palette_load[512] = {0};
-static wchar_t path_palette_save[512] = {0};
+static char path_image_load[512] = {0};
+static char path_image_save[512] = {0};
+static char path_preset_load[512] = {0};
+static char path_preset_save[512] = {0};
+static char path_dir_input[512] = {0};
+static char path_dir_output[512] = {0};
+static char path_palette_load[512] = {0};
+static char path_palette_save[512] = {0};
 
 int upscale = 1;
 //-------------------------------------
@@ -81,8 +83,8 @@ SLK_RGB_sprite *image_select()
 {
    NFD_Init();
 
-   nfdnchar_t *file_path = NULL;
-   nfdresult_t result = NFD_OpenDialogN(&file_path,NULL,0,NULL);
+   nfdu8char_t *file_path = NULL;
+   nfdresult_t result = NFD_OpenDialogU8(&file_path,NULL,0,path_image_load);
 
    if(result!=NFD_OKAY)
    {
@@ -90,13 +92,15 @@ SLK_RGB_sprite *image_select()
       return SLK_rgb_sprite_create(1,1);
    }
 
-   char buffer[512];
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)file_path);
+   if(file_path!=NULL)
+      path_pop(file_path,path_image_load,NULL);
 
-   NFD_FreePathN(file_path);
+   SLK_RGB_sprite *load = image_load(file_path);
+
+   NFD_FreePathU8(file_path);
    NFD_Quit();
 
-   return image_load(buffer);
+   return load;
 
    /*const wchar_t *filter_patterns[2] = {L"*.png"};
    const wchar_t *file_path = tinyfd_openFileDialogW(L"Select a file",L"",0,filter_patterns,NULL,0);
@@ -113,9 +117,10 @@ void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
 {
    NFD_Init();
    
-   nfdnfilteritem_t filter_item[2] = {{L"PNG", L"png"}, {L"SLK", L"slk"}};
-   nfdnchar_t *file_path = NULL;
-   nfdresult_t result = NFD_SaveDialogN(&file_path,filter_item,2,path_image_save,L"untitled.png");
+   nfdu8filteritem_t filter_item[2] = {{"PNG", "png"}, {"SLK", "slk"}};
+   nfdu8char_t *file_path = NULL;
+
+   nfdresult_t result = NFD_SaveDialogU8(&file_path,filter_item,2,path_image_save,"untitled.png");
 
    if(result!=NFD_OKAY)
    {
@@ -124,11 +129,13 @@ void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
    }
 
    if(file_path!=NULL)
-      wcsncpy(path_image_save,file_path,512);
+      path_pop(file_path,path_image_save,NULL);
 
-   image_save_w((wchar_t *)file_path,img,pal);
+   wchar_t buffer[512];
+   convert_utf8_to_wchar(buffer,512,file_path);
+   image_save_w((wchar_t *)buffer,img,pal);
 
-   NFD_FreePathN(file_path);
+   NFD_FreePathU8(file_path);
    NFD_Quit();
 
    /*const wchar_t *filter_patterns[2] = {L"*.png",L"*.slk"};
@@ -737,31 +744,14 @@ void utility_init()
 
    HLH_json5_root *root = HLH_json_parse_file_stream(f);
 
-   wchar_t buffer[512];
-
-   convert_utf8_to_wchar(buffer,512,HLH_json_get_object_string(&root->root,"path_image_load","(NULL)"));
-   wcsncpy(path_image_load,buffer,512);
-
-   convert_utf8_to_wchar(buffer,512,HLH_json_get_object_string(&root->root,"path_image_save","(NULL)"));
-   wcsncpy(path_image_save,buffer,512);
-
-   convert_utf8_to_wchar(buffer,512,HLH_json_get_object_string(&root->root,"path_preset_load","(NULL)"));
-   wcsncpy(path_preset_load,buffer,512);
-
-   convert_utf8_to_wchar(buffer,512,HLH_json_get_object_string(&root->root,"path_preset_save","(NULL)"));
-   wcsncpy(path_preset_save,buffer,512);
-
-   convert_utf8_to_wchar(buffer,512,HLH_json_get_object_string(&root->root,"path_palette_load","(NULL)"));
-   wcsncpy(path_palette_load,buffer,512);
-
-   convert_utf8_to_wchar(buffer,512,HLH_json_get_object_string(&root->root,"path_palette_save","(NULL)"));
-   wcsncpy(path_palette_save,buffer,512);
-
-   convert_utf8_to_wchar(buffer,512,HLH_json_get_object_string(&root->root,"path_dir_input","(NULL)"));
-   wcsncpy(path_dir_input,buffer,512);
-
-   convert_utf8_to_wchar(buffer,512,HLH_json_get_object_string(&root->root,"path_dir_output","(NULL)"));
-   wcsncpy(path_dir_output,buffer,512);
+   strncpy(path_image_load,HLH_json_get_object_string(&root->root,"path_image_load","(NULL)"),512);
+   strncpy(path_image_save,HLH_json_get_object_string(&root->root,"path_image_save","(NULL)"),512);
+   strncpy(path_preset_load,HLH_json_get_object_string(&root->root,"path_preset_load","(NULL)"),512);
+   strncpy(path_preset_save,HLH_json_get_object_string(&root->root,"path_preset_save","(NULL)"),512);
+   strncpy(path_palette_load,HLH_json_get_object_string(&root->root,"path_palette_load","(NULL)"),512);
+   strncpy(path_palette_save,HLH_json_get_object_string(&root->root,"path_palette_save","(NULL)"),512);
+   strncpy(path_dir_input,HLH_json_get_object_string(&root->root,"path_dir_input","(NULL)"),512);
+   strncpy(path_dir_output,HLH_json_get_object_string(&root->root,"path_dir_output","(NULL)"),512);
 
    HLH_json_free(root);
 }
@@ -773,31 +763,15 @@ void utility_exit()
       return;
 
    HLH_json5_root *root = HLH_json_create_root();
-   char buffer[512];
 
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)path_image_load);
-   HLH_json_object_add_string(&root->root,"path_image_load",buffer);
-
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)path_image_save);
-   HLH_json_object_add_string(&root->root,"path_image_save",buffer);
-
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)path_preset_load);
-   HLH_json_object_add_string(&root->root,"path_preset_load",buffer);
-
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)path_preset_save);
-   HLH_json_object_add_string(&root->root,"path_preset_save",buffer);
-
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)path_palette_load);
-   HLH_json_object_add_string(&root->root,"path_palette_load",buffer);
-
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)path_palette_save);
-   HLH_json_object_add_string(&root->root,"path_palette_save",buffer);
-
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)path_dir_input);
-   HLH_json_object_add_string(&root->root,"path_dir_input",buffer);
-
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)path_dir_output);
-   HLH_json_object_add_string(&root->root,"path_dir_output",buffer);
+   HLH_json_object_add_string(&root->root,"path_image_load",path_image_load);
+   HLH_json_object_add_string(&root->root,"path_image_save",path_image_save);
+   HLH_json_object_add_string(&root->root,"path_preset_load",path_preset_load);
+   HLH_json_object_add_string(&root->root,"path_preset_save",path_preset_save);
+   HLH_json_object_add_string(&root->root,"path_palette_load",path_palette_load);
+   HLH_json_object_add_string(&root->root,"path_palette_save",path_palette_save);
+   HLH_json_object_add_string(&root->root,"path_dir_input",path_dir_input);
+   HLH_json_object_add_string(&root->root,"path_dir_output",path_dir_output);
 
    HLH_json_write_file(f,&root->root);
    HLH_json_free(root);
