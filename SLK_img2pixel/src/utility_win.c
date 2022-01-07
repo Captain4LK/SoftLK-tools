@@ -28,7 +28,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "../../external/cute_path.h"
 #include "../../external/gifdec.h"
 #include "../../external/gifenc.h"
-//#include "../../external/tinyfiledialogs.h"
 #include "../../external/HLH_json.h"
 //-------------------------------------
 
@@ -101,16 +100,6 @@ SLK_RGB_sprite *image_select()
    NFD_Quit();
 
    return load;
-
-   /*const wchar_t *filter_patterns[2] = {L"*.png"};
-   const wchar_t *file_path = tinyfd_openFileDialogW(L"Select a file",L"",0,filter_patterns,NULL,0);
-   if(file_path==NULL)
-      return SLK_rgb_sprite_create(1,1);
-
-   char buffer[512];
-   stbi_convert_wchar_to_utf8(buffer,512,file_path);
-
-   return image_load(buffer);*/
 }
 
 void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
@@ -137,19 +126,15 @@ void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
 
    NFD_FreePathU8(file_path);
    NFD_Quit();
-
-   /*const wchar_t *filter_patterns[2] = {L"*.png",L"*.slk"};
-   const wchar_t *file_path = tinyfd_saveFileDialogW(L"Save image",L"",2,filter_patterns,NULL);
-   image_save_w(file_path,img,pal);*/
 }
 
 FILE *json_select()
 {
    NFD_Init();
 
-   nfdnfilteritem_t filter_item[1] = {{L"JSON", L"json"}};
-   nfdnchar_t *file_path = NULL;
-   nfdresult_t result = NFD_OpenDialogN(&file_path,filter_item,1,NULL);
+   nfdu8filteritem_t filter_item[1] = {{"JSON", "json"}};
+   nfdu8char_t *file_path = NULL;
+   nfdresult_t result = NFD_OpenDialogU8(&file_path,filter_item,1,path_preset_load);
 
    if(result!=NFD_OKAY)
    {
@@ -157,37 +142,26 @@ FILE *json_select()
       return NULL;
    }
 
-   char buffer[512];
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)file_path);
+   FILE *ret = NULL;
+   if(file_path!=NULL)
+   {
+      ret = fopen_utf8(file_path,"r");
+      path_pop(file_path,path_preset_load,NULL);
+   }
 
-   NFD_FreePathN(file_path);
+   NFD_FreePathU8(file_path);
    NFD_Quit();
 
-   if(buffer[0]!='\0')
-      return fopen_utf8(buffer,"r");
-
-   return NULL;
-
-   /*const wchar_t *filter_patterns[2] = {L"*.json"};
-   const wchar_t *file_path = tinyfd_openFileDialogW(L"Select a preset",L"",1,filter_patterns,NULL,0);
-   if(file_path==NULL)
-      return NULL;
-
-   char buffer[512];
-   stbi_convert_wchar_to_utf8(buffer,512,file_path);
-   if(buffer[0]!='\0')
-      return fopen_utf8(buffer,"r");
-
-   return NULL;*/
+   return ret;
 }
 
 FILE *json_write()
 {
    NFD_Init();
 
-   nfdnfilteritem_t filter_item[1] = {{L"JSON", L"json"}};
-   nfdnchar_t *file_path = NULL;
-   nfdresult_t result = NFD_SaveDialogN(&file_path,filter_item,1,NULL,L"untitled.json");
+   nfdu8filteritem_t filter_item[1] = {{"JSON", "json"}};
+   nfdu8char_t *file_path = NULL;
+   nfdresult_t result = NFD_SaveDialogU8(&file_path,filter_item,1,path_preset_save,"untitled.json");
 
    if(result!=NFD_OKAY)
    {
@@ -195,37 +169,26 @@ FILE *json_write()
       return NULL;
    }
 
-   char buffer[512];
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)file_path);
+   FILE *ret = NULL;
+   if(file_path!=NULL)
+   {
+      ret = fopen_utf8(file_path,"w");
+      path_pop(file_path,path_preset_save,NULL);
+   }
 
-   NFD_FreePathN(file_path);
+   NFD_FreePathU8(file_path);
    NFD_Quit();
 
-   if(buffer[0]!='\0')
-      return fopen_utf8(buffer,"w");
-
-   return NULL;
-
-   /*const wchar_t *filter_patterns[2] = {L"*.json"};
-   const wchar_t *file_path = tinyfd_saveFileDialogW(L"Save preset",L"",1,filter_patterns,NULL);
-   if(file_path==NULL)
-      return NULL;
-
-   char buffer[512];
-   stbi_convert_wchar_to_utf8(buffer,512,file_path);
-   if(buffer[0]!='\0')
-      return fopen_utf8(buffer,"w");
-
-   return NULL;*/
+   return ret;
 }
 
 SLK_Palette *palette_select()
 {
    NFD_Init();
 
-   nfdnfilteritem_t filter_item[4] = {{L"pal", L"pal"},{L"PNG",L"png"},{L"gpl",L"gpl"},{L"hex",L"hex"}};
-   nfdnchar_t *file_path = NULL;
-   nfdresult_t result = NFD_OpenDialogN(&file_path,filter_item,4,NULL);
+   nfdu8filteritem_t filter_item[4] = {{"pal", "pal"},{"PNG","png"},{"gpl","gpl"},{"hex","hex"}};
+   nfdu8char_t *file_path = NULL;
+   nfdresult_t result = NFD_OpenDialogU8(&file_path,filter_item,4,path_palette_load);
 
    if(result!=NFD_OKAY)
    {
@@ -233,25 +196,15 @@ SLK_Palette *palette_select()
       return NULL;
    }
 
-   /*const wchar_t *filter_patterns[] = {L"*.pal",L"*.png",L"*.gpl",L"*.hex"};
-   const wchar_t *file_path = tinyfd_openFileDialogW(L"Load a palette",L"",4,filter_patterns,NULL,0);
-   if(file_path==NULL)
-      return NULL;*/
-
-   char buffer[512];
-   stbi_convert_wchar_to_utf8(buffer,512,(wchar_t *)file_path);
-
-   NFD_FreePathN(file_path);
-   NFD_Quit();
-
-   if(buffer[0]!='\0')
+   SLK_Palette *p = NULL;
+   if(file_path!=NULL)
    {
-      SLK_Palette *p = NULL;
-      FILE *f = fopen_utf8(buffer,"rb");
+      path_pop(file_path,path_palette_load,NULL);
+      FILE *f = fopen_utf8(file_path,"rb");
       if(f)
       {
          cf_file_t file; //Not ment to be used this way, but since it's possible, who cares
-         strcpy(file.name,buffer);
+         strcpy(file.name,file_path);
          cf_get_ext(&file);
 
          if(strcmp(file.ext,".pal")==0)
@@ -264,10 +217,13 @@ SLK_Palette *palette_select()
             p = palette_hex(f);
          
          fclose(f);
-         return p;
       }
    }
-   return NULL;
+
+   NFD_FreePathU8(file_path);
+   NFD_Quit();
+
+   return p;
 }
 
 SLK_Palette *palette_load(const char *path)
@@ -302,9 +258,9 @@ void palette_write(SLK_Palette *pal)
 {
    NFD_Init();
 
-   nfdnfilteritem_t filter_item[1] = {{L"pal", L"pal"}};
-   nfdnchar_t *file_path = NULL;
-   nfdresult_t result = NFD_SaveDialogN(&file_path,filter_item,1,NULL,L"untitled.pal");
+   nfdu8filteritem_t filter_item[1] = {{"pal", "pal"}};
+   nfdu8char_t *file_path = NULL;
+   nfdresult_t result = NFD_SaveDialogU8(&file_path,filter_item,1,path_palette_save,"untitled.pal");
 
    if(result!=NFD_OKAY)
    {
@@ -312,26 +268,19 @@ void palette_write(SLK_Palette *pal)
       return;
    }
 
-   /*const wchar_t *filter_patterns[2] = {L"*.pal"};
-   const wchar_t *file_path = tinyfd_saveFileDialogW(L"Save palette",L"",1,filter_patterns,NULL);
-   if(file_path==NULL)
-      return;*/
-
-   char buffer[512];
-   stbi_convert_wchar_to_utf8(buffer,512,file_path);
-
-   NFD_FreePathN(file_path);
-   NFD_Quit();
-
-   if(buffer[0]!='\0')
+   if(file_path!=NULL)
    {
-      FILE *f = fopen_utf8(buffer,"w");
+      path_pop(file_path,path_palette_save,NULL);
+      FILE *f = fopen_utf8(file_path,"w");
       if(f)
       {
          SLK_palette_save_file(f,pal);
          fclose(f);
       }
    }
+
+   NFD_FreePathU8(file_path);
+   NFD_Quit();
 }
 
 void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)
@@ -449,8 +398,8 @@ void dir_input_select()
 {
    NFD_Init();
 
-   nfdnchar_t *path = NULL;
-   nfdresult_t result = NFD_PickFolderN(&path,NULL);
+   nfdu8char_t *path = NULL;
+   nfdresult_t result = NFD_PickFolderU8(&path,path_dir_input);
 
    if(result!=NFD_OKAY)
    {
@@ -458,27 +407,20 @@ void dir_input_select()
    }
    else
    {
-      wcscpy(input_dir,(wchar_t *)path);
-      NFD_FreePathN(path);
+      strncpy(path_dir_input,path,512);
+      convert_utf8_to_wchar(input_dir,512,path);
+      NFD_FreePathU8(path);
    }
 
    NFD_Quit();
-
-   /*const wchar_t *path = tinyfd_selectFolderDialogW(L"Select input directory",NULL);
-   if(path==NULL)
-   {
-      input_dir[0] = '\0';
-      return;
-   }
-   wcscpy(input_dir,path);*/
 }
 
 void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal)
 {
    NFD_Init();
 
-   nfdnchar_t *path = NULL;
-   nfdresult_t result = NFD_PickFolderN(&path,NULL);
+   nfdu8char_t *path = NULL;
+   nfdresult_t result = NFD_PickFolderU8(&path,path_dir_output);
 
    if(result!=NFD_OKAY)
    {
@@ -488,18 +430,11 @@ void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int 
    }
    else
    {
-      wcscpy(output_dir,(wchar_t *)path);
-      NFD_FreePathN(path);
+      strncpy(path_dir_output,path,512);
+      convert_utf8_to_wchar(output_dir,512,path);
+      NFD_FreePathU8(path);
       NFD_Quit();
    }
-
-   /*const wchar_t *path = tinyfd_selectFolderDialogW(L"Select output directory",NULL);
-   if(path==NULL)
-   {
-      output_dir[0] = '\0';
-      return;
-   }
-   wcscpy(output_dir,path);*/
 
    if(output_dir[0]!='\0'&&input_dir[0]!='\0') //Process directory
    {
@@ -564,15 +499,6 @@ void gif_input_select()
    wcscpy(input_gif,(wchar_t *)path);
    NFD_FreePathN(path);
    NFD_Quit();
-
-   /*const wchar_t *filter_patterns[2] = {L"*.gif"};
-   const wchar_t *path = tinyfd_openFileDialogW(L"Select a gif file",L"",1,filter_patterns,NULL,0);
-   if(path==NULL)
-   {
-      input_gif[0] = '\0';
-      return;
-   }
-   wcscpy(input_gif,path);*/
 }
 
 void gif_output_select(int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal)
@@ -593,15 +519,6 @@ void gif_output_select(int dither_mode, int sample_mode, int distance_mode, int 
    wcscpy(output_gif,(wchar_t *)path);
    NFD_FreePathN(path);
    NFD_Quit();
-
-   /*const wchar_t *filter_patterns[2] = {L"*.gif"};
-   const wchar_t *path = tinyfd_saveFileDialogW(L"Save gif",L"",1,filter_patterns,NULL);
-   if(path==NULL)
-   {
-      output_gif[0] = '\0';
-      return;
-   }
-   wcscpy(output_gif,path);*/
 
    if(output_gif[0]!='\0'&&input_gif[0]!='\0') //Process directory
    {

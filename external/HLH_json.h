@@ -973,10 +973,11 @@ static void json5_write(FILE *f, const HLH_json5 *o,int indent)
       const char *sep = "\"";
       while(e) 
       {
-         fprintf(f,"%s%.*s\\%c",sep,(int)(e-b),b,esc[(unsigned char)*e]);
+         fprintf(f,"%s%.*s%c",sep,(int)(e-b),b,esc[(unsigned char)*e]);
          e = strpbrk( b = e + 1, chars);
          sep = "";
       }
+      //printf("str %s %s: %s\n",sep,b,o->string);
       fprintf(f, "%s%s\"", sep, b);
    }
    else if(o->type==HLH_json5_array) 
