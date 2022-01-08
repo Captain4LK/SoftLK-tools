@@ -16,7 +16,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <SLK/SLK_gui.h>
 
 #define HLH_JSON_IMPLEMENTATION
-#include "../../external/HLH_json.h"
+#include "../external/HLH_json.h"
 //-------------------------------------
 
 //Internal includes

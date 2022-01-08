@@ -38,18 +38,11 @@ Here is a list of all makefile targets for building SoftLK-lib:
 * libSLK.a (``make backend_sdl2`` or ``make backend_sdl2_gl``)
 * global install (``sudo make install``, Unix only)
 
-## Using makefiles
+## Using sh scripts
 
 * cd into the directory of the tool you want to build
-* cd into its bin/unix directory
-* ...and build it: ``make``
+* run the shell script associated with your platform, e.g: ``sh linux.sh``
 * The binary can be found at the top level of the repo in the bin directory
-
-## Using SLK_make
-
-* build SLK_make (a shell fill can be found in the SLK_make/bin/unix directory)
-* cd into the bin directory 
-* run ``./SLK_make -v opt -no_syms -compiler gcc -extension .c [NAME OF TOOL]``
 
 # Contact
 

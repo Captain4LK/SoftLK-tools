@@ -1,7 +1,7 @@
 /*
 SLK_img2pixel - a tool for converting images to pixelart
 
-Written in 2021 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2021,2022 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -18,23 +18,23 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <wchar.h>
 #include <windows.h>
 #define FOPEN_UTF8_IMPLEMENTATION
-#include "../../external/fopen_utf8.h"
+#include "../external/fopen_utf8.h"
 #define STBI_WINDOWS_UTF8
 #define STB_IMAGE_IMPLEMENTATION
-#include "../../external/stb_image.h"
+#include "../external/stb_image.h"
 #define CUTE_FILES_IMPLEMENTATION
-#include "../../external/cute_files.h"
+#include "../external/cute_files.h"
 #define CUTE_PATH_IMPLEMENTATION
-#include "../../external/cute_path.h"
-#include "../../external/gifdec.h"
-#include "../../external/gifenc.h"
-#include "../../external/HLH_json.h"
+#include "../external/cute_path.h"
+#include "../external/gifdec.h"
+#include "../external/gifenc.h"
+#include "../external/HLH_json.h"
+#include "../external/nfd.h"
 //-------------------------------------
 
 //Internal includes
 #include "utility.h"
 #include "image2pixel.h"
-#include "../../external/nfd.h"
 //-------------------------------------
 
 //#defines
