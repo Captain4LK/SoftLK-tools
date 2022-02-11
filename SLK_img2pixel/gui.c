@@ -295,6 +295,12 @@ void gui_init()
    SLK_gui_window_set_moveable(preview,1);
    preview_tabs = SLK_gui_tabbar_create(2,14,256,14,2,text_tab_image);
    SLK_gui_window_add_element(preview,preview_tabs);
+
+   //Dummy elements to allow tab switching
+   label = SLK_gui_label_create(0,0,64,12,"");
+   SLK_gui_vtabbar_add_element(preview_tabs,0,label);
+   label = SLK_gui_label_create(0,0,64,12,"");
+   SLK_gui_vtabbar_add_element(preview_tabs,1,label);
    //-------------------------------------
    
    //Gui window

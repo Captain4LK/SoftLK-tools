@@ -740,7 +740,11 @@ static void slk_gui_input(SLK_gui_window *w, SLK_gui_element *elements, SLK_Butt
       else if(e->type==SLK_GUI_ELEMENT_TABBAR)
       {
          if(button_left.pressed&&INSIDE(cursor_x,cursor_y,w->pos.x+e->tabbar.pos.x,w->pos.y+e->tabbar.pos.y,e->tabbar.pos.w,e->tabbar.pos.h))
-            e->tabbar.current_tab = (cursor_x-w->pos.x-e->tabbar.pos.x)/(e->tabbar.pos.w/e->tabbar.tabs);
+         {
+            int new_tab = (cursor_x-w->pos.x-e->tabbar.pos.x)/(e->tabbar.pos.w/e->tabbar.tabs);
+            if(e->tabbar.elements[new_tab]!=NULL)
+               e->tabbar.current_tab = new_tab;
+         }
          if(e->tabbar.elements[e->tabbar.current_tab]!=NULL)
             slk_gui_input(w,e->tabbar.elements[e->tabbar.current_tab],button_left,button_right,cursor_x,cursor_y);
       }
@@ -748,7 +752,11 @@ static void slk_gui_input(SLK_gui_window *w, SLK_gui_element *elements, SLK_Butt
       {
          int height = 14*e->vtabbar.tabs;
          if(button_left.pressed&&INSIDE(cursor_x,cursor_y,w->pos.x+e->vtabbar.pos.x,w->pos.y+e->vtabbar.pos.y,e->vtabbar.pos.w,height))
-            e->vtabbar.current_tab = (cursor_y-w->pos.y-e->vtabbar.pos.y)/(height/e->vtabbar.tabs);
+         {
+            int new_tab = (cursor_y-w->pos.y-e->vtabbar.pos.y)/(height/e->vtabbar.tabs);
+            if(e->vtabbar.elements[new_tab]!=NULL)
+               e->vtabbar.current_tab = new_tab;
+         }
          if(e->vtabbar.elements[e->vtabbar.current_tab]!=NULL)
             slk_gui_input(w,e->vtabbar.elements[e->vtabbar.current_tab],button_left,button_right,cursor_x,cursor_y);
       }
