@@ -9,8 +9,12 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
-#include <SLK/SLK.h>
-#include <SLK/SLK_gui.h>
+
+#define LIBSLK_IMPLEMENTATION
+#include "../headers/libSLK.h"
+
+#define LIBSLK_GUI_IMPLEMENTATION
+#include "../headers/libSLK_gui.h"
 //-------------------------------------
 
 //Internal includes

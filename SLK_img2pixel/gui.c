@@ -10,8 +10,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //External includes
 #include <stdlib.h>
-#include <SLK/SLK.h>
-#include <SLK/SLK_gui.h>
+#include "../headers/libSLK.h"
+#include "../headers/libSLK_gui.h"
 //-------------------------------------
 
 //Internal includes
@@ -779,9 +779,9 @@ static void gui_buttons()
                free(img2pixel_get_palette());
             img2pixel_set_palette(p);
             update = 1;
-            elements.palette_bar_r->slider.value = p->colors[palette_selected].r;
-            elements.palette_bar_g->slider.value = p->colors[palette_selected].g;
-            elements.palette_bar_b->slider.value = p->colors[palette_selected].b;
+            elements.palette_bar_r->slider.value = p->colors[palette_selected].rgb.r;
+            elements.palette_bar_g->slider.value = p->colors[palette_selected].rgb.g;
+            elements.palette_bar_b->slider.value = p->colors[palette_selected].rgb.b;
             palette_draw();
             palette_labels();
             elements.palette_bar_colors->slider.value = img2pixel_get_palette()->used;
@@ -803,9 +803,9 @@ static void gui_buttons()
          img2pixel_quantize(img2pixel_get_palette()->used,sprite_in_org);
 
          update = 1;
-         elements.palette_bar_r->slider.value = img2pixel_get_palette()->colors[palette_selected].r;
-         elements.palette_bar_g->slider.value = img2pixel_get_palette()->colors[palette_selected].g;
-         elements.palette_bar_b->slider.value = img2pixel_get_palette()->colors[palette_selected].b;
+         elements.palette_bar_r->slider.value = img2pixel_get_palette()->colors[palette_selected].rgb.r;
+         elements.palette_bar_g->slider.value = img2pixel_get_palette()->colors[palette_selected].rgb.g;
+         elements.palette_bar_b->slider.value = img2pixel_get_palette()->colors[palette_selected].rgb.b;
          palette_draw();
          palette_labels();
          elements.palette_bar_colors->slider.value = img2pixel_get_palette()->used;
@@ -833,13 +833,13 @@ static void gui_buttons()
       BUTTON_BAR_PLUS(elements.palette_plus_colors,elements.palette_bar_colors);
       BUTTON_BAR_MINUS(elements.palette_minus_colors,elements.palette_bar_colors);
 
-      if(elements.palette_bar_r->slider.value!=img2pixel_get_palette()->colors[palette_selected].r||elements.palette_bar_g->slider.value!=img2pixel_get_palette()->colors[palette_selected].g||elements.palette_bar_b->slider.value!=img2pixel_get_palette()->colors[palette_selected].b)
+      if(elements.palette_bar_r->slider.value!=img2pixel_get_palette()->colors[palette_selected].rgb.r||elements.palette_bar_g->slider.value!=img2pixel_get_palette()->colors[palette_selected].rgb.g||elements.palette_bar_b->slider.value!=img2pixel_get_palette()->colors[palette_selected].rgb.b)
       {
-         img2pixel_get_palette()->colors[palette_selected].r = elements.palette_bar_r->slider.value;
-         img2pixel_get_palette()->colors[palette_selected].g = elements.palette_bar_g->slider.value;
-         img2pixel_get_palette()->colors[palette_selected].b = elements.palette_bar_b->slider.value;
+         img2pixel_get_palette()->colors[palette_selected].rgb.r = elements.palette_bar_r->slider.value;
+         img2pixel_get_palette()->colors[palette_selected].rgb.g = elements.palette_bar_g->slider.value;
+         img2pixel_get_palette()->colors[palette_selected].rgb.b = elements.palette_bar_b->slider.value;
          if(palette_selected!=0)
-            img2pixel_get_palette()->colors[palette_selected].a = 255;
+            img2pixel_get_palette()->colors[palette_selected].rgb.a = 255;
          img2pixel_get_palette()->used = MAX(img2pixel_get_palette()->used,palette_selected+1);
          palette_draw();
          palette_labels();
@@ -1167,15 +1167,15 @@ static void palette_draw()
 static void palette_labels()
 {
    char ctmp[16];
-   sprintf(ctmp,"%d",img2pixel_get_palette()->colors[palette_selected].r);
+   sprintf(ctmp,"%d",img2pixel_get_palette()->colors[palette_selected].rgb.r);
    SLK_gui_label_set_text(elements.palette_label_r,ctmp);
-   elements.palette_bar_r->slider.value = img2pixel_get_palette()->colors[palette_selected].r;
-   sprintf(ctmp,"%d",img2pixel_get_palette()->colors[palette_selected].g);
+   elements.palette_bar_r->slider.value = img2pixel_get_palette()->colors[palette_selected].rgb.r;
+   sprintf(ctmp,"%d",img2pixel_get_palette()->colors[palette_selected].rgb.g);
    SLK_gui_label_set_text(elements.palette_label_g,ctmp);
-   elements.palette_bar_g->slider.value = img2pixel_get_palette()->colors[palette_selected].g;
-   sprintf(ctmp,"%d",img2pixel_get_palette()->colors[palette_selected].b);
+   elements.palette_bar_g->slider.value = img2pixel_get_palette()->colors[palette_selected].rgb.g;
+   sprintf(ctmp,"%d",img2pixel_get_palette()->colors[palette_selected].rgb.b);
    SLK_gui_label_set_text(elements.palette_label_b,ctmp);
-   elements.palette_bar_b->slider.value = img2pixel_get_palette()->colors[palette_selected].b;
+   elements.palette_bar_b->slider.value = img2pixel_get_palette()->colors[palette_selected].rgb.b;
 }
 
 void preset_load(FILE *f)
@@ -1184,9 +1184,9 @@ void preset_load(FILE *f)
    img2pixel_preset_load(f);
 
    //The unnecessary indentations are for my own sanity
-   elements.palette_bar_r->slider.value = img2pixel_get_palette()->colors[palette_selected].r;
-   elements.palette_bar_g->slider.value = img2pixel_get_palette()->colors[palette_selected].g;
-   elements.palette_bar_b->slider.value = img2pixel_get_palette()->colors[palette_selected].b;
+   elements.palette_bar_r->slider.value = img2pixel_get_palette()->colors[palette_selected].rgb.r;
+   elements.palette_bar_g->slider.value = img2pixel_get_palette()->colors[palette_selected].rgb.g;
+   elements.palette_bar_b->slider.value = img2pixel_get_palette()->colors[palette_selected].rgb.b;
    palette_draw();
    palette_labels();
    SLK_gui_label_set_text(elements.color_label_space,text_space[img2pixel_get_distance_mode()]);

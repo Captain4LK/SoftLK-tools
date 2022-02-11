@@ -12,8 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //External includes
 #include <math.h>
-#include <SLK/SLK.h>
-#include <SLK/SLK_gui.h>
+#include "../headers/libSLK.h"
 
 #define HLH_JSON_IMPLEMENTATION
 #include "../external/HLH_json.h"
@@ -326,16 +325,16 @@ void img2pixel_sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
             {
                SLK_Color c = kernel_data_get(x+xk,y+yk,out->width,out->height,tmp_data2);
 
-               r+=sharpen_kernel[yk+1][xk+1]*(float)c.r;
-               g+=sharpen_kernel[yk+1][xk+1]*(float)c.g;
-               b+=sharpen_kernel[yk+1][xk+1]*(float)c.b;
+               r+=sharpen_kernel[yk+1][xk+1]*(float)c.rgb.r;
+               g+=sharpen_kernel[yk+1][xk+1]*(float)c.rgb.g;
+               b+=sharpen_kernel[yk+1][xk+1]*(float)c.rgb.b;
             }
          }
 
-         out->data[y*out->width+x].r = MAX(0x0,MIN(0xff,(int)r));
-         out->data[y*out->width+x].g = MAX(0x0,MIN(0xff,(int)g));
-         out->data[y*out->width+x].b = MAX(0x0,MIN(0xff,(int)b));
-         out->data[y*out->width+x].a = in->data[y*out->width+x].a;
+         out->data[y*out->width+x].rgb.r = MAX(0x0,MIN(0xff,(int)r));
+         out->data[y*out->width+x].rgb.g = MAX(0x0,MIN(0xff,(int)g));
+         out->data[y*out->width+x].rgb.b = MAX(0x0,MIN(0xff,(int)b));
+         out->data[y*out->width+x].rgb.a = in->data[y*out->width+x].rgb.a;
       }
    }
 
@@ -394,16 +393,16 @@ void img2pixel_lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
             {
                SLK_Color c = kernel_data_get(x+xk,y+yk,out->width,out->height,tmp_data2);
 
-               r+=lowpass_kernel[xk+3][yk+3]*(double)c.r;
-               g+=lowpass_kernel[xk+3][yk+3]*(double)c.g;
-               b+=lowpass_kernel[xk+3][yk+3]*(double)c.b;
+               r+=lowpass_kernel[xk+3][yk+3]*(double)c.rgb.r;
+               g+=lowpass_kernel[xk+3][yk+3]*(double)c.rgb.g;
+               b+=lowpass_kernel[xk+3][yk+3]*(double)c.rgb.b;
             }
          }
 
-         out->data[y*out->width+x].r = MAX(0x0,MIN(0xff,(int)r));
-         out->data[y*out->width+x].g = MAX(0x0,MIN(0xff,(int)g));
-         out->data[y*out->width+x].b = MAX(0x0,MIN(0xff,(int)b));
-         out->data[y*out->width+x].a = in->data[y*out->width+x].a;
+         out->data[y*out->width+x].rgb.r = MAX(0x0,MIN(0xff,(int)r));
+         out->data[y*out->width+x].rgb.g = MAX(0x0,MIN(0xff,(int)g));
+         out->data[y*out->width+x].rgb.b = MAX(0x0,MIN(0xff,(int)b));
+         out->data[y*out->width+x].rgb.a = in->data[y*out->width+x].rgb.a;
       }
    }
 
@@ -425,7 +424,7 @@ void img2pixel_quantize(int colors, SLK_RGB_sprite *in)
    for(int i = 0;i<colors;i++)
    {
       palette->colors[i] = quant_centroid_list[i];
-      palette->colors[i].a = 255;
+      palette->colors[i].rgb.a = 255;
    }
 
    quant_cluster_list_free();
@@ -495,20 +494,20 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
          }
 
          //Saturation, brightness and contrast
-         float r = (float)in.r;
-         float g = (float)in.g;
-         float b = (float)in.b;
-         in.r = MAX(0x0,MIN(0xff,(int)(rr*r)+(gr*g)+(br*b)+wr));
-         in.g = MAX(0x0,MIN(0xff,(int)(rg*r)+(gg*g)+(bg*b)+wg));
-         in.b = MAX(0x0,MIN(0xff,(int)(rb*r)+(gb*g)+(bb*b)+wb));
+         float r = (float)in.rgb.r;
+         float g = (float)in.rgb.g;
+         float b = (float)in.rgb.b;
+         in.rgb.r = MAX(0x0,MIN(0xff,(int)(rr*r)+(gr*g)+(br*b)+wr));
+         in.rgb.g = MAX(0x0,MIN(0xff,(int)(rg*r)+(gg*g)+(bg*b)+wg));
+         in.rgb.b = MAX(0x0,MIN(0xff,(int)(rb*r)+(gb*g)+(bb*b)+wb));
 
          //Gamma
          //Only ajust if not the default value --> better performance
          if(img_gamma!=100)
          {
-            in.r = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.r/255.0f,gamma_factor))));
-            in.g = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.g/255.0f,gamma_factor))));
-            in.b = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.b/255.0f,gamma_factor))));
+            in.rgb.r = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.rgb.r/255.0f,gamma_factor))));
+            in.rgb.g = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.rgb.g/255.0f,gamma_factor))));
+            in.rgb.b = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.rgb.b/255.0f,gamma_factor))));
          }
 
          tmp_data[y*out->width+x] = in;
@@ -843,7 +842,7 @@ static void dither_image(SLK_Color *in, SLK_Color *out, int width, int height, S
 
       for(int i = 0;i<width*height;i++)
       {
-         if(out[i].a==0)
+         if(out[i].rgb.a==0)
             out[i] = SLK_color_create(0,0,0,0);
          else
             out[i] = palette->colors[quant_assignment[i]];
@@ -925,7 +924,7 @@ static void dither_none(SLK_Color *in, SLK_Color *out, int width, int height, SL
       for(int x = 0;x<width;x++)
       { 
          SLK_Color cin = in[y*width+x];
-         if(cin.a<alpha_threshold)
+         if(cin.rgb.a<alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -934,12 +933,12 @@ static void dither_none(SLK_Color *in, SLK_Color *out, int width, int height, SL
          //Add a value to the color depending on the position,
          //this creates the dithering effect
          SLK_Color c;
-         c.r = cin.r;
-         c.g = cin.g;
-         c.b = cin.b;
-         c.a = cin.a;
+         c.rgb.r = cin.rgb.r;
+         c.rgb.g = cin.rgb.g;
+         c.rgb.b = cin.rgb.b;
+         c.rgb.a = cin.rgb.a;
          out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
-         out[y*width+x].a = 255;
+         out[y*width+x].rgb.a = 255;
       }
    }
 }
@@ -951,7 +950,7 @@ static void dither_none_apply(SLK_Color *in, SLK_Color *out, int width, int heig
       for(int x = 0;x<width;x++)
       { 
          SLK_Color cin = in[y*width+x];
-         if(cin.a<alpha_threshold)
+         if(cin.rgb.a<alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -960,12 +959,12 @@ static void dither_none_apply(SLK_Color *in, SLK_Color *out, int width, int heig
          //Add a value to the color depending on the position,
          //this creates the dithering effect
          SLK_Color c;
-         c.r = cin.r;
-         c.g = cin.g;
-         c.b = cin.b;
-         c.a = cin.a;
+         c.rgb.r = cin.rgb.r;
+         c.rgb.g = cin.rgb.g;
+         c.rgb.b = cin.rgb.b;
+         c.rgb.a = cin.rgb.a;
          out[y*width+x] = c;
-         out[y*width+x].a = 255;
+         out[y*width+x].rgb.a = 255;
       }
    }
 }
@@ -979,7 +978,7 @@ static void dither_threshold(SLK_Color *in, SLK_Color *out, int width, int heigh
       for(int x = 0;x<width;x++)
       { 
          SLK_Color cin = in[y*width+x];
-         if(cin.a<alpha_threshold)
+         if(cin.rgb.a<alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -990,12 +989,12 @@ static void dither_threshold(SLK_Color *in, SLK_Color *out, int width, int heigh
          uint8_t mod = (1<<dim)-1;
          uint8_t tresshold_id = ((y&mod)<<dim)+(x&mod);
          SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(threshold[tresshold_id]-0.5f))));
-         c.a = cin.a;
+         c.rgb.r = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.r+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.g = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.g+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.b = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.b+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.a = cin.rgb.a;
          out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
-         out[y*width+x].a = 255;
+         out[y*width+x].rgb.a = 255;
       }
    }
 }
@@ -1009,7 +1008,7 @@ static void dither_threshold_apply(SLK_Color *in, SLK_Color *out, int width, int
       for(int x = 0;x<width;x++)
       { 
          SLK_Color cin = in[y*width+x];
-         if(cin.a<alpha_threshold)
+         if(cin.rgb.a<alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -1020,12 +1019,12 @@ static void dither_threshold_apply(SLK_Color *in, SLK_Color *out, int width, int
          uint8_t mod = (1<<dim)-1;
          uint8_t tresshold_id = ((y&mod)<<dim)+(x&mod);
          SLK_Color c;
-         c.r = MAX(0x0,MIN(0xff,(int)((float)cin.r+255.0f*amount*(threshold[tresshold_id]-0.5f))));
-         c.g = MAX(0x0,MIN(0xff,(int)((float)cin.g+255.0f*amount*(threshold[tresshold_id]-0.5f))));
-         c.b = MAX(0x0,MIN(0xff,(int)((float)cin.b+255.0f*amount*(threshold[tresshold_id]-0.5f))));
-         c.a = cin.a;
+         c.rgb.r = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.r+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.g = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.g+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.b = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.b+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.a = cin.rgb.a;
          out[y*width+x] = c;
-         out[y*width+x].a = 255;
+         out[y*width+x].rgb.a = 255;
       }
    }
 }
@@ -1040,23 +1039,23 @@ static void dither_floyd(SLK_Color *in, SLK_Color *out, int width, int height, S
       for(int x = 0;x<width;x++)
       {
          SLK_Color cin = in[y*width+x];
-         if(cin.a<alpha_threshold)
+         if(cin.rgb.a<alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
          }
          
          SLK_Color p = palette_find_closest(pal,pal_d3,cin,distance_mode);
-         double error_r = (double)cin.r-(double)p.r;
-         double error_g = (double)cin.g-(double)p.g;
-         double error_b = (double)cin.b-(double)p.b;
+         double error_r = (double)cin.rgb.r-(double)p.rgb.r;
+         double error_g = (double)cin.rgb.g-(double)p.rgb.g;
+         double error_b = (double)cin.rgb.b-(double)p.rgb.b;
          floyd_apply_error(in,error_r*(7.0/16.0),error_g*(7.0/16.0),error_b*(7.0/16.0),x+1,y,width,height);
          floyd_apply_error(in,error_r*(3.0/16.0),error_g*(3.0/16.0),error_b*(3.0/16.0),x-1,y+1,width,height);
          floyd_apply_error(in,error_r*(5.0/16.0),error_g*(5.0/16.0),error_b*(5.0/16.0),x,y+1,width,height);
          floyd_apply_error(in,error_r*(1.0/16.0),error_g*(1.0/16.0),error_b*(1.0/16.0),x+1,y+1,width,height);
 
          out[y*width+x] = p;
-         out[y*width+x].a = 255;
+         out[y*width+x].rgb.a = 255;
       }
    }
 }
@@ -1071,16 +1070,16 @@ static void dither_floyd2(SLK_Color *in, SLK_Color *out, int width, int height, 
       for(int x = 0;x<width;x++)
       {
          SLK_Color cin = in[y*width+x];
-         if(cin.a<alpha_threshold)
+         if(cin.rgb.a<alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
          }
          
          SLK_Color p = palette_find_closest(pal,pal_d3,cin,distance_mode);
-         double error = ((double)cin.r-(double)p.r);
-         error+=((double)cin.g-(double)p.g);
-         error+=((double)cin.b-(double)p.b);
+         double error = ((double)cin.rgb.r-(double)p.rgb.r);
+         error+=((double)cin.rgb.g-(double)p.rgb.g);
+         error+=((double)cin.rgb.b-(double)p.rgb.b);
          error = error/3.0;
          floyd_apply_error(in,error*(7.0/16.0),error*(7.0/16.0),error*(7.0/16.0),x+1,y,width,height);
          floyd_apply_error(in,error*(3.0/16.0),error*(3.0/16.0),error*(3.0/16.0),x-1,y+1,width,height);
@@ -1088,7 +1087,7 @@ static void dither_floyd2(SLK_Color *in, SLK_Color *out, int width, int height, 
          floyd_apply_error(in,error*(1.0/16.0),error*(1.0/16.0),error*(1.0/16.0),x+1,y+1,width,height);
 
          out[y*width+x] = p;
-         out[y*width+x].a = 255;
+         out[y*width+x].rgb.a = 255;
       }
    }
 }
@@ -1101,13 +1100,13 @@ static void floyd_apply_error(SLK_Color *d, double error_r, double error_g, doub
 
    int r,g,b;
    SLK_Color *in = &d[y*width+x];
-   r = in->r+error_r;
-   g = in->g+error_g;
-   b = in->b+error_b;
+   r = in->rgb.r+error_r;
+   g = in->rgb.g+error_g;
+   b = in->rgb.b+error_b;
 
-   in->r = MAX(0x0,MIN(r,0xff));
-   in->g = MAX(0x0,MIN(g,0xff));
-   in->b = MAX(0x0,MIN(b,0xff));
+   in->rgb.r = MAX(0x0,MIN(r,0xff));
+   in->rgb.g = MAX(0x0,MIN(g,0xff));
+   in->rgb.b = MAX(0x0,MIN(b,0xff));
 }
 
 static SLK_Color palette_find_closest(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c, int distance_mode)
@@ -1149,9 +1148,9 @@ static Color_d3 color_to_rgb(SLK_Color c)
 {
    Color_d3 d3;
 
-   d3.c0 = (double)c.r/255.0;
-   d3.c1 = (double)c.g/255.0;
-   d3.c2 = (double)c.b/255.0;
+   d3.c0 = (double)c.rgb.r/255.0;
+   d3.c1 = (double)c.rgb.g/255.0;
+   d3.c2 = (double)c.rgb.b/255.0;
 
    return d3;
 }
@@ -1219,9 +1218,9 @@ static Color_d3 color_to_xyz(SLK_Color c)
 
 static Color_d3 color_to_ycc(SLK_Color c)
 {
-   double r = (double)c.r;
-   double g = (double)c.g;
-   double b = (double)c.b;
+   double r = (double)c.rgb.r;
+   double g = (double)c.rgb.g;
+   double b = (double)c.rgb.b;
    Color_d3 y;
 
    y.c0 = 0.299f*r+0.587f*g+0.114f*b;
@@ -1233,9 +1232,9 @@ static Color_d3 color_to_ycc(SLK_Color c)
 
 static Color_d3 color_to_yiq(SLK_Color c)
 {
-   double r = (double)c.r;
-   double g = (double)c.g;
-   double b = (double)c.b;
+   double r = (double)c.rgb.r;
+   double g = (double)c.rgb.g;
+   double b = (double)c.rgb.b;
    Color_d3 y;
 
    y.c0 = 0.2999f*r+0.587f*g+0.114f*b;
@@ -1247,9 +1246,9 @@ static Color_d3 color_to_yiq(SLK_Color c)
 
 static Color_d3 color_to_yuv(SLK_Color c)
 {
-   double r = (double)c.r;
-   double g = (double)c.g;
-   double b = (double)c.b;
+   double r = (double)c.rgb.r;
+   double g = (double)c.rgb.g;
+   double b = (double)c.rgb.b;
    Color_d3 y;
 
    y.c0 = 0.2999f*r+0.587f*g+0.114f*b;
@@ -1261,9 +1260,9 @@ static Color_d3 color_to_yuv(SLK_Color c)
 
 static Color_d3 color_to_hsv(SLK_Color c)
 {
-   float r = (float)c.r/255.0f;
-   float g = (float)c.g/255.0f;
-   float b = (float)c.b/255.0f;
+   float r = (float)c.rgb.r/255.0f;
+   float g = (float)c.rgb.g/255.0f;
+   float b = (float)c.rgb.b/255.0f;
    float cmax = MAX(r,MAX(g,b));
    float cmin = MIN(r,MIN(g,b));
    float diff = cmax-cmin;
@@ -1334,16 +1333,16 @@ static SLK_Color hsv_to_color(Color_d3 hsv)
       b = x+m;
    }
 
-   rgb.r = (uint8_t)(r*255.0f);
-   rgb.g = (uint8_t)(g*255.0f);
-   rgb.b = (uint8_t)(b*255.0f);
+   rgb.rgb.r = (uint8_t)(r*255.0f);
+   rgb.rgb.g = (uint8_t)(g*255.0f);
+   rgb.rgb.b = (uint8_t)(b*255.0f);
 
    return rgb;
 }
 
 static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
-   if(c.a==0)
+   if(c.rgb.a==0)
       return pal->colors[0];
 
    double min_dist = 10000000000000.0f;
@@ -1365,15 +1364,15 @@ static SLK_Color palette_find_closest_rgb(SLK_Palette *pal, Color_d3 *pal_d3, SL
 
 static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
-   if(c.a==0)
+   if(c.rgb.a==0)
       return pal->colors[0];
 
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0x0,MIN(0xff,c.r));
-   cin.g = MAX(0x0,MIN(0xff,c.g));
-   cin.b = MAX(0x0,MIN(0xff,c.b));
+   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
+   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
+   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
    Color_d3 in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1391,15 +1390,15 @@ static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, Color_d3 *pal_d3, 
 
 static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
-   if(c.a==0)
+   if(c.rgb.a==0)
       return pal->colors[0];
 
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0x0,MIN(0xff,c.r));
-   cin.g = MAX(0x0,MIN(0xff,c.g));
-   cin.b = MAX(0x0,MIN(0xff,c.b));
+   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
+   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
+   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
    Color_d3 in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1417,15 +1416,15 @@ static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, Color_d3 *pal_d3, 
 
 static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
-   if(c.a==0)
+   if(c.rgb.a==0)
       return pal->colors[0];
 
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0x0,MIN(0xff,c.r));
-   cin.g = MAX(0x0,MIN(0xff,c.g));
-   cin.b = MAX(0x0,MIN(0xff,c.b));
+   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
+   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
+   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
    Color_d3 in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1443,15 +1442,15 @@ static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, Color_d3 *pal_
 
 static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
-   if(c.a==0)
+   if(c.rgb.a==0)
       return pal->colors[0];
 
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0x0,MIN(0xff,c.r));
-   cin.g = MAX(0x0,MIN(0xff,c.g));
-   cin.b = MAX(0x0,MIN(0xff,c.b));
+   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
+   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
+   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
    Color_d3 in = color_to_xyz(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1469,15 +1468,15 @@ static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, Color_d3 *pal_d3, SL
 
 static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
-   if(c.a==0)
+   if(c.rgb.a==0)
       return pal->colors[0];
 
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0x0,MIN(0xff,c.r));
-   cin.g = MAX(0x0,MIN(0xff,c.g));
-   cin.b = MAX(0x0,MIN(0xff,c.b));
+   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
+   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
+   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
    Color_d3 in = color_to_ycc(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1495,15 +1494,15 @@ static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, Color_d3 *pal_d3, SL
 
 static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
-   if(c.a==0)
+   if(c.rgb.a==0)
       return pal->colors[0];
 
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0x0,MIN(0xff,c.r));
-   cin.g = MAX(0x0,MIN(0xff,c.g));
-   cin.b = MAX(0x0,MIN(0xff,c.b));
+   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
+   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
+   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
    Color_d3 in = color_to_yiq(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1521,15 +1520,15 @@ static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, Color_d3 *pal_d3, SL
 
 static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c)
 {
-   if(c.a==0)
+   if(c.rgb.a==0)
       return pal->colors[0];
 
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.r = MAX(0x0,MIN(0xff,c.r));
-   cin.g = MAX(0x0,MIN(0xff,c.g));
-   cin.b = MAX(0x0,MIN(0xff,c.b));
+   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
+   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
+   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
    Color_d3 in = color_to_yuv(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1737,29 +1736,29 @@ static void sample_linear(const SLK_RGB_sprite *in, SLK_Color *out, int width, i
          c4 = SLK_rgb_sprite_get_pixel(in,ix+1,iy+1);
 
          //r value
-         float c1t = ((1.0f-six)*(float)c1.r+six*(float)c2.r);
-         float c2t = ((1.0f-six)*(float)c3.r+six*(float)c4.r);
-         c.r = (int)((1.0f-siy)*c1t+siy*c2t);
+         float c1t = ((1.0f-six)*(float)c1.rgb.r+six*(float)c2.rgb.r);
+         float c2t = ((1.0f-six)*(float)c3.rgb.r+six*(float)c4.rgb.r);
+         c.rgb.r = (int)((1.0f-siy)*c1t+siy*c2t);
 
          //g value
-         c1t = ((1.0f-six)*(float)c1.g+six*(float)c2.g);
-         c2t = ((1.0f-six)*(float)c3.g+six*(float)c4.g);
-         c.g = (int)((1.0f-siy)*c1t+siy*c2t);
+         c1t = ((1.0f-six)*(float)c1.rgb.g+six*(float)c2.rgb.g);
+         c2t = ((1.0f-six)*(float)c3.rgb.g+six*(float)c4.rgb.g);
+         c.rgb.g = (int)((1.0f-siy)*c1t+siy*c2t);
 
          //b value
-         c1t = ((1.0f-six)*(float)c1.b+six*(float)c2.b);
-         c2t = ((1.0f-six)*(float)c3.b+six*(float)c4.b);
-         c.b = (int)((1.0f-siy)*c1t+siy*c2t);
+         c1t = ((1.0f-six)*(float)c1.rgb.b+six*(float)c2.rgb.b);
+         c2t = ((1.0f-six)*(float)c3.rgb.b+six*(float)c4.rgb.b);
+         c.rgb.b = (int)((1.0f-siy)*c1t+siy*c2t);
 
          //a value
-         c1t = ((1.0f-six)*(float)c1.a+six*(float)c2.a);
-         c2t = ((1.0f-six)*(float)c3.a+six*(float)c4.a);
-         c.a = (int)((1.0f-siy)*c1t+siy*c2t);
+         c1t = ((1.0f-six)*(float)c1.rgb.a+six*(float)c2.rgb.a);
+         c2t = ((1.0f-six)*(float)c3.rgb.a+six*(float)c4.rgb.a);
+         c.rgb.a = (int)((1.0f-siy)*c1t+siy*c2t);
 
-         out[y*width+x].r = c.r;
-         out[y*width+x].b = c.b;
-         out[y*width+x].g = c.g;
-         out[y*width+x].a = c.a;
+         out[y*width+x].rgb.r = c.rgb.r;
+         out[y*width+x].rgb.b = c.rgb.b;
+         out[y*width+x].rgb.g = c.rgb.g;
+         out[y*width+x].rgb.a = c.rgb.a;
       }
    }
 }
@@ -1807,36 +1806,36 @@ static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
          c33 = SLK_rgb_sprite_get_pixel(in,ix+2,iy+2);
 
          //r value
-         float c0 = cubic_hermite((float)c00.r,(float)c10.r,(float)c20.r,(float)c30.r,six);
-         float c1 = cubic_hermite((float)c01.r,(float)c11.r,(float)c21.r,(float)c31.r,six);
-         float c2 = cubic_hermite((float)c02.r,(float)c12.r,(float)c22.r,(float)c32.r,six);
-         float c3 = cubic_hermite((float)c03.r,(float)c13.r,(float)c23.r,(float)c33.r,six);
+         float c0 = cubic_hermite((float)c00.rgb.r,(float)c10.rgb.r,(float)c20.rgb.r,(float)c30.rgb.r,six);
+         float c1 = cubic_hermite((float)c01.rgb.r,(float)c11.rgb.r,(float)c21.rgb.r,(float)c31.rgb.r,six);
+         float c2 = cubic_hermite((float)c02.rgb.r,(float)c12.rgb.r,(float)c22.rgb.r,(float)c32.rgb.r,six);
+         float c3 = cubic_hermite((float)c03.rgb.r,(float)c13.rgb.r,(float)c23.rgb.r,(float)c33.rgb.r,six);
          float val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].r = MAX(0x0,MIN(0xff,(int)val));
+         out[y*width+x].rgb.r = MAX(0x0,MIN(0xff,(int)val));
 
          //g value
-         c0 = cubic_hermite((float)c00.g,(float)c10.g,(float)c20.g,(float)c30.g,six);
-         c1 = cubic_hermite((float)c01.g,(float)c11.g,(float)c21.g,(float)c31.g,six);
-         c2 = cubic_hermite((float)c02.g,(float)c12.g,(float)c22.g,(float)c32.g,six);
-         c3 = cubic_hermite((float)c03.g,(float)c13.g,(float)c23.g,(float)c33.g,six);
+         c0 = cubic_hermite((float)c00.rgb.g,(float)c10.rgb.g,(float)c20.rgb.g,(float)c30.rgb.g,six);
+         c1 = cubic_hermite((float)c01.rgb.g,(float)c11.rgb.g,(float)c21.rgb.g,(float)c31.rgb.g,six);
+         c2 = cubic_hermite((float)c02.rgb.g,(float)c12.rgb.g,(float)c22.rgb.g,(float)c32.rgb.g,six);
+         c3 = cubic_hermite((float)c03.rgb.g,(float)c13.rgb.g,(float)c23.rgb.g,(float)c33.rgb.g,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].g = MAX(0x0,MIN(0xff,(int)val));
+         out[y*width+x].rgb.g = MAX(0x0,MIN(0xff,(int)val));
 
          //b value
-         c0 = cubic_hermite((float)c00.b,(float)c10.b,(float)c20.b,(float)c30.b,six);
-         c1 = cubic_hermite((float)c01.b,(float)c11.b,(float)c21.b,(float)c31.b,six);
-         c2 = cubic_hermite((float)c02.b,(float)c12.b,(float)c22.b,(float)c32.b,six);
-         c3 = cubic_hermite((float)c03.b,(float)c13.b,(float)c23.b,(float)c33.b,six);
+         c0 = cubic_hermite((float)c00.rgb.b,(float)c10.rgb.b,(float)c20.rgb.b,(float)c30.rgb.b,six);
+         c1 = cubic_hermite((float)c01.rgb.b,(float)c11.rgb.b,(float)c21.rgb.b,(float)c31.rgb.b,six);
+         c2 = cubic_hermite((float)c02.rgb.b,(float)c12.rgb.b,(float)c22.rgb.b,(float)c32.rgb.b,six);
+         c3 = cubic_hermite((float)c03.rgb.b,(float)c13.rgb.b,(float)c23.rgb.b,(float)c33.rgb.b,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].b = MAX(0x0,MIN(0xff,(int)val));
+         out[y*width+x].rgb.b = MAX(0x0,MIN(0xff,(int)val));
 
          //a value
-         c0 = cubic_hermite((float)c00.a,(float)c10.a,(float)c20.a,(float)c30.a,six);
-         c1 = cubic_hermite((float)c01.a,(float)c11.a,(float)c21.a,(float)c31.a,six);
-         c2 = cubic_hermite((float)c02.a,(float)c12.a,(float)c22.a,(float)c32.a,six);
-         c3 = cubic_hermite((float)c03.a,(float)c13.a,(float)c23.a,(float)c33.a,six);
+         c0 = cubic_hermite((float)c00.rgb.a,(float)c10.rgb.a,(float)c20.rgb.a,(float)c30.rgb.a,six);
+         c1 = cubic_hermite((float)c01.rgb.a,(float)c11.rgb.a,(float)c21.rgb.a,(float)c31.rgb.a,six);
+         c2 = cubic_hermite((float)c02.rgb.a,(float)c12.rgb.a,(float)c22.rgb.a,(float)c32.rgb.a,six);
+         c3 = cubic_hermite((float)c03.rgb.a,(float)c13.rgb.a,(float)c23.rgb.a,(float)c33.rgb.a,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].a = MAX(0x0,MIN(0xff,(int)val));
+         out[y*width+x].rgb.a = MAX(0x0,MIN(0xff,(int)val));
       }
    }
 }
@@ -1896,16 +1895,16 @@ static void sample_lanczos(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
             SLK_Color p4 = SLK_rgb_sprite_get_pixel(in,ix+2,iy-2+i);
             SLK_Color p5 = SLK_rgb_sprite_get_pixel(in,ix+3,iy-2+i);
 
-            r[i] = a0*(double)p0.r+a1*(double)p1.r+a2*(double)p2.r+a3*(double)p3.r+a4*(double)p4.r+a5*(double)p5.r;
-            g[i] = a0*(double)p0.g+a1*(double)p1.g+a2*(double)p2.g+a3*(double)p3.g+a4*(double)p4.g+a5*(double)p5.g;
-            b[i] = a0*(double)p0.b+a1*(double)p1.b+a2*(double)p2.b+a3*(double)p3.b+a4*(double)p4.b+a5*(double)p5.b;
-            a[i] = a0*(double)p0.a+a1*(double)p1.a+a2*(double)p2.a+a3*(double)p3.a+a4*(double)p4.a+a5*(double)p5.a;
+            r[i] = a0*(double)p0.rgb.r+a1*(double)p1.rgb.r+a2*(double)p2.rgb.r+a3*(double)p3.rgb.r+a4*(double)p4.rgb.r+a5*(double)p5.rgb.r;
+            g[i] = a0*(double)p0.rgb.g+a1*(double)p1.rgb.g+a2*(double)p2.rgb.g+a3*(double)p3.rgb.g+a4*(double)p4.rgb.g+a5*(double)p5.rgb.g;
+            b[i] = a0*(double)p0.rgb.b+a1*(double)p1.rgb.b+a2*(double)p2.rgb.b+a3*(double)p3.rgb.b+a4*(double)p4.rgb.b+a5*(double)p5.rgb.b;
+            a[i] = a0*(double)p0.rgb.a+a1*(double)p1.rgb.a+a2*(double)p2.rgb.a+a3*(double)p3.rgb.a+a4*(double)p4.rgb.a+a5*(double)p5.rgb.a;
          }
 
-         p.r = MAX(0x0,MIN(0xff,(int)(b0*r[0]+b1*r[1]+b2*r[2]+b3*r[3]+b4*r[4]+b5*r[5])));
-         p.g = MAX(0x0,MIN(0xff,(int)(b0*g[0]+b1*g[1]+b2*g[2]+b3*g[3]+b4*g[4]+b5*g[5])));
-         p.b = MAX(0x0,MIN(0xff,(int)(b0*b[0]+b1*b[1]+b2*b[2]+b3*b[3]+b4*b[4]+b5*b[5])));
-         p.a = MAX(0x0,MIN(0xff,(int)(b0*a[0]+b1*a[1]+b2*a[2]+b3*a[3]+b4*a[4]+b5*a[5])));
+         p.rgb.r = MAX(0x0,MIN(0xff,(int)(b0*r[0]+b1*r[1]+b2*r[2]+b3*r[3]+b4*r[4]+b5*r[5])));
+         p.rgb.g = MAX(0x0,MIN(0xff,(int)(b0*g[0]+b1*g[1]+b2*g[2]+b3*g[3]+b4*g[4]+b5*g[5])));
+         p.rgb.b = MAX(0x0,MIN(0xff,(int)(b0*b[0]+b1*b[1]+b2*b[2]+b3*b[3]+b4*b[4]+b5*b[5])));
+         p.rgb.a = MAX(0x0,MIN(0xff,(int)(b0*a[0]+b1*a[1]+b2*a[2]+b3*a[3]+b4*a[4]+b5*a[5])));
          out[y*width+x] = p;
       }
    }
@@ -2018,17 +2017,17 @@ static SLK_Color quant_colors_mean(dyn_array *color_list,SLK_Color color, int we
    int length = color_list->used;
    for(int i = 0;i<length;i++)
    {
-      r+=dyn_array_element(SLK_Color,color_list,i).r;
-      g+=dyn_array_element(SLK_Color,color_list,i).g;
-      b+=dyn_array_element(SLK_Color,color_list,i).b;
+      r+=dyn_array_element(SLK_Color,color_list,i).rgb.r;
+      g+=dyn_array_element(SLK_Color,color_list,i).rgb.g;
+      b+=dyn_array_element(SLK_Color,color_list,i).rgb.b;
    }
 
    if(weight_color!=0)
       weight_color = length/weight_color;
    length+=weight_color;
-   r+=color.r*weight_color;
-   g+=color.g*weight_color;
-   b+=color.b*weight_color;
+   r+=color.rgb.r*weight_color;
+   g+=color.rgb.g*weight_color;
+   b+=color.rgb.b*weight_color;
 
    if(length!=0)
    {
@@ -2037,7 +2036,7 @@ static SLK_Color quant_colors_mean(dyn_array *color_list,SLK_Color color, int we
       b/=length;
    }
 
-   return (SLK_Color){.r = r, .g = g, .b = b};
+   return (SLK_Color){.rgb.r = r, .rgb.g = g, .rgb.b = b};
 }
 
 static SLK_Color quant_pick_random_color(SLK_RGB_sprite *data)
@@ -2069,10 +2068,10 @@ static double quant_distance(SLK_Color color0, SLK_Color color1)
    double dg =  (color0.g-color1.g)/255.0;
    double db =  (color0.b-color1.b)/255.0;
    return sqrt(dr*dr+dg*dg+db*db);*/
-   double mr = 0.5*(color0.r+color1.r),
-      dr = color0.r-color1.r,
-      dg = color0.g-color1.g,
-      db = color0.b-color1.b;
+   double mr = 0.5*(color0.rgb.r+color1.rgb.r),
+      dr = color0.rgb.r-color1.rgb.r,
+      dg = color0.rgb.g-color1.rgb.g,
+      db = color0.rgb.b-color1.rgb.b;
    double distance = (2.0*dr*dr)+(4.0*dg*dg)+(3.0*db*db)+(mr*((dr*dr)-(db*db))/256.0);
    return sqrt(distance)/(3.0*255.0);
 }
@@ -2104,24 +2103,24 @@ static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
          int empty = 0;
 
          //Inline
-         if(image_inline>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).a!=0)
+         if(image_inline>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).rgb.a!=0)
          {
-            if(SLK_rgb_sprite_get_pixel(tmp,x,y-1).a==0) empty++;
-            if(SLK_rgb_sprite_get_pixel(tmp,x-1,y).a==0) empty++;
-            if(SLK_rgb_sprite_get_pixel(tmp,x+1,y).a==0) empty++;
-            if(SLK_rgb_sprite_get_pixel(tmp,x,y+1).a==0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x,y-1).rgb.a==0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x-1,y).rgb.a==0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x+1,y).rgb.a==0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x,y+1).rgb.a==0) empty++;
 
             if(empty!=0)
                SLK_rgb_sprite_set_pixel(out,x,y,palette->colors[image_inline]);
          }
          
          //Outline
-         if(image_outline>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).a==0)
+         if(image_outline>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).rgb.a==0)
          {
-            if(SLK_rgb_sprite_get_pixel(tmp,x,y-1).a!=0) empty++;
-            if(SLK_rgb_sprite_get_pixel(tmp,x-1,y).a!=0) empty++;
-            if(SLK_rgb_sprite_get_pixel(tmp,x+1,y).a!=0) empty++;
-            if(SLK_rgb_sprite_get_pixel(tmp,x,y+1).a!=0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x,y-1).rgb.a!=0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x-1,y).rgb.a!=0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x+1,y).rgb.a!=0) empty++;
+            if(SLK_rgb_sprite_get_pixel(tmp,x,y+1).rgb.a!=0) empty++;
 
             if(empty!=0)
                SLK_rgb_sprite_set_pixel(out,x,y,palette->colors[image_outline]);

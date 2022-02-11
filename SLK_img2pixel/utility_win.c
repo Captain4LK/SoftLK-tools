@@ -14,7 +14,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //External includes
 #include <stdint.h>
-#include <SLK/SLK.h>
+#include "../headers/libSLK.h"
 #include <wchar.h>
 #include <windows.h>
 #define FOPEN_UTF8_IMPLEMENTATION
@@ -300,7 +300,7 @@ void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)
       for(int i = 0;i<p->width*p->height;i++)
       {
          p->data[i] = find_palette(img->data[i],pal);
-         if(!img->data[i].a)
+         if(!img->data[i].rgb.a)
             p->data[i] = 0;
       }
       FILE *f = fopen_utf8(buffer,"wb");
@@ -339,7 +339,7 @@ void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
       for(int i = 0;i<p->width*p->height;i++)
       {
          p->data[i] = find_palette(img->data[i],pal);
-         if(!img->data[i].a)
+         if(!img->data[i].rgb.a)
             p->data[i] = 0;
       }
 
@@ -388,7 +388,7 @@ SLK_RGB_sprite *image_load(const char *path)
 static uint8_t find_palette(SLK_Color in, SLK_Palette *pal)
 {
    for(int i = 0;i<pal->used;i++)
-      if(pal->colors[i].r==in.r&&pal->colors[i].g==in.g&&pal->colors[i].b==in.b)
+      if(pal->colors[i].rgb.r==in.rgb.r&&pal->colors[i].rgb.g==in.rgb.g&&pal->colors[i].rgb.b==in.rgb.b)
          return i;
 
    return 0;
@@ -530,9 +530,9 @@ void gif_output_select(int dither_mode, int sample_mode, int distance_mode, int 
       uint8_t gif_palette[256*3] = {0};
       for(int i = 0;i<256;i++)
       {
-         gif_palette[i*3] = pal->colors[i].r;
-         gif_palette[i*3+1] = pal->colors[i].g;
-         gif_palette[i*3+2] = pal->colors[i].b;
+         gif_palette[i*3] = pal->colors[i].rgb.r;
+         gif_palette[i*3+1] = pal->colors[i].rgb.g;
+         gif_palette[i*3+2] = pal->colors[i].rgb.b;
       }
       char buffer_out[512];
       stbi_convert_wchar_to_utf8(buffer_out,512,output_gif);
@@ -554,10 +554,10 @@ void gif_output_select(int dither_mode, int sample_mode, int distance_mode, int 
          gd_render_frame(gif,frame);
          for(int i = 0;i<gif->width*gif->height;i++)
          {
-            in->data[i].r = frame[i*3];
-            in->data[i].g = frame[i*3+1];
-            in->data[i].b = frame[i*3+2];
-            in->data[i].a = 255;
+            in->data[i].rgb.r = frame[i*3];
+            in->data[i].rgb.g = frame[i*3+1];
+            in->data[i].rgb.b = frame[i*3+2];
+            in->data[i].rgb.a = 255;
          }
          img2pixel_lowpass_image(in,in);
          img2pixel_sharpen_image(in,in);
@@ -606,10 +606,10 @@ static SLK_Palette *palette_gpl(FILE *f)
          continue;
       if(sscanf(buffer,"%d %d %d",&r,&g,&b)==3)
       {
-         p->colors[c].r = r;
-         p->colors[c].g = g;
-         p->colors[c].b = b;
-         p->colors[c].a = 255;
+         p->colors[c].rgb.r = r;
+         p->colors[c].rgb.g = g;
+         p->colors[c].rgb.b = b;
+         p->colors[c].rgb.a = 255;
          c++;
       }
    }
@@ -630,10 +630,10 @@ static SLK_Palette *palette_hex(FILE *f)
 
    while(fgets(buffer,512,f))
    {
-      p->colors[c].r = chartoi(buffer[0])*16+chartoi(buffer[1]);
-      p->colors[c].g = chartoi(buffer[2])*16+chartoi(buffer[3]);
-      p->colors[c].b = chartoi(buffer[4])*16+chartoi(buffer[5]);
-      p->colors[c].a = 255;
+      p->colors[c].rgb.r = chartoi(buffer[0])*16+chartoi(buffer[1]);
+      p->colors[c].rgb.g = chartoi(buffer[2])*16+chartoi(buffer[3]);
+      p->colors[c].rgb.b = chartoi(buffer[4])*16+chartoi(buffer[5]);
+      p->colors[c].rgb.a = 255;
       c++;
    }
    p->used= c;
