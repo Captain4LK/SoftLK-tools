@@ -22,21 +22,7 @@ Warning: SLK_make is still very much experimental, it will not work for any oper
 
 In general, I try to keep the amount of external dependencies as low as possible, but some are still needed, as listed below.
 
-* SLK_img2pixel:
-   * on Linux ONE of the following is needed for creating file dialogs: zenity, matedialog, qarma, kdialog, Xdialog, python2/tkinter or dialog
-   * libSLK.a, as explained below 
-
-* SLK_make
-   * None
-
-### SoftLK-lib
-
-Most of the tools in this repository need SoftLK-lib. Since SoftLK-lib is a separate project the source has not been included in this repository. Separate install instructions can be found in its directory: [SoftLK-lib](https://github.com/Captain4LK/SoftLK-lib). All of the makefiles assume it to be installed globally, so I recommend running ``sudo make install`` for installing it on your system.
-
-Here is a list of all makefile targets for building SoftLK-lib:
-
-* libSLK.a (``make backend_sdl2`` or ``make backend_sdl2_gl``)
-* global install (``sudo make install``, Unix only)
+* [SDL2](https://www.libsdl.org/download-2.0.php)
 
 ## Using sh scripts
 
@@ -66,6 +52,7 @@ All code in this repository (except the 'external' directory containing source c
 * [tinyfiledialogs](https://sourceforge.net/projects/tinyfiledialogs/), zlib, for all builds except windows
 * [cute_files](https://github.com/RandyGaul/cute_headers), zlib/unlicense
 * [cute_path](https://github.com/RandyGaul/cute_headers), zlib/unlicense
+* [cute_png](https://github.com/RandyGaul/cute_headers), zlib/unlicense
 * [stb_image](https://github.com/nothings/stb), mit/unlicense
 * [gifenc](https://github.com/lecram/gifenc), public domain
 * [gifdec](https://github.com/lecram/gifdec), public domain
