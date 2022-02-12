@@ -15,8 +15,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "../external/cute_files.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "../external/stb_image.h"
-#include "../external/gifdec.h"
-#include "../external/gifenc.h"
 #include "../external/tinyfiledialogs.h"
 #include "../external/HLH_json.h"
 //-------------------------------------
@@ -40,8 +38,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Variables
 static char input_dir[256];
 static char output_dir[256];
-static char input_gif[256];
-static char output_gif[256];
 static char path_image_load[512] = {0};
 static char path_image_save[512] = {0};
 static char path_preset_load[512] = {0};
@@ -344,80 +340,6 @@ void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int 
       cf_dir_close(&dir);
       if(scale_mode==0)
          SLK_rgb_sprite_destroy(out);
-   }
-}
-
-void gif_input_select()
-{
-   const char *filter_patterns[2] = {"*.gif"};
-   const char *path = tinyfd_openFileDialog("Select a gif file","",1,filter_patterns,NULL,0);
-   if(path==NULL)
-   {
-      input_gif[0] = '\0';
-      return;
-   }
-   strcpy(input_gif,path);
-}
-
-void gif_output_select(int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal)
-{
-   const char *filter_patterns[2] = {"*.gif"};
-   const char *path = tinyfd_saveFileDialog("Save gif","",1,filter_patterns,NULL);
-   if(path==NULL)
-   {
-      output_gif[0] = '\0';
-      return;
-   }
-   strcpy(output_gif,path);
-
-   if(output_gif[0]!='\0'&&input_gif[0]!='\0') //Process directory
-   {
-      gd_GIF *gif = gd_open_gif(input_gif);
-      if(!gif)
-         return;
-      uint8_t gif_palette[256*3] = {0};
-      for(int i = 0;i<256;i++)
-      {
-         gif_palette[i*3] = pal->colors[i].rgb.r;
-         gif_palette[i*3+1] = pal->colors[i].rgb.g;
-         gif_palette[i*3+2] = pal->colors[i].rgb.b;
-      }
-      ge_GIF *gif_out;
-      if(scale_mode==0)
-         gif_out = ge_new_gif(output_gif,width,height,gif_palette,8,gif->loop_count);
-      else
-         gif_out = ge_new_gif(output_gif,gif->width/width,gif->height/height,gif_palette,8,gif->loop_count);
-      uint8_t *frame = malloc(gif->width*gif->height*3);
-      SLK_RGB_sprite *out = NULL;
-      if(scale_mode==0)
-         out = SLK_rgb_sprite_create(width,height);
-      else
-         out = SLK_rgb_sprite_create(gif->width/width,gif->height/height);
-      SLK_RGB_sprite *in = SLK_rgb_sprite_create(gif->width,gif->height);
-
-      while(gd_get_frame(gif))
-      {
-         gd_render_frame(gif,frame);
-         for(int i = 0;i<gif->width*gif->height;i++)
-         {
-            in->data[i].rgb.r = frame[i*3];
-            in->data[i].rgb.g = frame[i*3+1];
-            in->data[i].rgb.b = frame[i*3+2];
-            in->data[i].rgb.a = 255;
-         }
-         img2pixel_lowpass_image(in,in);
-         img2pixel_sharpen_image(in,in);
-         img2pixel_process_image(in,out);
-         for(int i = 0;i<out->width*out->height;i++)
-            gif_out->frame[i] = find_palette(out->data[i],pal);
-         ge_add_frame(gif_out,gif->gce.delay);
-      }
-
-      free(frame);
-      gd_close_gif(gif);
-      ge_close_gif(gif_out);
-      SLK_rgb_sprite_destroy(out);
-      SLK_rgb_sprite_destroy(in);
    }
 }
 

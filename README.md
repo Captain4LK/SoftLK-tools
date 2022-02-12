@@ -54,7 +54,5 @@ All code in this repository (except the 'external' directory containing source c
 * [cute_path](https://github.com/RandyGaul/cute_headers), zlib/unlicense
 * [cute_png](https://github.com/RandyGaul/cute_headers), zlib/unlicense
 * [stb_image](https://github.com/nothings/stb), mit/unlicense
-* [gifenc](https://github.com/lecram/gifenc), public domain
-* [gifdec](https://github.com/lecram/gifdec), public domain
 * [fopen_utf8](https://github.com/Photosounder/fopen_utf8/), only for windows builds, public domain
 * [Native File Dialog Extended](https://github.com/btzy/nativefiledialog-extended), only for windows builds, zlib

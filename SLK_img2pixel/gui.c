@@ -172,10 +172,6 @@ struct Elements
    SLK_gui_element *process_minus_hue;
    SLK_gui_element *process_plus_hue;
    SLK_gui_element *process_label_hue;
-
-   //Special tab
-   SLK_gui_element *special_gif_load;
-   SLK_gui_element *special_gif_save;
 };
 //-------------------------------------
 
@@ -263,7 +259,7 @@ static const char *text_tab_settings[] =
    "",
    "",
    "",
-   "Special",
+   "",
 };
 //-------------------------------------
 
@@ -629,12 +625,6 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_plus_hue);
    elements.process_minus_hue = SLK_gui_button_create(160,182,14,14,"-");
    SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_minus_hue);
-
-   //Special tab
-   elements.special_gif_load = SLK_gui_button_create(158,32,164,14,"Load gif");
-   SLK_gui_vtabbar_add_element(settings_tabs,19,elements.special_gif_load);
-   elements.special_gif_save = SLK_gui_button_create(158,64,164,14,"Save gif");
-   SLK_gui_vtabbar_add_element(settings_tabs,19,elements.special_gif_save);
    //-------------------------------------
 
    //Load default json
@@ -1056,21 +1046,6 @@ static void gui_buttons()
          img2pixel_lowpass_image(sprite_in_org,sprite_in);
          img2pixel_sharpen_image(sprite_in,sprite_in);
          update = 1;
-      }
-      break;
-   case 19: //Special tab
-      if(elements.special_gif_save->button.state.released)
-      {
-         if(img2pixel_get_scale_mode()==0)
-            gif_output_select(img2pixel_get_process_mode(),img2pixel_get_sample_mode(),img2pixel_get_distance_mode(),img2pixel_get_scale_mode(),img2pixel_get_out_width(),img2pixel_get_out_height(),img2pixel_get_palette());
-         else
-            gif_output_select(img2pixel_get_process_mode(),img2pixel_get_sample_mode(),img2pixel_get_distance_mode(),img2pixel_get_scale_mode(),img2pixel_get_out_swidth(),img2pixel_get_out_sheight(),img2pixel_get_palette());
-         elements.special_gif_save->button.state.released = 0;
-      }
-      else if(elements.special_gif_load->button.state.released)
-      {
-         gif_input_select();
-         elements.special_gif_load->button.state.released = 0;
       }
       break;
    }
