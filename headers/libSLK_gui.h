@@ -95,6 +95,7 @@ typedef struct
 struct SLK_gui_element
 {
    SLK_gui_element_type type;
+   int enabled;
 
    union
    {
@@ -141,6 +142,8 @@ SLK_gui_element *SLK_gui_tabbar_create(int x, int y, int width, int height, int 
 void             SLK_gui_tabbar_add_element(SLK_gui_element *bar, int tab, SLK_gui_element *element_new);
 SLK_gui_element *SLK_gui_vtabbar_create(int x, int y, int width, int tab_count, const char **tabs_text);
 void             SLK_gui_vtabbar_add_element(SLK_gui_element *bar, int tab, SLK_gui_element *element_new);
+
+void             SLK_gui_element_enabled(SLK_gui_element *element, int enabled);
 
 void             SLK_gui_set_font(SLK_RGB_sprite *f);
 SLK_RGB_sprite  *SLK_gui_get_font();
@@ -251,6 +254,7 @@ SLK_gui_element *SLK_gui_button_create(int x, int y, int width, int height, cons
    MALLOC_CHECK(e,sizeof(*e));
 
    e->next = NULL;
+   e->enabled = 1;
    e->type = SLK_GUI_ELEMENT_BUTTON;
    e->button.pos.x = x;
    e->button.pos.y = y;
@@ -271,6 +275,7 @@ SLK_gui_element *SLK_gui_label_create(int x, int y, int width, int height, const
    MALLOC_CHECK(e,sizeof(*e));
 
    e->next = NULL;
+   e->enabled = 1;
    e->type = SLK_GUI_ELEMENT_LABEL;
    e->label.pos.x = x;
    e->label.pos.y = y;
@@ -295,6 +300,7 @@ SLK_gui_element *SLK_gui_icon_create(int x, int y, int width, int height, SLK_RG
    MALLOC_CHECK(e,sizeof(*e));
 
    e->next = NULL;
+   e->enabled = 1;
    e->type = SLK_GUI_ELEMENT_ICON;
    e->icon.sprite = sprite;
    e->icon.pos.x = x;
@@ -317,6 +323,7 @@ SLK_gui_element *SLK_gui_slider_create(int x, int y, int width, int height, int 
    MALLOC_CHECK(e,sizeof(*e));
 
    e->next = NULL;
+   e->enabled = 1;
    e->type = SLK_GUI_ELEMENT_SLIDER;
    e->slider.pos.x = x;
    e->slider.pos.y = y;
@@ -336,6 +343,7 @@ SLK_gui_element *SLK_gui_image_create(int x, int y, int width, int height, SLK_R
    MALLOC_CHECK(e,sizeof(*e));
 
    e->next = NULL;
+   e->enabled = 1;
    e->type = SLK_GUI_ELEMENT_IMAGE;
    e->image.sprite = SLK_rgb_sprite_create(width,height);
    e->image.pos.x = x;
@@ -407,6 +415,7 @@ SLK_gui_element *SLK_gui_tabbar_create(int x, int y, int width, int height, int 
    MALLOC_CHECK(e,sizeof(*e));
 
    e->next = NULL;
+   e->enabled = 1;
    e->type = SLK_GUI_ELEMENT_TABBAR;
    e->tabbar.elements = backend_malloc(sizeof(*e->tabbar.elements)*tab_count);
    MALLOC_CHECK(e->tabbar.elements,sizeof(*e->tabbar.elements)*tab_count);
@@ -445,6 +454,7 @@ SLK_gui_element *SLK_gui_vtabbar_create(int x, int y, int width, int tab_count, 
    MALLOC_CHECK(e,sizeof(*e));
 
    e->next = NULL;
+   e->enabled = 1;
    e->type = SLK_GUI_ELEMENT_VTABBAR;
    e->vtabbar.elements = backend_malloc(sizeof(*e->vtabbar.elements)*tab_count);;
    MALLOC_CHECK(e->vtabbar.elements,sizeof(*e->vtabbar.elements)*tab_count);
@@ -475,6 +485,11 @@ void SLK_gui_vtabbar_add_element(SLK_gui_element *bar, int tab, SLK_gui_element 
 {
    element_new->next = bar->vtabbar.elements[tab];
    bar->vtabbar.elements[tab] = element_new;
+}
+
+void SLK_gui_element_enabled(SLK_gui_element *element, int enabled)
+{
+   element->enabled = enabled;
 }
 
 SLK_gui_window *SLK_gui_window_create(int x, int y, int width, int height)
@@ -589,6 +604,9 @@ static void slk_gui_draw(const SLK_gui_window *w, SLK_gui_element *elements)
    SLK_gui_element *e = elements;
    while(e)
    {
+      if(!e->enabled)
+         goto next;
+
       switch(e->type)
       {
       case SLK_GUI_ELEMENT_BUTTON:
@@ -657,6 +675,8 @@ static void slk_gui_draw(const SLK_gui_window *w, SLK_gui_element *elements)
             slk_gui_draw(w,e->vtabbar.elements[e->vtabbar.current_tab]);
          break;
       }
+
+next:
       e = e->next;
    }
 }
@@ -666,6 +686,9 @@ static void slk_gui_input(SLK_gui_window *w, SLK_gui_element *elements, SLK_Butt
    SLK_gui_element *e = elements;
    while(e)
    {
+      if(!e->enabled)
+         goto next;
+
       if(e->type==SLK_GUI_ELEMENT_BUTTON&&(!w->locked||e->button.selected))
       {
          int status = 0;
@@ -761,6 +784,7 @@ static void slk_gui_input(SLK_gui_window *w, SLK_gui_element *elements, SLK_Butt
             slk_gui_input(w,e->vtabbar.elements[e->vtabbar.current_tab],button_left,button_right,cursor_x,cursor_y);
       }
 
+next:
       e = e->next;
    }
 }

@@ -14,6 +14,7 @@ CHANGES:
 * added K-means color distance mode
 * made empty tabs in gui unclickable
 * removed gif processing (it was basically useless anyway)
+* Options in the gui are now only shown if they actually do anything
 
 ----------------------------------------
 Version:                SLK_img2pixel 1.2 (16.08.2021)

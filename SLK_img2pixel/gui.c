@@ -130,21 +130,27 @@ struct Elements
    SLK_gui_element *color_button_outline;
    SLK_gui_element *color_alpha_plus;
    SLK_gui_element *color_alpha_minus;
-   SLK_gui_element *color_weight_plus;
-   SLK_gui_element *color_weight_minus;
+
    SLK_gui_element *color_dither_left;
    SLK_gui_element *color_dither_right;
+   SLK_gui_element *color_label_dither;
+
    SLK_gui_element *color_dither_plus;
    SLK_gui_element *color_dither_minus;
+   SLK_gui_element *color_bar_dither;
+   SLK_gui_element *color_label_dither_amount;
+   SLK_gui_element *color_label_dither_text;
+
+   SLK_gui_element *color_weight_plus;
+   SLK_gui_element *color_weight_minus;
+   SLK_gui_element *color_bar_weight;
+   SLK_gui_element *color_label_weight;
+   SLK_gui_element *color_label_weight_text;
+
    SLK_gui_element *color_space_left;
    SLK_gui_element *color_space_right;
-   SLK_gui_element *color_bar_dither;
    SLK_gui_element *color_bar_alpha;
-   SLK_gui_element *color_bar_weight;
-   SLK_gui_element *color_label_dither;
    SLK_gui_element *color_label_alpha;
-   SLK_gui_element *color_label_weight;
-   SLK_gui_element *color_label_dither_amount;
    SLK_gui_element *color_label_space;
 
    //Process tab
@@ -270,6 +276,9 @@ static void update_output();
 static void palette_draw();
 static void palette_labels();
 static void preset_load(FILE *f);
+
+static void color_dither_enabled(int enabled);
+static void color_weight_enabled(int enabled);
 //-------------------------------------
 
 //Function implementations
@@ -490,8 +499,8 @@ void gui_init()
    elements.color_label_dither = SLK_gui_label_create(174,112,170,12,text_dither[1]);
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_label_dither);
 
-   label = SLK_gui_label_create(104,144,56,12,"Amount");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   elements.color_label_dither_text = SLK_gui_label_create(104,144,56,12,"Amount");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_label_dither_text);
    elements.color_bar_dither = SLK_gui_slider_create(174,141,170,14,0,999);
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_bar_dither);
    elements.color_bar_dither->slider.value = 64;
@@ -523,8 +532,8 @@ void gui_init()
    elements.color_space_right = SLK_gui_button_create(344,205,14,14,">");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_space_right);
 
-   label = SLK_gui_label_create(104,230,56,12,"Weight");
-   SLK_gui_vtabbar_add_element(settings_tabs,3,label);
+   elements.color_label_weight_text = SLK_gui_label_create(104,230,56,12,"Weight");
+   SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_label_weight_text);
    elements.color_weight_plus = SLK_gui_button_create(344,227,14,14,"+");
    SLK_gui_vtabbar_add_element(settings_tabs,3,elements.color_weight_plus);
    elements.color_weight_minus = SLK_gui_button_create(160,227,14,14,"-");
@@ -627,6 +636,8 @@ void gui_init()
    SLK_gui_vtabbar_add_element(settings_tabs,4,elements.process_minus_hue);
    //-------------------------------------
 
+   color_weight_enabled(0);
+
    //Load default json
    const char *env_def = getenv("IMG2PIXEL_CONF");
    if(!env_def)
@@ -640,6 +651,7 @@ void gui_init()
    char ctmp[16];
    sprintf(ctmp,"%d",img2pixel_get_palette()->used);
    SLK_gui_label_set_text(elements.palette_label_colors,ctmp);
+
 }
 
 void gui_update()
@@ -929,6 +941,12 @@ static void gui_buttons()
          img2pixel_set_process_mode(img2pixel_get_process_mode()-1);
          if(img2pixel_get_process_mode()<0)
             img2pixel_set_process_mode(7);
+
+         if(img2pixel_get_process_mode()==6||img2pixel_get_process_mode()==7||img2pixel_get_process_mode()==0)
+            color_dither_enabled(0);
+         else
+            color_dither_enabled(1);
+
          update = 1;
          SLK_gui_label_set_text(elements.color_label_dither,text_dither[img2pixel_get_process_mode()]);
       }
@@ -937,6 +955,12 @@ static void gui_buttons()
          img2pixel_set_process_mode(img2pixel_get_process_mode()+1);
          if(img2pixel_get_process_mode()>7)
             img2pixel_set_process_mode(0);
+
+         if(img2pixel_get_process_mode()==6||img2pixel_get_process_mode()==7||img2pixel_get_process_mode()==0)
+            color_dither_enabled(0);
+         else
+            color_dither_enabled(1);
+
          update = 1;
          SLK_gui_label_set_text(elements.color_label_dither,text_dither[img2pixel_get_process_mode()]);
       }
@@ -956,6 +980,12 @@ static void gui_buttons()
          img2pixel_set_distance_mode(img2pixel_get_distance_mode()-1);;
          if(img2pixel_get_distance_mode()<0)
             img2pixel_set_distance_mode(8);
+
+         if(img2pixel_get_distance_mode()==8)
+            color_weight_enabled(1);
+         else
+            color_weight_enabled(0);
+
          update = 1;
          SLK_gui_label_set_text(elements.color_label_space,text_space[img2pixel_get_distance_mode()]);
       }
@@ -964,6 +994,12 @@ static void gui_buttons()
          img2pixel_set_distance_mode(img2pixel_get_distance_mode()+1);;
          if(img2pixel_get_distance_mode()>8)
             img2pixel_set_distance_mode(0);
+
+         if(img2pixel_get_distance_mode()==8)
+            color_weight_enabled(1);
+         else
+            color_weight_enabled(0);
+
          update = 1;
          SLK_gui_label_set_text(elements.color_label_space,text_space[img2pixel_get_distance_mode()]);
       }
@@ -1229,5 +1265,23 @@ void preset_load(FILE *f)
    img2pixel_lowpass_image(sprite_in_org,sprite_in);   
    img2pixel_sharpen_image(sprite_in,sprite_in);
    update_output();
+}
+
+static void color_dither_enabled(int enabled)
+{
+   SLK_gui_element_enabled(elements.color_dither_plus,enabled);
+   SLK_gui_element_enabled(elements.color_dither_minus,enabled);
+   SLK_gui_element_enabled(elements.color_bar_dither,enabled);
+   SLK_gui_element_enabled(elements.color_label_dither_amount,enabled);
+   SLK_gui_element_enabled(elements.color_label_dither_text,enabled);
+}
+
+static void color_weight_enabled(int enabled)
+{
+   SLK_gui_element_enabled(elements.color_weight_plus,enabled);
+   SLK_gui_element_enabled(elements.color_weight_minus,enabled);
+   SLK_gui_element_enabled(elements.color_bar_weight,enabled);
+   SLK_gui_element_enabled(elements.color_label_weight,enabled);
+   SLK_gui_element_enabled(elements.color_label_weight_text,enabled);
 }
 //-------------------------------------
