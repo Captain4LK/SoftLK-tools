@@ -323,7 +323,7 @@ void SLK_log(const char *w, ...);
             { (x)=(x)^(y); (y)=(x)^(y); (x)=(x)^(y); }
 
 #define INBOUNDS(LOWER,UPPER,NUMBER) \
-         ((NUMBER)>(LOWER)&&(NUMBER)<(UPPER))
+         ((NUMBER)>=(LOWER)&&(NUMBER)<(UPPER))
 
 #define SIGNUM(NUM) \
    (NUM==0?0:(NUM<0?-1:1))
