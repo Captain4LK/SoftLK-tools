@@ -1265,6 +1265,16 @@ void preset_load(FILE *f)
    img2pixel_lowpass_image(sprite_in_org,sprite_in);   
    img2pixel_sharpen_image(sprite_in,sprite_in);
    update_output();
+
+   //Update gui
+   if(img2pixel_get_process_mode()==6||img2pixel_get_process_mode()==7||img2pixel_get_process_mode()==0)
+      color_dither_enabled(0);
+   else
+      color_dither_enabled(1);
+   if(img2pixel_get_distance_mode()==8)
+      color_weight_enabled(1);
+   else
+      color_weight_enabled(0);
 }
 
 static void color_dither_enabled(int enabled)
