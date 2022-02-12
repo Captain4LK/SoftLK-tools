@@ -101,7 +101,7 @@ extern const char* cp_error_reason;
 
 // return 1 for success, 0 for failures
 int cp_inflate(void* in, int in_bytes, void* out, int out_bytes);
-int cp_save_png(const char* file_name, const cp_image_t* img);
+int cp_save_png(const FILE *fp, const cp_image_t* img);
 
 // Constructs an atlas image in-memory. The atlas pixels are stored in the returned image. free the pixels
 // when done with them. The user must provide an array of cp_atlas_image_t for the `imgs` param. `imgs` holds
@@ -777,13 +777,10 @@ static long cp_save_data(cp_save_png_data_t* s, cp_image_t* img, long dataPos)
 	return dataSize;
 }
 
-int cp_save_png(const char* file_name, const cp_image_t* img)
+int cp_save_png(const FILE *fp, const cp_image_t* img)
 {
 	cp_save_png_data_t s;
 	long dataPos, dataSize, err;
-
-	CUTE_PNG_FILE* fp = CUTE_PNG_FOPEN(file_name, "wb");
-	if (!fp) return 1;
 
 	s.fp = fp;
 	s.adler = 1;
@@ -804,7 +801,6 @@ int cp_save_png(const char* file_name, const cp_image_t* img)
 	cp_put32(&s, dataSize);
 
 	err = CUTE_PNG_FERROR(fp);
-	CUTE_PNG_FCLOSE(fp);
 	return !err;
 }
 
