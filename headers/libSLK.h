@@ -2538,12 +2538,7 @@ void backend_setup(int width, int height, int layer_num, const char *title, int 
    layer_count = layer_num;
    layer_dynamic = resizable;
 
-   Uint32 flags = 
-#ifndef __EMSCRIPTEN__
-   SDL_INIT_EVERYTHING;
-#else
-   SDL_INIT_VIDEO|SDL_INIT_EVENTS;
-#endif
+   Uint32 flags = SDL_INIT_VIDEO|SDL_INIT_EVENTS;
 
    if(SDL_Init(flags)<0)
    {
