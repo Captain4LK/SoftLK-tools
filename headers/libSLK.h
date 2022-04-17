@@ -86,7 +86,7 @@ typedef struct
    int held;
 }SLK_Button;
 
-typedef void (*SLK_error_pointer_type)(const char *format, ...);
+typedef void (*SLK_log_pointer_type)(const char *format, ...);
 
 typedef enum 
 {
@@ -293,18 +293,9 @@ void           *SLK_system_realloc(void *ptr, size_t size);
 void            SLK_set_malloc(void *(*func)(size_t size));
 void            SLK_set_free(void (*func)(void *ptr));
 void            SLK_set_realloc(void *(*func)(void *ptr, size_t size));
-void            SLK_log(const char *w, ...);
-void            SLK_warning_file_line(const char *w, ...);
-void            SLK_error_file_line(const char *e, ...);
 
-//Log subsystem: SLK_error.c
-SLK_error_pointer_type SLK_get_error_function_pointer(const char *file, int line);
-SLK_error_pointer_type SLK_get_warning_function_pointer(const char *file, int line);
-void SLK_default_warning(const char *st);
-void SLK_default_error(const char *st);
 void SLK_log(const char *w, ...);
-#define SLK_error (SLK_get_error_function_pointer(__FILE__,__LINE__))
-#define SLK_warning (SLK_get_warning_function_pointer(__FILE__,__LINE__))
+#define SLK_log_line(w,...) do { char SLK_log_line_tmp[1024]; snprintf(SLK_log_line_tmp,1024,__VA_ARGS__); SLK_log(w " (%s:%u): %s\n",__FILE__,__LINE__,SLK_log_line_tmp); } while(0)
 
 #endif //_LIBSLK_H_
 
@@ -635,7 +626,7 @@ void SLK_setup(int width, int height, int layer_num, const char *title, int full
    //Allocate space for layers, max layer num is fixed.
    layers = backend_malloc(sizeof(layers[0])*layer_num);
    if(layers==NULL)
-      SLK_error("malloc of size %zu failed, out of memory!",sizeof(layers[0])*layer_num);
+      SLK_log("malloc of size %zu failed, out of memory!",sizeof(layers[0])*layer_num);
    memset(layers,0,sizeof(layers[0])*layer_num);
 
    backend_setup(width,height,layer_num,title,fullscreen,scale,resizable);
@@ -1625,58 +1616,6 @@ void SLK_draw_rgb_fill_circle(int x, int y, int radius, SLK_Color color)
    }
 }
 
-static const char *SLK_error_file_on;
-static int SLK_error_line_on;
-
-static void SLK_error_old(const char *format, ...);
-static void SLK_warning_old(const char *format, ...);
-
-SLK_error_pointer_type SLK_get_error_function_pointer(const char *file, int line)
-{
-   SLK_error_file_on=file;
-   SLK_error_line_on=line;
-   return SLK_error_old;
-}
-
-SLK_error_pointer_type SLK_get_warning_function_pointer(const char *file, int line)
-{
-   SLK_error_file_on=file;
-   SLK_error_line_on=line;
-   return SLK_warning_old;
-}
-
-static void SLK_error_old(const char *format, ...)
-{
-  va_list ap;
-  char st[512];
-
-  va_start(ap, format);
-  vsprintf(st, format, ap);
-  SLK_default_error(st);
-  va_end(ap);
-}
-
-static void SLK_warning_old(const char *format, ...)
-{
-  va_list ap;
-  char st[512];
-
-  va_start(ap, format);
-  vsprintf(st, format, ap);
-  SLK_default_warning(st);
-  va_end(ap);
-}
-
-void SLK_default_warning(const char *st)
-{
-   SLK_log("SoftLK warning (%s:%d): %s\n",SLK_error_file_on,SLK_error_line_on,st);
-}
-
-void SLK_default_error(const char *st)
-{
-   SLK_log("SoftLK error (%s:%d): %s\n",SLK_error_file_on,SLK_error_line_on,st);
-}
-
 void SLK_log(const char *w, ...)
 {
    va_list args;
@@ -1979,7 +1918,7 @@ void SLK_layer_set_size(unsigned index, int width, int height)
       {
          if(layers[index].as.type_0.target==NULL||layers[index].as.type_0.render==NULL)
          {
-            SLK_warning("layer %d has not been created yet",index);
+            SLK_log("layer %d has not been created yet",index);
             return;
          }
 
@@ -1996,7 +1935,7 @@ void SLK_layer_set_size(unsigned index, int width, int height)
       {
          if(layers[index].as.type_1.target==NULL)
          {
-            SLK_warning("layer %d has not been created yet",index);
+            SLK_log("layer %d has not been created yet",index);
             return;
          }
 
@@ -2125,14 +2064,14 @@ SLK_Pal_sprite *SLK_pal_sprite_create(int width, int height)
 {
    SLK_Pal_sprite *s = backend_malloc(sizeof(*s));
    if(s==NULL)
-      SLK_error("malloc of size %zu failed, out of memory!",sizeof(*s));
+      SLK_log("malloc of size %zu failed, out of memory!",sizeof(*s));
 
    s->width = width;
    s->height = height;
 
    s->data = backend_malloc(width*height*sizeof(*s->data));
    if(s->data==NULL)
-      SLK_error("malloc of size %zu failed, out of memory!",width*height*sizeof(*s->data));
+      SLK_log("malloc of size %zu failed, out of memory!",width*height*sizeof(*s->data));
 
    memset(s->data,0,sizeof(*s->data)*width*height);
 
@@ -2238,14 +2177,14 @@ SLK_RGB_sprite *SLK_rgb_sprite_create(int width, int height)
 {   
    SLK_RGB_sprite *s = backend_malloc(sizeof(*s));
    if(s==NULL)
-      SLK_error("malloc of size %zu failed, out of memory!",sizeof(*s));
+      SLK_log("malloc of size %zu failed, out of memory!",sizeof(*s));
    
    s->width = width;
    s->height = height;
    
    s->data = backend_malloc(width*height*sizeof(*s->data));
    if(s->data==NULL)
-      SLK_error("malloc of size %zu failed, out of memory!",width*height*sizeof(*s->data));
+      SLK_log("malloc of size %zu failed, out of memory!",width*height*sizeof(*s->data));
 
    memset(s->data,0,width*height*sizeof(*s->data));
     
@@ -2462,7 +2401,7 @@ void backend_update_viewport()
    v.w = view_width;
    v.h = view_height;
    if(SDL_RenderSetViewport(renderer,&v)<0)
-      SLK_warning("failed to set render viewport: %s",SDL_GetError());
+      SLK_log("failed to set render viewport: %s",SDL_GetError());
 }
 
 //Handles window and input events.
@@ -2606,11 +2545,11 @@ void backend_setup(int width, int height, int layer_num, const char *title, int 
    SDL_INIT_VIDEO|SDL_INIT_EVENTS;
 #endif
 
-   if(SDL_Init(flags)<0)
-   {
-      SLK_error("failed to init sdl: %s",SDL_GetError());
-      exit(-1);
-   }
+   int err = 0;
+   if((err = SDL_InitSubSystem(SDL_INIT_VIDEO))<0)
+      SLK_log_line("SDL_InitSubsystem","%s (%d)",SDL_GetError(),err);
+   if((err = SDL_InitSubSystem(SDL_INIT_EVENTS))<0)
+      SLK_log_line("SDL_InitSubsystem","%s (%d)",SDL_GetError(),err);
 
    if(pixel_scale==SLK_WINDOW_MAX)
    {
@@ -2618,7 +2557,7 @@ void backend_setup(int width, int height, int layer_num, const char *title, int 
 
       if(SDL_GetDisplayUsableBounds(0,&max_size)<0)
       {
-         SLK_warning("failed to get max dimensions: %s",SDL_GetError());
+         SLK_log_line("SDL_GetDisplayUsableBounds","%s",SDL_GetError());
       }
       else
       {
@@ -2642,14 +2581,14 @@ void backend_setup(int width, int height, int layer_num, const char *title, int 
 
    if(sdl_window==NULL)
    {
-      SLK_error("failed to create window: %s",SDL_GetError());
+      SLK_log("failed to create window: %s",SDL_GetError());
       exit(-1);
    }
 
    renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
    if(!renderer)
    {
-      SLK_error("failed to create renderer: %s",SDL_GetError());
+      SLK_log("failed to create renderer: %s",SDL_GetError());
       exit(-1);
    }
 
@@ -2657,7 +2596,7 @@ void backend_setup(int width, int height, int layer_num, const char *title, int 
 
    layer_textures = backend_malloc(sizeof(*layer_textures)*layer_num);
    if(layer_textures==NULL)
-      SLK_error("malloc of size %zu failed, out of memory!",sizeof(*layer_textures)*layer_num);
+      SLK_log("malloc of size %zu failed, out of memory!",sizeof(*layer_textures)*layer_num);
 
    memset(layer_textures,0,sizeof(*layer_textures)*layer_num);
    backend_update_viewport();
@@ -2767,18 +2706,18 @@ void backend_create_layer(unsigned index, int type)
    case SLK_LAYER_PAL:
       layer_textures[index] = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_RGBA32,SDL_TEXTUREACCESS_STREAMING,screen_width,screen_height);
       if(layer_textures[index]==NULL)
-         SLK_error("failed to create texture for layer %d: %s",index,SDL_GetError());
+         SLK_log("failed to create texture for layer %d: %s",index,SDL_GetError());
 
       if(SDL_SetTextureBlendMode(layer_textures[index],SDL_BLENDMODE_BLEND)<0)
-         SLK_warning("failed to set texture blend mode: %s",SDL_GetError());
+         SLK_log("failed to set texture blend mode: %s",SDL_GetError());
       break;
    case SLK_LAYER_RGB:
       layer_textures[index] = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_RGBA32,SDL_TEXTUREACCESS_STREAMING,screen_width,screen_height);
       if(layer_textures[index]==NULL)
-         SLK_error("failed to create texture for layer %d: %s",index,SDL_GetError());
+         SLK_log("failed to create texture for layer %d: %s",index,SDL_GetError());
 
       if(SDL_SetTextureBlendMode(layer_textures[index],SDL_BLENDMODE_BLEND)<0)
-         SLK_warning("failed to set texture blend mode: %s",SDL_GetError());
+         SLK_log("failed to set texture blend mode: %s",SDL_GetError());
       break;
    }
 }
@@ -2795,12 +2734,12 @@ void backend_set_fullscreen(int fullscreen)
    if(fullscreen)
    {
       if(SDL_SetWindowFullscreen(sdl_window,SDL_WINDOW_FULLSCREEN_DESKTOP)!=0)
-         SLK_warning("failed to fullscreen window: %s",SDL_GetError());
+         SLK_log("failed to fullscreen window: %s",SDL_GetError());
    }
    else
    {
       if(SDL_SetWindowFullscreen(sdl_window,0)!=0)
-         SLK_warning("failed to exit fullscreen: %s",SDL_GetError());
+         SLK_log("failed to exit fullscreen: %s",SDL_GetError());
 
       SDL_SetWindowSize(sdl_window,screen_width*pixel_scale,screen_height*pixel_scale);
    }
@@ -2823,7 +2762,7 @@ void backend_set_icon(const SLK_RGB_sprite *icon)
    SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(icon->data,icon->width,icon->height,32,icon->width*4,0xf000,0x0f00,0x00f0,0x000f);
    if(surface==NULL)
    {
-      SLK_warning("failed to create sdl surface from rgb sprite: %s",SDL_GetError());
+      SLK_log("failed to create sdl surface from rgb sprite: %s",SDL_GetError());
       return;
    }
 
@@ -3044,7 +2983,7 @@ void backend_input_init()
 void backend_show_cursor(int shown)
 {
    if(SDL_ShowCursor(shown?SDL_ENABLE:SDL_DISABLE)<0)
-      SLK_warning("failed to show/hide cursor: %s",SDL_GetError());
+      SLK_log("failed to show/hide cursor: %s",SDL_GetError());
 }
 
 //Sets wether the mouse cursor is captured and only relative
@@ -3052,14 +2991,14 @@ void backend_show_cursor(int shown)
 void backend_mouse_set_relative(int relative)
 {
    if(SDL_SetRelativeMouseMode(relative)<0)
-      SLK_warning("failed to set relative mouse mode: %s",SDL_GetError());
+      SLK_log("failed to set relative mouse mode: %s",SDL_GetError());
 }
 
 //Sets wether to track mouse events globally.
 void backend_mouse_capture(int capture)
 {
    if(SDL_CaptureMouse(capture)<0)
-      SLK_warning("failed to capture/release mouse: %s",SDL_GetError());
+      SLK_log("failed to capture/release mouse: %s",SDL_GetError());
 }
 
 //Starts text input.
@@ -3193,7 +3132,7 @@ SLK_RGB_sprite *backend_load_rgb(const char *path)
    SLK_RGB_sprite *out = NULL;
    if(img.pix==NULL)
    {
-      SLK_warning("failed to load png %s\n",path);
+      SLK_log("failed to load png %s\n",path);
       return NULL;
    }
 
@@ -3225,7 +3164,7 @@ SLK_RGB_sprite *backend_load_rgb_mem(const void *data, int length)
    SLK_RGB_sprite *out = NULL;
    if(img.pix==NULL)
    {
-      SLK_warning("failed to load png from memory buffer");
+      SLK_log("failed to load png from memory buffer");
       return NULL;
    }
 
@@ -3243,7 +3182,7 @@ void backend_save_rgb(const SLK_RGB_sprite *s, const char *path)
       return;
    FILE *f = fopen(path,"wb");
    if(f==NULL)
-      SLK_warning("failed to open %s for writing",path);
+      SLK_log("failed to open %s for writing",path);
 
    backend_save_rgb_file(s,f);
 
@@ -3254,7 +3193,7 @@ void backend_save_rgb_file(const SLK_RGB_sprite *s, FILE *f)
 {
    if(f==NULL)
    {
-      SLK_warning("file pointer is NULL, can't write png to disk");
+      SLK_log("file pointer is NULL, can't write png to disk");
       return;
    }
 
@@ -3270,7 +3209,7 @@ SLK_Pal_sprite *backend_load_pal(const char *path)
    FILE *f = fopen(path,"rb");
    if(f==NULL)
    {
-      SLK_warning("failed to open %s for reading",path);
+      SLK_log("failed to open %s for reading",path);
       return NULL;
    }
 
@@ -3283,7 +3222,7 @@ SLK_Pal_sprite *backend_load_pal_file(FILE *f)
 {
    if(f==NULL)
    {
-      SLK_warning("file pointer is NULL, can't read .slk file");
+      SLK_log("file pointer is NULL, can't read .slk file");
       return NULL;
    }
 
@@ -3317,7 +3256,7 @@ void backend_save_pal(const SLK_Pal_sprite *s, const char *path, int rle)
 
    if(f==NULL)
    {
-      SLK_warning("failed to open %s for writing",path);
+      SLK_log("failed to open %s for writing",path);
       return;
    }
 
@@ -3330,7 +3269,7 @@ void backend_save_pal_file(const SLK_Pal_sprite *s, FILE *f, int rle)
 {
    if(f==NULL)
    {
-      SLK_warning("file pointer is NULL, can't write palette to disk");
+      SLK_log("file pointer is NULL, can't write palette to disk");
       return;
    }
 
@@ -3346,7 +3285,7 @@ SLK_Palette *backend_load_palette(const char *path)
    FILE *f = fopen(path,"r");
    if(f==NULL)
    {
-      SLK_warning("failed to open %s for reading",path);
+      SLK_log("failed to open %s for reading",path);
       return NULL; 
    }
 
@@ -3361,7 +3300,7 @@ void backend_save_palette(const char *path, const SLK_Palette *pal)
    FILE *f = fopen(path,"w");
    if(f==NULL)
    {
-      SLK_warning("failed to open %s for writing",path);
+      SLK_log("failed to open %s for writing",path);
       return;
    }
 
@@ -3374,7 +3313,7 @@ SLK_Palette *backend_load_palette_file(FILE *f)
 {
    if(f==NULL)
    {
-      SLK_warning("file pointer is NULL, can't load palette");
+      SLK_log("file pointer is NULL, can't load palette");
       return NULL;
    }
 
@@ -3384,7 +3323,7 @@ SLK_Palette *backend_load_palette_file(FILE *f)
 
    SLK_Palette *palette = backend_malloc(sizeof(*palette));
    if(palette==NULL)
-      SLK_error("malloc of size %zu failed, out of memory!",sizeof(*palette));
+      SLK_log("malloc of size %zu failed, out of memory!",sizeof(*palette));
 
    memset(palette,0,sizeof(*palette));
    for(i = 0;i<259&&fgets(buffer,512,f);i++)
@@ -3417,7 +3356,7 @@ void backend_save_palette_file(FILE *f, const SLK_Palette *pal)
 {
    if(f==NULL)
    {
-      SLK_warning("file pointer is NULL, can't write palette to disk");
+      SLK_log("file pointer is NULL, can't write palette to disk");
       return;
    }
 

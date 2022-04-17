@@ -167,7 +167,7 @@ void             SLK_gui_set_colors(SLK_Color c0, SLK_Color c1, SLK_Color c2, SL
 
 #define MALLOC_CHECK(m,s) \
    if((m)==NULL) \
-      SLK_error("malloc of size %zu failed, out of memory!",(s))
+      SLK_log("malloc of size %zu failed, out of memory!",(s))
 
 static SLK_RGB_sprite *slk_gui_font;
 static SLK_Color slk_gui_color_0;
