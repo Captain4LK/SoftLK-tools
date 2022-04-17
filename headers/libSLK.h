@@ -2545,11 +2545,11 @@ void backend_setup(int width, int height, int layer_num, const char *title, int 
    SDL_INIT_VIDEO|SDL_INIT_EVENTS;
 #endif
 
-   int err = 0;
-   if((err = SDL_InitSubSystem(SDL_INIT_VIDEO))<0)
-      SLK_log_line("SDL_InitSubsystem","%s (%d)",SDL_GetError(),err);
-   if((err = SDL_InitSubSystem(SDL_INIT_EVENTS))<0)
-      SLK_log_line("SDL_InitSubsystem","%s (%d)",SDL_GetError(),err);
+   if(SDL_Init(flags)<0)
+   {
+      SLK_log_line("SDL_Init","%s",SDL_GetError());
+      exit(-1);
+   }
 
    if(pixel_scale==SLK_WINDOW_MAX)
    {
@@ -2581,14 +2581,14 @@ void backend_setup(int width, int height, int layer_num, const char *title, int 
 
    if(sdl_window==NULL)
    {
-      SLK_log("failed to create window: %s",SDL_GetError());
+      SLK_log_line("SDL_CreateWindow","%s",SDL_GetError());
       exit(-1);
    }
 
    renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
    if(!renderer)
    {
-      SLK_log("failed to create renderer: %s",SDL_GetError());
+      SLK_log_line("SDL_CreateRenderer","%s",SDL_GetError());
       exit(-1);
    }
 
