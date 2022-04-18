@@ -28,6 +28,12 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "../external/cute_path.h"
 #include "../external/HLH_json.h"
 #include "../external/nfd.h"
+
+#define HLH_STREAM_IMPLEMENTATION
+#include "../external/HLH_stream.h"
+
+#define HLH_QOI_IMPLEMENTATION
+#include "../external/HLH_qoi.h"
 //-------------------------------------
 
 //Internal includes
@@ -102,7 +108,7 @@ void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
 {
    NFD_Init();
    
-   nfdu8filteritem_t filter_item[2] = {{"PNG", "png"}, {"SLK", "slk"}};
+   nfdu8filteritem_t filter_item[2] = {{"PNG", "png"}, {"QOI", "qoi"}};
    nfdu8char_t *file_path = NULL;
 
    nfdresult_t result = NFD_SaveDialogU8(&file_path,filter_item,2,path_image_save,"untitled.png");
@@ -289,31 +295,37 @@ void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)
    cf_file_t file; //Not ment to be used this way, but since it's possible, who cares
    strcpy(file.name,buffer);
 
-   //slk file
-   if(strcmp(cf_get_ext(&file),".slk")==0)
-   {
-      SLK_Pal_sprite *p = SLK_pal_sprite_create(img->width,img->height);
-      for(int i = 0;i<p->width*p->height;i++)
-      {
-         p->data[i] = find_palette(img->data[i],pal);
-         if(!img->data[i].rgb.a)
-            p->data[i] = 0;
-      }
-      FILE *f = fopen_utf8(buffer,"wb");
-      SLK_pal_sprite_save_file(f,p,0);
-      fclose(f);
-      SLK_pal_sprite_destroy(p);
-
-      return;
-   }
-
-   //anything else --> png
+   //Convert to png and upscale
    SLK_RGB_sprite *tmp_up = SLK_rgb_sprite_create(upscale*img->width,upscale*img->height);
    for(int y = 0;y<img->height;y++)
       for(int x = 0;x<img->width;x++)
          for(int y_ = 0;y_<upscale;y_++)
             for(int x_ = 0;x_<upscale;x_++)
                SLK_rgb_sprite_set_pixel(tmp_up,x*upscale+x_,y*upscale+y_,SLK_rgb_sprite_get_pixel(img,x,y));
+
+   //qoi file
+   if(strcmp(cf_get_ext(&file),".qoi")==0)
+   {
+      HLH_qoi_image img_qoi = {0};
+      img_qoi.width = tmp_up->width;
+      img_qoi.height = tmp_up->height;
+      img_qoi.channels = 4;
+      img_qoi.color_space = 0;
+      img_qoi.data = (HLH_qoi_color *)tmp_up->data;
+
+      FILE *f = fopen_utf8(buffer,"wb");
+      if(f==NULL)
+         return;
+      HLH_rw rw;
+      HLH_rw_init_file(&rw,f);
+      HLH_qoi_encode(&rw,&img_qoi);
+      HLH_rw_close(&rw);
+      fclose(f);
+
+      return;
+   }
+
+   //png file
    FILE *f = fopen_utf8(buffer,"wb");
    SLK_rgb_sprite_save_file(f,tmp_up);
    fclose(f);
@@ -328,33 +340,37 @@ void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
    cf_file_t file; //Not ment to be used this way, but since it's possible, who cares
    strcpy(file.name,path);
 
-   //slk file
-   if(strcmp(cf_get_ext(&file),".slk")==0)
-   {
-      SLK_Pal_sprite *p = SLK_pal_sprite_create(img->width,img->height);
-      for(int i = 0;i<p->width*p->height;i++)
-      {
-         p->data[i] = find_palette(img->data[i],pal);
-         if(!img->data[i].rgb.a)
-            p->data[i] = 0;
-      }
-
-      //Save image as smallest type
-      FILE *in = fopen(path,"wb");
-      SLK_pal_sprite_save_file(in,p,0);
-      fclose(in); 
-      SLK_pal_sprite_destroy(p);
-
-      return;
-   }
-
-   //anything else --> png
+   //Convert to rgb and upscale
    SLK_RGB_sprite *tmp_up = SLK_rgb_sprite_create(upscale*img->width,upscale*img->height);
    for(int y = 0;y<img->height;y++)
       for(int x = 0;x<img->width;x++)
          for(int y_ = 0;y_<upscale;y_++)
             for(int x_ = 0;x_<upscale;x_++)
                SLK_rgb_sprite_set_pixel(tmp_up,x*upscale+x_,y*upscale+y_,SLK_rgb_sprite_get_pixel(img,x,y));
+
+   //qoi file
+   if(strcmp(cf_get_ext(&file),".qoi")==0)
+   {
+      HLH_qoi_image img_qoi = {0};
+      img_qoi.width = tmp_up->width;
+      img_qoi.height = tmp_up->height;
+      img_qoi.channels = 4;
+      img_qoi.color_space = 0;
+      img_qoi.data = (HLH_qoi_color *)tmp_up->data;
+
+      FILE *f = fopen(path,"wb");
+      if(f==NULL)
+         return;
+      HLH_rw rw;
+      HLH_rw_init_file(&rw,f);
+      HLH_qoi_encode(&rw,&img_qoi);
+      HLH_rw_close(&rw);
+      fclose(f);
+
+      return;
+   }
+
+   //png file
    SLK_rgb_sprite_save(path,tmp_up);
    SLK_rgb_sprite_destroy(tmp_up);
 }
@@ -366,12 +382,33 @@ SLK_RGB_sprite *image_load(const char *path)
    int height = 1;
    SLK_RGB_sprite *out;
 
+   cf_file_t file; //Not ment to be used this way, but since it's possible, who cares
+   strcpy(file.name,path);
+   cf_get_ext(&file);
+
+   if(strcmp(file.ext,".qoi")==0)
+   {
+      FILE *f = fopen(path,"rb");
+      if(f==NULL)
+         goto err;
+
+      HLH_rw rw; 
+      HLH_rw_init_file(&rw,f);
+      HLH_qoi_image *img = HLH_qoi_decode(&rw);
+      HLH_rw_close(&rw);
+      fclose(f);
+
+      if(img==NULL)
+         goto err;
+
+      out = SLK_rgb_sprite_create(img->width,img->height);
+      memcpy(out->data,img->data,img->width*img->height*sizeof(*out->data));
+      return out;
+   }
+
    data = stbi_load(path,&width,&height,NULL,4);
    if(data==NULL)
-   {
-      printf("Failed to load %s\n",path);
-      return SLK_rgb_sprite_create(1,1);
-   }
+      goto err;
 
    out = SLK_rgb_sprite_create(width,height);
    memcpy(out->data,data,width*height*sizeof(*out->data));
@@ -379,6 +416,10 @@ SLK_RGB_sprite *image_load(const char *path)
    stbi_image_free(data);
 
    return out;
+
+err:
+   printf("Failed to load %s\n",path);
+   return SLK_rgb_sprite_create(1,1);
 }
 
 static uint8_t find_palette(SLK_Color in, SLK_Palette *pal)

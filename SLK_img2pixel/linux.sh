@@ -22,5 +22,10 @@ elif [ $1 = "video" ]; then
    sources="$sources main_video.c"
    echo "${sources}"
 
-   gcc -o ../bin/SLK_img2pix_video $sources -Wall -Wextra -lm -lSDL2 -O3 -s -flto=auto
+   gcc -o ../bin/SLK_img2pix_video $sources -Wall -Wextra -lm -lSDL2 -lavcodec -lavformat -lavutil -lswscale -Og -g
+
+else
+
+   echo "unknown target, need either gui, cmd or video"
+
 fi
