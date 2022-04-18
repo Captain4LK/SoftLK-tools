@@ -238,6 +238,9 @@ SLK_RGB_sprite *image_load(const char *path)
    int height = 1;
    SLK_RGB_sprite *out;
 
+   if(path==NULL)
+      goto err;
+
    cf_file_t file; //Not ment to be used this way, but since it's possible, who cares
    strcpy(file.name,path);
    cf_get_ext(&file);
