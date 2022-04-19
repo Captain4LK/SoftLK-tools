@@ -10,11 +10,12 @@ CHANGES:
 
 * fixed multiple memory leaks
 * removed supersampling sample mode (virtually the same results can be achieved using a high gauss blurring setting)
-* added persisten paths for file/folder selection
+* added persistent paths for file/folder selection
 * added K-means color distance mode
 * made empty tabs in gui unclickable
 * removed gif processing (it was basically useless anyway)
 * Options in the gui are now only shown if they actually do anything
+* Support for [qoi format](https://qoiformat.org/)
 
 ----------------------------------------
 Version:                SLK_img2pixel 1.2 (16.08.2021)
