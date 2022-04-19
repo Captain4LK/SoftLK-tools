@@ -482,6 +482,7 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
       for(int x = 0;x<out->width;x++)
       {
          SLK_Color in = tmp_data[y*out->width+x];
+         uint8_t a = in.rgb.a;
 
          //Hue
          //Only ajust if not the default value --> better performance
@@ -510,6 +511,7 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
             in.rgb.b = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.rgb.b/255.0f,gamma_factor))));
          }
 
+         in.rgb.a = a;
          tmp_data[y*out->width+x] = in;
       }
    }
