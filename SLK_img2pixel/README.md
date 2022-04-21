@@ -1,6 +1,6 @@
 # Changelog
 
-Current development version: SLK_img2pixel 1.3-dev
+Current development version: SLK_img2pixel 1.4-dev
 
 ----------------------------------------
 Version:                SLK_img2pixel 1.3 (21.04.2022)
