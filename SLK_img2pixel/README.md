@@ -3,7 +3,7 @@
 Current development version: SLK_img2pixel 1.3-dev
 
 ----------------------------------------
-Version:                SLK_img2pixel 1.3 (tba)
+Version:                SLK_img2pixel 1.3 (21.04.2022)
 ----------------------------------------
 
 CHANGES:
