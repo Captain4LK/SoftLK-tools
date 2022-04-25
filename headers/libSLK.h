@@ -632,7 +632,7 @@ void SLK_setup(int width, int height, int layer_num, const char *title, int full
    //Allocate space for layers, max layer num is fixed.
    layers = backend_malloc(sizeof(layers[0])*layer_num);
    if(layers==NULL)
-      SLK_log("malloc of size %zu failed, out of memory!",sizeof(layers[0])*layer_num);
+      SLK_log_line("SLK_setup","malloc of size %zu failed, out of memory!",sizeof(layers[0])*layer_num);
    memset(layers,0,sizeof(layers[0])*layer_num);
 
    backend_setup(width,height,layer_num,title,fullscreen,scale,resizable);
@@ -1924,7 +1924,7 @@ void SLK_layer_set_size(unsigned index, int width, int height)
       {
          if(layers[index].as.type_0.target==NULL||layers[index].as.type_0.render==NULL)
          {
-            SLK_log("layer %d has not been created yet",index);
+            SLK_log_line("SLK_layer_set_size","layer %d has not been created yet",index);
             return;
          }
 
@@ -1941,7 +1941,7 @@ void SLK_layer_set_size(unsigned index, int width, int height)
       {
          if(layers[index].as.type_1.target==NULL)
          {
-            SLK_log("layer %d has not been created yet",index);
+            SLK_log_line("SLK_layer_set_size","layer %d has not been created yet",index);
             return;
          }
 
@@ -2070,14 +2070,14 @@ SLK_Pal_sprite *SLK_pal_sprite_create(int width, int height)
 {
    SLK_Pal_sprite *s = backend_malloc(sizeof(*s));
    if(s==NULL)
-      SLK_log("malloc of size %zu failed, out of memory!",sizeof(*s));
+      SLK_log_line("SLK_pal_sprite_create","malloc of size %zu failed, out of memory!",sizeof(*s));
 
    s->width = width;
    s->height = height;
 
    s->data = backend_malloc(width*height*sizeof(*s->data));
    if(s->data==NULL)
-      SLK_log("malloc of size %zu failed, out of memory!",width*height*sizeof(*s->data));
+      SLK_log_line("SLK_pal_sprite_create","malloc of size %zu failed, out of memory!",width*height*sizeof(*s->data));
 
    memset(s->data,0,sizeof(*s->data)*width*height);
 
@@ -2183,14 +2183,14 @@ SLK_RGB_sprite *SLK_rgb_sprite_create(int width, int height)
 {   
    SLK_RGB_sprite *s = backend_malloc(sizeof(*s));
    if(s==NULL)
-      SLK_log("malloc of size %zu failed, out of memory!",sizeof(*s));
+      SLK_log_line("SLK_rgb_sprite_create","malloc of size %zu failed, out of memory!",sizeof(*s));
    
    s->width = width;
    s->height = height;
    
    s->data = backend_malloc(width*height*sizeof(*s->data));
    if(s->data==NULL)
-      SLK_log("malloc of size %zu failed, out of memory!",width*height*sizeof(*s->data));
+      SLK_log_line("SLK_rgb_sprite_create","malloc of size %zu failed, out of memory!",width*height*sizeof(*s->data));
 
    memset(s->data,0,width*height*sizeof(*s->data));
     

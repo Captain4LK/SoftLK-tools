@@ -91,7 +91,7 @@ void backend_update_viewport()
    v.w = view_width;
    v.h = view_height;
    if(SDL_RenderSetViewport(renderer,&v)<0)
-      SLK_log("failed to set render viewport: %s",SDL_GetError());
+      SLK_log_line("SDL_RenderSetViewport","failed to set render viewport: %s",SDL_GetError());
 }
 
 //Handles window and input events.
