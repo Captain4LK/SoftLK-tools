@@ -22,7 +22,7 @@ elif [ $1 = "video" ]; then
    sources="$sources main_video.c"
    echo "${sources}"
 
-   gcc -o ../bin/SLK_img2pix_video $sources -Wall -Wextra -lm -lSDL2 -lavcodec -lavformat -lavutil -lswscale -Og -g
+   gcc -o ../bin/SLK_img2pix_video $sources -Wall -Wextra -lm -lSDL2 -Og -g
 
 else
 
