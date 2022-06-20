@@ -302,14 +302,15 @@ void img2pixel_sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    SLK_rgb_sprite_copy(tmp_data2,in);
 
    //Setup sharpening kernel
-   float sharpen_factor = (float)sharpen/100.0f;
-   float sharpen_kernel[3][3] =
+   const float sharpen_factor = (float)sharpen/100.0f;
+   const float sharpen_kernel[3][3] =
    {
       {0.0f,-1.0f*sharpen_factor,0.0f},
       {-1.0f*sharpen_factor,4.0f*sharpen_factor+1.0f,-1.0f*sharpen_factor},
       {0.0f,-1.0f*sharpen_factor,0.0f},
    };
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<out->height;y++)
    {
       for(int x = 0;x<out->width;x++)
@@ -378,6 +379,7 @@ void img2pixel_lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
       for(int x = 0;x<7;x++)
          lowpass_kernel[x][y] = lowpass_kernel[x][y]/norm_val;
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<out->height;y++)
    {
       for(int x = 0;x<out->width;x++)
@@ -477,6 +479,7 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    float wb = (t+brightness_factor)*255.0f;
    //-------------------------------------
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<out->height;y++)
    {
       for(int x = 0;x<out->width;x++)
@@ -921,6 +924,7 @@ static void dither_image(SLK_Color *in, SLK_Color *out, int width, int height, S
 
 static void dither_none(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -947,6 +951,7 @@ static void dither_none(SLK_Color *in, SLK_Color *out, int width, int height, SL
 
 static void dither_none_apply(SLK_Color *in, SLK_Color *out, int width, int height)
 {
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -975,6 +980,7 @@ static void dither_threshold(SLK_Color *in, SLK_Color *out, int width, int heigh
 {
    float amount = (float)dither_amount/1000.0f;
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1005,6 +1011,7 @@ static void dither_threshold_apply(SLK_Color *in, SLK_Color *out, int width, int
 {
    float amount = (float)dither_amount/1000.0f;
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1659,6 +1666,7 @@ static void sample_round(const SLK_RGB_sprite *in, SLK_Color *out, int width, in
    double offx = (double)offset_x/100.0;
    double offy = (double)offset_y/100.0;
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1680,6 +1688,7 @@ static void sample_floor(const SLK_RGB_sprite *in, SLK_Color *out, int width, in
    double offx = (double)offset_x/100.0;
    double offy = (double)offset_y/100.0;
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1701,6 +1710,7 @@ static void sample_ceil(const SLK_RGB_sprite *in, SLK_Color *out, int width, int
    double offx = (double)offset_x/100.0;
    double offy = (double)offset_y/100.0;
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1721,6 +1731,7 @@ static void sample_linear(const SLK_RGB_sprite *in, SLK_Color *out, int width, i
    float foffx = (float)offset_x/100.0f;
    float foffy = (float)offset_y/100.0f;
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1773,6 +1784,7 @@ static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
    float foffx = (float)offset_x/100.0f;
    float foffy = (float)offset_y/100.0f;
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1861,6 +1873,7 @@ static void sample_lanczos(const SLK_RGB_sprite *in, SLK_Color *out, int width, 
    float foffx = (float)offset_x/100.0f;
    float foffy = (float)offset_y/100.0f;
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -2098,6 +2111,7 @@ static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    SLK_RGB_sprite *tmp = SLK_rgb_sprite_create(in->width,in->height);
    SLK_rgb_sprite_copy(tmp,in);
 
+   #pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<in->height;y++)
    {
       for(int x = 0;x<in->width;x++)

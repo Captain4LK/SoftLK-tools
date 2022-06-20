@@ -10,19 +10,19 @@ fi
 if [ $1 = "gui" ]; then
    sources="$sources main.c"
 
-   gcc -o ../bin/SLK_img2pix $sources -Wall -Wextra -lm -lSDL2 -Og -g
+   gcc -o ../bin/SLK_img2pix $sources -Wall -Wextra -lm -lSDL2 -Og -g -Wstrict-aliasing=3 -fopenmp
 
 elif [ $1 = "cmd" ]; then
    sources="$sources main_cmd.c"
    echo $sources
 
-   gcc -o ../bin/SLK_img2pix_cmd $sources -Wall -Wextra -lm -lSDL2 -O3 -s -flto=auto
+   gcc -o ../bin/SLK_img2pix_cmd $sources -Wall -Wextra -lm -lSDL2 -O3 -s -flto=auto -Wstrict-aliasing=3 -fopenmp
 
 elif [ $1 = "video" ]; then
    sources="$sources main_video.c"
    echo "${sources}"
 
-   gcc -o ../bin/SLK_img2pix_video $sources -Wall -Wextra -lm -lSDL2 -Og -g
+   gcc -o ../bin/SLK_img2pix_video $sources -Wall -Wextra -lm -lSDL2 -Og -g -Wstrict-aliasing=3 -fopenmp
 
 else
 
