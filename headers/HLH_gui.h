@@ -39,12 +39,23 @@ typedef enum
    HLH_GUI_MSG_PAINT,
    HLH_GUI_MSG_UPDATE,
    HLH_GUI_MSG_MOUSE_MOVE,
+
+   HLH_GUI_MSG_LEFT_DOWN,
+   HLH_GUI_MSG_RIGHT_DOWN,
+   HLH_GUI_MSG_MIDDLE_DOWN,
+   HLH_GUI_MSG_LEFT_UP,
+   HLH_GUI_MSG_RIGHT_UP,
+   HLH_GUI_MSG_MIDDLE_UP,
+   HLH_GUI_MSG_MOUSE_DRAG,
+   HLH_GUI_MSG_CLICK,
+
    HLH_GUI_MSG_USR,
 }HLH_gui_msg;
 
 typedef enum
 {
    HLH_GUI_UPDATE_HOVER = 1,
+   HLH_GUI_UPDATE_PRESSED = 2,
 }HLH_gui_const;
 
 typedef int (*HLH_gui_msg_handler)(HLH_gui_element *e, HLH_gui_msg, int di, void *dp);
@@ -76,15 +87,34 @@ struct HLH_gui_element
    HLH_gui_msg_handler msg_usr;
 };
 
+typedef struct
+{
+   HLH_gui_element e;
+   char *text;
+   size_t text_len;
+}HLH_gui_button;
+
+typedef struct
+{
+   HLH_gui_element e;
+   char *text;
+   size_t text_len;
+}HLH_gui_label;
+
 struct HLH_gui_window
 {
    HLH_gui_element e;
    uint32_t *data;
    int width;
    int height;
+
+   //Input
    int mouse_x;
    int mouse_y;
+   int pressed_button;
    HLH_gui_element *hover;
+   HLH_gui_element *pressed;
+
    HLH_gui_rect update_region;
 
 #ifdef HLH_GUI_PLATTFORM_WIN32
@@ -101,8 +131,11 @@ struct HLH_gui_window
 void HLH_gui_init();
 int HLH_gui_message_loop();
 
-HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height);
 HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, uint32_t flags, HLH_gui_msg_handler msg_handler);
+
+HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height);
+HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint32_t flags, const char *text, ptrdiff_t text_len);
+HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint32_t flags,  const char *text, ptrdiff_t text_len);
 
 int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 void HLH_gui_element_move(HLH_gui_element *e, HLH_gui_rect bounds, int always_layout);
@@ -120,7 +153,7 @@ int HLH_gui_rect_valid(HLH_gui_rect r);
 int HLH_gui_rect_equal(HLH_gui_rect a, HLH_gui_rect b);
 int HLH_gui_rect_inside(HLH_gui_rect a, int x, int y);
 
-void HLH_gui_string_copy(char **dest, size_t *dest_size, const char *src, ptrdiff_t src_size);
+void HLH_gui_string_copy(char **dest, size_t *dest_size, const char *src, ptrdiff_t src_len);
 
 #endif //_HLH_GUI_H_
 
@@ -136,6 +169,9 @@ void hlh_gui_element_paint(HLH_gui_element *e, HLH_gui_painter *p);
 void hlh_gui_update();
 void hlh_gui_window_end_paint(HLH_gui_window *w, HLH_gui_painter *p);
 void hlh_gui_window_input_event(HLH_gui_window *w, HLH_gui_msg msg, int di, void *dp);
+void hlh_gui_window_set_pressed(HLH_gui_window *w, HLH_gui_element *e, int button);
+int hlh_gui_button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+int hlh_gui_label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 
 #define HLH_GUI_GLYPH_WIDTH (9)
 #define HLH_GUI_GLYPH_HEIGHT (16)
@@ -228,14 +264,14 @@ int HLH_gui_rect_inside(HLH_gui_rect a, int x, int y)
    return a.l<=x&&a.r>x&&a.t<=y&&a.b>y;
 }
 
-void HLH_gui_string_copy(char **dest, size_t *dest_size, const char *src, ptrdiff_t src_size)
+void HLH_gui_string_copy(char **dest, size_t *dest_size, const char *src, ptrdiff_t src_len)
 {
-   if(src_size==-1)
-      src_size = strlen(src);
+   if(src_len==-1)
+      src_len = strlen(src);
 
-   *dest = realloc(*dest,src_size);
-   *dest_size = src_size;
-   memcpy(*dest,src,src_size);
+   *dest = realloc(*dest,src_len);
+   *dest_size = src_len;
+   memcpy(*dest,src,src_len);
 }
 
 HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, uint32_t flags, HLH_gui_msg_handler msg_handler)
@@ -254,6 +290,22 @@ HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, u
    }
 
    return e;
+}
+
+HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint32_t flags, const char *text, ptrdiff_t text_len)
+{
+   HLH_gui_button *button = HLH_gui_element_create(sizeof(*button),parent,flags,hlh_gui_button_msg);
+   HLH_gui_string_copy(&button->text,&button->text_len,text,text_len);
+
+   return button;
+}
+
+HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint32_t flags,  const char *text, ptrdiff_t text_len)
+{
+   HLH_gui_label *label = HLH_gui_element_create(sizeof(*label),parent,flags,hlh_gui_label_msg);
+   HLH_gui_string_copy(&label->text,&label->text_len,text,text_len);
+
+   return label;
 }
 
 int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -405,20 +457,131 @@ void hlh_gui_update()
 
 void hlh_gui_window_input_event(HLH_gui_window *w, HLH_gui_msg msg, int di, void *dp)
 {
-   HLH_gui_element *hover = HLH_gui_element_find_by_point(&w->e,w->mouse_x,w->mouse_y);
-
-   if(msg==HLH_GUI_MSG_MOUSE_MOVE)
-      HLH_gui_element_msg(hover,msg,di,dp);
-
-   if(hover!=w->hover)
+   if(w->pressed!=NULL)
    {
-      HLH_gui_element *prev = w->hover;
-      w->hover = hover;
-      HLH_gui_element_msg(prev,HLH_GUI_MSG_UPDATE,HLH_GUI_UPDATE_HOVER,NULL);
-      HLH_gui_element_msg(w->hover,HLH_GUI_MSG_UPDATE,HLH_GUI_UPDATE_HOVER,NULL);
+      if(msg==HLH_GUI_MSG_MOUSE_MOVE)
+      {
+         HLH_gui_element_msg(w->pressed,HLH_GUI_MSG_MOUSE_DRAG,di,dp);
+      }
+      else if(msg==HLH_GUI_MSG_LEFT_UP&&w->pressed_button==1)
+      {
+         if(w->hover==w->pressed)
+            HLH_gui_element_msg(w->pressed,HLH_GUI_MSG_CLICK,di,dp);
+
+         HLH_gui_element_msg(w->pressed,msg,di,dp);
+         hlh_gui_window_set_pressed(w,NULL,1);
+      }
+      else if(msg==HLH_GUI_MSG_MIDDLE_UP&&w->pressed_button==2)
+      {
+         HLH_gui_element_msg(w->pressed,msg,di,dp);
+         hlh_gui_window_set_pressed(w,NULL,2);
+      }
+      else if(msg==HLH_GUI_MSG_RIGHT_UP&&w->pressed_button==3)
+      {
+         HLH_gui_element_msg(w->pressed,msg,di,dp);
+         hlh_gui_window_set_pressed(w,NULL,3);
+      }
+   }
+
+   if(w->pressed!=NULL)
+   {
+      int inside = HLH_gui_rect_inside(w->pressed->clip,w->mouse_x,w->mouse_y);
+
+      if(inside&&w->hover==&w->e)
+      {
+         w->hover = w->pressed;
+         HLH_gui_element_msg(w->pressed,HLH_GUI_MSG_UPDATE,HLH_GUI_UPDATE_HOVER,NULL);
+      }
+      else if(!inside&&w->hover==w->pressed)
+      {
+         w->hover = &w->e;
+         HLH_gui_element_msg(w->pressed,HLH_GUI_MSG_UPDATE,HLH_GUI_UPDATE_HOVER,NULL);
+      }
+   }
+   else
+   {
+      HLH_gui_element *hover = HLH_gui_element_find_by_point(&w->e,w->mouse_x,w->mouse_y);
+
+      if(msg==HLH_GUI_MSG_MOUSE_MOVE)
+      {
+         HLH_gui_element_msg(hover,msg,di,dp);
+      }
+      else if(msg==HLH_GUI_MSG_LEFT_DOWN)
+      {
+         hlh_gui_window_set_pressed(w,hover,1);
+         HLH_gui_element_msg(hover,msg,di,dp);
+      }
+      else if(msg==HLH_GUI_MSG_MIDDLE_DOWN)
+      {
+         hlh_gui_window_set_pressed(w,hover,2);
+         HLH_gui_element_msg(hover,msg,di,dp);
+      }
+      else if(msg==HLH_GUI_MSG_RIGHT_DOWN)
+      {
+         hlh_gui_window_set_pressed(w,hover,3);
+         HLH_gui_element_msg(hover,msg,di,dp);
+      }
+
+      if(hover!=w->hover)
+      {
+         HLH_gui_element *prev = w->hover;
+         w->hover = hover;
+         HLH_gui_element_msg(prev,HLH_GUI_MSG_UPDATE,HLH_GUI_UPDATE_HOVER,NULL);
+         HLH_gui_element_msg(w->hover,HLH_GUI_MSG_UPDATE,HLH_GUI_UPDATE_HOVER,NULL);
+      }
    }
 
    hlh_gui_update();
+}
+
+void hlh_gui_window_set_pressed(HLH_gui_window *w, HLH_gui_element *e, int button)
+{
+   HLH_gui_element *prev = w->pressed;
+
+   w->pressed = e;
+   w->pressed_button = button;
+
+   if(prev!=NULL)
+      HLH_gui_element_msg(prev,HLH_GUI_MSG_UPDATE,HLH_GUI_UPDATE_PRESSED,NULL);
+   if(e!=NULL)
+      HLH_gui_element_msg(e,HLH_GUI_MSG_UPDATE,HLH_GUI_UPDATE_PRESSED,NULL);
+}
+
+int hlh_gui_button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_button *button = (HLH_gui_button *)e;
+
+   if(msg==HLH_GUI_MSG_PAINT)
+   {
+      HLH_gui_painter *painter = dp;
+
+      int pressed = e->window->pressed==e&&e->window->hover==e;
+
+      uint32_t c = 0xffffff;
+      uint32_t c1 = pressed?0xffffff:0x000000;
+      uint32_t c2 = pressed?0x000000:c;
+
+      HLH_gui_draw_rectangle(painter,e->bounds,c2,c1);
+      HLH_gui_draw_string(painter,e->bounds,button->text,button->text_len,c1,1);
+   }
+   else if(msg==HLH_GUI_MSG_UPDATE)
+   {
+      HLH_gui_element_repaint(e,NULL);
+   }
+
+   return 0;
+}
+
+int hlh_gui_label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_label *label = (HLH_gui_label *)e;
+
+   if(msg==HLH_GUI_MSG_PAINT)
+   {
+      HLH_gui_draw_string(dp,e->bounds,label->text,label->text_len,0x000000,0);
+   }
+
+   return 0;
 }
 
 #ifdef HLH_GUI_PLATTFORM_WIN32
@@ -619,9 +782,36 @@ int HLH_gui_message_loop()
          HLH_gui_window *window = hlh_gui_find_window(event.xcrossing.window);
          if(window==NULL)
             continue;
-         window->mouse_x = -1;
-         window->mouse_y = -1;
+
+         if(window->pressed==NULL)
+         {
+            window->mouse_x = -1;
+            window->mouse_y = -1;
+         }
+
          hlh_gui_window_input_event(window,HLH_GUI_MSG_MOUSE_MOVE,0,NULL);
+      }
+      else if(event.type==ButtonPress||event.type==ButtonRelease)
+      {
+         HLH_gui_window *window = hlh_gui_find_window(event.xbutton.window);
+         if(window==NULL)
+            continue;
+
+         window->mouse_x = event.xbutton.x;
+         window->mouse_y = event.xbutton.y;
+
+         if(event.xbutton.button>=1&&event.xbutton.button<=3)
+         {
+            HLH_gui_msg msg = HLH_GUI_MSG_LEFT_UP;
+            switch(event.xbutton.button)
+            {
+            case 1: msg = event.type==ButtonPress?HLH_GUI_MSG_LEFT_DOWN:HLH_GUI_MSG_LEFT_UP; break;
+            case 2: msg = event.type==ButtonPress?HLH_GUI_MSG_MIDDLE_DOWN:HLH_GUI_MSG_MIDDLE_UP; break;
+            case 3: msg = event.type==ButtonPress?HLH_GUI_MSG_RIGHT_DOWN:HLH_GUI_MSG_RIGHT_UP; break;
+            }
+
+            hlh_gui_window_input_event(window,msg,0,NULL);
+         }
       }
    }
 }
