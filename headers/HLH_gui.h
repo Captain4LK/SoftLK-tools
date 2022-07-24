@@ -729,7 +729,7 @@ int hlh_gui_panel_layout(HLH_gui_panel *p, HLH_gui_rect bounds, int measure)
       else
       {
          int width = (child->flags&HLH_GUI_H_FILL)?space_h:HLH_gui_element_msg(child,HLH_GUI_MSG_GET_WIDTH,(child->flags&HLH_GUI_V_FILL)?per_fill:0,NULL);
-         int height = (child->flags&HLH_GUI_V_FILL)?per_fill:HLH_gui_element_msg(child,HLH_GUI_MSG_GET_WIDTH,width,NULL);
+         int height = (child->flags&HLH_GUI_V_FILL)?per_fill:HLH_gui_element_msg(child,HLH_GUI_MSG_GET_HEIGHT,width,NULL);
          HLH_gui_rect r = HLH_gui_rect_make(border2+(space_h-width)/2+bounds.l,border2+(space_h+width)/2+bounds.l,pos+bounds.t,pos+height+bounds.t);
          if(!measure)
             HLH_gui_element_move(child,r,0);
