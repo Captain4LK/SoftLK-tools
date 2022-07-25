@@ -39,6 +39,7 @@ typedef enum
    HLH_GUI_MSG_PAINT,
    HLH_GUI_MSG_UPDATE,
    HLH_GUI_MSG_MOUSE_MOVE,
+   HLH_GUI_MSG_DESTROY,
 
    HLH_GUI_MSG_LEFT_DOWN,
    HLH_GUI_MSG_RIGHT_DOWN,
@@ -64,8 +65,10 @@ typedef enum
 
 typedef enum
 {
-   HLH_GUI_V_FILL = 1<<16,
-   HLH_GUI_H_FILL = 1<<17,
+   HLH_GUI_DESTROY = 1<<16,
+   HLH_GUI_DESTROY_DESCENDENT = 1<<17,
+   HLH_GUI_V_FILL = 1<<18,
+   HLH_GUI_H_FILL = 1<<19,
 
    HLH_GUI_LABEL_CENTER = 1<<0,
 
@@ -165,6 +168,7 @@ int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 void HLH_gui_element_move(HLH_gui_element *e, HLH_gui_rect bounds, int always_layout);
 void HLH_gui_element_repaint(HLH_gui_element *e, HLH_gui_rect *region);
 HLH_gui_element *HLH_gui_element_find_by_point(HLH_gui_element *e, int x, int y);
+void HLH_gui_element_destroy(HLH_gui_element *e);
 
 void HLH_gui_label_set_text(HLH_gui_label *l, const char *text, ptrdiff_t text_len);
 
@@ -202,6 +206,8 @@ int hlh_gui_panel_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 
 int hlh_gui_panel_layout(HLH_gui_panel *p, HLH_gui_rect bounds, int measure);
 int hlh_gui_panel_measure(HLH_gui_panel *p);
+
+int hlh_gui_element_destroy(HLH_gui_element *e);
 
 #define HLH_GUI_GLYPH_WIDTH (9)
 #define HLH_GUI_GLYPH_HEIGHT (16)
@@ -347,6 +353,9 @@ HLH_gui_panel *HLH_gui_panel_create(HLH_gui_element *parent, uint32_t flags)
 
 int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
+   if(e->flags&HLH_GUI_DESTROY&&msg!=HLH_GUI_MSG_DESTROY)
+      return 0;
+
    if(e->msg_usr!=NULL)
    {
       int res = e->msg_usr(e,msg,di,dp);
@@ -394,6 +403,24 @@ HLH_gui_element *HLH_gui_element_find_by_point(HLH_gui_element *e, int x, int y)
       if(HLH_gui_rect_inside(e->children[i]->clip,x,y))
          return HLH_gui_element_find_by_point(e->children[i],x,y);
    return e;
+}
+
+void HLH_gui_element_destroy(HLH_gui_element *e)
+{
+   if(e->flags&HLH_GUI_DESTROY)
+      return;
+
+   e->flags|=HLH_GUI_DESTROY;
+
+   HLH_gui_element *ancestor = e->parent;
+   while(ancestor!=NULL)
+   {
+      ancestor->flags|=HLH_GUI_DESTROY_DESCENDENT;
+      ancestor = ancestor->parent;
+   }
+
+   for(int i = 0;i<e->child_count;i++)
+      HLH_gui_element_destroy(e->children[i]);
 }
 
 void HLH_gui_label_set_text(HLH_gui_label *l, const char *text, ptrdiff_t text_len)
@@ -484,7 +511,13 @@ void hlh_gui_update()
    {
       HLH_gui_window *win = hlh_gui_state.windows[i];
 
-      if(HLH_gui_rect_valid(win->update_region))
+      if(hlh_gui_element_destroy(&win->e))
+      {
+         hlh_gui_state.windows[i] = hlh_gui_state.windows[hlh_gui_state.window_count-1];
+         hlh_gui_state.window_count--;
+         i--;
+      }
+      else if(HLH_gui_rect_valid(win->update_region))
       {
          HLH_gui_painter painter;
          painter.data = win->data;
@@ -621,6 +654,10 @@ int hlh_gui_button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    {
       return 25;
    }
+   else if(msg==HLH_GUI_MSG_DESTROY)
+   {
+      free(button->text);
+   }
 
    return 0;
 }
@@ -640,6 +677,10 @@ int hlh_gui_label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {
       return HLH_GUI_GLYPH_HEIGHT;
+   }
+   else if(msg==HLH_GUI_MSG_DESTROY)
+   {
+      free(label->text);
    }
 
    return 0;
@@ -687,6 +728,9 @@ int hlh_gui_panel_layout(HLH_gui_panel *p, HLH_gui_rect bounds, int measure)
    
    for(int i = 0;i<p->e.child_count;i++)
    {
+      if(p->e.children[i]->flags&HLH_GUI_DESTROY)
+         continue;
+
       count++;
 
       if(horizontal)
@@ -715,6 +759,9 @@ int hlh_gui_panel_layout(HLH_gui_panel *p, HLH_gui_rect bounds, int measure)
 
    for(int i = 0;i<p->e.child_count;i++)
    {
+      if(p->e.children[i]->flags&HLH_GUI_DESTROY)
+         continue;
+
       HLH_gui_element *child = p->e.children[i];
 
       if(horizontal)
@@ -747,6 +794,9 @@ int hlh_gui_panel_measure(HLH_gui_panel *p)
 
    for(int i = 0;i<p->e.child_count;i++)
    {
+      if(p->e.children[i]->flags&HLH_GUI_DESTROY)
+         continue;
+
       int child_size = HLH_gui_element_msg(p->e.children[i],horizontal?HLH_GUI_MSG_GET_HEIGHT:HLH_GUI_MSG_GET_WIDTH,0,NULL);
       if(child_size>size)
          size = child_size;
@@ -754,6 +804,41 @@ int hlh_gui_panel_measure(HLH_gui_panel *p)
 
    int border = horizontal?p->border.t+p->border.b:p->border.l+p->border.r;
    return size+border;
+}
+
+int hlh_gui_element_destroy(HLH_gui_element *e)
+{
+   if(e->flags&HLH_GUI_DESTROY_DESCENDENT)
+   {
+      e->flags^=HLH_GUI_DESTROY_DESCENDENT;
+
+      for(int i = 0;i<e->child_count;i++)
+      {
+         if(hlh_gui_element_destroy(e->children[i]))
+         {
+            memmove(&e->children[i],&e->children[i+1],sizeof(HLH_gui_element *)*(e->child_count-i-1));
+            e->child_count--;
+            i--;
+         }
+      }
+   }
+
+   if(e->flags&HLH_GUI_DESTROY)
+   {
+      HLH_gui_element_msg(e,HLH_GUI_MSG_DESTROY,0,NULL);
+
+      if(e->window->pressed==e)
+         hlh_gui_window_set_pressed(e->window,NULL,0);
+
+      if(e->window->hover==e)
+         e->window->hover = &e->window->e;
+
+      free(e->children);
+      free(e);
+      return 1;
+   }
+
+   return 0;
 }
 
 #ifdef HLH_GUI_PLATTFORM_WIN32
@@ -990,7 +1075,15 @@ int HLH_gui_message_loop()
 
 int hlh_gui_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
-   if(msg==HLH_GUI_MSG_LAYOUT&&e->child_count!=0)
+   if(msg==HLH_GUI_MSG_DESTROY)
+   {
+      HLH_gui_window *window = (HLH_gui_window *)e;
+      free(window->data);
+      window->image->data = NULL;
+      XDestroyImage(window->image);
+      XDestroyWindow(hlh_gui_state.display,window->window);
+   }
+   else if(msg==HLH_GUI_MSG_LAYOUT&&e->child_count!=0)
    {
       HLH_gui_element_move(e->children[0],e->bounds,0);
       HLH_gui_element_repaint(e,NULL);
