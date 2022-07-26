@@ -330,7 +330,7 @@ HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, u
 
 HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint32_t flags, const char *text, ptrdiff_t text_len)
 {
-   HLH_gui_button *button = HLH_gui_element_create(sizeof(*button),parent,flags,hlh_gui_button_msg);
+   HLH_gui_button *button = (HLH_gui_button *) HLH_gui_element_create(sizeof(*button),parent,flags,hlh_gui_button_msg);
    HLH_gui_string_copy(&button->text,&button->text_len,text,text_len);
 
    return button;
@@ -338,7 +338,7 @@ HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint32_t flags, c
 
 HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint32_t flags,  const char *text, ptrdiff_t text_len)
 {
-   HLH_gui_label *label = HLH_gui_element_create(sizeof(*label),parent,flags,hlh_gui_label_msg);
+   HLH_gui_label *label = (HLH_gui_label *) HLH_gui_element_create(sizeof(*label),parent,flags,hlh_gui_label_msg);
    HLH_gui_string_copy(&label->text,&label->text_len,text,text_len);
 
    return label;
@@ -346,7 +346,7 @@ HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint32_t flags,  co
 
 HLH_gui_panel *HLH_gui_panel_create(HLH_gui_element *parent, uint32_t flags)
 {
-   HLH_gui_panel *panel = HLH_gui_element_create(sizeof(*panel),parent,flags,hlh_gui_panel_msg);
+   HLH_gui_panel *panel = (HLH_gui_panel *) HLH_gui_element_create(sizeof(*panel),parent,flags,hlh_gui_panel_msg);
 
    return panel;
 }
@@ -845,7 +845,7 @@ int hlh_gui_element_destroy(HLH_gui_element *e)
 
 LRESULT CALLBACK hlh_gui_window_procedure(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
-   Window *window = GetWindowLongPtr(hwnd,GWLP_USERDATA);
+   HLH_gui_window *window = (HLH_gui_window *) GetWindowLongPtr(hwnd,GWLP_USERDATA);
 
    if(window==NULL)
       return DefWindowProc(hwnd,message,wparam,lparam);
@@ -860,12 +860,13 @@ LRESULT CALLBACK hlh_gui_window_procedure(HWND hwnd, UINT message, WPARAM wparam
       GetClientRect(hwnd,&client);
       window->width = client.right;
       window->height = client.bottom;
+      window->data = realloc(window->data,window->width*window->height*4);
       window->e.bounds = HLH_gui_rect_make(0,window->width,0,window->height);
       window->e.clip = HLH_gui_rect_make(0,window->width,0,window->height);
       HLH_gui_element_msg(&window->e,HLH_GUI_MSG_LAYOUT,0,NULL);
       hlh_gui_update();
    }
-   else if(message=WM_PAINT)
+   else if(message==WM_PAINT)
    {
       PAINTSTRUCT paint;
       HDC dc = BeginPaint(hwnd,&paint);
@@ -877,8 +878,72 @@ LRESULT CALLBACK hlh_gui_window_procedure(HWND hwnd, UINT message, WPARAM wparam
       info.biBitCount = 32;
       StretchDIBits(dc,0,0,window->e.bounds.r-window->e.bounds.l,window->e.bounds.b-window->e.bounds.t, 
             0,0,window->e.bounds.r-window->e.bounds.l,window->e.bounds.b-window->e.bounds.t,
-            window->bits,(BITMAPINFO *)&info,DIB_RGB_COLORS,SRCCOPY);
+            window->data,(BITMAPINFO *)&info,DIB_RGB_COLORS,SRCCOPY);
       EndPaint(hwnd,&paint);
+   }
+   else if(message==WM_MOUSEMOVE)
+   {
+      if(!window->tracking_leave)
+      {
+         window->tracking_leave = 1;
+         TRACKMOUSEEVENT leave = {0};
+         leave.cbSize = sizeof(TRACKMOUSEEVENT);
+         leave.dwFlags = TME_LEAVE;
+         leave.hwndTrack = hwnd;
+         TrackMouseEvent(&leave);
+      }
+
+      POINT cursor;
+      GetCursorPos(&cursor);
+      ScreenToClient(hwnd,&cursor);
+      window->mouse_x = cursor.x;
+      window->mouse_y = cursor.y;
+      hlh_gui_window_input_event(window,HLH_GUI_MSG_MOUSE_MOVE,0,NULL);
+   }
+   else if(message==WM_MOUSELEAVE)
+   {
+      window->tracking_leave = 0;
+
+      if(!window->pressed)
+      {
+         window->mouse_x = -1;
+         window->mouse_y = -1;
+      }
+
+      hlh_gui_window_input_event(window,HLH_GUI_MSG_MOUSE_MOVE,0,NULL);
+   }
+   else if(message==WM_LBUTTONDOWN)
+   {
+      SetCapture(hwnd);
+      hlh_gui_window_input_event(window,HLH_GUI_MSG_LEFT_DOWN,0,NULL);
+   }
+   else if(message==WM_MBUTTONDOWN)
+   {
+      SetCapture(hwnd);
+      hlh_gui_window_input_event(window,HLH_GUI_MSG_MIDDLE_DOWN,0,NULL);
+   }
+   else if(message==WM_RBUTTONDOWN)
+   {
+      SetCapture(hwnd);
+      hlh_gui_window_input_event(window,HLH_GUI_MSG_RIGHT_DOWN,0,NULL);
+   }
+   else if(message==WM_LBUTTONUP)
+   {
+      if(window->pressed_button==1)
+         ReleaseCapture();
+      hlh_gui_window_input_event(window,HLH_GUI_MSG_LEFT_UP,0,NULL);
+   }
+   else if(message==WM_MBUTTONUP)
+   {
+      if(window->pressed_button==2)
+         ReleaseCapture();
+      hlh_gui_window_input_event(window,HLH_GUI_MSG_MIDDLE_UP,0,NULL);
+   }
+   else if(message==WM_RBUTTONUP)
+   {
+      if(window->pressed_button==3)
+         ReleaseCapture();
+      hlh_gui_window_input_event(window,HLH_GUI_MSG_RIGHT_UP,0,NULL);
    }
    else
    {
@@ -893,7 +958,7 @@ void HLH_gui_init()
    WNDCLASS windowClass = {0};
    windowClass.lpfnWndProc = hlh_gui_window_procedure;
    windowClass.hCursor = LoadCursor(NULL,IDC_ARROW);
-   windowClass.lpszClassName = "UILibraryTutorial";
+   windowClass.lpszClassName = "HLH_GUI";
    RegisterClass(&windowClass);
 }
 
@@ -901,11 +966,12 @@ HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height)
 {
    HLH_gui_window *window = (HLH_gui_window *)HLH_gui_element_create(sizeof(*window),NULL,0,hlh_gui_window_msg);
    window->e.window = window;
+   window->hover = &window->e;
    hlh_gui_state.window_count++;
    hlh_gui_state.windows = realloc(hlh_gui_state.windows,sizeof(*hlh_gui_state.windows)*hlh_gui_state.window_count);
-   hlh_gui_state.windows[hlh_gui_state_window_count-1] = window;
+   hlh_gui_state.windows[hlh_gui_state.window_count-1] = window;
 
-   window->hwnd = CreateWindow("UILibraryTutorial",title,WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,width,height,NULL,NULL,NULL,NULL);
+   window->hwnd = CreateWindow("HLH_GUI",title,WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,width,height,NULL,NULL,NULL,NULL);
    SetWindowLongPtr(window->hwnd,GWLP_USERDATA,(LONG_PTR)window);
    ShowWindow(window->hwnd,SW_SHOW);
    PostMessage(window->hwnd,WM_SIZE,0,0);
@@ -923,12 +989,19 @@ int HLH_gui_message_loop()
       DispatchMessage(&msg);
    }
 
-   return msg.wparam;
+   return msg.wParam;
 }
 
 int hlh_gui_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
-   if(msg==HLH_GUI_MSG_LAYOUT&&e->child_count!=0)
+   if(msg==HLH_GUI_MSG_DESTROY)
+   {
+      HLH_gui_window *window = (HLH_gui_window *)e;
+      free(window->data);
+      SetWindowLongPtr(window->hwnd,GWLP_USERDATA,0);
+      DestroyWindow(window->hwnd);
+   }
+   else if(msg==HLH_GUI_MSG_LAYOUT&&e->child_count!=0)
    {
       HLH_gui_element_move(e->children[0],e->bounds,0);
       HLH_gui_element_repaint(e,NULL);
@@ -939,6 +1012,20 @@ int hlh_gui_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
 void hlh_gui_window_end_paint(HLH_gui_window *w, HLH_gui_painter *p)
 {
+   HDC dc = GetDC(w->hwnd);
+	BITMAPINFOHEADER info = { 0 };
+	info.biSize = sizeof(info);
+	info.biWidth = w->width;
+   info.biHeight = w->height;
+	info.biPlanes = 1;
+   info.biBitCount = 32;
+	StretchDIBits(dc, 
+		w->update_region.l,w->update_region.t, 
+		w->update_region.r-w->update_region.l,w->update_region.b-w->update_region.t,
+		w->update_region.l,w->update_region.b+1, 
+		w->update_region.r-w->update_region.l,w->update_region.t-w->update_region.b,
+		w->data,(BITMAPINFO *)&info,DIB_RGB_COLORS,SRCCOPY);
+	ReleaseDC(w->hwnd, dc);
 }
 
 #endif
