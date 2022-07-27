@@ -73,8 +73,8 @@ typedef enum
    HLH_GUI_LABEL_CENTER = 1<<0,
 
    HLH_GUI_PANEL_HORIZONTAL = 1<<0,
-   HLH_GUI_PANEL_GRAY = 1<<1,
-   HLH_GUI_PANEL_WHITE = 1<<2,
+   HLH_GUI_PANEL_DARK = 1<<1,
+   HLH_GUI_PANEL_LIGHT = 1<<2,
 }HLH_gui_flag;
 
 typedef int (*HLH_gui_msg_handler)(HLH_gui_element *e, HLH_gui_msg, int di, void *dp);
@@ -634,13 +634,37 @@ int hlh_gui_button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
       int pressed = e->window->pressed==e&&e->window->hover==e;
 
-      uint32_t c = 0xffffff;
-      HLH_gui_element_msg(e,HLH_GUI_MSG_BUTTON_GET_COLOR,0,&c);
-      uint32_t c1 = pressed?0xffffff:0x000000;
-      uint32_t c2 = pressed?0x000000:c;
+      //Draw
+      //Outline
+      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l,e->bounds.r,e->bounds.t,e->bounds.t+2),0x000000);
+      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l,e->bounds.l+2,e->bounds.t+2,e->bounds.b-2),0x000000);
+      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.r-2,e->bounds.r,e->bounds.t+2,e->bounds.b-2),0x000000);
+      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l,e->bounds.r,e->bounds.b-2,e->bounds.b),0x000000);
 
-      HLH_gui_draw_rectangle(painter,e->bounds,c2,c1);
-      HLH_gui_draw_string(painter,e->bounds,button->text,button->text_len,c1,1);
+      //Infill
+      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2,e->bounds.r-2,e->bounds.t+2,e->bounds.b-2),0x5a5a5a);
+
+      //Border
+      if(pressed)
+      {
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2,e->bounds.l+4,e->bounds.t+4,e->bounds.b-4),0x000000);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2,e->bounds.r-4,e->bounds.b-4,e->bounds.b-2),0x000000);
+
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.r-4,e->bounds.r-2,e->bounds.t+4,e->bounds.b-4),0x323232);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+4,e->bounds.r-2,e->bounds.t+2,e->bounds.t+4),0x323232);
+      }
+      else
+      {
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2,e->bounds.l+4,e->bounds.t+4,e->bounds.b-4),0x323232);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2,e->bounds.r-4,e->bounds.b-4,e->bounds.b-2),0x323232);
+
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.r-4,e->bounds.r-2,e->bounds.t+4,e->bounds.b-4),0xc8c8c8);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+4,e->bounds.r-2,e->bounds.t+2,e->bounds.t+4),0xc8c8c8);
+      }
+
+      //Text
+      HLH_gui_draw_string(painter,e->bounds,button->text,button->text_len,0x000000,1);
+      //-------------------------------------
    }
    else if(msg==HLH_GUI_MSG_UPDATE)
    {
@@ -693,10 +717,10 @@ int hlh_gui_panel_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
    if(msg==HLH_GUI_MSG_PAINT)
    {
-      if(e->flags&HLH_GUI_PANEL_GRAY)
-         HLH_gui_draw_block(dp,e->bounds,0xcccccc);
-      else if(e->flags&HLH_GUI_PANEL_WHITE)
-         HLH_gui_draw_block(dp,e->bounds,0xffffff);
+      if(e->flags&HLH_GUI_PANEL_LIGHT)
+         HLH_gui_draw_block(dp,e->bounds,0x5a5a5a);
+      else if(e->flags&HLH_GUI_PANEL_DARK)
+         HLH_gui_draw_block(dp,e->bounds,0x323232);
    }
    else if(msg==HLH_GUI_MSG_LAYOUT)
    {
