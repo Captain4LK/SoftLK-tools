@@ -183,6 +183,7 @@ int HLH_gui_rect_valid(HLH_gui_rect r);
 int HLH_gui_rect_equal(HLH_gui_rect a, HLH_gui_rect b);
 int HLH_gui_rect_inside(HLH_gui_rect a, int x, int y);
 
+void HLH_gui_set_scale(int scale);
 void HLH_gui_string_copy(char **dest, size_t *dest_size, const char *src, ptrdiff_t src_len);
 
 #endif //_HLH_GUI_H_
@@ -252,13 +253,14 @@ struct
 {
    HLH_gui_window **windows;
    size_t window_count;
+   int scale;
 
 #ifdef HLH_GUI_PLATTFORM_LINUX
    Display *display;
    Visual *visual;
    Atom window_closed_id;
 #endif
-}hlh_gui_state;
+}hlh_gui_state = {.scale = 1 };
 
 HLH_gui_rect HLH_gui_rect_make(int l, int r, int t, int b)
 {
@@ -298,6 +300,18 @@ int HLH_gui_rect_equal(HLH_gui_rect a, HLH_gui_rect b)
 int HLH_gui_rect_inside(HLH_gui_rect a, int x, int y)
 {
    return a.l<=x&&a.r>x&&a.t<=y&&a.b>y;
+}
+
+void HLH_gui_set_scale(int scale)
+{
+   if(scale<0)
+      return;
+
+   hlh_gui_state.scale = scale;
+
+   //Repaint all
+   for(int i = 0;i<hlh_gui_state.window_count;i++)
+      HLH_gui_element_repaint(&hlh_gui_state.windows[i]->e,NULL);
 }
 
 void HLH_gui_string_copy(char **dest, size_t *dest_size, const char *src, ptrdiff_t src_len)
@@ -633,33 +647,34 @@ int hlh_gui_button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       HLH_gui_painter *painter = dp;
 
       int pressed = e->window->pressed==e&&e->window->hover==e;
+      int scale = hlh_gui_state.scale;
 
       //Draw
       //Outline
-      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l,e->bounds.r,e->bounds.t,e->bounds.t+2),0x000000);
-      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l,e->bounds.l+2,e->bounds.t+2,e->bounds.b-2),0x000000);
-      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.r-2,e->bounds.r,e->bounds.t+2,e->bounds.b-2),0x000000);
-      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l,e->bounds.r,e->bounds.b-2,e->bounds.b),0x000000);
+      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l,e->bounds.r,e->bounds.t,e->bounds.t+2*scale),0x000000);
+      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l,e->bounds.l+2*scale,e->bounds.t+2*scale,e->bounds.b-2*scale),0x000000);
+      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.r-2*scale,e->bounds.r,e->bounds.t+2*scale,e->bounds.b-2*scale),0x000000);
+      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l,e->bounds.r,e->bounds.b-2*scale,e->bounds.b),0x000000);
 
       //Infill
-      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2,e->bounds.r-2,e->bounds.t+2,e->bounds.b-2),0x5a5a5a);
+      HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2*scale,e->bounds.r-2*scale,e->bounds.t+2*scale,e->bounds.b-2*scale),0x5a5a5a);
 
       //Border
       if(pressed)
       {
-         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2,e->bounds.l+4,e->bounds.t+4,e->bounds.b-4),0x000000);
-         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2,e->bounds.r-4,e->bounds.b-4,e->bounds.b-2),0x000000);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2*scale,e->bounds.l+4*scale,e->bounds.t+4*scale,e->bounds.b-4*scale),0x000000);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2*scale,e->bounds.r-4*scale,e->bounds.b-4*scale,e->bounds.b-2*scale),0x000000);
 
-         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.r-4,e->bounds.r-2,e->bounds.t+4,e->bounds.b-4),0x323232);
-         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+4,e->bounds.r-2,e->bounds.t+2,e->bounds.t+4),0x323232);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.r-4*scale,e->bounds.r-2*scale,e->bounds.t+4*scale,e->bounds.b-4*scale),0x323232);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+4*scale,e->bounds.r-2*scale,e->bounds.t+2*scale,e->bounds.t+4*scale),0x323232);
       }
       else
       {
-         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2,e->bounds.l+4,e->bounds.t+4,e->bounds.b-4),0x323232);
-         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2,e->bounds.r-4,e->bounds.b-4,e->bounds.b-2),0x323232);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2*scale,e->bounds.l+4*scale,e->bounds.t+4*scale,e->bounds.b-4*scale),0x323232);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+2*scale,e->bounds.r-4*scale,e->bounds.b-4*scale,e->bounds.b-2*scale),0x323232);
 
-         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.r-4,e->bounds.r-2,e->bounds.t+4,e->bounds.b-4),0xc8c8c8);
-         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+4,e->bounds.r-2,e->bounds.t+2,e->bounds.t+4),0xc8c8c8);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.r-4*scale,e->bounds.r-2*scale,e->bounds.t+4*scale,e->bounds.b-4*scale),0xc8c8c8);
+         HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+4*scale,e->bounds.r-2*scale,e->bounds.t+2*scale,e->bounds.t+4*scale),0xc8c8c8);
       }
 
       //Text
