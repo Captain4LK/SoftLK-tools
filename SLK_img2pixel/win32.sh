@@ -2,7 +2,7 @@
 
 sources="utility_win.c assets.c image2pixel.c"
 object_files="utility_win.o assets.o image2pixel.o nfd_win.o"
-options="-O3 -flto=auto -s"
+options="-Og -g"
 
 if [ $# -lt 1 ]; then
    echo "unspecified target, need either gui, gui_win, cmd, cmd_win or video"
@@ -44,7 +44,7 @@ elif [ $1 = "cmd_win" ]; then
    i686-w64-mingw32-gcc -c $sources -luuid -lcomdlg32 -lole32 -lmingw32 -mwindows -Wall -Wno-sign-compare -Wno-unused-parameter -static-libgcc -static-libstdc++ $options
    i686-w64-mingw32-g++ -o ../bin/SLK_img2pix_cmd $object_files -luuid -lcomdlg32 -lole32 -lmingw32 -mwindows -Wall -Wno-sign-compare -Wno-unused-parameter -static-libgcc -static-libstdc++ $options
 
-elif [ $1^= "video"]; then
+elif [ $1 = "video" ]; then
    sources="$sources main_video.c"
    object_files="$object_files main_video.o"
 

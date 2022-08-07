@@ -54,6 +54,8 @@ static char path_palette_load[512] = {0};
 static char path_palette_save[512] = {0};
 
 int upscale = 1;
+int win_preview_width = 260;
+int win_preview_height = 286;
 //-------------------------------------
 
 //Function prototypes
@@ -449,6 +451,8 @@ void utility_init()
    strncpy(path_palette_save,HLH_json_get_object_string(&root->root,"path_palette_save","(NULL)"),512);
    strncpy(path_dir_input,HLH_json_get_object_string(&root->root,"path_dir_input","(NULL)"),512);
    strncpy(path_dir_output,HLH_json_get_object_string(&root->root,"path_dir_output","(NULL)"),512);
+   win_preview_width = HLH_json_get_object_integer(&root->root,"preview_window_width",260);
+   win_preview_height = HLH_json_get_object_integer(&root->root,"preview_window_height",286);
 
    HLH_json_free(root);
 }
@@ -469,6 +473,8 @@ void utility_exit()
    HLH_json_object_add_string(&root->root,"path_palette_save",path_palette_save);
    HLH_json_object_add_string(&root->root,"path_dir_input",path_dir_input);
    HLH_json_object_add_string(&root->root,"path_dir_output",path_dir_output);
+   HLH_json_object_add_integer(&root->root,"preview_window_width",win_preview_width);
+   HLH_json_object_add_integer(&root->root,"preview_window_height",win_preview_height);
 
    HLH_json_write_file(f,&root->root);
    HLH_json_free(root);

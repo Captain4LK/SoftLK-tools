@@ -12,6 +12,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <io.h>
 #define LIBSLK_IMPLEMENTATION
 #include "../headers/libSLK.h"
 
@@ -60,6 +62,9 @@ static Frame *frame_read(Frame *f);
 
 int main(int argc, char **argv)
 {
+   _setmode(_fileno(stdin), O_BINARY);
+   _setmode(_fileno(stdout), O_BINARY);
+
    //Load default palette
    img2pixel_set_palette(assets_load_pal_default());
 
@@ -104,8 +109,10 @@ int main(int argc, char **argv)
    SLK_RGB_sprite *sin = SLK_rgb_sprite_create(fin->width,fin->height);
    SLK_RGB_sprite *sout = SLK_rgb_sprite_create(width,height);
 
+   //int frame = 0;
    do
    {
+      //fprintf(stderr,"\rFrame %d",frame++);
       for(int i = 0;i<fin->width*fin->height;i++)
       {
          sin->data[i].rgb.r = fin->data[i*3];
@@ -134,8 +141,7 @@ int main(int argc, char **argv)
             }
          }
       }
-
-     frame_write(fout);
+      frame_write(fout);
    }while((fin = frame_read(fin))!=NULL);
 
    return 0;
@@ -239,22 +245,34 @@ static Frame *frame_create(size_t width, size_t height)
 
 static void frame_write(Frame *f)
 {
-    printf("P6\n%zu %zu\n255\n",f->width,f->height);
+   /*fputc('P',stdout);
+   fputc('6',stdout);
+   int nl = 0x0a;
+   fwrite(&nl,1,1,stdout);
+   printf("%zu %zu",f->width,f->height);
+   fwrite(&nl,1,1,stdout);
+   printf("259");
+   fwrite(&nl,1,1,stdout);*/
+    printf("P6%c%zu %zu%c255%c",0x0a,f->width,f->height,0x0a,0x0a);
     fwrite(f->data,f->width*f->height,3,stdout);
 }
 
 static Frame *frame_read(Frame *f)
 {
-    size_t width, height;
-    if(scanf("P6 %zu%zu%*d%*c", &width, &height) < 2) {
+    size_t width = 0, height = 0;
+    char nc;
+    int nd;
+
+    if(scanf("P6 %zu%zu%d%c", &width, &height,&nd,&nc) < 4) {
         free(f);
-        return 0;
+        return NULL;
     }
     if (!f || f->width != width || f->height != height) {
-        free(f);
+       if(f!=NULL)
+           free(f);
         f = frame_create(width, height);
     }
-    fread(f->data, width * height, 3, stdin);
+    size_t sz = fread(f->data, width * height, 3, stdin);
     return f;
 }
 //-------------------------------------

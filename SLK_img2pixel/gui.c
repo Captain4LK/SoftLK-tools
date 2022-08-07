@@ -295,7 +295,7 @@ void gui_init()
    SLK_gui_set_colors(SLK_color_create(90,90,90,255),SLK_color_create(200,200,200,255),SLK_color_create(100,100,100,255),SLK_color_create(50,50,50,255),SLK_color_create(0,0,0,255));
    SLK_gui_set_font(font);
    SLK_gui_set_font_color(SLK_color_create(0,0,0,255));
-   preview = SLK_gui_window_create(400,100,260,286);
+   preview = SLK_gui_window_create(400,100,win_preview_width,win_preview_height);
    SLK_gui_window_set_title(preview,"Preview");
    SLK_gui_window_set_moveable(preview,1);
    preview_tabs = SLK_gui_tabbar_create(2,14,256,14,2,text_tab_image);
@@ -712,7 +712,29 @@ static void gui_buttons()
             SLK_draw_rgb_clear();
             SLK_draw_rgb_sprite(sprite_in_org,0,0);
             SLK_draw_rgb_set_changed(1);
-            float scale;
+
+            float view_width,view_height;
+            float ratio = (float)(preview->pos.w-4)/(float)(preview->pos.h-30);
+            if(ratio>(float)sprite_in->width/(float)sprite_in->height)
+            {
+               view_height = preview->pos.h-30;
+               view_width = ((float)sprite_in->width/(float)sprite_in->height)*(float)(preview->pos.h-30);
+            }
+            else
+            {
+               view_width = preview->pos.w-4;
+               view_height = ((float)sprite_in->height/(float)sprite_in->width)*(float)(preview->pos.w-4);
+            }
+
+            float view_x = (preview->pos.w-4-view_width)/2;
+            float view_y = (preview->pos.h-30-view_height)/2;
+
+            float pixel_scale = (float)view_width/(float)sprite_in->width;
+
+            SLK_layer_set_scale(0,pixel_scale);
+            gui_in_x = (preview->pos.w-4-view_width)/2;
+            gui_in_y = (preview->pos.h-30-view_height)/2;
+            /*float scale;
             if(sprite_in->width>sprite_in->height)
                scale = 256.0f/sprite_in->width;
             else 
@@ -721,7 +743,7 @@ static void gui_buttons()
             int fwidth = (int)((float)sprite_in->width*scale);
             int fheight = (int)((float)sprite_in->height*scale);
             gui_in_x = (256-fwidth)/2;
-            gui_in_y = (256-fheight)/2;
+            gui_in_y = (256-fheight)/2;*/
          }
 
          update = 1;
@@ -1153,7 +1175,30 @@ static void update_output()
    SLK_draw_rgb_clear();
    SLK_draw_rgb_sprite(sprite_out,0,0);
    SLK_draw_rgb_set_changed(1);
-   float scale;
+
+   float view_width,view_height;
+   float ratio = (float)(preview->pos.w-4)/(float)(preview->pos.h-30);
+   if(ratio>(float)sprite_out->width/(float)sprite_out->height)
+   {
+      view_height = preview->pos.h-30;
+      view_width = ((float)sprite_out->width/(float)sprite_out->height)*(float)(preview->pos.h-30);
+   }
+   else
+   {
+      view_width = preview->pos.w-4;
+      view_height = ((float)sprite_out->height/(float)sprite_out->width)*(float)(preview->pos.w-4);
+   }
+
+   float view_x = (preview->pos.w-4-view_width)/2;
+   float view_y = (preview->pos.h-30-view_height)/2;
+
+   float pixel_scale = (float)view_width/(float)sprite_out->width;
+
+   SLK_layer_set_scale(1,pixel_scale);
+   gui_out_x = (preview->pos.w-4-view_width)/2;
+   gui_out_y = (preview->pos.h-30-view_height)/2;
+   //gui_out_x = (
+   /*float scale;
    if(sprite_out->width>sprite_out->height)
       scale = 256.0f/sprite_out->width;
    else 
@@ -1162,7 +1207,7 @@ static void update_output()
    int fwidth = (int)((float)sprite_out->width*scale);
    int fheight = (int)((float)sprite_out->height*scale);
    gui_out_x = (256-fwidth)/2;
-   gui_out_y = (256-fheight)/2;
+   gui_out_y = (256-fheight)/2;*/
 }
 
 static void palette_draw()

@@ -13,6 +13,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define _UTILITY_H_
 
 extern int upscale;
+extern int win_preview_width;
+extern int win_preview_height;
 
 SLK_RGB_sprite *image_select();
 void image_write(SLK_RGB_sprite *img, SLK_Palette *pal);
