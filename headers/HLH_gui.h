@@ -142,6 +142,14 @@ typedef struct
    int tabs;
    int tab_current;
    char **labels;
+}HLH_gui_vtab;
+
+typedef struct
+{
+   HLH_gui_element e;
+   int tabs;
+   int tab_current;
+   char **labels;
 }HLH_gui_htab;
 
 struct HLH_gui_window
@@ -182,6 +190,7 @@ HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint32_t flags,  co
 HLH_gui_panel *HLH_gui_panel_create(HLH_gui_element *parent, uint32_t flags);
 HLH_gui_image *HLH_gui_image_create(HLH_gui_element *parent, uint32_t flags, int width, int height, uint32_t *data);
 HLH_gui_htab *HLH_gui_htab_create(HLH_gui_element *parent, uint32_t flags);
+HLH_gui_vtab *HLH_gui_vtab_create(HLH_gui_element *parent, uint32_t flags);
 
 int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 void HLH_gui_element_move(HLH_gui_element *e, HLH_gui_rect bounds, int always_layout);
@@ -191,6 +200,7 @@ void HLH_gui_element_destroy(HLH_gui_element *e);
 
 void HLH_gui_label_set_text(HLH_gui_label *l, const char *text, ptrdiff_t text_len);
 void HLH_gui_htab_set(HLH_gui_htab *h, int tab, const char *str);
+void HLH_gui_vtab_set(HLH_gui_vtab *h, int tab, const char *str);
 
 void HLH_gui_draw_block(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color);
 void HLH_gui_draw_rectangle(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color_fill, uint32_t color_border);
@@ -226,6 +236,7 @@ int hlh_gui_label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 int hlh_gui_panel_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 int hlh_gui_img_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 int hlh_gui_htab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+int hlh_gui_vtab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 
 int hlh_gui_panel_layout(HLH_gui_panel *p, HLH_gui_rect bounds, int measure);
 int hlh_gui_panel_measure(HLH_gui_panel *p);
@@ -408,6 +419,15 @@ HLH_gui_htab *HLH_gui_htab_create(HLH_gui_element *parent, uint32_t flags)
    return htab;
 }
 
+HLH_gui_vtab *HLH_gui_vtab_create(HLH_gui_element *parent, uint32_t flags)
+{
+   HLH_gui_vtab *vtab = (HLH_gui_vtab *) HLH_gui_element_create(sizeof(*vtab),parent,flags,hlh_gui_vtab_msg);
+   vtab->tabs = 0;
+   vtab->tab_current = 0;
+
+   return vtab;
+}
+
 int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    if(e->flags&HLH_GUI_DESTROY&&msg!=HLH_GUI_MSG_DESTROY)
@@ -494,6 +514,20 @@ void HLH_gui_label_set_text(HLH_gui_label *l, const char *text, ptrdiff_t text_l
 }
 
 void HLH_gui_htab_set(HLH_gui_htab *h, int tab, const char *str)
+{
+   int max = (tab+1)>h->tabs?tab+1:h->tabs;
+   if(max>h->tabs)
+   {
+      h->tabs = tab+1;
+      h->labels = realloc(h->labels,sizeof(*h->labels)*h->tabs);
+   }
+   if(tab!=0)
+      h->e.parent->children[tab+1]->flags|=HLH_GUI_HIDDEN;
+
+   HLH_gui_string_copy(&h->labels[tab],NULL,str,-1);
+}
+
+void HLH_gui_vtab_set(HLH_gui_vtab *h, int tab, const char *str)
 {
    int max = (tab+1)>h->tabs?tab+1:h->tabs;
    if(max>h->tabs)
@@ -853,6 +887,58 @@ int hlh_gui_img_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 int hlh_gui_htab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    HLH_gui_htab *t = e;
+   int width = (e->bounds.r-e->bounds.l)/t->tabs;
+
+   if(msg==HLH_GUI_MSG_DESTROY)
+   {
+      for(int i = 0;i<t->tabs;i++)
+         if(t->labels[i]!=NULL)
+            free(t->labels[i]);
+      free(t->labels);
+   }
+   else if(msg==HLH_GUI_MSG_GET_WIDTH)
+   {
+      //TODO
+      return -1;
+   }
+   else if(msg==HLH_GUI_MSG_CLICK)
+   {
+      int tab = (e->window->mouse_x-e->bounds.l)/width;
+      if(tab<0||tab>=t->tabs)
+         return 0;
+
+      e->parent->children[t->tab_current+1]->flags|=HLH_GUI_HIDDEN;
+      t->tab_current = tab;
+      e->parent->children[t->tab_current+1]->flags^=HLH_GUI_HIDDEN;
+
+      HLH_gui_element_msg(e->parent,HLH_GUI_MSG_LAYOUT,0,NULL);
+      HLH_gui_element_repaint(e->parent,NULL);
+   }
+   else if(msg==HLH_GUI_MSG_GET_HEIGHT)
+   {
+      return (HLH_GUI_GLYPH_HEIGHT+5)*hlh_gui_state.scale;
+   }
+   else if(msg==HLH_GUI_MSG_PAINT)
+   {
+      //Draw background
+      HLH_gui_painter *painter = dp;
+      HLH_gui_draw_block(painter,e->bounds,0x323232);
+
+      //Draw labels
+      for(int i = 0;i<t->tabs;i++)
+      {
+         if(i==t->tab_current)
+            HLH_gui_draw_block(painter,HLH_gui_rect_make(e->bounds.l+i*width,e->bounds.l+(i+1)*width,e->bounds.t,e->bounds.b),0x646464);
+         HLH_gui_draw_string(dp,HLH_gui_rect_make(e->bounds.l+i*width,e->bounds.l+(i+1)*width,e->bounds.t,e->bounds.b),t->labels[i],strlen(t->labels[i]),0x000000,HLH_GUI_LABEL_CENTER);
+      }
+   }
+
+   return 0;
+}
+
+int hlh_gui_vtab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_vtab *t = e;
    int height = (HLH_GUI_GLYPH_HEIGHT+4)*hlh_gui_state.scale;
 
    if(msg==HLH_GUI_MSG_DESTROY)
