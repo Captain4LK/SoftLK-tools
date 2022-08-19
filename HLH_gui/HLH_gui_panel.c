@@ -71,9 +71,9 @@ static int panel_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 static int panel_layout(HLH_gui_panel *p, HLH_gui_rect bounds, int measure)
 {
    int horizontal = p->e.flags&HLH_GUI_PANEL_HORIZONTAL;
-   int pos = horizontal?p->border.l:p->border.t;
-   int space_h = bounds.r-bounds.l-p->border.r-p->border.l;
-   int space_v = bounds.b-bounds.t-p->border.b-p->border.t;
+   int pos = horizontal?p->border.l*HLH_gui_get_scale():p->border.t*HLH_gui_get_scale();
+   int space_h = bounds.r-bounds.l-p->border.r*HLH_gui_get_scale()-p->border.l*HLH_gui_get_scale();
+   int space_v = bounds.b-bounds.t-p->border.b*HLH_gui_get_scale()-p->border.t*HLH_gui_get_scale();
    int available = horizontal?space_h:space_v;
    int fill = 0;
    int per_fill = 0;
@@ -103,12 +103,12 @@ static int panel_layout(HLH_gui_panel *p, HLH_gui_rect bounds, int measure)
    }
 
    if(count)
-      available-=(count-1)*p->gap;
+      available-=(count-1)*p->gap*HLH_gui_get_scale();
 
    if(available>0&&fill)
       per_fill = available/fill;
 
-   int border2 = horizontal?p->border.t:p->border.l;
+   int border2 = horizontal?p->border.t*HLH_gui_get_scale():p->border.l*HLH_gui_get_scale();
 
    for(int i = 0;i<p->e.child_count;i++)
    {
@@ -124,7 +124,7 @@ static int panel_layout(HLH_gui_panel *p, HLH_gui_rect bounds, int measure)
          HLH_gui_rect r = HLH_gui_rect_make(pos+bounds.l,pos+width+bounds.l,border2+(space_v-height)/2+bounds.t,border2+(space_v+height)/2+bounds.t);
          if(!measure)
             HLH_gui_element_move(child,r,0);
-         pos+=width+p->gap;
+         pos+=width+p->gap*HLH_gui_get_scale();
       }
       else
       {
@@ -133,11 +133,11 @@ static int panel_layout(HLH_gui_panel *p, HLH_gui_rect bounds, int measure)
          HLH_gui_rect r = HLH_gui_rect_make(border2+(space_h-width)/2+bounds.l,border2+(space_h+width)/2+bounds.l,pos+bounds.t,pos+height+bounds.t);
          if(!measure)
             HLH_gui_element_move(child,r,0);
-         pos+=height+p->gap;
+         pos+=height+p->gap*HLH_gui_get_scale();
       }
    }
 
-   return pos-(count?p->gap:0)+(horizontal?p->border.r:p->border.b);
+   return pos-(count?p->gap*HLH_gui_get_scale():0)+(horizontal?p->border.r*HLH_gui_get_scale():p->border.b*HLH_gui_get_scale());
 }
 
 static int panel_measure(HLH_gui_panel *p)
@@ -155,7 +155,7 @@ static int panel_measure(HLH_gui_panel *p)
          size = child_size;
    }
 
-   int border = horizontal?p->border.t+p->border.b:p->border.l+p->border.r;
+   int border = horizontal?p->border.t*HLH_gui_get_scale()+p->border.b*HLH_gui_get_scale():p->border.l*HLH_gui_get_scale()+p->border.r*HLH_gui_get_scale();
    return size+border;
 }
 //-------------------------------------

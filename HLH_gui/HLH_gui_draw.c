@@ -32,9 +32,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 void HLH_gui_draw_block(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color)
 {
    rect = HLH_gui_rect_intersect(p->clip,rect);
+   if(!HLH_gui_rect_valid(rect))
+      return;
 
    SDL_Rect r;
-
    r.x = rect.l;
    r.y = rect.t;
    r.w = rect.r-rect.l;

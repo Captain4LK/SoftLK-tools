@@ -118,7 +118,8 @@ typedef struct
    HLH_gui_element e;
    int width;
    int height;
-   uint32_t *data;
+   SDL_Texture *texture;
+   //uint32_t *data;
 }HLH_gui_image;
 
 typedef struct
@@ -136,6 +137,14 @@ typedef struct
    int tab_current;
    char **labels;
 }HLH_gui_htab;
+
+typedef struct
+{
+   HLH_gui_element e;
+   int value;
+   int min;
+   int max;
+}HLH_gui_slider;
 
 struct HLH_gui_window
 {
@@ -170,6 +179,7 @@ int HLH_gui_get_scale(void);
 HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height);
 void HLH_gui_string_copy(char **dest, size_t *dest_size, const char *src, ptrdiff_t src_len);
 
+//Elements
 HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, uint32_t flags, HLH_gui_msg_handler msg_handler);
 void HLH_gui_element_move(HLH_gui_element *e, HLH_gui_rect bounds, int always_layout);
 void HLH_gui_element_repaint(HLH_gui_element *e, HLH_gui_rect *region);
@@ -177,12 +187,24 @@ int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 HLH_gui_element *HLH_gui_element_find_by_point(HLH_gui_element *e, int x, int y);
 void HLH_gui_element_destroy(HLH_gui_element *e);
 
+//Rectangles
 HLH_gui_rect HLH_gui_rect_make(int l, int r, int t, int b);
 HLH_gui_rect HLH_gui_rect_intersect(HLH_gui_rect a, HLH_gui_rect b);
 HLH_gui_rect HLH_gui_rect_bounding(HLH_gui_rect a, HLH_gui_rect b);
 int HLH_gui_rect_valid(HLH_gui_rect r);
 int HLH_gui_rect_equal(HLH_gui_rect a, HLH_gui_rect b);
 int HLH_gui_rect_inside(HLH_gui_rect a, int x, int y);
+
+//Drawing
+void HLH_gui_draw_block(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color);
+void HLH_gui_draw_string(HLH_gui_painter *p, HLH_gui_rect bounds, const char *str, size_t bytes, uint32_t color, int align_center);
+
+//button
+HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint32_t flags, const char *text, ptrdiff_t text_len);
+
+//label
+HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint32_t flags,  const char *text, ptrdiff_t text_len);
+void HLH_gui_label_set_text(HLH_gui_label *l, const char *text, ptrdiff_t text_len);
 
 //panel
 HLH_gui_panel *HLH_gui_panel_create(HLH_gui_element *parent, uint32_t flags);
@@ -191,7 +213,16 @@ HLH_gui_panel *HLH_gui_panel_create(HLH_gui_element *parent, uint32_t flags);
 HLH_gui_htab *HLH_gui_htab_create(HLH_gui_element *parent, uint32_t flags);
 void HLH_gui_htab_set(HLH_gui_htab *h, int tab, const char *str);
 
-void HLH_gui_draw_block(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color);
-void HLH_gui_draw_string(HLH_gui_painter *p, HLH_gui_rect bounds, const char *str, size_t bytes, uint32_t color, int align_center);
+//vtab
+HLH_gui_vtab *HLH_gui_vtab_create(HLH_gui_element *parent, uint32_t flags);
+void HLH_gui_vtab_set(HLH_gui_vtab *h, int tab, const char *str);
+
+//image
+HLH_gui_image *HLH_gui_image_create(HLH_gui_element *parent, uint32_t flags, int width, int height, uint32_t *data);
+void HLH_gui_image_update(HLH_gui_image *img, int width, int height, uint32_t *data);
+
+//slider
+HLH_gui_slider *HLH_gui_slider_create(HLH_gui_element *parent, uint32_t flags, int value, int min, int max);
+void HLH_gui_slider_set_value(HLH_gui_slider *slider, int value);
 
 #endif

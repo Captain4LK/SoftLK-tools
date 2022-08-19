@@ -126,7 +126,6 @@ int HLH_gui_message_loop(void)
             SDL_RenderCopy(win->renderer,win->target,NULL,NULL);
             SDL_RenderPresent(win->renderer);
             break;
-         case SDL_WINDOWEVENT_RESIZED:
          case SDL_WINDOWEVENT_SIZE_CHANGED:
             {
                int width = event.window.data1;
@@ -153,6 +152,8 @@ int HLH_gui_message_loop(void)
 
             core_window_input_event(win,HLH_GUI_MSG_MOUSE_MOVE,0,NULL);
             break;
+         case SDL_WINDOWEVENT_CLOSE:
+            return 0;
          }
          break;
       case SDL_MOUSEMOTION:
