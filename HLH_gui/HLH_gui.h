@@ -38,6 +38,8 @@ typedef enum
    HLH_GUI_MSG_GET_WIDTH,
    HLH_GUI_MSG_GET_HEIGHT,
 
+   HLH_GUI_MSG_SLIDER_CHANGED_VALUE,
+
    HLH_GUI_MSG_USR,
 }HLH_gui_msg;
 

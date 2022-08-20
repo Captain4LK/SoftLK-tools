@@ -44,8 +44,15 @@ HLH_gui_slider *HLH_gui_slider_create(HLH_gui_element *parent, uint32_t flags, i
 
 void HLH_gui_slider_set_value(HLH_gui_slider *slider, int value)
 {
+   int old = slider->value;
    slider->value = value;
-   HLH_gui_element_repaint(&slider->e,NULL);
+   slider->value = MAX(slider->min,MIN(slider->value,slider->max));
+
+   if(old!=slider->value)
+   {
+      HLH_gui_element_repaint(&slider->e,NULL);
+      HLH_gui_element_msg(&slider->e,HLH_GUI_MSG_SLIDER_CHANGED_VALUE,0,NULL);
+   }
 }
 
 static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -69,13 +76,19 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    }
    else if(msg==HLH_GUI_MSG_MOUSE_DRAG||msg==HLH_GUI_MSG_LEFT_DOWN)
    {
+      int old = s->value;
       int width = e->bounds.r-e->bounds.l;
       if(width==0)
          return 0;
       float t = ((float)(e->window->mouse_x-e->bounds.l)/(float)width);
       s->value = s->min+t*(s->max-s->min);
       s->value = MAX(s->min,MIN(s->value,s->max));
-      HLH_gui_element_repaint(e,NULL);
+
+      if(old!=s->value)
+      {
+         HLH_gui_element_repaint(e,NULL);
+         HLH_gui_element_msg(e,HLH_GUI_MSG_SLIDER_CHANGED_VALUE,0,NULL);
+      }
    }
 
    return 0;
