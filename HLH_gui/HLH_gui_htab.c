@@ -74,15 +74,17 @@ static int htab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    else if(msg==HLH_GUI_MSG_CLICK)
    {
       int tab = (e->window->mouse_x-e->bounds.l)/width;
-      if(tab<0||tab>=t->tabs)
+      if(tab<0||tab>=t->tabs||tab==t->tab_current)
          return 0;
 
+      int old = t->tab_current;
       e->parent->children[t->tab_current+1]->flags|=HLH_GUI_HIDDEN;
       t->tab_current = tab;
       e->parent->children[t->tab_current+1]->flags^=HLH_GUI_HIDDEN;
 
       HLH_gui_element_msg(e->parent,HLH_GUI_MSG_LAYOUT,0,NULL);
       HLH_gui_element_repaint(e->parent,NULL);
+      HLH_gui_element_msg(e,HLH_GUI_MSG_TAB_CHANGED,old,NULL);
    }
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {

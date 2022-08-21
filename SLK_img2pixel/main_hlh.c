@@ -68,8 +68,6 @@ struct
 
          HLH_gui_panel *tab2;
             HLH_gui_panel *panel20;
-               HLH_gui_image *img_pal20;
-               HLH_gui_image *img_pal21;
             HLH_gui_panel *panel21;
             HLH_gui_panel *panel22;
 
@@ -113,6 +111,40 @@ struct
                      HLH_gui_button *ydiv_plus;
                   HLH_gui_panel *panel352;
                      HLH_gui_label *label352;
+            HLH_gui_panel *panel36;
+                  HLH_gui_panel *panel360;
+                     HLH_gui_label *label361;
+                  HLH_gui_panel *panel361;
+                     HLH_gui_button *sample_left;
+                     HLH_gui_label *sample;
+                     HLH_gui_button *sample_right;
+            HLH_gui_panel *panel37;
+                  HLH_gui_panel *panel370;
+                     HLH_gui_label *label371;
+                  HLH_gui_panel *panel371;
+                     HLH_gui_button *xoff_minus;
+                     HLH_gui_slider *xoff;
+                     HLH_gui_button *xoff_plus;
+                  HLH_gui_panel *panel372;
+                     HLH_gui_label *label372;
+            HLH_gui_panel *panel38;
+                  HLH_gui_panel *panel380;
+                     HLH_gui_label *label381;
+                  HLH_gui_panel *panel381;
+                     HLH_gui_button *yoff_minus;
+                     HLH_gui_slider *yoff;
+                     HLH_gui_button *yoff_plus;
+                  HLH_gui_panel *panel382;
+                     HLH_gui_label *label382;
+            HLH_gui_panel *panel39;
+                  HLH_gui_panel *panel390;
+                     HLH_gui_label *label391;
+                  HLH_gui_panel *panel391;
+                     HLH_gui_button *gauss_minus;
+                     HLH_gui_slider *gauss;
+                     HLH_gui_button *gauss_plus;
+                  HLH_gui_panel *panel392;
+                     HLH_gui_label *label392;
 
          HLH_gui_panel *tab4;
 
@@ -229,6 +261,7 @@ static const char *text_tab_scale[] =
 //Function prototypes
 static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int htab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static void update_output();
 static void preset_load(FILE *f);
 //-------------------------------------
@@ -327,6 +360,7 @@ int main()
    settings.tab3->gap = 10;
    HLH_gui_vtab_set(settings.vtab,2,"Sample");
    settings.htab = HLH_gui_htab_create(&settings.tab3->e,HLH_GUI_H_FILL);
+   settings.htab->e.msg_usr = htab_msg;
    settings.panel30 = HLH_gui_panel_create(&settings.tab3->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_H_FILL);
    settings.panel30->gap = 8;
    HLH_gui_htab_set(settings.htab,0,"Absolute");
@@ -342,13 +376,13 @@ int main()
    settings.panel311->border = HLH_gui_rect_make(8,8,0,0);
    settings.width_minus = HLH_gui_button_create(&settings.panel311->e,0,"-",-1);
    settings.width_minus->e.msg_usr = button_msg;
-   settings.width = HLH_gui_slider_create(&settings.panel311->e, HLH_GUI_H_FILL,0,-255,255);
+   settings.width = HLH_gui_slider_create(&settings.panel311->e, HLH_GUI_H_FILL,128,0,512);
    settings.width->e.msg_usr = slider_msg;
    settings.width_plus = HLH_gui_button_create(&settings.panel311->e,0,"+",-1);
    settings.width_plus->e.msg_usr = button_msg;
    settings.panel312 = HLH_gui_panel_create(&settings.panel31->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel312->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label312 = HLH_gui_label_create(&settings.panel312->e,0,"   0",-1);
+   settings.label312 = HLH_gui_label_create(&settings.panel312->e,0," 128",-1);
 
    settings.panel32 = HLH_gui_panel_create(&settings.panel30->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel320 = HLH_gui_panel_create(&settings.panel32->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
@@ -358,13 +392,13 @@ int main()
    settings.panel321->border = HLH_gui_rect_make(8,8,0,0);
    settings.height_minus = HLH_gui_button_create(&settings.panel321->e,0,"-",-1);
    settings.height_minus->e.msg_usr = button_msg;
-   settings.height = HLH_gui_slider_create(&settings.panel321->e, HLH_GUI_H_FILL,0,-255,255);
+   settings.height = HLH_gui_slider_create(&settings.panel321->e, HLH_GUI_H_FILL,128,0,512);
    settings.height->e.msg_usr = slider_msg;
    settings.height_plus = HLH_gui_button_create(&settings.panel321->e,0,"+",-1);
    settings.height_plus->e.msg_usr = button_msg;
    settings.panel322 = HLH_gui_panel_create(&settings.panel32->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel322->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label322 = HLH_gui_label_create(&settings.panel322->e,0,"   0",-1);
+   settings.label322 = HLH_gui_label_create(&settings.panel322->e,0," 128",-1);
 
    settings.panel34 = HLH_gui_panel_create(&settings.panel33->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel340 = HLH_gui_panel_create(&settings.panel34->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
@@ -374,13 +408,13 @@ int main()
    settings.panel341->border = HLH_gui_rect_make(8,8,0,0);
    settings.xdiv_minus = HLH_gui_button_create(&settings.panel341->e,0,"-",-1);
    settings.xdiv_minus->e.msg_usr = button_msg;
-   settings.xdiv = HLH_gui_slider_create(&settings.panel341->e, HLH_GUI_H_FILL,0,-255,255);
+   settings.xdiv = HLH_gui_slider_create(&settings.panel341->e, HLH_GUI_H_FILL,2,1,32);
    settings.xdiv->e.msg_usr = slider_msg;
    settings.xdiv_plus = HLH_gui_button_create(&settings.panel341->e,0,"+",-1);
    settings.xdiv_plus->e.msg_usr = button_msg;
    settings.panel342 = HLH_gui_panel_create(&settings.panel34->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel342->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label342 = HLH_gui_label_create(&settings.panel342->e,0,"   0",-1);
+   settings.label342 = HLH_gui_label_create(&settings.panel342->e,0,"   2",-1);
 
    settings.panel35 = HLH_gui_panel_create(&settings.panel33->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel350 = HLH_gui_panel_create(&settings.panel35->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
@@ -390,13 +424,74 @@ int main()
    settings.panel351->border = HLH_gui_rect_make(8,8,0,0);
    settings.ydiv_minus = HLH_gui_button_create(&settings.panel351->e,0,"-",-1);
    settings.ydiv_minus->e.msg_usr = button_msg;
-   settings.ydiv = HLH_gui_slider_create(&settings.panel351->e, HLH_GUI_H_FILL,0,-255,255);
+   settings.ydiv = HLH_gui_slider_create(&settings.panel351->e, HLH_GUI_H_FILL,2,1,32);
    settings.ydiv->e.msg_usr = slider_msg;
    settings.ydiv_plus = HLH_gui_button_create(&settings.panel351->e,0,"+",-1);
    settings.ydiv_plus->e.msg_usr = button_msg;
    settings.panel352 = HLH_gui_panel_create(&settings.panel35->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel352->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label352 = HLH_gui_label_create(&settings.panel352->e,0,"   0",-1);
+   settings.label352 = HLH_gui_label_create(&settings.panel352->e,0,"   2",-1);
+
+   settings.panel36 = HLH_gui_panel_create(&settings.tab3->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
+   settings.panel36->border = HLH_gui_rect_make(0,0,40,0);
+   settings.panel360 = HLH_gui_panel_create(&settings.panel36->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
+   settings.panel360->border = HLH_gui_rect_make(8,8,0,0);
+   settings.label361 = HLH_gui_label_create(&settings.panel360->e,0,"sample",-1);
+   settings.panel361 = HLH_gui_panel_create(&settings.panel36->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
+   settings.panel361->border = HLH_gui_rect_make(8,60,0,0);
+   settings.sample_left = HLH_gui_button_create(&settings.panel361->e,0,"<",-1);
+   settings.sample_left->e.msg_usr = button_msg;
+   settings.sample = HLH_gui_label_create(&settings.panel361->e,HLH_GUI_H_FILL|HLH_GUI_LABEL_CENTER,"Round",-1);
+   settings.sample_right = HLH_gui_button_create(&settings.panel361->e,0,">",-1);
+   settings.sample_right->e.msg_usr = button_msg;
+
+   settings.panel37 = HLH_gui_panel_create(&settings.tab3->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
+   settings.panel370 = HLH_gui_panel_create(&settings.panel37->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
+   settings.panel370->border = HLH_gui_rect_make(8,8,0,0);
+   settings.label371 = HLH_gui_label_create(&settings.panel370->e,0,"x off ",-1);
+   settings.panel371 = HLH_gui_panel_create(&settings.panel37->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
+   settings.panel371->border = HLH_gui_rect_make(8,8,0,0);
+   settings.xoff_minus = HLH_gui_button_create(&settings.panel371->e,0,"-",-1);
+   settings.xoff_minus->e.msg_usr = button_msg;
+   settings.xoff = HLH_gui_slider_create(&settings.panel371->e, HLH_GUI_H_FILL,0,0,100);
+   settings.xoff->e.msg_usr = slider_msg;
+   settings.xoff_plus = HLH_gui_button_create(&settings.panel371->e,0,"+",-1);
+   settings.xoff_plus->e.msg_usr = button_msg;
+   settings.panel372 = HLH_gui_panel_create(&settings.panel37->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
+   settings.panel372->border = HLH_gui_rect_make(8,8,0,0);
+   settings.label372 = HLH_gui_label_create(&settings.panel372->e,0,"   0",-1);
+
+   settings.panel38 = HLH_gui_panel_create(&settings.tab3->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
+   settings.panel380 = HLH_gui_panel_create(&settings.panel38->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
+   settings.panel380->border = HLH_gui_rect_make(8,8,0,0);
+   settings.label381 = HLH_gui_label_create(&settings.panel380->e,0,"y off ",-1);
+   settings.panel381 = HLH_gui_panel_create(&settings.panel38->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
+   settings.panel381->border = HLH_gui_rect_make(8,8,0,0);
+   settings.yoff_minus = HLH_gui_button_create(&settings.panel381->e,0,"-",-1);
+   settings.yoff_minus->e.msg_usr = button_msg;
+   settings.yoff = HLH_gui_slider_create(&settings.panel381->e, HLH_GUI_H_FILL,0,0,100);
+   settings.yoff->e.msg_usr = slider_msg;
+   settings.yoff_plus = HLH_gui_button_create(&settings.panel381->e,0,"+",-1);
+   settings.yoff_plus->e.msg_usr = button_msg;
+   settings.panel382 = HLH_gui_panel_create(&settings.panel38->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
+   settings.panel382->border = HLH_gui_rect_make(8,8,0,0);
+   settings.label382 = HLH_gui_label_create(&settings.panel382->e,0,"   0",-1);
+
+   settings.panel39 = HLH_gui_panel_create(&settings.tab3->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
+   settings.panel390 = HLH_gui_panel_create(&settings.panel39->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
+   settings.panel390->border = HLH_gui_rect_make(8,8,0,0);
+   settings.label391 = HLH_gui_label_create(&settings.panel390->e,0,"Gauss ",-1);
+   settings.panel391 = HLH_gui_panel_create(&settings.panel39->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
+   settings.panel391->border = HLH_gui_rect_make(8,8,0,0);
+   settings.gauss_minus = HLH_gui_button_create(&settings.panel391->e,0,"-",-1);
+   settings.gauss_minus->e.msg_usr = button_msg;
+   settings.gauss = HLH_gui_slider_create(&settings.panel391->e, HLH_GUI_H_FILL,80,0,500);
+   settings.gauss->e.msg_usr = slider_msg;
+   settings.gauss_plus = HLH_gui_button_create(&settings.panel391->e,0,"+",-1);
+   settings.gauss_plus->e.msg_usr = button_msg;
+   settings.panel392 = HLH_gui_panel_create(&settings.panel39->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
+   settings.panel392->border = HLH_gui_rect_make(8,8,0,0);
+   settings.label392 = HLH_gui_label_create(&settings.panel392->e,0,"  80",-1);
 
    //Tab 4 - Colors
    settings.tab4 = HLH_gui_panel_create(&settings.panel0->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_H_FILL|HLH_GUI_V_FILL);
@@ -616,6 +711,38 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(b==settings.upscale_minus) { HLH_gui_slider_set_value(settings.upscale,settings.upscale->value-1); }
       else if(b==settings.upscale_plus) { HLH_gui_slider_set_value(settings.upscale,settings.upscale->value+1); }
 
+      //Sample
+      else if(b==settings.width_minus) { HLH_gui_slider_set_value(settings.width,settings.width->value-1); }
+      else if(b==settings.width_plus) { HLH_gui_slider_set_value(settings.width,settings.width->value+1); }
+      else if(b==settings.height_minus) { HLH_gui_slider_set_value(settings.height,settings.height->value-1); }
+      else if(b==settings.height_plus) { HLH_gui_slider_set_value(settings.height,settings.height->value+1); }
+      else if(b==settings.xdiv_minus) { HLH_gui_slider_set_value(settings.xdiv,settings.xdiv->value-1); }
+      else if(b==settings.xdiv_plus) { HLH_gui_slider_set_value(settings.xdiv,settings.xdiv->value+1); }
+      else if(b==settings.ydiv_minus) { HLH_gui_slider_set_value(settings.ydiv,settings.ydiv->value-1); }
+      else if(b==settings.ydiv_plus) { HLH_gui_slider_set_value(settings.ydiv,settings.ydiv->value+1); }
+      else if(b==settings.xoff_minus) { HLH_gui_slider_set_value(settings.xoff,settings.xoff->value-1); }
+      else if(b==settings.xoff_plus) { HLH_gui_slider_set_value(settings.xoff,settings.xoff->value+1); }
+      else if(b==settings.yoff_minus) { HLH_gui_slider_set_value(settings.yoff,settings.yoff->value-1); }
+      else if(b==settings.yoff_plus) { HLH_gui_slider_set_value(settings.yoff,settings.yoff->value+1); }
+      else if(b==settings.gauss_minus) { HLH_gui_slider_set_value(settings.gauss,settings.gauss->value-1); }
+      else if(b==settings.gauss_plus) { HLH_gui_slider_set_value(settings.gauss,settings.gauss->value+1); }
+      else if(b==settings.sample_left)
+      {
+         img2pixel_set_sample_mode(img2pixel_get_sample_mode()-1);
+         if(img2pixel_get_sample_mode()<0)
+            img2pixel_set_sample_mode(5);
+         HLH_gui_label_set_text(settings.sample,text_sample[img2pixel_get_sample_mode()],-1);
+         update_output();
+      }
+      else if(b==settings.sample_right)
+      {
+         img2pixel_set_sample_mode(img2pixel_get_sample_mode()+1);
+         if(img2pixel_get_sample_mode()>5)
+            img2pixel_set_sample_mode(0);
+         HLH_gui_label_set_text(settings.sample,text_sample[img2pixel_get_sample_mode()],-1);
+         update_output();
+      }
+
       //Process
       else if(b==settings.bright_minus) { HLH_gui_slider_set_value(settings.bright,settings.bright->value-1); }
       else if(b==settings.bright_plus) { HLH_gui_slider_set_value(settings.bright,settings.bright->value+1); }
@@ -645,6 +772,23 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Save/Load
       if(s==settings.upscale) { sprintf(tmp,"%2d",settings.upscale->value); HLH_gui_label_set_text(settings.label11,tmp,-1); }
 
+      //Sample
+      else if(s==settings.width) { sprintf(tmp,"%4d",settings.width->value); HLH_gui_label_set_text(settings.label312,tmp,-1); img2pixel_set_out_width(settings.width->value); update_output(); }
+      else if(s==settings.height) { sprintf(tmp,"%4d",settings.height->value); HLH_gui_label_set_text(settings.label322,tmp,-1); img2pixel_set_out_height(settings.height->value); update_output(); }
+      else if(s==settings.xdiv) { sprintf(tmp,"%4d",settings.xdiv->value); HLH_gui_label_set_text(settings.label342,tmp,-1); img2pixel_set_out_swidth(settings.xdiv->value); update_output(); }
+      else if(s==settings.ydiv) { sprintf(tmp,"%4d",settings.ydiv->value); HLH_gui_label_set_text(settings.label352,tmp,-1); img2pixel_set_out_sheight(settings.ydiv->value); update_output(); }
+      else if(s==settings.xoff) { sprintf(tmp,"%4d",settings.xoff->value); HLH_gui_label_set_text(settings.label372,tmp,-1); img2pixel_set_offset_x(settings.xoff->value); update_output(); }
+      else if(s==settings.yoff) { sprintf(tmp,"%4d",settings.yoff->value); HLH_gui_label_set_text(settings.label382,tmp,-1); img2pixel_set_offset_y(settings.yoff->value); update_output(); }
+      else if(s==settings.gauss)
+      {
+         sprintf(tmp,"%4d",settings.gauss->value);
+         HLH_gui_label_set_text(settings.label392,tmp,-1);
+         img2pixel_set_gauss(settings.gauss->value);
+         img2pixel_lowpass_image(sprite_in_org,sprite_in);
+         img2pixel_sharpen_image(sprite_in,sprite_in);
+         update_output();
+      }
+
       //Process
       else if(s==settings.bright) { sprintf(tmp,"%4d",settings.bright->value); HLH_gui_label_set_text(settings.label502,tmp,-1); img2pixel_set_brightness(settings.bright->value); update_output(); }
       else if(s==settings.contra) { sprintf(tmp,"%4d",settings.contra->value); HLH_gui_label_set_text(settings.label512,tmp,-1); img2pixel_set_contrast(settings.contra->value); update_output(); }
@@ -658,6 +802,22 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          img2pixel_set_sharpen(settings.sharp->value);
          img2pixel_lowpass_image(sprite_in_org,sprite_in);
          img2pixel_sharpen_image(sprite_in,sprite_in);
+         update_output();
+      }
+   }
+
+   return 0;
+}
+
+static int htab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_htab *h = e;
+
+   if(msg==HLH_GUI_MSG_TAB_CHANGED)
+   {
+      if(h==settings.htab)
+      {
+         img2pixel_set_scale_mode(h->tab_current);
          update_output();
       }
    }
