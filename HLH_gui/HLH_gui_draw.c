@@ -88,4 +88,14 @@ void HLH_gui_draw_string(HLH_gui_painter *p, HLH_gui_rect bounds, const char *st
 
    p->clip = old_clip;
 }
+
+void HLH_gui_draw_rectangle(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color_fill, uint32_t color_border)
+{
+   HLH_gui_draw_block(p,HLH_gui_rect_make(rect.l,rect.r,rect.t,rect.t+2*HLH_gui_get_scale()),color_border);
+   HLH_gui_draw_block(p,HLH_gui_rect_make(rect.l,rect.l+2*HLH_gui_get_scale(),rect.t+2*HLH_gui_get_scale(),rect.b-2*HLH_gui_get_scale()),color_border);
+   HLH_gui_draw_block(p,HLH_gui_rect_make(rect.r-2*HLH_gui_get_scale(),rect.r,rect.t+2*HLH_gui_get_scale(),rect.b-2*HLH_gui_get_scale()),color_border);
+   HLH_gui_draw_block(p,HLH_gui_rect_make(rect.l,rect.r,rect.b-2*HLH_gui_get_scale(),rect.b),color_border);
+   //TODO: remove color_fill from args
+   //HLH_gui_draw_block(p,HLH_gui_rect_make(rect.l+2*HLH_gui_get_scale(),rect.r-2*HLH_gui_get_scale(),rect.t+2*HLH_gui_get_scale(),rect.b-2*HLH_gui_get_scale()),color_fill);
+}
 //-------------------------------------
