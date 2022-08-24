@@ -229,6 +229,15 @@ struct
                      HLH_gui_button *dist_left;
                      HLH_gui_label *dist;
                      HLH_gui_button *dist_right;
+               HLH_gui_panel *panel48;
+                  HLH_gui_panel *panel480;
+                     HLH_gui_label *label481;
+                  HLH_gui_panel *panel481;
+                     HLH_gui_button *weight_minus;
+                     HLH_gui_slider *weight;
+                     HLH_gui_button *weight_plus;
+                  HLH_gui_panel *panel482;
+                     HLH_gui_label *label482;
             HLH_gui_panel *panel46;
                HLH_gui_label *label460;
                HLH_gui_button *tick_inline;
@@ -683,19 +692,19 @@ int main()
    settings.panel42->border = HLH_gui_rect_make(0,0,0,0);
    settings.panel420 = HLH_gui_panel_create(&settings.panel42->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel420->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label421 = HLH_gui_label_create(&settings.panel420->e,0,"sample",-1);
+   settings.label421 = HLH_gui_label_create(&settings.panel420->e,0,"dither",-1);
    settings.panel421 = HLH_gui_panel_create(&settings.panel42->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel421->border = HLH_gui_rect_make(8,60,0,0);
    settings.dither_left = HLH_gui_button_create(&settings.panel421->e,0,"<",-1);
    settings.dither_left->e.msg_usr = button_msg;
-   settings.dither = HLH_gui_label_create(&settings.panel421->e,HLH_GUI_H_FILL|HLH_GUI_LABEL_CENTER,"Round",-1);
+   settings.dither = HLH_gui_label_create(&settings.panel421->e,HLH_GUI_H_FILL|HLH_GUI_LABEL_CENTER,"Bayer 8x8",-1);
    settings.dither_right = HLH_gui_button_create(&settings.panel421->e,0,">",-1);
    settings.dither_right->e.msg_usr = button_msg;
 
    settings.panel43 = HLH_gui_panel_create(&settings.panel41->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel430 = HLH_gui_panel_create(&settings.panel43->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel430->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label431 = HLH_gui_label_create(&settings.panel430->e,0,"Gauss ",-1);
+   settings.label431 = HLH_gui_label_create(&settings.panel430->e,0,"amount",-1);
    settings.panel431 = HLH_gui_panel_create(&settings.panel43->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel431->border = HLH_gui_rect_make(8,8,0,0);
    settings.amount_minus = HLH_gui_button_create(&settings.panel431->e,0,"-",-1);
@@ -711,7 +720,7 @@ int main()
    settings.panel44 = HLH_gui_panel_create(&settings.panel41->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel440 = HLH_gui_panel_create(&settings.panel44->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel440->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label441 = HLH_gui_label_create(&settings.panel440->e,0,"Gauss ",-1);
+   settings.label441 = HLH_gui_label_create(&settings.panel440->e,0,"alpha",-1);
    settings.panel441 = HLH_gui_panel_create(&settings.panel44->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel441->border = HLH_gui_rect_make(8,8,0,0);
    settings.alpha_minus = HLH_gui_button_create(&settings.panel441->e,0,"-",-1);
@@ -728,20 +737,38 @@ int main()
    settings.panel45->border = HLH_gui_rect_make(0,0,0,0);
    settings.panel450 = HLH_gui_panel_create(&settings.panel45->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel450->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label451 = HLH_gui_label_create(&settings.panel450->e,0,"sample",-1);
+   settings.label451 = HLH_gui_label_create(&settings.panel450->e,0,"dist",-1);
    settings.panel451 = HLH_gui_panel_create(&settings.panel45->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel451->border = HLH_gui_rect_make(8,60,0,0);
    settings.dist_left = HLH_gui_button_create(&settings.panel451->e,0,"<",-1);
    settings.dist_left->e.msg_usr = button_msg;
-   settings.dist = HLH_gui_label_create(&settings.panel451->e,HLH_GUI_H_FILL|HLH_GUI_LABEL_CENTER,"Round",-1);
+   settings.dist = HLH_gui_label_create(&settings.panel451->e,HLH_GUI_H_FILL|HLH_GUI_LABEL_CENTER,"RGB",-1);
    settings.dist_right = HLH_gui_button_create(&settings.panel451->e,0,">",-1);
    settings.dist_right->e.msg_usr = button_msg;
 
+   settings.panel48 = HLH_gui_panel_create(&settings.panel41->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
+   settings.panel480 = HLH_gui_panel_create(&settings.panel48->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
+   settings.panel480->border = HLH_gui_rect_make(8,8,0,0);
+   settings.label481 = HLH_gui_label_create(&settings.panel480->e,0,"alpha",-1);
+   settings.panel481 = HLH_gui_panel_create(&settings.panel48->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
+   settings.panel481->border = HLH_gui_rect_make(8,8,0,0);
+   settings.weight_minus = HLH_gui_button_create(&settings.panel481->e,0,"-",-1);
+   settings.weight_minus->e.msg_usr = button_msg;
+   settings.weight = HLH_gui_slider_create(&settings.panel481->e, HLH_GUI_H_FILL,80,0,500);
+   settings.weight->e.msg_usr = slider_msg;
+   settings.weight_plus = HLH_gui_button_create(&settings.panel481->e,0,"+",-1);
+   settings.weight_plus->e.msg_usr = button_msg;
+   settings.panel482 = HLH_gui_panel_create(&settings.panel48->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
+   settings.panel482->border = HLH_gui_rect_make(8,8,0,0);
+   settings.label482 = HLH_gui_label_create(&settings.panel482->e,0,"  80",-1);
+
    settings.label460 = HLH_gui_label_create(&settings.panel46->e,0,"inline ",-1);
    settings.tick_inline = HLH_gui_button_create(&settings.panel46->e,0," ",-1);
+   settings.tick_inline->e.msg_usr = button_msg;
    HLH_gui_element_create(sizeof(HLH_gui_element),&settings.panel46->e,HLH_GUI_H_FILL,NULL);
    settings.label461 = HLH_gui_label_create(&settings.panel46->e,0,"outline",-1);
    settings.tick_outline = HLH_gui_button_create(&settings.panel46->e,0," ",-1);
+   settings.tick_outline->e.msg_usr = button_msg;
    
    settings.inline_set = HLH_gui_button_create(&settings.panel47->e,0,"  inline  ",-1);
    HLH_gui_element_create(sizeof(HLH_gui_element),&settings.panel47->e,HLH_GUI_H_FILL,NULL);
@@ -862,7 +889,6 @@ int main()
    preset_load(f);
    if(f!=NULL)
       fclose(f);
-
 
    return HLH_gui_message_loop();
 }
@@ -1026,6 +1052,108 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          if(img2pixel_get_sample_mode()>5)
             img2pixel_set_sample_mode(0);
          HLH_gui_label_set_text(settings.sample,text_sample[img2pixel_get_sample_mode()],-1);
+         update_output();
+      }
+
+      //Colors
+      else if(b==settings.amount_minus) { HLH_gui_slider_set_value(settings.amount,settings.amount->value-1); }
+      else if(b==settings.amount_plus) { HLH_gui_slider_set_value(settings.amount,settings.amount->value+1); }
+      else if(b==settings.alpha_minus) { HLH_gui_slider_set_value(settings.alpha,settings.alpha->value-1); }
+      else if(b==settings.alpha_plus) { HLH_gui_slider_set_value(settings.alpha,settings.alpha->value+1); }
+      else if(b==settings.dither_left)
+      {
+         img2pixel_set_process_mode(img2pixel_get_process_mode()-1);
+         if(img2pixel_get_process_mode()<0)
+            img2pixel_set_process_mode(7);
+
+         //TODO
+         //if(img2pixel_get_process_mode()==6||img2pixel_get_process_mode()==7||img2pixel_get_process_mode()==0)
+            //color_dither_enabled(0);
+         //else
+            //color_dither_enabled(1);
+
+         update_output();
+         HLH_gui_label_set_text(settings.dither,text_dither[img2pixel_get_process_mode()],-1);
+      }
+      else if(b==settings.dither_right)
+      {
+         img2pixel_set_process_mode(img2pixel_get_process_mode()+1);
+         if(img2pixel_get_process_mode()>7)
+            img2pixel_set_process_mode(0);
+
+         //TODO
+         //if(img2pixel_get_process_mode()==6||img2pixel_get_process_mode()==7||img2pixel_get_process_mode()==0)
+            //color_dither_enabled(0);
+         //else
+            //color_dither_enabled(1);
+
+         update_output();
+         HLH_gui_label_set_text(settings.dither,text_dither[img2pixel_get_process_mode()],-1);
+      }
+      else if(b==settings.dist_left)
+      {
+         img2pixel_set_distance_mode(img2pixel_get_distance_mode()-1);;
+         if(img2pixel_get_distance_mode()<0)
+            img2pixel_set_distance_mode(8);
+
+         //TODO
+         //if(img2pixel_get_distance_mode()==8)
+            //color_weight_enabled(1);
+         //else
+            //color_weight_enabled(0);
+
+         update_output();
+         HLH_gui_label_set_text(settings.dist,text_space[img2pixel_get_distance_mode()],-1);
+      }
+      else if(b==settings.dist_right)
+      {
+         img2pixel_set_distance_mode(img2pixel_get_distance_mode()+1);;
+         if(img2pixel_get_distance_mode()>8)
+            img2pixel_set_distance_mode(0);
+
+         //TODO
+         //if(img2pixel_get_distance_mode()==8)
+            //color_weight_enabled(1);
+         //else
+            //color_weight_enabled(0);
+
+         update_output();
+         HLH_gui_label_set_text(settings.dist,text_space[img2pixel_get_distance_mode()],-1);
+      }
+      else if(b==settings.tick_inline)
+      {
+         if(b->text[0]==' ')
+            img2pixel_set_inline(img2pixel_get_inline()+256);
+         else
+            img2pixel_set_inline(img2pixel_get_inline()-256);
+         b->text[0] = (b->text[0]==' ')?'X':' ';
+         update_output();
+         HLH_gui_element_repaint(e,NULL);
+      }
+      else if(b==settings.tick_outline)
+      {
+         if(b->text[0]==' ')
+            img2pixel_set_outline(img2pixel_get_outline()+256);
+         else
+            img2pixel_set_outline(img2pixel_get_outline()-256);
+         b->text[0] = (b->text[0]==' ')?'X':' ';
+         update_output();
+         HLH_gui_element_repaint(e,NULL);
+      }
+      else if(b==settings.inline_set)
+      {
+         if(img2pixel_get_inline()<0)
+            img2pixel_set_inline(settings.pal4->selected-256);
+         else
+            img2pixel_set_inline(settings.pal4->selected);
+         update_output();
+      }
+      else if(b==settings.outline_set)
+      {
+         if(img2pixel_get_outline()<0)
+            img2pixel_set_outline(settings.pal4->selected-256);
+         else
+            img2pixel_set_outline(settings.pal4->selected);
          update_output();
       }
 
@@ -1228,6 +1356,11 @@ void preset_load(FILE *f)
 {
    char ctmp[16];
    img2pixel_preset_load(f);
+
+   if(img2pixel_get_process_mode()==6||img2pixel_get_process_mode()==7||img2pixel_get_process_mode()==0)
+      settings.panel43->e.flags|=HLH_GUI_INVISIBLE;
+   else
+      settings.panel43->e.flags&=~HLH_GUI_INVISIBLE;
 
    //The unnecessary indentations are for my own sanity
    /*elements.palette_bar_r->slider.value = img2pixel_get_palette()->colors[palette_selected].rgb.r;

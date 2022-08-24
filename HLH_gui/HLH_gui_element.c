@@ -85,6 +85,8 @@ int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       return 0;
    if(e->flags&HLH_GUI_HIDDEN)
       return 0;
+   if(msg==HLH_GUI_MSG_PAINT&&e->flags&HLH_GUI_INVISIBLE)
+      return 0;
 
    if(e->msg_usr!=NULL)
    {
@@ -100,7 +102,7 @@ int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
 HLH_gui_element *HLH_gui_element_find_by_point(HLH_gui_element *e, int x, int y)
 {
-   if(e->flags&HLH_GUI_HIDDEN)
+   if(e->flags&HLH_GUI_HIDDEN||e->flags&HLH_GUI_INVISIBLE)
       return NULL;
    for(int i = 0;i<e->child_count;i++)
       if(HLH_gui_rect_inside(e->children[i]->clip,x,y)&&!(e->children[i]->flags&HLH_GUI_HIDDEN))

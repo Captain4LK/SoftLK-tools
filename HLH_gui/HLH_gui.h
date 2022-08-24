@@ -57,6 +57,7 @@ typedef enum
    HLH_GUI_V_FILL = 1<<18,
    HLH_GUI_H_FILL = 1<<19,
    HLH_GUI_HIDDEN = 1<<20,
+   HLH_GUI_INVISIBLE = 1<<21,
 
    HLH_GUI_LABEL_CENTER = 1<<0,
 

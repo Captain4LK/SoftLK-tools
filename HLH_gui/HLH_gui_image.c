@@ -36,6 +36,7 @@ HLH_gui_image *HLH_gui_image_create(HLH_gui_element *parent, uint32_t flags, int
    img->width = width;
    img->height = height;
    img->texture = SDL_CreateTexture(parent->window->renderer,SDL_PIXELFORMAT_RGBA32,SDL_TEXTUREACCESS_STREAMING,width,height);
+   SDL_SetTextureBlendMode(img->texture,SDL_BLENDMODE_BLEND);
    void *pixels;
    int pitch;
    SDL_LockTexture(img->texture,NULL,&pixels,&pitch);
@@ -53,6 +54,7 @@ void HLH_gui_image_update(HLH_gui_image *img, int width, int height, uint32_t *d
       img->height = height;
       SDL_DestroyTexture(img->texture);
       img->texture = SDL_CreateTexture(img->e.parent->window->renderer,SDL_PIXELFORMAT_RGBA32,SDL_TEXTUREACCESS_STREAMING,width,height);
+      SDL_SetTextureBlendMode(img->texture,SDL_BLENDMODE_BLEND);
    }
 
    void *pixels;

@@ -80,6 +80,7 @@ static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
 void HLH_gui_init(void)
 {
    SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS);
+   SDL_BlendMode(SDL_BLENDMODE_BLEND);
 
    core_font_surface = SDL_CreateRGBSurface(0,1024,16,32,0xff0000,0x00ff00,0x0000ff,0xff000000);
    SDL_LockSurface(core_font_surface);
@@ -480,6 +481,9 @@ static void core_element_paint(HLH_gui_element *e, HLH_gui_painter *p)
    HLH_gui_rect clip = HLH_gui_rect_intersect(e->clip,p->clip);
 
    if(!HLH_gui_rect_valid(clip))
+      return;
+
+   if(e->flags&HLH_GUI_INVISIBLE)
       return;
 
    p->clip = clip;
