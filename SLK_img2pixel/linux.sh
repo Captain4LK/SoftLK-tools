@@ -3,7 +3,7 @@
 sources="utility.c assets.c image2pixel.c ../external/tinyfiledialogs.c"
 
 if [ $# -lt 1 ]; then
-   echo "unspecified target, need either gui,cmd or video"
+   echo "unspecified target, need either gui, gui_hlh, cmd or video"
    exit 0 
 fi
 

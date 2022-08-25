@@ -372,7 +372,7 @@ static int palsel_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 
 //Function implementations
 
-int main()
+int main(int argc, char **argv)
 {
    utility_init();
    atexit(utility_exit);
