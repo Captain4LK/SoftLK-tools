@@ -216,11 +216,13 @@ HLH_gui_panel *HLH_gui_panel_create(HLH_gui_element *parent, uint32_t flags);
 
 //htab
 HLH_gui_htab *HLH_gui_htab_create(HLH_gui_element *parent, uint32_t flags);
-void HLH_gui_htab_set(HLH_gui_htab *h, int tab, const char *str);
+void HLH_gui_htab_add(HLH_gui_htab *h, int tab, const char *str);
+void HLH_gui_htab_set(HLH_gui_htab *t, int tab);
 
 //vtab
 HLH_gui_vtab *HLH_gui_vtab_create(HLH_gui_element *parent, uint32_t flags);
-void HLH_gui_vtab_set(HLH_gui_vtab *h, int tab, const char *str);
+void HLH_gui_vtab_add(HLH_gui_vtab *h, int tab, const char *str);
+void HLH_gui_vtab_set(HLH_gui_vtab *t, int tab);
 
 //image
 HLH_gui_image *HLH_gui_image_create(HLH_gui_element *parent, uint32_t flags, int width, int height, uint32_t *data);

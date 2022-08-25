@@ -83,6 +83,8 @@ static int panel_layout(HLH_gui_panel *p, HLH_gui_rect bounds, int measure)
    {
       if(p->e.children[i]->flags&HLH_GUI_DESTROY||p->e.children[i]->flags&HLH_GUI_HIDDEN)
          continue;
+      if(!measure)
+         HLH_gui_element_msg(p->e.children[i],HLH_GUI_MSG_LAYOUT,0,NULL);
 
       count++;
 

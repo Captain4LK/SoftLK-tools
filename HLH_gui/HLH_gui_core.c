@@ -110,6 +110,9 @@ int HLH_gui_message_loop(void)
 
       HLH_gui_window *win = NULL;
 
+      if(SDL_QuitRequested())
+         return 0;
+
       switch(event.type)
       {
       case SDL_QUIT:
@@ -162,8 +165,11 @@ int HLH_gui_message_loop(void)
          if(win==NULL)
             continue;
 
-         win->mouse_x = event.motion.x;
-         win->mouse_y = event.motion.y;
+         //Hack to prevent flooding the event queue
+         SDL_GetMouseState(&win->mouse_x,&win->mouse_y);
+         SDL_FlushEvent(SDL_MOUSEMOTION);
+         //win->mouse_x = event.motion.x;
+         //win->mouse_y = event.motion.y;
          core_window_input_event(win,HLH_GUI_MSG_MOUSE_MOVE,0,NULL);
 
          break;
@@ -190,80 +196,6 @@ int HLH_gui_message_loop(void)
          break;
       }
    }
-   /*hlh_gui_update();
-
-   for(;;)
-   {
-      XEvent event;
-      XNextEvent(hlh_gui_state.display,&event);
-
-      else if(event.type==ConfigureNotify)
-      {
-         HLH_gui_window *window = hlh_gui_find_window(event.xconfigure.window);
-         if(window==NULL)
-            continue;
-
-         if(window->width!=event.xconfigure.width||window->height!=event.xconfigure.height)
-         {
-            window->width = event.xconfigure.width;
-            window->height = event.xconfigure.height;
-            window->data = realloc(window->data,window->width*window->height*sizeof(*window->data));
-            window->image->width = window->width;
-            window->image->height = window->height;
-            window->image->bytes_per_line = window->width*4;
-            window->image->data = (char *)window->data;
-            window->e.bounds = HLH_gui_rect_make(0,window->width,0,window->height);
-            window->e.clip = HLH_gui_rect_make(0,window->width,0,window->height);
-            HLH_gui_element_msg(&window->e,HLH_GUI_MSG_LAYOUT,0,NULL);
-            hlh_gui_update();
-         }
-      }
-      else if(event.type==MotionNotify)
-      {
-         HLH_gui_window *window = hlh_gui_find_window(event.xmotion.window);
-         if(window==NULL)
-            continue;
-         window->mouse_x = event.xmotion.x;
-         window->mouse_y = event.xmotion.y;
-         hlh_gui_window_input_event(window,HLH_GUI_MSG_MOUSE_MOVE,0,NULL);
-      }
-      else if(event.type==LeaveNotify)
-      {
-         HLH_gui_window *window = hlh_gui_find_window(event.xcrossing.window);
-         if(window==NULL)
-            continue;
-
-         if(window->pressed==NULL)
-         {
-            window->mouse_x = -1;
-            window->mouse_y = -1;
-         }
-
-         hlh_gui_window_input_event(window,HLH_GUI_MSG_MOUSE_MOVE,0,NULL);
-      }
-      else if(event.type==ButtonPress||event.type==ButtonRelease)
-      {
-         HLH_gui_window *window = hlh_gui_find_window(event.xbutton.window);
-         if(window==NULL)
-            continue;
-
-         window->mouse_x = event.xbutton.x;
-         window->mouse_y = event.xbutton.y;
-
-         if(event.xbutton.button>=1&&event.xbutton.button<=3)
-         {
-            HLH_gui_msg msg = HLH_GUI_MSG_LEFT_UP;
-            switch(event.xbutton.button)
-            {
-            case 1: msg = event.type==ButtonPress?HLH_GUI_MSG_LEFT_DOWN:HLH_GUI_MSG_LEFT_UP; break;
-            case 2: msg = event.type==ButtonPress?HLH_GUI_MSG_MIDDLE_DOWN:HLH_GUI_MSG_MIDDLE_UP; break;
-            case 3: msg = event.type==ButtonPress?HLH_GUI_MSG_RIGHT_DOWN:HLH_GUI_MSG_RIGHT_UP; break;
-            }
-
-            hlh_gui_window_input_event(window,msg,0,NULL);
-         }
-      }
-   }*/
 }
 
 void HLH_gui_set_scale(int scale)
@@ -273,6 +205,7 @@ void HLH_gui_set_scale(int scale)
 
    core_scale = scale;
 
+   //TODO
    //Repaint all
    //for(int i = 0;i<hlh_gui_state.window_count;i++)
       //HLH_gui_element_repaint(&hlh_gui_state.windows[i]->e,NULL);
@@ -295,16 +228,6 @@ HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height)
    SDL_CreateWindowAndRenderer(width,height,SDL_WINDOW_RESIZABLE,&window->window,&window->renderer);
    window->target = SDL_CreateTexture(window->renderer,SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_TARGET,window->width,window->height);
    window->font = SDL_CreateTextureFromSurface(window->renderer,core_font_surface);
-
-   /*XSetWindowAttributes attributes = {0};
-   window->window = XCreateWindow(hlh_gui_state.display,DefaultRootWindow(hlh_gui_state.display),0,0,width,height,0,0,InputOutput,CopyFromParent,CWOverrideRedirect,&attributes);
-   XStoreName(hlh_gui_state.display,window->window,title);
-   XSelectInput(hlh_gui_state.display,window->window,SubstructureNotifyMask|ExposureMask|PointerMotionMask 
-               |ButtonPressMask|ButtonReleaseMask|KeyPressMask|KeyReleaseMask|StructureNotifyMask
-               |EnterWindowMask|LeaveWindowMask|ButtonMotionMask|KeymapStateMask|FocusChangeMask|PropertyChangeMask);
-   XMapRaised(hlh_gui_state.display,window->window);
-   XSetWMProtocols(hlh_gui_state.display,window->window,&hlh_gui_state.window_closed_id,1);
-   window->image = XCreateImage(hlh_gui_state.display,hlh_gui_state.visual,24,ZPixmap,0,NULL,10,10,32,0);*/
 
    return window;
 }
@@ -478,12 +401,12 @@ static void core_element_paint(HLH_gui_element *e, HLH_gui_painter *p)
    if(e->flags&HLH_GUI_HIDDEN)
       return;
 
+   if(e->flags&HLH_GUI_INVISIBLE)
+      return;
+
    HLH_gui_rect clip = HLH_gui_rect_intersect(e->clip,p->clip);
 
    if(!HLH_gui_rect_valid(clip))
-      return;
-
-   if(e->flags&HLH_GUI_INVISIBLE)
       return;
 
    p->clip = clip;
@@ -526,10 +449,6 @@ static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
       SDL_DestroyTexture(window->font);
       SDL_DestroyRenderer(window->renderer);
       SDL_DestroyWindow(window->window);
-      //free(window->data);
-      //window->image->data = NULL;
-      //XDestroyImage(window->image);
-      //XDestroyWindow(hlh_gui_state.display,window->window);
    }
    else if(msg==HLH_GUI_MSG_LAYOUT&&e->child_count!=0)
    {

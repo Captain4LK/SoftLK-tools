@@ -237,6 +237,7 @@ void img2pixel_preset_load(FILE *f)
    img_gamma = HLH_json_get_object_integer(&root->root,"gamma",0);
    sharpen = HLH_json_get_object_integer(&root->root,"sharpness",0);
    hue = HLH_json_get_object_integer(&root->root,"hue",0);
+   palette_weight = HLH_json_get_object_integer(&root->root,"palette_weight",2);
 
    HLH_json_free(root);
 }
@@ -278,6 +279,7 @@ void img2pixel_preset_save(FILE *f)
    HLH_json_object_add_integer(&root->root,"saturation",saturation);
    HLH_json_object_add_integer(&root->root,"sharpness",sharpen);
    HLH_json_object_add_integer(&root->root,"hue",hue);
+   HLH_json_object_add_integer(&root->root,"palette_weight",palette_weight);
  
    HLH_json_write_file(f,&root->root);
    HLH_json_free(root);

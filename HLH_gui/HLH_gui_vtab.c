@@ -39,7 +39,7 @@ HLH_gui_vtab *HLH_gui_vtab_create(HLH_gui_element *parent, uint32_t flags)
    return vtab;
 }
 
-void HLH_gui_vtab_set(HLH_gui_vtab *h, int tab, const char *str)
+void HLH_gui_vtab_add(HLH_gui_vtab *h, int tab, const char *str)
 {
    int max = (tab+1)>h->tabs?tab+1:h->tabs;
    if(max>h->tabs)
@@ -52,6 +52,21 @@ void HLH_gui_vtab_set(HLH_gui_vtab *h, int tab, const char *str)
       h->e.parent->children[tab+1]->flags|=HLH_GUI_HIDDEN;
 
    HLH_gui_string_copy(&h->labels[tab],NULL,str,-1);
+}
+
+void HLH_gui_vtab_set(HLH_gui_vtab *t, int tab)
+{
+   if(tab<0||tab>=t->tabs||tab==t->tab_current)
+      return;
+
+   int old = t->tab_current;
+   t->e.parent->children[t->tab_current+1]->flags|=HLH_GUI_HIDDEN;
+   t->tab_current = tab;
+   t->e.parent->children[t->tab_current+1]->flags&=~HLH_GUI_HIDDEN;
+
+   HLH_gui_element_msg(t->e.parent,HLH_GUI_MSG_LAYOUT,0,NULL);
+   HLH_gui_element_repaint(t->e.parent,NULL);
+   HLH_gui_element_msg(&t->e,HLH_GUI_MSG_TAB_CHANGED,old,NULL);
 }
 
 static int vtab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -81,17 +96,7 @@ static int vtab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    else if(msg==HLH_GUI_MSG_CLICK)
    {
       int tab = (e->window->mouse_y-e->bounds.t)/height;
-      if(tab<0||tab>=t->tabs||tab==t->tab_current)
-         return 0;
-
-      int old = t->tab_current;
-      e->parent->children[t->tab_current+1]->flags|=HLH_GUI_HIDDEN;
-      t->tab_current = tab;
-      e->parent->children[t->tab_current+1]->flags^=HLH_GUI_HIDDEN;
-
-      HLH_gui_element_msg(e->parent,HLH_GUI_MSG_LAYOUT,0,NULL);
-      HLH_gui_element_repaint(e->parent,NULL);
-      HLH_gui_element_msg(e,HLH_GUI_MSG_TAB_CHANGED,old,NULL);
+      HLH_gui_vtab_set(t,tab);
    }
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {

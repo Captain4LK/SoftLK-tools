@@ -105,7 +105,7 @@ HLH_gui_element *HLH_gui_element_find_by_point(HLH_gui_element *e, int x, int y)
    if(e->flags&HLH_GUI_HIDDEN||e->flags&HLH_GUI_INVISIBLE)
       return NULL;
    for(int i = 0;i<e->child_count;i++)
-      if(HLH_gui_rect_inside(e->children[i]->clip,x,y)&&!(e->children[i]->flags&HLH_GUI_HIDDEN))
+      if(HLH_gui_rect_inside(e->children[i]->clip,x,y)&&!(e->children[i]->flags&HLH_GUI_HIDDEN||e->children[i]->flags&HLH_GUI_INVISIBLE))
          return HLH_gui_element_find_by_point(e->children[i],x,y);
    return e;
 }
