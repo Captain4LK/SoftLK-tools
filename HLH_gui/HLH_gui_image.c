@@ -69,7 +69,7 @@ void HLH_gui_image_update(HLH_gui_image *img, int width, int height, uint32_t *d
 
 static int img_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
-   HLH_gui_image *img = e;
+   HLH_gui_image *img = (HLH_gui_image *) e;
    HLH_gui_painter *p = dp;
    float aspect = (float)img->width/(float)img->height;
 

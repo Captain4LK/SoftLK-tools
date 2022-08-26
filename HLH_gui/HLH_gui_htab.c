@@ -72,7 +72,7 @@ void HLH_gui_htab_set(HLH_gui_htab *t, int tab)
 
 static int htab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
-   HLH_gui_htab *t = e;
+   HLH_gui_htab *t = (HLH_gui_htab *) e;
    int width = (e->bounds.r-e->bounds.l)/t->tabs;
 
    if(msg==HLH_GUI_MSG_DESTROY)

@@ -57,7 +57,7 @@ void HLH_gui_slider_set_value(HLH_gui_slider *slider, int value)
 
 static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
-   HLH_gui_slider *s = e;
+   HLH_gui_slider *s = (HLH_gui_slider *) e;
 
    if(msg==HLH_GUI_MSG_GET_WIDTH)
    {

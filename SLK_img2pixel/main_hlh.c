@@ -307,7 +307,6 @@ struct
 static SLK_RGB_sprite *sprite_in = NULL;
 static SLK_RGB_sprite *sprite_in_org = NULL;
 static SLK_RGB_sprite *sprite_out = NULL;
-static int palette_selected = 0;
 
 static const char *text_space[] = 
 {
@@ -343,18 +342,6 @@ static const char *text_sample[] =
    "Bicubic",
    "Lanczos",
 };
-
-static const char *text_tab_image[] = 
-{
-   "Input",
-   "Output",
-};
-
-static const char *text_tab_scale[] = 
-{
-   "Absoulte",
-   "Relative",
-};
 //-------------------------------------
 
 //Function prototypes
@@ -382,6 +369,7 @@ int main(int argc, char **argv)
 
    //Construct gui
    HLH_gui_init();
+   HLH_gui_set_scale(1);
 
    //Preview window
    preview.window = HLH_gui_window_create("SLK_img2pixel - preview", 800, 600);
@@ -405,7 +393,7 @@ int main(int argc, char **argv)
    //-------------------------------------
 
    //Settings window
-   settings.window = HLH_gui_window_create("HLH_gui_window 1", 800, 600);
+   settings.window = HLH_gui_window_create("HLH_gui_window 1", 668*HLH_gui_get_scale(), 512*HLH_gui_get_scale());
    settings.panel0 = HLH_gui_panel_create(&settings.window->e, HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel0->gap = 0;
    settings.vtab = HLH_gui_vtab_create(&settings.panel0->e,HLH_GUI_V_FILL);
@@ -1179,7 +1167,7 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
 static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
-   HLH_gui_slider *s = e;
+   HLH_gui_slider *s = (HLH_gui_slider *) e;
 
    if(msg==HLH_GUI_MSG_SLIDER_CHANGED_VALUE)
    {
@@ -1238,7 +1226,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
 static int htab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
-   HLH_gui_htab *h = e;
+   HLH_gui_htab *h = (HLH_gui_htab *) e;
 
    if(msg==HLH_GUI_MSG_TAB_CHANGED)
    {
@@ -1328,7 +1316,7 @@ static int palsel_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          color = 0;
       else
          color = UINT32_MAX;
-      HLH_gui_draw_rectangle(p,rect,0,color);
+      HLH_gui_draw_rectangle(p,rect,color);
 
       SDL_RenderSetClipRect(p->win->renderer,NULL);
    }
@@ -1360,7 +1348,6 @@ static int palsel_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
 void preset_load(FILE *f)
 {
-   char ctmp[16];
    img2pixel_preset_load(f);
 
    //Load/Save

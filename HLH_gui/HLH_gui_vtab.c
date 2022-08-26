@@ -71,7 +71,7 @@ void HLH_gui_vtab_set(HLH_gui_vtab *t, int tab)
 
 static int vtab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
-   HLH_gui_vtab *t = e;
+   HLH_gui_vtab *t = (HLH_gui_vtab *) e;
    int height = (HLH_GUI_GLYPH_HEIGHT+4)*HLH_gui_get_scale();
 
    if(msg==HLH_GUI_MSG_DESTROY)

@@ -80,7 +80,6 @@ static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
 void HLH_gui_init(void)
 {
    SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS);
-   SDL_BlendMode(SDL_BLENDMODE_BLEND);
 
    core_font_surface = SDL_CreateRGBSurface(0,1024,16,32,0xff0000,0x00ff00,0x0000ff,0xff000000);
    SDL_LockSurface(core_font_surface);
@@ -205,10 +204,9 @@ void HLH_gui_set_scale(int scale)
 
    core_scale = scale;
 
-   //TODO
    //Repaint all
-   //for(int i = 0;i<hlh_gui_state.window_count;i++)
-      //HLH_gui_element_repaint(&hlh_gui_state.windows[i]->e,NULL);
+   for(int i = 0;i<core_window_count;i++)
+      HLH_gui_element_msg(&core_windows[i]->e,HLH_GUI_MSG_LAYOUT,0,NULL);
 }
 
 int HLH_gui_get_scale(void)

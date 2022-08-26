@@ -202,7 +202,7 @@ int HLH_gui_rect_inside(HLH_gui_rect a, int x, int y);
 //Drawing
 void HLH_gui_draw_block(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color);
 void HLH_gui_draw_string(HLH_gui_painter *p, HLH_gui_rect bounds, const char *str, size_t bytes, uint32_t color, int align_center);
-void HLH_gui_draw_rectangle(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color_fill, uint32_t color_border);
+void HLH_gui_draw_rectangle(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color_border);
 
 //button
 HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint32_t flags, const char *text, ptrdiff_t text_len);
