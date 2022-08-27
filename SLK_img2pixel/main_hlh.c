@@ -369,7 +369,7 @@ int main(int argc, char **argv)
 
    //Construct gui
    HLH_gui_init();
-   HLH_gui_set_scale(1);
+   HLH_gui_set_scale(gui_scale);
 
    //Preview window
    preview.window = HLH_gui_window_create("SLK_img2pixel - preview", 800, 600);
