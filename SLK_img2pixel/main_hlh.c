@@ -345,6 +345,7 @@ static const char *text_sample[] =
 //-------------------------------------
 
 //Function prototypes
+static int win_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int htab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
@@ -373,6 +374,7 @@ int main(int argc, char **argv)
 
    //Preview window
    preview.window = HLH_gui_window_create("SLK_img2pixel - preview", 800, 600);
+   preview.window->e.msg_usr = win_msg;
    preview.panel = HLH_gui_panel_create(&preview.window->e, HLH_GUI_PANEL_LIGHT);
    preview.htab = HLH_gui_htab_create(&preview.panel->e,HLH_GUI_H_FILL);
 
@@ -393,7 +395,7 @@ int main(int argc, char **argv)
    //-------------------------------------
 
    //Settings window
-   settings.window = HLH_gui_window_create("HLH_gui_window 1", 668*HLH_gui_get_scale(), 512*HLH_gui_get_scale());
+   settings.window = HLH_gui_window_create("SLK_img2pixel - settings", 668*HLH_gui_get_scale(), 512*HLH_gui_get_scale());
    settings.panel0 = HLH_gui_panel_create(&settings.window->e, HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel0->gap = 0;
    settings.vtab = HLH_gui_vtab_create(&settings.panel0->e,HLH_GUI_V_FILL);
@@ -601,7 +603,7 @@ int main(int argc, char **argv)
    settings.panel36->border = HLH_gui_rect_make(0,0,40,0);
    settings.panel360 = HLH_gui_panel_create(&settings.panel36->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel360->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label361 = HLH_gui_label_create(&settings.panel360->e,0,"sample",-1);
+   settings.label361 = HLH_gui_label_create(&settings.panel360->e,0,"Sample",-1);
    settings.panel361 = HLH_gui_panel_create(&settings.panel36->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel361->border = HLH_gui_rect_make(8,60,0,0);
    settings.sample_left = HLH_gui_button_create(&settings.panel361->e,0,"<",-1);
@@ -680,7 +682,7 @@ int main(int argc, char **argv)
    settings.panel42->border = HLH_gui_rect_make(0,0,0,0);
    settings.panel420 = HLH_gui_panel_create(&settings.panel42->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel420->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label421 = HLH_gui_label_create(&settings.panel420->e,0,"dither",-1);
+   settings.label421 = HLH_gui_label_create(&settings.panel420->e,0,"Dither",-1);
    settings.panel421 = HLH_gui_panel_create(&settings.panel42->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel421->border = HLH_gui_rect_make(8,60,0,0);
    settings.dither_left = HLH_gui_button_create(&settings.panel421->e,0,"<",-1);
@@ -692,7 +694,7 @@ int main(int argc, char **argv)
    settings.panel43 = HLH_gui_panel_create(&settings.panel41->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel430 = HLH_gui_panel_create(&settings.panel43->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel430->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label431 = HLH_gui_label_create(&settings.panel430->e,0,"amount",-1);
+   settings.label431 = HLH_gui_label_create(&settings.panel430->e,0,"Amount",-1);
    settings.panel431 = HLH_gui_panel_create(&settings.panel43->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel431->border = HLH_gui_rect_make(8,8,0,0);
    settings.amount_minus = HLH_gui_button_create(&settings.panel431->e,0,"-",-1);
@@ -708,7 +710,7 @@ int main(int argc, char **argv)
    settings.panel44 = HLH_gui_panel_create(&settings.panel41->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel440 = HLH_gui_panel_create(&settings.panel44->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel440->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label441 = HLH_gui_label_create(&settings.panel440->e,0,"alpha ",-1);
+   settings.label441 = HLH_gui_label_create(&settings.panel440->e,0,"Alpha ",-1);
    settings.panel441 = HLH_gui_panel_create(&settings.panel44->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel441->border = HLH_gui_rect_make(8,8,0,0);
    settings.alpha_minus = HLH_gui_button_create(&settings.panel441->e,0,"-",-1);
@@ -725,7 +727,7 @@ int main(int argc, char **argv)
    settings.panel45->border = HLH_gui_rect_make(0,0,0,0);
    settings.panel450 = HLH_gui_panel_create(&settings.panel45->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel450->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label451 = HLH_gui_label_create(&settings.panel450->e,0,"dist  ",-1);
+   settings.label451 = HLH_gui_label_create(&settings.panel450->e,0,"Dist  ",-1);
    settings.panel451 = HLH_gui_panel_create(&settings.panel45->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel451->border = HLH_gui_rect_make(8,60,0,0);
    settings.dist_left = HLH_gui_button_create(&settings.panel451->e,0,"<",-1);
@@ -737,7 +739,7 @@ int main(int argc, char **argv)
    settings.panel48 = HLH_gui_panel_create(&settings.panel41->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel480 = HLH_gui_panel_create(&settings.panel48->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL);
    settings.panel480->border = HLH_gui_rect_make(8,8,0,0);
-   settings.label481 = HLH_gui_label_create(&settings.panel480->e,0,"weight",-1);
+   settings.label481 = HLH_gui_label_create(&settings.panel480->e,0,"Weight",-1);
    settings.panel481 = HLH_gui_panel_create(&settings.panel48->e,HLH_GUI_PANEL_LIGHT|HLH_GUI_PANEL_HORIZONTAL|HLH_GUI_H_FILL);
    settings.panel481->border = HLH_gui_rect_make(8,8,0,0);
    settings.weight_minus = HLH_gui_button_create(&settings.panel481->e,0,"-",-1);
@@ -750,18 +752,18 @@ int main(int argc, char **argv)
    settings.panel482->border = HLH_gui_rect_make(8,8,0,0);
    settings.label482 = HLH_gui_label_create(&settings.panel482->e,0,"    ",-1);
 
-   settings.label460 = HLH_gui_label_create(&settings.panel46->e,0,"inline ",-1);
+   settings.label460 = HLH_gui_label_create(&settings.panel46->e,0,"Inline ",-1);
    settings.tick_inline = HLH_gui_button_create(&settings.panel46->e,0," ",-1);
    settings.tick_inline->e.msg_usr = button_msg;
    HLH_gui_element_create(sizeof(HLH_gui_element),&settings.panel46->e,HLH_GUI_H_FILL,NULL);
-   settings.label461 = HLH_gui_label_create(&settings.panel46->e,0,"outline",-1);
+   settings.label461 = HLH_gui_label_create(&settings.panel46->e,0,"Outline",-1);
    settings.tick_outline = HLH_gui_button_create(&settings.panel46->e,0," ",-1);
    settings.tick_outline->e.msg_usr = button_msg;
    
-   settings.inline_set = HLH_gui_button_create(&settings.panel47->e,0,"  inline  ",-1);
+   settings.inline_set = HLH_gui_button_create(&settings.panel47->e,0,"  Inline  ",-1);
    settings.inline_set->e.msg_usr = button_msg;
    HLH_gui_element_create(sizeof(HLH_gui_element),&settings.panel47->e,HLH_GUI_H_FILL,NULL);
-   settings.outline_set = HLH_gui_button_create(&settings.panel47->e,0,"  outline  ",-1);
+   settings.outline_set = HLH_gui_button_create(&settings.panel47->e,0,"  Outline  ",-1);
    settings.outline_set->e.msg_usr = button_msg;
 
    //Tab 5 - Process
@@ -912,6 +914,32 @@ static void update_output()
    img2pixel_process_image(sprite_in,sprite_out);
 
    HLH_gui_image_update(preview.img_out,sprite_out->width,sprite_out->height,(uint32_t *)sprite_out->data);
+}
+
+static int win_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_FILE_DROP&&dp!=NULL)
+   {
+      SLK_RGB_sprite *sprite_new = image_load(dp);
+
+      if(sprite_new!=NULL)
+      {
+         SLK_rgb_sprite_destroy(sprite_in);
+         SLK_rgb_sprite_destroy(sprite_in_org);
+
+         sprite_in = sprite_new;
+         sprite_in_org = SLK_rgb_sprite_create(sprite_in->width,sprite_in->height);
+         SLK_rgb_sprite_copy(sprite_in_org,sprite_in);
+         img2pixel_lowpass_image(sprite_in_org,sprite_in);
+         img2pixel_sharpen_image(sprite_in,sprite_in);
+
+         HLH_gui_image_update(preview.img_in,sprite_in_org->width,sprite_in_org->height,(uint32_t *)sprite_in_org->data);
+
+         update_output();
+      }
+   }
+
+   return 0;
 }
 
 static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
