@@ -104,7 +104,14 @@ int HLH_gui_message_loop(void)
    for(int i = 0;i<core_window_count;i++)
    {
       HLH_gui_window *win = core_windows[i];
-      SDL_SetWindowSize(win->window,win->width,win->height);
+      SDL_Event e;
+      e.type = SDL_WINDOWEVENT;
+      e.window.data1 = win->width;
+      e.window.data2 = win->height;
+      e.window.event = SDL_WINDOWEVENT_SIZE_CHANGED;
+      win->width = -1;
+      win->height = -1;
+      SDL_PushEvent(&e);
    }
 
    core_update();
@@ -233,6 +240,8 @@ HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height)
    HLH_gui_window *window = (HLH_gui_window *)HLH_gui_element_create(sizeof(*window),NULL,0,core_window_msg);
    window->e.window = window;
    window->hover = &window->e;
+   window->width = width;
+   window->height = height;
    core_window_count++;
    core_windows = realloc(core_windows,sizeof(*core_windows)*core_window_count);
    core_windows[core_window_count-1] = window;
