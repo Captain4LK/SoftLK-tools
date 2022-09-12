@@ -106,6 +106,7 @@ int HLH_gui_message_loop(void)
       HLH_gui_window *win = core_windows[i];
       SDL_Event e;
       e.type = SDL_WINDOWEVENT;
+      e.window.windowID = SDL_GetWindowID(win->window);
       e.window.data1 = win->width;
       e.window.data2 = win->height;
       e.window.event = SDL_WINDOWEVENT_SIZE_CHANGED;
