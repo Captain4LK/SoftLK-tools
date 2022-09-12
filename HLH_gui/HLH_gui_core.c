@@ -79,7 +79,8 @@ static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
 
 void HLH_gui_init(void)
 {
-   SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS);
+   if(!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS))
+      fprintf(stderr,"SDL_Init: %s\n",SDL_GetError());
 
    core_font_surface = SDL_CreateRGBSurface(0,1024,16,32,0xff0000,0x00ff00,0x0000ff,0xff000000);
    SDL_LockSurface(core_font_surface);
@@ -100,6 +101,12 @@ void HLH_gui_init(void)
 
 int HLH_gui_message_loop(void)
 {
+   for(int i = 0;i<core_window_count;i++)
+   {
+      HLH_gui_window *win = core_windows[i];
+      SDL_SetWindowSize(win->window,win->width,win->height);
+   }
+
    core_update();
 
    for(;;)

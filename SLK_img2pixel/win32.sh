@@ -2,7 +2,7 @@
 
 sources="utility_win.c assets.c image2pixel.c"
 object_files="utility_win.o assets.o image2pixel.o nfd_win.o"
-options="-Og -g"
+options="-O3 -flto -s"
 
 if [ $# -lt 1 ]; then
    echo "unspecified target, need either gui, gui_win, gui_hlh, cmd, cmd_win or video"
