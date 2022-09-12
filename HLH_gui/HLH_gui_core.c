@@ -79,11 +79,15 @@ static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
 
 void HLH_gui_init(void)
 {
-   if(!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS))
-      fprintf(stderr,"SDL_Init: %s\n",SDL_GetError());
+   if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS)<0)
+      fprintf(stderr,"SDL_Init(): %s\n",SDL_GetError());
 
    core_font_surface = SDL_CreateRGBSurface(0,1024,16,32,0xff0000,0x00ff00,0x0000ff,0xff000000);
-   SDL_LockSurface(core_font_surface);
+   if(core_font_surface==NULL)
+      fprintf(stderr,"SDL_CreateRGBSurface(): %s\n",SDL_GetError());
+
+   if(SDL_LockSurface(core_font_surface)<0)
+      fprintf(stderr,"SDL_LockSurface(): %s\n",SDL_GetError());
    for(int c = 0;c<128;c++)
    {
       int index = c*2;
@@ -106,13 +110,19 @@ int HLH_gui_message_loop(void)
       HLH_gui_window *win = core_windows[i];
       SDL_Event e;
       e.type = SDL_WINDOWEVENT;
+
       e.window.windowID = SDL_GetWindowID(win->window);
+      if(e.window.windowID==0)
+         fprintf(stderr,"SDL_GetWindowID(): %s\n",SDL_GetError());
+
       e.window.data1 = win->width;
       e.window.data2 = win->height;
       e.window.event = SDL_WINDOWEVENT_SIZE_CHANGED;
       win->width = -1;
       win->height = -1;
-      SDL_PushEvent(&e);
+
+      if(SDL_PushEvent(&e)<0)
+         fprintf(stderr,"SDL_PushEvent(): %s\n",SDL_GetError());
    }
 
    core_update();
@@ -120,7 +130,8 @@ int HLH_gui_message_loop(void)
    for(;;)
    {
       SDL_Event event;
-      SDL_WaitEvent(&event);
+      if(!SDL_WaitEvent(&event))
+         fprintf(stderr,"SDL_WaitEvent(): %s\n",SDL_GetError());
 
       HLH_gui_window *win = NULL;
 
@@ -146,9 +157,12 @@ int HLH_gui_message_loop(void)
          switch(event.window.event)
          {
          case SDL_WINDOWEVENT_EXPOSED:
-            SDL_SetRenderTarget(win->renderer,NULL);
-            SDL_RenderClear(win->renderer);
-            SDL_RenderCopy(win->renderer,win->target,NULL,NULL);
+            if(SDL_SetRenderTarget(win->renderer,NULL)<0)
+               fprintf(stderr,"SDL_SetRenderTarget(): %s\n",SDL_GetError());
+            if(SDL_RenderClear(win->renderer)<0)
+               fprintf(stderr,"SDL_RenderClear(): %s\n",SDL_GetError());
+            if(SDL_RenderCopy(win->renderer,win->target,NULL,NULL)<0)
+               fprintf(stderr,"SDL_RenderCopy(): %s\n",SDL_GetError());
             SDL_RenderPresent(win->renderer);
             break;
          case SDL_WINDOWEVENT_SIZE_CHANGED:
@@ -159,8 +173,12 @@ int HLH_gui_message_loop(void)
                {
                   win->width = width;
                   win->height = height;
+
                   SDL_DestroyTexture(win->target);
                   win->target = SDL_CreateTexture(win->renderer,SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_TARGET,win->width,win->height);
+                  if(win->target==NULL)
+                     fprintf(stderr,"SDL_CreateTexture(): %s\n",SDL_GetError());
+
                   win->e.bounds = HLH_gui_rect_make(0,win->width,0,win->height);
                   win->e.clip = HLH_gui_rect_make(0,win->width,0,win->height);
                   HLH_gui_element_msg(&win->e,HLH_GUI_MSG_LAYOUT,0,NULL);
@@ -247,9 +265,17 @@ HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height)
    core_windows = realloc(core_windows,sizeof(*core_windows)*core_window_count);
    core_windows[core_window_count-1] = window;
 
-   SDL_CreateWindowAndRenderer(width,height,SDL_WINDOW_RESIZABLE,&window->window,&window->renderer);
+   if(SDL_CreateWindowAndRenderer(width,height,SDL_WINDOW_RESIZABLE,&window->window,&window->renderer)<0)
+      fprintf(stderr,"SDL_CreateWindowAndRenderer(): %s\n",SDL_GetError());
+   SDL_SetWindowTitle(window->window,title);
+
    window->target = SDL_CreateTexture(window->renderer,SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_TARGET,window->width,window->height);
+   if(window->target==NULL)
+      fprintf(stderr,"SDL_CreateTexture(): %s\n",SDL_GetError());
+
    window->font = SDL_CreateTextureFromSurface(window->renderer,core_font_surface);
+   if(window->font==NULL)
+      fprintf(stderr,"SDL_CreateTextureFromSurface(): %s\n",SDL_GetError());
 
    return window;
 }
@@ -268,6 +294,9 @@ void HLH_gui_string_copy(char **dest, size_t *dest_size, const char *src, ptrdif
 
 HLH_gui_window *core_find_window(SDL_Window *win)
 {
+   if(win==NULL)
+      fprintf(stderr,"SDL_GetWindowFromID: %s\n",SDL_GetError());
+
    for(uintptr_t i = 0;i<core_window_count;i++)
       if(core_windows[i]->window==win)
          return core_windows[i];
@@ -296,7 +325,8 @@ static void core_update(void)
          painter.height = win->height;
          painter.clip = HLH_gui_rect_intersect(HLH_gui_rect_make(0,win->width,0,win->height),win->update_region);
 
-         SDL_SetRenderTarget(win->renderer,win->target);
+         if(SDL_SetRenderTarget(win->renderer,win->target)<0)
+            fprintf(stderr,"SDL_SetRenderTarget(): %s\n",SDL_GetError());
          core_element_paint(&win->e,&painter);
          core_window_end_paint(win,&painter);
          win->update_region = HLH_gui_rect_make(0,0,0,0);
@@ -443,9 +473,12 @@ static void core_element_paint(HLH_gui_element *e, HLH_gui_painter *p)
 
 static void core_window_end_paint(HLH_gui_window *w, HLH_gui_painter *p)
 {
-   SDL_SetRenderTarget(w->renderer,NULL);
-   SDL_RenderClear(w->renderer);
-   SDL_RenderCopy(w->renderer,w->target,NULL,NULL);
+   if(SDL_SetRenderTarget(w->renderer,NULL)<0)
+      fprintf(stderr,"SDL_SetRenderTarget(): %s\n",SDL_GetError());
+   if(SDL_RenderClear(w->renderer)<0)
+      fprintf(stderr,"SDL_RenderClear(): %s\n",SDL_GetError());
+   if(SDL_RenderCopy(w->renderer,w->target,NULL,NULL)<0)
+      fprintf(stderr,"SDL_RenderCopy(): %s\n",SDL_GetError());
    SDL_RenderPresent(w->renderer);
 }
 
