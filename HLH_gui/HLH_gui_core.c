@@ -151,6 +151,7 @@ int HLH_gui_message_loop(void)
 
          HLH_gui_element_msg(&win->e,HLH_GUI_MSG_FILE_DROP,0,event.drop.file);
          SDL_free(event.drop.file);
+         break;
       case SDL_WINDOWEVENT:
          win = core_find_window(SDL_GetWindowFromID(event.window.windowID));
          if(win==NULL)
