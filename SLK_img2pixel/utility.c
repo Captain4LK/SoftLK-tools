@@ -17,6 +17,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "../external/stb_image.h"
 #include "../external/tinyfiledialogs.h"
 #include "../external/HLH_json.h"
+#define CUTE_PATH_IMPLEMENTATION
+#include "../external/cute_path.h"
 
 #define HLH_STREAM_IMPLEMENTATION
 #include "../external/HLH_stream.h"
@@ -343,7 +345,11 @@ void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int 
                if(scale_mode==1)
                   out = SLK_rgb_sprite_create(in->width/width,in->height/height);
                img2pixel_process_image(in,out);
-               sprintf(tmp,"%s/%s.png",output_dir,file.name);
+
+               char name[512];
+               path_pop_ext(file.name,name,NULL);
+               sprintf(tmp,"%s/%s.png",output_dir,name);
+
                image_save(tmp,out,pal);
                if(scale_mode==1)
                   SLK_rgb_sprite_destroy(out);

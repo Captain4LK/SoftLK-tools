@@ -507,7 +507,11 @@ void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int 
                img2pixel_process_image(in,out);
                char buffer[512];
                stbi_convert_wchar_to_utf8(buffer,512,output_dir);
-               sprintf(tmp,"%s/%s.png",buffer,file.name);
+
+               char name[512];
+               path_pop_ext(file.name,name,NULL);
+               sprintf(tmp,"%s/%s.png",buffer,name);
+
                wchar_t *wpath = (wchar_t *) utf8_to_utf16((const uint8_t *) tmp, NULL);
                image_save_w(wpath,out,pal);
                free(wpath);
