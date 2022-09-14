@@ -1,6 +1,51 @@
+# SLK_img2pixel
+
+![SLK_img2pixel_preview](../screenshots/SLK_img2pixel.png)
+![anim](../screenshots/crate.gif)
+
+A tool for transforming images into pixel art.
+
+# Download 
+
+* SLK_img2pixel: [itch.io](https://captain4lk.itch.io/slk-img2pixel)
+
+# Contact
+
+Here is a link to the SLK_img2pixel Discord. Feel free to pop in and make suggestions or ask questions: https://discord.gg/Nch8hjdZ2V
+
+# Building from source
+
+* First, clone this repository: ``https://github.com/Captain4LK/SoftLK-tools.git``
+
+## Dependencies
+
+In general, I try to keep the amount of external dependencies as low as possible, but some are still needed, as listed below:
+
+* [SDL2](https://www.libsdl.org/download-2.0.php)
+
+## Building
+
+* cd into SLK_img2pixels directory: ``cd SLK_img2pixel``
+* run the shell script associated with your platform and supply it with the desired target, e.g: ``sh linux.sh gui_hlh``, possible targets are:
+      * ``gui_hlh`` - the new gui, seen since version 1.4
+      * ``gui`` - the old gui, seen on all versions prior to 1.4
+      * ``cmd`` - command line version
+      * ``video`` - experimental video processing version
+* The binary can be found at the top level of the repo in the ``bin/`` directory
+
 # Changelog
 
 Current development version: SLK_img2pixel 1.4-dev
+
+----------------------------------------
+Version:                SLK_img2pixel 1.4 (tba)
+----------------------------------------
+
+CHANGES:
+
+* new gui
+* drag'n drop support for images
+* fixed batch processing appending png extension without removing original extension
 
 ----------------------------------------
 Version:                SLK_img2pixel 1.3 (21.04.2022)
