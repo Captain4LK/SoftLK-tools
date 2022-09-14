@@ -1,6 +1,6 @@
 # SoftLK-tools
 
-This repo hosts the source code for different (currently two) tools that were made to be used with SoftLK-lib.
+This repo hosts the source code for different (currently two) programs made by Lukas Holzbeierlein (Captain4LK).
 
 ## Programs
 
