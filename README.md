@@ -7,9 +7,9 @@ This repo hosts the source code for different (currently two) tools that were ma
 More information, compilation instructions and download links can be found in the tools respective READMEs.
 
 |Program|Info|Version|
-|---|---|
+|---|---|---|
 |[SLK_img2pixel](SLK_img2pixel/README.md)|A tool for transforming images into pixel art|1.4-rc2|
-|[SLK_make]()|A build system based on the one used by golgotha|on hold|
+|[SLK_make](SLK_make/README.md)|A build system based on the one used by golgotha|on hold|
 
 # Gallery
 

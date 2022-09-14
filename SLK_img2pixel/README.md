@@ -1,6 +1,5 @@
 # SLK_img2pixel
 
-![SLK_img2pixel_preview](../screenshots/SLK_img2pixel.png)
 ![anim](../screenshots/crate.gif)
 
 A tool for transforming images into pixel art.
@@ -27,11 +26,15 @@ In general, I try to keep the amount of external dependencies as low as possible
 
 * cd into SLK_img2pixels directory: ``cd SLK_img2pixel``
 * run the shell script associated with your platform and supply it with the desired target, e.g: ``sh linux.sh gui_hlh``, possible targets are:
-      * ``gui_hlh`` - the new gui, seen since version 1.4
-      * ``gui`` - the old gui, seen on all versions prior to 1.4
-      * ``cmd`` - command line version
-      * ``video`` - experimental video processing version
+  * ``gui_hlh`` - the new gui, seen since version 1.4
+  * ``gui`` - the old gui, seen on all versions prior to 1.4
+  * ``cmd`` - command line version
+  * ``video`` - experimental video processing version
 * The binary can be found at the top level of the repo in the ``bin/`` directory
+
+# Gallery
+
+![SLK_img2pixel_preview](../screenshots/SLK_img2pixel.png)
 
 # Changelog
 
