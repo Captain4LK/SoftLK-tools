@@ -13,6 +13,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdlib.h>
 #include <string.h>
 #define LIBSLK_IMPLEMENTATION
+#define LIBSLK_BACKEND 2
 #include "../headers/libSLK.h"
 #include "../external/cute_files.h"
 //-------------------------------------

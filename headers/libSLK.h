@@ -305,6 +305,7 @@ void SLK_log(const char *w, ...);
 
 //0 - sdl2
 //1 - win32
+//2 - none (for e.g. image processing)
 #ifndef LIBSLK_BACKEND
 #define LIBSLK_BACKEND 0
 #endif
@@ -2318,6 +2319,8 @@ float SLK_timer_get_delta()
 #include "libSLK_sdl.h"
 #elif LIBSLK_BACKEND == 1
 #include "libSLK_win.h"
+#elif LIBSLK_BACKEND == 2
+#include "libSLK_none.h"
 #endif
 //-----------------------------------------------
 
