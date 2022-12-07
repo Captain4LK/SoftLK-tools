@@ -835,7 +835,7 @@ static char *json5__parse_value(HLH_json5 *obj, char *p, char **err_code)
 #ifdef _MSC_VER // somehow, NaN is apparently signed in MSC
             if(i>=5) 
             {
-               obj->type = json5_real;
+               obj->type = HLH_json5_real;
                obj->real = i>=11?-INFINITY:i>=9?INFINITY:i>=7?NAN:-NAN;
             }
 #else

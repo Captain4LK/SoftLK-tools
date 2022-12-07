@@ -11,6 +11,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Quantization algorithm based on: https://github.com/ogus/kmeans-quantizer (wtfpl)
 
 //External includes
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include "../headers/libSLK.h"
 
