@@ -1,6 +1,16 @@
 *.o
 *.dll
 *.exe
+
+*.pal
+*.hex
+
+*.png
+*.mp4
+*.txt
+
+*.vim
+a.out
 bin/*.png
 bin/*.json
 bin/*.gif
