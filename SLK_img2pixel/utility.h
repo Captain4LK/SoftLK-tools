@@ -28,7 +28,7 @@ SLK_RGB_sprite *image_load(const char *path);
 SLK_Palette *palette_load(const char *path);
 void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal);
 void dir_input_select();
-void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal);
+void dir_output_select(I2P_state *s, int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal);
 
 void utility_init();
 void utility_exit();

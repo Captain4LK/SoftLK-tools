@@ -9,19 +9,17 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //Quantization algorithm based on: https://github.com/ogus/kmeans-quantizer (wtfpl)
-
 //External includes
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "../headers/libSLK.h"
-
 #define HLH_JSON_IMPLEMENTATION
 #include "../external/HLH_json.h"
 //-------------------------------------
 
 //Internal includes
-#include "utility.h"
 #include "image2pixel.h"
+#include "utility.h"
 //-------------------------------------
 
 //#defines
@@ -48,12 +46,12 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Typedefs
-typedef struct
+struct dyn_array
 {
    uint32_t used;
    uint32_t size;
    void *data;
-}dyn_array;
+};
 
 typedef struct
 {
@@ -64,35 +62,6 @@ typedef struct
 //-------------------------------------
 
 //Variables
-static int brightness = 0;
-static int contrast = 0;
-static int img_gamma = 100;
-static int saturation = 100;
-static int dither_amount = 64;
-static int alpha_threshold = 128;
-static int sharpen = 0;
-static int hue = 0;
-static int gauss = 80;
-static int offset_x = 0;
-static int offset_y = 0;
-static int image_outline = -1;
-static int image_inline = -1;
-static int pixel_scale_mode = 0;
-static int pixel_sample_mode = 0;
-static int pixel_process_mode = 1;
-static int pixel_distance_mode = 0;
-static int image_out_width = 128;
-static int image_out_height = 128;
-static int image_out_swidth = 2;
-static int image_out_sheight = 2;
-static int palette_weight = 2;
-static SLK_Palette *palette = NULL;
-
-static dyn_array *quant_cluster_list = NULL;
-static SLK_Color *quant_centroid_list = NULL;
-static int *quant_assignment = NULL;
-static int quant_k = 16;
-
 static const float dither_threshold_bayer8x8[64] = 
 {
     0.0f/64.0f,32.0f/64.0f, 8.0f/64.0f,40.0f/64.0f, 2.0f/64.0f,34.0f/64.0f,10.0f/64.0f,42.0f/64.0f,
@@ -138,13 +107,13 @@ static const float dither_threshold_cluster4x4[16] =
 
 //Function prototypes
 
-static void dither_image          (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, int process_mode, int distance_mode);
-static void dither_threshold      (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode, const float *threshold, uint8_t dim);
-static void dither_threshold_apply(SLK_Color *in, SLK_Color *out, int width, int height, const float *threshold, uint8_t dim);
-static void dither_none           (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
-static void dither_none_apply     (SLK_Color *in, SLK_Color *out, int width, int height);
-static void dither_floyd          (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
-static void dither_floyd2         (SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_image          (I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, int process_mode, int distance_mode);
+static void dither_threshold      (I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode, const float *threshold, uint8_t dim);
+static void dither_threshold_apply(I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, const float *threshold, uint8_t dim);
+static void dither_none           (I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_none_apply     (I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height);
+static void dither_floyd          (I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
+static void dither_floyd2         (I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode);
 static void floyd_apply_error     (SLK_Color *d, double error_r, double error_g, double error_b, int x, int y, int width, int height);
 
 static double gauss_calc(double x, double y, double sigma);
@@ -174,36 +143,72 @@ static double ciede2000_color_dist2(Color_d3 c0, Color_d3 c1);
 static double color_dist2(Color_d3 a, Color_d3 b);
 
 //Functions needed for downsampling image
-static void sample_image(const SLK_RGB_sprite *in, SLK_Color *out, int sample_mode, int width, int height);
-static void sample_round(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
-static void sample_floor(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
-static void sample_ceil(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
-static void sample_linear(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
-static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
+static void sample_image(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int sample_mode, int width, int height);
+static void sample_round(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
+static void sample_floor(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
+static void sample_ceil(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
+static void sample_linear(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
+static void sample_bicubic(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
 static float cubic_hermite (float a, float b, float c, float d, float t);
-static void sample_lanczos(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
+static void sample_lanczos(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height);
 static double lanczos(double v);
 
 //Functions needed for color quantization
-static void quant_cluster_list_init();
-static void quant_cluster_list_free();
-static void quant_compute_kmeans(SLK_RGB_sprite *data, int pal_in);
-static void quant_get_cluster_centroid(SLK_RGB_sprite *data, int pal_in, int weight_pal);
+static void quant_cluster_list_init(I2P_state *s);
+static void quant_cluster_list_free(I2P_state *s);
+static void quant_compute_kmeans(I2P_state *s, SLK_RGB_sprite *data, int pal_in);
+static void quant_get_cluster_centroid(I2P_state *s, SLK_RGB_sprite *data, int pal_in, int weight_pal);
 static SLK_Color quant_colors_mean(dyn_array *color_list,SLK_Color color, int weight_color);
 static SLK_Color quant_pick_random_color(SLK_RGB_sprite *data);
-static int quant_nearest_color_idx(SLK_Color color, SLK_Color *color_list);
+static int quant_nearest_color_idx(I2P_state *s, SLK_Color color, SLK_Color *color_list);
 static double quant_distance(SLK_Color color0, SLK_Color color1);
 static double quant_colors_variance(dyn_array *color_list);
 
 //Post processing
-static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out);
+static void post_process_image(I2P_state *s, const SLK_RGB_sprite *in, SLK_RGB_sprite *out);
 //-------------------------------------
 
 //Function implementations
 
+void img2pixel_state_init(I2P_state *s)
+{
+   s->brightness = 0;
+   s->contrast = 0;
+   s->img_gamma = 100;
+   s->saturation = 100;
+   s->dither_amount = 64;
+   s->alpha_threshold = 128;
+   s->sharpen = 0;
+   s->hue = 0;
+   s->gauss = 80;
+   s->offset_x = 0;
+   s->offset_y = 0;
+   s->image_outline = -1;
+   s->image_inline = -1;
+   s->pixel_scale_mode = 0;
+   s->pixel_sample_mode = 0;
+   s->pixel_process_mode = 1;
+   s->pixel_distance_mode = 0;
+   s->image_out_width = 128;
+   s->image_out_height = 128;
+   s->image_out_swidth = 2;
+   s->image_out_sheight = 2;
+   s->palette_weight = 2;
+   s->palette = NULL;
+
+   s->quant_cluster_list = NULL;
+   s->quant_centroid_list = NULL;
+   s->quant_assignment = NULL;
+   s->quant_k = 16;
+}
+
+void img2pixel_state_free(I2P_state *s)
+{
+}
+
 //loads the palette and all configuration values
 //from an external json file.
-void img2pixel_preset_load(FILE *f)
+void img2pixel_preset_load(I2P_state *s, FILE *f)
 {
    if(f==NULL)
       return;
@@ -212,87 +217,87 @@ void img2pixel_preset_load(FILE *f)
    HLH_json5_root *root = HLH_json_parse_file_stream(f);
 
    HLH_json5 *o = HLH_json_get_object_object(&root->root,"palette",&fallback);
-   palette->used = HLH_json_get_object_integer(o,"used",0);
+   s->palette->used = HLH_json_get_object_integer(o,"used",0);
    HLH_json5 *array = HLH_json_get_object(o,"colors");
    for(int i = 0;i<256;i++)
-      palette->colors[i].n = HLH_json_get_array_integer(array,i,0);
-   pixel_distance_mode = HLH_json_get_object_integer(&root->root,"distance_mode",0);
-   image_out_width = HLH_json_get_object_integer(&root->root,"width",1);
-   image_out_height = HLH_json_get_object_integer(&root->root,"height",1);
-   image_out_swidth = HLH_json_get_object_integer(&root->root,"swidth",1);
-   image_out_sheight = HLH_json_get_object_integer(&root->root,"sheight",1);
-   pixel_scale_mode = HLH_json_get_object_integer(&root->root,"scale_mode",1);
-   pixel_process_mode = HLH_json_get_object_integer(&root->root,"dither_mode",0);
-   dither_amount = HLH_json_get_object_integer(&root->root,"dither_amount",64);
-   pixel_sample_mode = HLH_json_get_object_integer(&root->root,"sample_mode",0);
-   alpha_threshold = HLH_json_get_object_integer(&root->root,"alpha_threshold",128);
+      s->palette->colors[i].n = HLH_json_get_array_integer(array,i,0);
+   s->pixel_distance_mode = HLH_json_get_object_integer(&root->root,"distance_mode",0);
+   s->image_out_width = HLH_json_get_object_integer(&root->root,"width",1);
+   s->image_out_height = HLH_json_get_object_integer(&root->root,"height",1);
+   s->image_out_swidth = HLH_json_get_object_integer(&root->root,"swidth",1);
+   s->image_out_sheight = HLH_json_get_object_integer(&root->root,"sheight",1);
+   s->pixel_scale_mode = HLH_json_get_object_integer(&root->root,"scale_mode",1);
+   s->pixel_process_mode = HLH_json_get_object_integer(&root->root,"dither_mode",0);
+   s->dither_amount = HLH_json_get_object_integer(&root->root,"dither_amount",64);
+   s->pixel_sample_mode = HLH_json_get_object_integer(&root->root,"sample_mode",0);
+   s->alpha_threshold = HLH_json_get_object_integer(&root->root,"alpha_threshold",128);
    upscale = HLH_json_get_object_integer(&root->root,"upscale",1);
-   gauss = HLH_json_get_object_integer(&root->root,"gaussian_blur",128);
-   offset_x = HLH_json_get_object_integer(&root->root,"offset_x",0);
-   offset_y = HLH_json_get_object_integer(&root->root,"offset_y",0);
-   image_outline = HLH_json_get_object_integer(&root->root,"outline",-1);
-   image_inline = HLH_json_get_object_integer(&root->root,"inline",-1);
-   brightness = HLH_json_get_object_integer(&root->root,"brightness",0);
-   contrast = HLH_json_get_object_integer(&root->root,"contrast",0);
-   saturation = HLH_json_get_object_integer(&root->root,"saturation",0);
-   img_gamma = HLH_json_get_object_integer(&root->root,"gamma",0);
-   sharpen = HLH_json_get_object_integer(&root->root,"sharpness",0);
-   hue = HLH_json_get_object_integer(&root->root,"hue",0);
-   palette_weight = HLH_json_get_object_integer(&root->root,"palette_weight",2);
+   s->gauss = HLH_json_get_object_integer(&root->root,"gaussian_blur",128);
+   s->offset_x = HLH_json_get_object_integer(&root->root,"offset_x",0);
+   s->offset_y = HLH_json_get_object_integer(&root->root,"offset_y",0);
+   s->image_outline = HLH_json_get_object_integer(&root->root,"outline",-1);
+   s->image_inline = HLH_json_get_object_integer(&root->root,"inline",-1);
+   s->brightness = HLH_json_get_object_integer(&root->root,"brightness",0);
+   s->contrast = HLH_json_get_object_integer(&root->root,"contrast",0);
+   s->saturation = HLH_json_get_object_integer(&root->root,"saturation",0);
+   s->img_gamma = HLH_json_get_object_integer(&root->root,"gamma",0);
+   s->sharpen = HLH_json_get_object_integer(&root->root,"sharpness",0);
+   s->hue = HLH_json_get_object_integer(&root->root,"hue",0);
+   s->palette_weight = HLH_json_get_object_integer(&root->root,"palette_weight",2);
 
    HLH_json_free(root);
 }
 
 //Saves the current configuration and palette to a
 //json file.
-void img2pixel_preset_save(FILE *f)
+void img2pixel_preset_save(I2P_state *s, FILE *f)
 {
    if(f==NULL)
       return;
 
    HLH_json5_root *root = HLH_json_create_root();
    HLH_json5 object = HLH_json_create_object();
-   HLH_json_object_add_integer(&object,"used",palette->used);
+   HLH_json_object_add_integer(&object,"used",s->palette->used);
    HLH_json5 array = HLH_json_create_array();
    for(int i = 0;i<256;i++)
-      HLH_json_array_add_integer(&array,palette->colors[i].n);
+      HLH_json_array_add_integer(&array,s->palette->colors[i].n);
    HLH_json_object_add_object(&object,"colors",array);
    HLH_json_object_add_object(&root->root,"palette",object);
-   HLH_json_object_add_integer(&root->root,"distance_mode",pixel_distance_mode);
-   HLH_json_object_add_integer(&root->root,"width",image_out_width);
-   HLH_json_object_add_integer(&root->root,"height",image_out_height);
-   HLH_json_object_add_integer(&root->root,"swidth",image_out_swidth);
-   HLH_json_object_add_integer(&root->root,"sheight",image_out_sheight);
-   HLH_json_object_add_integer(&root->root,"scale_mode",pixel_scale_mode);
-   HLH_json_object_add_integer(&root->root,"dither_mode",pixel_process_mode);
-   HLH_json_object_add_integer(&root->root,"dither_amount",dither_amount);
-   HLH_json_object_add_integer(&root->root,"sample_mode",pixel_sample_mode);
-   HLH_json_object_add_integer(&root->root,"gaussian_blur",gauss);
-   HLH_json_object_add_integer(&root->root,"offset_x",offset_x);
-   HLH_json_object_add_integer(&root->root,"offset_y",offset_y);
-   HLH_json_object_add_integer(&root->root,"outline",image_outline);
-   HLH_json_object_add_integer(&root->root,"inline",image_inline);
-   HLH_json_object_add_integer(&root->root,"alpha_threshold",alpha_threshold);
+   HLH_json_object_add_integer(&root->root,"distance_mode",s->pixel_distance_mode);
+   HLH_json_object_add_integer(&root->root,"width",s->image_out_width);
+   HLH_json_object_add_integer(&root->root,"height",s->image_out_height);
+   HLH_json_object_add_integer(&root->root,"swidth",s->image_out_swidth);
+   HLH_json_object_add_integer(&root->root,"sheight",s->image_out_sheight);
+   HLH_json_object_add_integer(&root->root,"scale_mode",s->pixel_scale_mode);
+   HLH_json_object_add_integer(&root->root,"dither_mode",s->pixel_process_mode);
+   HLH_json_object_add_integer(&root->root,"dither_amount",s->dither_amount);
+   HLH_json_object_add_integer(&root->root,"sample_mode",s->pixel_sample_mode);
+   HLH_json_object_add_integer(&root->root,"gaussian_blur",s->gauss);
+   HLH_json_object_add_integer(&root->root,"offset_x",s->offset_x);
+   HLH_json_object_add_integer(&root->root,"offset_y",s->offset_y);
+   HLH_json_object_add_integer(&root->root,"outline",s->image_outline);
+   HLH_json_object_add_integer(&root->root,"inline",s->image_inline);
+   HLH_json_object_add_integer(&root->root,"alpha_threshold",s->alpha_threshold);
    HLH_json_object_add_integer(&root->root,"upscale",upscale);
-   HLH_json_object_add_integer(&root->root,"brightness",brightness);
-   HLH_json_object_add_integer(&root->root,"contrast",contrast);
-   HLH_json_object_add_integer(&root->root,"gamma",img_gamma);
-   HLH_json_object_add_integer(&root->root,"saturation",saturation);
-   HLH_json_object_add_integer(&root->root,"sharpness",sharpen);
-   HLH_json_object_add_integer(&root->root,"hue",hue);
-   HLH_json_object_add_integer(&root->root,"palette_weight",palette_weight);
+   HLH_json_object_add_integer(&root->root,"brightness",s->brightness);
+   HLH_json_object_add_integer(&root->root,"contrast",s->contrast);
+   HLH_json_object_add_integer(&root->root,"gamma",s->img_gamma);
+   HLH_json_object_add_integer(&root->root,"saturation",s->saturation);
+   HLH_json_object_add_integer(&root->root,"sharpness",s->sharpen);
+   HLH_json_object_add_integer(&root->root,"hue",s->hue);
+   HLH_json_object_add_integer(&root->root,"palette_weight",s->palette_weight);
  
    HLH_json_write_file(f,&root->root);
    HLH_json_free(root);
 }
 
 //Sharpens an image, input and output dimensions must be equal
-void img2pixel_sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
+void img2pixel_sharpen_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 {
    if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
       return;
 
-   if(sharpen==0)
+   if(s->sharpen==0)
    {
       SLK_rgb_sprite_copy(out,in);
       return;
@@ -305,7 +310,7 @@ void img2pixel_sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    SLK_rgb_sprite_copy(tmp_data2,in);
 
    //Setup sharpening kernel
-   const float sharpen_factor = (float)sharpen/100.0f;
+   const float sharpen_factor = (float)s->sharpen/100.0f;
    const float sharpen_kernel[3][3] =
    {
       {0.0f,-1.0f*sharpen_factor,0.0f},
@@ -313,7 +318,7 @@ void img2pixel_sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
       {0.0f,-1.0f*sharpen_factor,0.0f},
    };
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<out->height;y++)
    {
       for(int x = 0;x<out->width;x++)
@@ -346,12 +351,12 @@ void img2pixel_sharpen_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    SLK_rgb_sprite_destroy(tmp_data2);
 }
 
-void img2pixel_lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
+void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 {
    if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
       return;
 
-   if(gauss==0)
+   if(s->gauss==0)
    {
       SLK_rgb_sprite_copy(out,in);
       return;
@@ -369,7 +374,7 @@ void img2pixel_lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    //sure the sum of all cells will be 1
    //otherwise the blur would either darken
    //or lighten the image
-   double gauss_factor = (double)gauss/100.0f;
+   double gauss_factor = (double)s->gauss/100.0f;
    double lowpass_kernel[7][7];
    for(int y = 0;y<7;y++)
       for(int x = 0;x<7;x++)
@@ -382,7 +387,7 @@ void img2pixel_lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
       for(int x = 0;x<7;x++)
          lowpass_kernel[x][y] = lowpass_kernel[x][y]/norm_val;
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<out->height;y++)
    {
       for(int x = 0;x<out->width;x++)
@@ -415,30 +420,33 @@ void img2pixel_lowpass_image(SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    SLK_rgb_sprite_destroy(tmp_data2);
 }
 
-void img2pixel_quantize(int colors, SLK_RGB_sprite *in)
+void img2pixel_quantize(I2P_state *s, int colors, SLK_RGB_sprite *in)
 {
-   if(in==NULL||palette==NULL)
+   if(in==NULL||s->palette==NULL)
       return;
 
    SLK_RGB_sprite *tmp = SLK_rgb_sprite_create(512,512);
-   sample_image(in,tmp->data,0,512,512);
+   sample_image(s,in,tmp->data,0,512,512);
 
-   quant_k = colors;
-   quant_compute_kmeans(tmp,0);
-   palette->used = colors;
+   s->quant_k = colors;
+   quant_compute_kmeans(s,tmp,0);
+   s->palette->used = colors;
    for(int i = 0;i<colors;i++)
    {
-      palette->colors[i] = quant_centroid_list[i];
-      palette->colors[i].rgb.a = 255;
+      s->palette->colors[i] = s->quant_centroid_list[i];
+      s->palette->colors[i].rgb.a = 255;
    }
 
-   quant_cluster_list_free();
-   free(quant_centroid_list);
-   free(quant_assignment);
+   quant_cluster_list_free(s);
+   free(s->quant_centroid_list);
+   free(s->quant_assignment);
+   s->quant_centroid_list = NULL;
+   s->quant_cluster_list = NULL;
+   s->quant_assignment = NULL;
    SLK_rgb_sprite_destroy(tmp);
 }
 
-void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
+void img2pixel_process_image(I2P_state *s, const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 {
    SLK_Color *tmp_data = malloc(sizeof(*tmp_data)*out->width*out->height);
    if(tmp_data==NULL)
@@ -447,13 +455,13 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    //Downsample image before processing it. 
    //Every image operation except kernel based ones (sharpness, gaussian blur)
    //is done after downsampling.
-   sample_image(in,tmp_data,pixel_sample_mode,out->width,out->height);
+   sample_image(s,in,tmp_data,s->pixel_sample_mode,out->width,out->height);
 
    //Adjust range of values
-   float gamma_factor = (float)img_gamma/100.0f;
-   float contrast_factor = (259.0f*(255.0f+(float)contrast))/(255.0f*(259.0f-(float)contrast));
-   float saturation_factor = (float)saturation/100.0f;
-   float brightness_factor = (float)brightness/255.0f;
+   float gamma_factor = (float)s->img_gamma/100.0f;
+   float contrast_factor = (259.0f*(255.0f+(float)s->contrast))/(255.0f*(259.0f-(float)s->contrast));
+   float saturation_factor = (float)s->saturation/100.0f;
+   float brightness_factor = (float)s->brightness/255.0f;
 
    //Setup "matrix"
    //saturation, brighness and contrast are implemented with a color matrix
@@ -482,7 +490,7 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    float wb = (t+brightness_factor)*255.0f;
    //-------------------------------------
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<out->height;y++)
    {
       for(int x = 0;x<out->width;x++)
@@ -492,9 +500,9 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 
          //Hue
          //Only ajust if not the default value --> better performance
-         if(hue!=0)
+         if(s->hue!=0)
          {
-            float huef = (float)hue;
+            float huef = (float)s->hue;
             Color_d3 hsv = color_to_hsv(in);
             hsv.c0+=huef;
             in = hsv_to_color(hsv);
@@ -510,7 +518,7 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 
          //Gamma
          //Only ajust if not the default value --> better performance
-         if(img_gamma!=100)
+         if(s->img_gamma!=100)
          {
             in.rgb.r = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.rgb.r/255.0f,gamma_factor))));
             in.rgb.g = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.rgb.g/255.0f,gamma_factor))));
@@ -525,268 +533,268 @@ void img2pixel_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
    //Dithering is done after all image processing
    //If it was done at any other time, it would
    //resoult in different colors than the palette
-   dither_image(tmp_data,out->data,out->width,out->height,palette,pixel_process_mode,pixel_distance_mode);
+   dither_image(s,tmp_data,out->data,out->width,out->height,s->palette,s->pixel_process_mode,s->pixel_distance_mode);
 
    //Clean up
    free(tmp_data);
 
    //Post process
-   post_process_image(out,out);
+   post_process_image(s,out,out);
 }
 
-void img2pixel_reset_to_defaults()
+void img2pixel_reset_to_defaults(I2P_state *s)
 {
-   brightness = 0;
-   contrast = 0;
-   img_gamma = 100;
-   saturation = 100;
-   dither_amount = 64;
-   alpha_threshold = 128;
-   sharpen = 0;
-   hue = 0;
-   gauss = 80;
-   offset_x = 0;
-   offset_y = 0;
-   image_outline = -1;
-   image_inline = -1;
-   pixel_scale_mode = 0;
-   pixel_sample_mode = 0;
-   pixel_process_mode = 1;
-   pixel_distance_mode = 0;
-   image_out_width = 128;
-   image_out_height = 128;
-   image_out_swidth = 2;
-   image_out_sheight = 2;
+   s->brightness = 0;
+   s->contrast = 0;
+   s->img_gamma = 100;
+   s->saturation = 100;
+   s->dither_amount = 64;
+   s->alpha_threshold = 128;
+   s->sharpen = 0;
+   s->hue = 0;
+   s->gauss = 80;
+   s->offset_x = 0;
+   s->offset_y = 0;
+   s->image_outline = -1;
+   s->image_inline = -1;
+   s->pixel_scale_mode = 0;
+   s->pixel_sample_mode = 0;
+   s->pixel_process_mode = 1;
+   s->pixel_distance_mode = 0;
+   s->image_out_width = 128;
+   s->image_out_height = 128;
+   s->image_out_swidth = 2;
+   s->image_out_sheight = 2;
 }
 
-int img2pixel_get_brightness()
+int img2pixel_get_brightness(const I2P_state *s)
 {
-   return brightness;
+   return s->brightness;
 }
 
-void img2pixel_set_brightness(int nbrightness)
+void img2pixel_set_brightness(I2P_state *s, int nbrightness)
 {
-   brightness = nbrightness;
+   s->brightness = nbrightness;
 }
 
-int img2pixel_get_contrast()
+int img2pixel_get_contrast(const I2P_state *s)
 {
-   return contrast;
+   return s->contrast;
 }
 
-void img2pixel_set_contrast(int ncontrast)
+void img2pixel_set_contrast(I2P_state *s, int ncontrast)
 {
-   contrast = ncontrast;
+   s->contrast = ncontrast;
 }
 
-int img2pixel_get_gamma()
+int img2pixel_get_gamma(const I2P_state *s)
 {
-   return img_gamma;
+   return s->img_gamma;
 }
 
-void img2pixel_set_gamma(int ngamma)
+void img2pixel_set_gamma(I2P_state *s, int ngamma)
 {
-   img_gamma = ngamma;
+   s->img_gamma = ngamma;
 }
 
-int img2pixel_get_saturation()
+int img2pixel_get_saturation(const I2P_state *s)
 {
-   return saturation;
+   return s->saturation;
 }
 
-void img2pixel_set_saturation(int nsaturation)
+void img2pixel_set_saturation(I2P_state *s, int nsaturation)
 {
-   saturation = nsaturation;
+   s->saturation = nsaturation;
 }
 
-int img2pixel_get_sharpen()
+int img2pixel_get_sharpen(const I2P_state *s)
 {
-   return sharpen;
+   return s->sharpen;
 }
 
-void img2pixel_set_sharpen(int nsharpen)
+void img2pixel_set_sharpen(I2P_state *s, int nsharpen)
 {
-   sharpen = nsharpen;
+   s->sharpen = nsharpen;
 }
 
-int img2pixel_get_hue()
+int img2pixel_get_hue(const I2P_state *s)
 {
-   return hue;
+   return s->hue;
 }
 
-void img2pixel_set_hue(int nhue)
+void img2pixel_set_hue(I2P_state *s, int nhue)
 {
-   hue = nhue;
+   s->hue = nhue;
 }
 
-int img2pixel_get_dither_amount()
+int img2pixel_get_dither_amount(const I2P_state *s)
 {
-   return dither_amount;
+   return s->dither_amount;
 }
 
-void img2pixel_set_dither_amount(int namount)
+void img2pixel_set_dither_amount(I2P_state *s, int namount)
 {
-   dither_amount = namount;
+   s->dither_amount = namount;
 }
 
-int img2pixel_get_alpha_threshold()
+int img2pixel_get_alpha_threshold(const I2P_state *s)
 {
-   return alpha_threshold;
+   return s->alpha_threshold;
 }
 
-void img2pixel_set_alpha_threshold(int nthreshold)
+void img2pixel_set_alpha_threshold(I2P_state *s, int nthreshold)
 {
-   alpha_threshold = nthreshold;
+   s->alpha_threshold = nthreshold;
 }
 
-int img2pixel_get_gauss()
+int img2pixel_get_gauss(const I2P_state *s)
 {
-   return gauss;
+   return s->gauss;
 }
 
-void img2pixel_set_gauss(int ngauss)
+void img2pixel_set_gauss(I2P_state *s, int ngauss)
 {
-   gauss = ngauss;
+   s->gauss = ngauss;
 }
 
-void img2pixel_set_offset_x(int noffset)
+void img2pixel_set_offset_x(I2P_state *s, int noffset)
 {
-   offset_x = noffset;
+   s->offset_x = noffset;
 }
 
-int img2pixel_get_offset_x()
+int img2pixel_get_offset_x(const I2P_state *s)
 {
-   return offset_x;
+   return s->offset_x;
 }
 
-void img2pixel_set_offset_y(int noffset)
+void img2pixel_set_offset_y(I2P_state *s, int noffset)
 {
-   offset_y = noffset;
+   s->offset_y = noffset;
 }
 
-int img2pixel_get_offset_y()
+int img2pixel_get_offset_y(const I2P_state *s)
 {
-   return offset_y;
+   return s->offset_y;
 }
 
-int img2pixel_get_outline()
+int img2pixel_get_outline(const I2P_state *s)
 {
-   return image_outline;
+   return s->image_outline;
 }
 
-void img2pixel_set_outline(int nline)
+void img2pixel_set_outline(I2P_state *s, int nline)
 {
-   image_outline = nline;
+   s->image_outline = nline;
 }
 
-int img2pixel_get_inline()
+int img2pixel_get_inline(const I2P_state *s)
 {
-   return image_inline;
+   return s->image_inline;
 }
 
-void img2pixel_set_inline(int nline)
+void img2pixel_set_inline(I2P_state *s, int nline)
 {
-   image_inline = nline;
+   s->image_inline = nline;
 }
 
-SLK_Palette *img2pixel_get_palette()
+SLK_Palette *img2pixel_get_palette(I2P_state *s)
 {
-   return palette;
+   return s->palette;
 }
 
-void img2pixel_set_palette(SLK_Palette *npalette)
+void img2pixel_set_palette(I2P_state *s, SLK_Palette *npalette)
 {
-   palette = npalette;
+   s->palette = npalette;
 }
 
-int img2pixel_get_palette_weight()
+int img2pixel_get_palette_weight(const I2P_state *s)
 {
-   return palette_weight;
+   return s->palette_weight;
 }
 
-void img2pixel_set_palette_weight(int weight)
+void img2pixel_set_palette_weight(I2P_state *s, int weight)
 {
-   palette_weight = weight;
+   s->palette_weight = weight;
 }
 
-int img2pixel_get_scale_mode()
+int img2pixel_get_scale_mode(const I2P_state *s)
 {
-   return pixel_scale_mode;
+   return s->pixel_scale_mode;
 }
 
-void img2pixel_set_scale_mode(int nmode)
+void img2pixel_set_scale_mode(I2P_state *s, int nmode)
 {
-   pixel_scale_mode = nmode;
+   s->pixel_scale_mode = nmode;
 }
 
-int img2pixel_get_sample_mode()
+int img2pixel_get_sample_mode(const I2P_state *s)
 {
-   return pixel_sample_mode;
+   return s->pixel_sample_mode;
 }
 
-void img2pixel_set_sample_mode(int nmode)
+void img2pixel_set_sample_mode(I2P_state *s, int nmode)
 {
-   pixel_sample_mode = nmode;
+   s->pixel_sample_mode = nmode;
 }
 
-int img2pixel_get_process_mode()
+int img2pixel_get_process_mode(const I2P_state *s)
 {
-   return pixel_process_mode;
+   return s->pixel_process_mode;
 }
 
-void img2pixel_set_process_mode(int nmode)
+void img2pixel_set_process_mode(I2P_state *s, int nmode)
 {
-   pixel_process_mode = nmode;
+   s->pixel_process_mode = nmode;
 }
 
-int img2pixel_get_distance_mode()
+int img2pixel_get_distance_mode(const I2P_state *s)
 {
-   return pixel_distance_mode;
+   return s->pixel_distance_mode;
 }
 
-void img2pixel_set_distance_mode(int nmode)
+void img2pixel_set_distance_mode(I2P_state *s, int nmode)
 {
-   pixel_distance_mode = nmode;
+   s->pixel_distance_mode = nmode;
 }
 
-int img2pixel_get_out_width()
+int img2pixel_get_out_width(const I2P_state *s)
 {
-   return image_out_width;
+   return s->image_out_width;
 }
 
-void img2pixel_set_out_width(int nwidth)
+void img2pixel_set_out_width(I2P_state *s, int nwidth)
 {
-   image_out_width = nwidth;
+   s->image_out_width = nwidth;
 }
 
-int img2pixel_get_out_height()
+int img2pixel_get_out_height(const I2P_state *s)
 {
-   return image_out_height;
+   return s->image_out_height;
 }
 
-void img2pixel_set_out_height(int nheight)
+void img2pixel_set_out_height(I2P_state *s, int nheight)
 {
-   image_out_height = nheight;
+   s->image_out_height = nheight;
 }
 
-int img2pixel_get_out_swidth()
+int img2pixel_get_out_swidth(const I2P_state *s)
 {
-   return image_out_swidth;
+   return s->image_out_swidth;
 }
 
-void img2pixel_set_out_swidth(int nwidth)
+void img2pixel_set_out_swidth(I2P_state *s, int nwidth)
 {
-   image_out_swidth = nwidth;
+   s->image_out_swidth = nwidth;
 }
 
-int img2pixel_get_out_sheight()
+int img2pixel_get_out_sheight(const I2P_state *s)
 {
-   return image_out_sheight;
+   return s->image_out_sheight;
 }
 
-void img2pixel_set_out_sheight(int nheight)
+void img2pixel_set_out_sheight(I2P_state *s, int nheight)
 {
-   image_out_sheight = nheight;
+   s->image_out_sheight = nheight;
 }
 
 //Helper function for lowpass_image
@@ -812,53 +820,56 @@ static SLK_Color kernel_data_get(int x, int y, int width, int height, const SLK_
 }
 
 //Dithers an image to the provided palette using the specified mode
-static void dither_image(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, int process_mode, int distance_mode)
+static void dither_image(I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, int process_mode, int distance_mode)
 {
    if(distance_mode==8)
    {
       switch(process_mode)
       {
       case 1: //Bayer 8x8
-         dither_threshold_apply(in,out,width,height,dither_threshold_bayer8x8,3);
+         dither_threshold_apply(s,in,out,width,height,dither_threshold_bayer8x8,3);
          break;
       case 2: //Bayer 4x4
-         dither_threshold_apply(in,out,width,height,dither_threshold_bayer4x4,2);
+         dither_threshold_apply(s,in,out,width,height,dither_threshold_bayer4x4,2);
          break;
       case 3: //Bayer 2x2
-         dither_threshold_apply(in,out,width,height,dither_threshold_bayer2x2,1);
+         dither_threshold_apply(s,in,out,width,height,dither_threshold_bayer2x2,1);
          break;
       case 4: //Cluster 8x8
-         dither_threshold_apply(in,out,width,height,dither_threshold_cluster8x8,3);
+         dither_threshold_apply(s,in,out,width,height,dither_threshold_cluster8x8,3);
          break;
       case 5: //Cluster4x4
-         dither_threshold_apply(in,out,width,height,dither_threshold_cluster4x4,2);
+         dither_threshold_apply(s,in,out,width,height,dither_threshold_cluster4x4,2);
          break;
       case 0:
       case 6:
       case 7:
-         dither_none_apply(in,out,width,height);
+         dither_none_apply(s,in,out,width,height);
          break;
       }
 
-      quant_k = palette->used;
+      s->quant_k = s->palette->used;
 
       SLK_RGB_sprite tmp;
       tmp.width = width;
       tmp.height = height;
       tmp.data = out;
-      quant_compute_kmeans(&tmp,1);
+      quant_compute_kmeans(s,&tmp,1);
 
       for(int i = 0;i<width*height;i++)
       {
          if(out[i].rgb.a==0)
             out[i] = SLK_color_create(0,0,0,0);
          else
-            out[i] = palette->colors[quant_assignment[i]];
+            out[i] = s->palette->colors[s->quant_assignment[i]];
       }
 
-      quant_cluster_list_free();
-      free(quant_centroid_list);
-      free(quant_assignment);
+      quant_cluster_list_free(s);
+      free(s->quant_centroid_list);
+      free(s->quant_assignment);
+      s->quant_cluster_list = NULL;
+      s->quant_centroid_list = NULL;
+      s->quant_assignment = NULL;
 
       return;
    }
@@ -899,41 +910,41 @@ static void dither_image(SLK_Color *in, SLK_Color *out, int width, int height, S
    switch(process_mode)
    {
    case 0: //No dithering
-      dither_none(in,out,width,height,pal,palette_d3,distance_mode);
+      dither_none(s,in,out,width,height,pal,palette_d3,distance_mode);
       break;
    case 1: //Bayer 8x8
-      dither_threshold(in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_bayer8x8,3);
+      dither_threshold(s,in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_bayer8x8,3);
       break;
    case 2: //Bayer 4x4
-      dither_threshold(in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_bayer4x4,2);
+      dither_threshold(s,in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_bayer4x4,2);
       break;
    case 3: //Bayer 2x2
-      dither_threshold(in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_bayer2x2,1);
+      dither_threshold(s,in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_bayer2x2,1);
       break;
    case 4: //Cluster 8x8
-      dither_threshold(in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_cluster8x8,3);
+      dither_threshold(s,in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_cluster8x8,3);
       break;
    case 5: //Cluster4x4
-      dither_threshold(in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_cluster4x4,2);
+      dither_threshold(s,in,out,width,height,pal,palette_d3,distance_mode,dither_threshold_cluster4x4,2);
       break;
    case 6: //Floyd-Steinberg dithering (per color component error)
-      dither_floyd(in,out,width,height,pal,palette_d3,distance_mode);
+      dither_floyd(s,in,out,width,height,pal,palette_d3,distance_mode);
       break;
    case 7: //Floyd-Steinberg dithering (distributed error)
-      dither_floyd2(in,out,width,height,pal,palette_d3,distance_mode);
+      dither_floyd2(s,in,out,width,height,pal,palette_d3,distance_mode);
       break;
    }
 }
 
-static void dither_none(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
+static void dither_none(I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       { 
          SLK_Color cin = in[y*width+x];
-         if(cin.rgb.a<alpha_threshold)
+         if(cin.rgb.a<s->alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -952,15 +963,15 @@ static void dither_none(SLK_Color *in, SLK_Color *out, int width, int height, SL
    }
 }
 
-static void dither_none_apply(SLK_Color *in, SLK_Color *out, int width, int height)
+static void dither_none_apply(I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height)
 {
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       { 
          SLK_Color cin = in[y*width+x];
-         if(cin.rgb.a<alpha_threshold)
+         if(cin.rgb.a<s->alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -979,17 +990,17 @@ static void dither_none_apply(SLK_Color *in, SLK_Color *out, int width, int heig
    }
 }
 
-static void dither_threshold(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode, const float *threshold, uint8_t dim)
+static void dither_threshold(I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode, const float *threshold, uint8_t dim)
 {
-   float amount = (float)dither_amount/1000.0f;
+   float amount = (float)s->dither_amount/1000.0f;
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       { 
          SLK_Color cin = in[y*width+x];
-         if(cin.rgb.a<alpha_threshold)
+         if(cin.rgb.a<s->alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -1010,17 +1021,17 @@ static void dither_threshold(SLK_Color *in, SLK_Color *out, int width, int heigh
    }
 }
 
-static void dither_threshold_apply(SLK_Color *in, SLK_Color *out, int width, int height, const float *threshold, uint8_t dim)
+static void dither_threshold_apply(I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, const float *threshold, uint8_t dim)
 {
-   float amount = (float)dither_amount/1000.0f;
+   float amount = (float)s->dither_amount/1000.0f;
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       { 
          SLK_Color cin = in[y*width+x];
-         if(cin.rgb.a<alpha_threshold)
+         if(cin.rgb.a<s->alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -1044,14 +1055,14 @@ static void dither_threshold_apply(SLK_Color *in, SLK_Color *out, int width, int
 //Applies Floyd-Steinberg dithering to the input
 //This version uses per color component errror values,
 //this usually does not work well with most palettes
-static void dither_floyd(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
+static void dither_floyd(I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
          SLK_Color cin = in[y*width+x];
-         if(cin.rgb.a<alpha_threshold)
+         if(cin.rgb.a<s->alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -1075,14 +1086,14 @@ static void dither_floyd(SLK_Color *in, SLK_Color *out, int width, int height, S
 //Applies Floyd-Steinberg dithering to the input
 //This version uses distributed error values,
 //this results in better results for most palettes
-static void dither_floyd2(SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
+static void dither_floyd2(I2P_state *s, SLK_Color *in, SLK_Color *out, int width, int height, SLK_Palette *pal, Color_d3 *pal_d3, int distance_mode)
 {
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
       {
          SLK_Color cin = in[y*width+x];
-         if(cin.rgb.a<alpha_threshold)
+         if(cin.rgb.a<s->alpha_threshold)
          {
             out[y*width+x] = SLK_color_create(0,0,0,0);
             continue;
@@ -1647,29 +1658,29 @@ static double color_dist2(Color_d3 a, Color_d3 b)
 }
 
 //Downsamples an image to the specified dimensions
-static void sample_image(const SLK_RGB_sprite *in, SLK_Color *out, int sample_mode, int width, int height)
+static void sample_image(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int sample_mode, int width, int height)
 {
    switch(sample_mode)
    {
-   case 0: sample_round(in,out,width,height); break;
-   case 1: sample_floor(in,out,width,height); break;
-   case 2: sample_ceil(in,out,width,height); break;
-   case 3: sample_linear(in,out,width,height); break;
-   case 4: sample_bicubic(in,out,width,height); break;
-   case 5: sample_lanczos(in,out,width,height); break;
+   case 0: sample_round(s,in,out,width,height); break;
+   case 1: sample_floor(s,in,out,width,height); break;
+   case 2: sample_ceil(s,in,out,width,height); break;
+   case 3: sample_linear(s,in,out,width,height); break;
+   case 4: sample_bicubic(s,in,out,width,height); break;
+   case 5: sample_lanczos(s,in,out,width,height); break;
    }
 }
 
 //Nearest neighbour sampling,
 //rounding the position
-static void sample_round(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
+static void sample_round(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    double w = (double)(in->width-1)/(double)width;
    double h = (double)(in->height-1)/(double)height;
-   double offx = (double)offset_x/100.0;
-   double offy = (double)offset_y/100.0;
+   double offx = (double)s->offset_x/100.0;
+   double offy = (double)s->offset_y/100.0;
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1684,14 +1695,14 @@ static void sample_round(const SLK_RGB_sprite *in, SLK_Color *out, int width, in
 
 //Nearest neighbour sampling,
 //flooring the position
-static void sample_floor(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
+static void sample_floor(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    double w = (double)(in->width-1)/(double)width;
    double h = (double)(in->height-1)/(double)height;
-   double offx = (double)offset_x/100.0;
-   double offy = (double)offset_y/100.0;
+   double offx = (double)s->offset_x/100.0;
+   double offy = (double)s->offset_y/100.0;
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1706,14 +1717,14 @@ static void sample_floor(const SLK_RGB_sprite *in, SLK_Color *out, int width, in
 
 //Nearest neighbour sampling,
 //ceiling the position
-static void sample_ceil(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
+static void sample_ceil(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    double w = (double)(in->width-1)/(double)width;
    double h = (double)(in->height-1)/(double)height;
-   double offx = (double)offset_x/100.0;
-   double offy = (double)offset_y/100.0;
+   double offx = (double)s->offset_x/100.0;
+   double offy = (double)s->offset_y/100.0;
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1727,14 +1738,14 @@ static void sample_ceil(const SLK_RGB_sprite *in, SLK_Color *out, int width, int
 }
 
 //Bilinear sampling
-static void sample_linear(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
+static void sample_linear(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
-   float foffx = (float)offset_x/100.0f;
-   float foffy = (float)offset_y/100.0f;
+   float foffx = (float)s->offset_x/100.0f;
+   float foffy = (float)s->offset_y/100.0f;
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1780,14 +1791,14 @@ static void sample_linear(const SLK_RGB_sprite *in, SLK_Color *out, int width, i
 }
 
 //Bicubic sampling
-static void sample_bicubic(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
+static void sample_bicubic(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    float fw = (float)(in->width-1)/(float)width;
    float fh = (float)(in->height-1)/(float)height;
-   float foffx = (float)offset_x/100.0f;
-   float foffy = (float)offset_y/100.0f;
+   float foffx = (float)s->offset_x/100.0f;
+   float foffy = (float)s->offset_y/100.0f;
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1869,14 +1880,14 @@ static float cubic_hermite (float a, float b, float c, float d, float t)
 }
 
 //Lanczos downsampling
-static void sample_lanczos(const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
+static void sample_lanczos(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *out, int width, int height)
 {
    double fw = (double)(in->width-1)/(double)width;
    double fh = (double)(in->height-1)/(double)height;
-   float foffx = (float)offset_x/100.0f;
-   float foffy = (float)offset_y/100.0f;
+   float foffx = (float)s->offset_x/100.0f;
+   float foffy = (float)s->offset_y/100.0f;
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -1941,61 +1952,61 @@ static double lanczos(double v)
    return ((3.0f*sin(M_PI*v)*sin(M_PI*v/3.0f))/(M_PI*M_PI*v*v));
 }
 
-static void quant_cluster_list_init()
+static void quant_cluster_list_init(I2P_state *s)
 {
-   quant_cluster_list_free(quant_k);
+   quant_cluster_list_free(s);
    
-   quant_cluster_list = malloc(sizeof(*quant_cluster_list)*quant_k);
-   for(int i = 0;i<quant_k;i++)
-      dyn_array_init(SLK_Color,&quant_cluster_list[i],2);
+   s->quant_cluster_list = malloc(sizeof(*s->quant_cluster_list)*s->quant_k);
+   for(int i = 0;i<s->quant_k;i++)
+      dyn_array_init(SLK_Color,&s->quant_cluster_list[i],2);
 }
 
-static void quant_cluster_list_free()
+static void quant_cluster_list_free(I2P_state *s)
 {
-   if(quant_cluster_list==NULL)
+   if(s->quant_cluster_list==NULL)
       return;
 
-   for(int i = 0;i<quant_k;i++)
-      dyn_array_free(SLK_Color,&quant_cluster_list[i]);
+   for(int i = 0;i<s->quant_k;i++)
+      dyn_array_free(SLK_Color,&s->quant_cluster_list[i]);
 
-   free(quant_cluster_list);
-   quant_cluster_list = NULL;
+   free(s->quant_cluster_list);
+   s->quant_cluster_list = NULL;
 }
 
-static void quant_compute_kmeans(SLK_RGB_sprite *data, int pal_in)
+static void quant_compute_kmeans(I2P_state *s, SLK_RGB_sprite *data, int pal_in)
 {
-   quant_cluster_list_init();
-   quant_centroid_list = malloc(sizeof(*quant_centroid_list)*quant_k);
-   quant_assignment = malloc(sizeof(*quant_assignment)*(data->width*data->height));
-   memset(quant_assignment,0,sizeof(*quant_assignment)*data->width*data->height);
+   quant_cluster_list_init(s);
+   s->quant_centroid_list = malloc(sizeof(*s->quant_centroid_list)*s->quant_k);
+   s->quant_assignment = malloc(sizeof(*s->quant_assignment)*(data->width*data->height));
+   memset(s->quant_assignment,0,sizeof(*s->quant_assignment)*data->width*data->height);
 
    int iter = 0;
    int max_iter = 16;
    //if(pal_in)
       //max_iter = 2;
-   double *previous_variance = malloc(sizeof(*previous_variance)*quant_k);
+   double *previous_variance = malloc(sizeof(*previous_variance)*s->quant_k);
    double variance = 0.0;
    double delta = 0.0;
    double delta_max = 0.0;
    double threshold = 0.00005;
-   for(int i = 0;i<quant_k;i++)
+   for(int i = 0;i<s->quant_k;i++)
       previous_variance[i] = 1.0;
 
    for(;;)
    {
-      quant_get_cluster_centroid(data,pal_in,1<<palette_weight);
-      quant_cluster_list_init();
+      quant_get_cluster_centroid(s,data,pal_in,1<<(s->palette_weight));
+      quant_cluster_list_init(s);
       for(int i = 0;i<data->width*data->height;i++)
       {
          SLK_Color color = data->data[i];
-         quant_assignment[i] = quant_nearest_color_idx(color,quant_centroid_list);
-         dyn_array_add(SLK_Color,&quant_cluster_list[quant_assignment[i]],1,color);
+         s->quant_assignment[i] = quant_nearest_color_idx(s,color,s->quant_centroid_list);
+         dyn_array_add(SLK_Color,&s->quant_cluster_list[s->quant_assignment[i]],1,color);
       }
 
       delta_max = 0.0;
-      for(int i = 0;i<quant_k;i++)
+      for(int i = 0;i<s->quant_k;i++)
       {
-         variance = quant_colors_variance(&quant_cluster_list[i]);
+         variance = quant_colors_variance(&s->quant_cluster_list[i]);
          delta = fabs(previous_variance[i]-variance);
          delta_max = MAX(delta,delta_max);
          previous_variance[i] = variance;
@@ -2008,23 +2019,23 @@ static void quant_compute_kmeans(SLK_RGB_sprite *data, int pal_in)
    free(previous_variance);
 }
 
-static void quant_get_cluster_centroid(SLK_RGB_sprite *data, int pal_in, int weight_pal)
+static void quant_get_cluster_centroid(I2P_state *s, SLK_RGB_sprite *data, int pal_in, int weight_pal)
 {
-   for(int i = 0;i<quant_k;i++)
+   for(int i = 0;i<s->quant_k;i++)
    {
-      if(quant_cluster_list[i].used>0)
+      if(s->quant_cluster_list[i].used>0)
       {
          if(pal_in)
-            quant_centroid_list[i] = quant_colors_mean(&quant_cluster_list[i],palette->colors[i],weight_pal);
+            s->quant_centroid_list[i] = quant_colors_mean(&s->quant_cluster_list[i],s->palette->colors[i],weight_pal);
          else
-            quant_centroid_list[i] = quant_colors_mean(&quant_cluster_list[i],SLK_color_create(0,0,0,0),0);
+            s->quant_centroid_list[i] = quant_colors_mean(&s->quant_cluster_list[i],SLK_color_create(0,0,0,0),0);
       }
       else
       {
          if(pal_in)
-            quant_centroid_list[i] = palette->colors[i];
+            s->quant_centroid_list[i] = s->palette->colors[i];
          else
-            quant_centroid_list[i] = quant_pick_random_color(data);
+            s->quant_centroid_list[i] = quant_pick_random_color(data);
       }
    }
 }
@@ -2062,12 +2073,12 @@ static SLK_Color quant_pick_random_color(SLK_RGB_sprite *data)
    return data->data[(int)(((double)rand()/(double)RAND_MAX)*data->width*data->height)];
 }
 
-static int quant_nearest_color_idx(SLK_Color color, SLK_Color *color_list)
+static int quant_nearest_color_idx(I2P_state *s, SLK_Color color, SLK_Color *color_list)
 {
    double dist_min = 0xfff;
    double dist = 0.0;
    int idx = 0;
-   for(int i = 0;i<quant_k;i++)
+   for(int i = 0;i<s->quant_k;i++)
    {
       dist = quant_distance(color,color_list[i]);
       if(dist<dist_min)
@@ -2109,12 +2120,12 @@ static double quant_colors_variance(dyn_array *color_list)
    return dist_sum/(double)length;
 }
 
-static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
+static void post_process_image(I2P_state *s, const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 {
    SLK_RGB_sprite *tmp = SLK_rgb_sprite_create(in->width,in->height);
    SLK_rgb_sprite_copy(tmp,in);
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int y = 0;y<in->height;y++)
    {
       for(int x = 0;x<in->width;x++)
@@ -2122,7 +2133,7 @@ static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
          int empty = 0;
 
          //Inline
-         if(image_inline>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).rgb.a!=0)
+         if(s->image_inline>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).rgb.a!=0)
          {
             if(SLK_rgb_sprite_get_pixel(tmp,x,y-1).rgb.a==0) empty++;
             if(SLK_rgb_sprite_get_pixel(tmp,x-1,y).rgb.a==0) empty++;
@@ -2130,11 +2141,11 @@ static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
             if(SLK_rgb_sprite_get_pixel(tmp,x,y+1).rgb.a==0) empty++;
 
             if(empty!=0)
-               SLK_rgb_sprite_set_pixel(out,x,y,palette->colors[image_inline]);
+               SLK_rgb_sprite_set_pixel(out,x,y,s->palette->colors[s->image_inline]);
          }
          
          //Outline
-         if(image_outline>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).rgb.a==0)
+         if(s->image_outline>=0&&SLK_rgb_sprite_get_pixel(tmp,x,y).rgb.a==0)
          {
             if(SLK_rgb_sprite_get_pixel(tmp,x,y-1).rgb.a!=0) empty++;
             if(SLK_rgb_sprite_get_pixel(tmp,x-1,y).rgb.a!=0) empty++;
@@ -2142,7 +2153,7 @@ static void post_process_image(const SLK_RGB_sprite *in, SLK_RGB_sprite *out)
             if(SLK_rgb_sprite_get_pixel(tmp,x,y+1).rgb.a!=0) empty++;
 
             if(empty!=0)
-               SLK_rgb_sprite_set_pixel(out,x,y,palette->colors[image_outline]);
+               SLK_rgb_sprite_set_pixel(out,x,y,s->palette->colors[s->image_outline]);
          }
       }
    }

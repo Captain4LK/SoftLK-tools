@@ -19,9 +19,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#include "image2pixel.h"
 #include "utility.h"
 #include "assets.h"
-#include "image2pixel.h"
 //-------------------------------------
 
 //#defines
@@ -36,6 +36,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 static SLK_RGB_sprite *sprite_in = NULL;
 static const char *path_out = NULL;
 static const char *path_out_pal = NULL;
+static I2P_state state;
 //-------------------------------------
 
 //Function prototypes
@@ -48,7 +49,8 @@ static void parse_option(const char *name, const char *value);
 int main(int argc, char **argv)
 {
    //Load default palette
-   img2pixel_set_palette(assets_load_pal_default());
+   img2pixel_state_init(&state);
+   img2pixel_set_palette(&state,assets_load_pal_default());
 
    //parse args
    for(int i = 1;i<argc;i++)
@@ -74,14 +76,14 @@ int main(int argc, char **argv)
       else if(strcmp(argv[i],"-fpre")==0)
       {
          FILE *f = fopen(READ_ARG(i),"r");
-         img2pixel_preset_load(f);
+         img2pixel_preset_load(&state,f);
          fclose(f);
       }
       else if(strcmp(argv[i],"-quantize")==0)
       {
          const char *next = READ_ARG(i);
          int colors = atoi(next);
-         img2pixel_quantize(colors,sprite_in);
+         img2pixel_quantize(&state,colors,sprite_in);
       }
       else if(strcmp(argv[i],"-set")==0)
       {
@@ -103,29 +105,29 @@ int main(int argc, char **argv)
    }
 
    //process image
-   img2pixel_lowpass_image(sprite_in,sprite_in);
-   img2pixel_sharpen_image(sprite_in,sprite_in);
+   img2pixel_lowpass_image(&state,sprite_in,sprite_in);
+   img2pixel_sharpen_image(&state,sprite_in,sprite_in);
    int width;
    int height;
-   if(img2pixel_get_scale_mode()==0)
+   if(img2pixel_get_scale_mode(&state)==0)
    {
-      width = img2pixel_get_out_width();
-      height = img2pixel_get_out_height();
+      width = img2pixel_get_out_width(&state);
+      height = img2pixel_get_out_height(&state);
    }
    else
    {
-      width = sprite_in->width/img2pixel_get_out_swidth();
-      height = sprite_in->height/img2pixel_get_out_sheight();
+      width = sprite_in->width/img2pixel_get_out_swidth(&state);
+      height = sprite_in->height/img2pixel_get_out_sheight(&state);
    }
    SLK_RGB_sprite *out = SLK_rgb_sprite_create(width,height);
-   img2pixel_process_image(sprite_in,out);
+   img2pixel_process_image(&state,sprite_in,out);
 
    //Write image to output path
-   image_save(path_out,out,img2pixel_get_palette());
+   image_save(path_out,out,img2pixel_get_palette(&state));
 
    //Write palette to output path, if specified
    if(path_out_pal!=NULL)
-      SLK_palette_save(path_out_pal,img2pixel_get_palette());
+      SLK_palette_save(path_out_pal,img2pixel_get_palette(&state));
 
    return 0;
 }
@@ -171,49 +173,49 @@ static void print_help(int argc, char **argv)
 static void parse_option(const char *name, const char *value)
 {
    if(strcmp(name,"brightness")==0)
-      img2pixel_set_brightness(atoi(value));
+      img2pixel_set_brightness(&state,atoi(value));
    else if(strcmp(name,"contrast")==0)
-      img2pixel_set_contrast(atoi(value));
+      img2pixel_set_contrast(&state,atoi(value));
    else if(strcmp(name,"gamma")==0)
-      img2pixel_set_gamma(atoi(value));
+      img2pixel_set_gamma(&state,atoi(value));
    else if(strcmp(name,"saturation")==0)
-      img2pixel_set_saturation(atoi(value));
+      img2pixel_set_saturation(&state,atoi(value));
    else if(strcmp(name,"sharpen")==0)
-      img2pixel_set_sharpen(atoi(value));
+      img2pixel_set_sharpen(&state,atoi(value));
    else if(strcmp(name,"hue")==0)
-      img2pixel_set_hue(atoi(value));
+      img2pixel_set_hue(&state,atoi(value));
    else if(strcmp(name,"dither")==0)
-      img2pixel_set_dither_amount(atoi(value));
+      img2pixel_set_dither_amount(&state,atoi(value));
    else if(strcmp(name,"alpha_threshold")==0)
-      img2pixel_set_alpha_threshold(atoi(value));
+      img2pixel_set_alpha_threshold(&state,atoi(value));
    else if(strcmp(name,"gauss")==0)
-      img2pixel_set_gauss(atoi(value));
+      img2pixel_set_gauss(&state,atoi(value));
    else if(strcmp(name,"palette")==0)
-      img2pixel_set_palette(palette_load(value));
+      img2pixel_set_palette(&state,palette_load(value));
    else if(strcmp(name,"scale_mode")==0)
-      img2pixel_set_scale_mode(atoi(value));
+      img2pixel_set_scale_mode(&state,atoi(value));
    else if(strcmp(name,"sample_mode")==0)
-      img2pixel_set_sample_mode(atoi(value));
+      img2pixel_set_sample_mode(&state,atoi(value));
    else if(strcmp(name,"dither_mode")==0)
-      img2pixel_set_process_mode(atoi(value));
+      img2pixel_set_process_mode(&state,atoi(value));
    else if(strcmp(name,"distance_mode")==0)
-      img2pixel_set_distance_mode(atoi(value));
+      img2pixel_set_distance_mode(&state,atoi(value));
    else if(strcmp(name,"width")==0)
-      img2pixel_set_out_width(atoi(value));
+      img2pixel_set_out_width(&state,atoi(value));
    else if(strcmp(name,"height")==0)
-      img2pixel_set_out_height(atoi(value));
+      img2pixel_set_out_height(&state,atoi(value));
    else if(strcmp(name,"scale_x")==0)
-      img2pixel_set_out_swidth(atoi(value));
+      img2pixel_set_out_swidth(&state,atoi(value));
    else if(strcmp(name,"scale_y")==0)
-      img2pixel_set_out_sheight(atoi(value));
+      img2pixel_set_out_sheight(&state,atoi(value));
    else if(strcmp(name,"offset_x")==0)
-      img2pixel_set_offset_x(atoi(value));
+      img2pixel_set_offset_x(&state,atoi(value));
    else if(strcmp(name,"offset_y")==0)
-      img2pixel_set_offset_y(atoi(value));
+      img2pixel_set_offset_y(&state,atoi(value));
    else if(strcmp(name,"inline")==0)
-      img2pixel_set_inline(atoi(value));
+      img2pixel_set_inline(&state,atoi(value));
    else if(strcmp(name,"outline")==0)
-      img2pixel_set_outline(atoi(value));
+      img2pixel_set_outline(&state,atoi(value));
    else if(strcmp(name,"upscale")==0)
       upscale = atoi(value);
 }

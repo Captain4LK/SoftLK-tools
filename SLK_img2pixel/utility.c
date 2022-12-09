@@ -28,8 +28,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
-#include "utility.h"
 #include "image2pixel.h"
+#include "utility.h"
 //-------------------------------------
 
 //#defines
@@ -308,7 +308,7 @@ void dir_input_select()
    strcpy(input_dir,path);
 }
 
-void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal)
+void dir_output_select(I2P_state *s, int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal)
 {
    const char *path = tinyfd_selectFolderDialog("Select output directory",path_dir_output);
 
@@ -338,13 +338,13 @@ void dir_output_select(int dither_mode, int sample_mode, int distance_mode, int 
             char tmp[516];
             sprintf(tmp,"%s/%s",input_dir,file.name);
             SLK_RGB_sprite *in = image_load(tmp);
-            img2pixel_lowpass_image(in,in);
-            img2pixel_sharpen_image(in,in);
+            img2pixel_lowpass_image(s,in,in);
+            img2pixel_sharpen_image(s,in,in);
             if(in!=NULL)
             {
                if(scale_mode==1)
                   out = SLK_rgb_sprite_create(in->width/width,in->height/height);
-               img2pixel_process_image(in,out);
+               img2pixel_process_image(s,in,out);
 
                char name[512];
                path_pop_ext(file.name,name,NULL);

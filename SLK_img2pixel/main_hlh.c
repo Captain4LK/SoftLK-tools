@@ -17,9 +17,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
-#include "utility.h"
 #include "assets.h"
 #include "image2pixel.h"
+#include "utility.h"
 //-------------------------------------
 
 //#defines
@@ -307,6 +307,7 @@ struct
 static SLK_RGB_sprite *sprite_in = NULL;
 static SLK_RGB_sprite *sprite_in_org = NULL;
 static SLK_RGB_sprite *sprite_out = NULL;
+static I2P_state state;
 
 static const char *text_space[] = 
 {
@@ -366,7 +367,8 @@ int main(int argc, char **argv)
    atexit(utility_exit);
 
    assets_init();
-   img2pixel_set_palette(assets_load_pal_default());
+   img2pixel_state_init(&state);
+   img2pixel_set_palette(&state,assets_load_pal_default());
 
    //Construct gui
    HLH_gui_init();
@@ -870,7 +872,7 @@ int main(int argc, char **argv)
    //-------------------------------------
 
    palette_draw();
-   HLH_gui_slider_set_value(settings.colors,img2pixel_get_palette()->used);
+   HLH_gui_slider_set_value(settings.colors,img2pixel_get_palette(&state)->used);
    //-------------------------------------
 
    //Load default json
@@ -891,15 +893,15 @@ static void update_output()
       return;
    int width;
    int height;
-   if(img2pixel_get_scale_mode()==0)
+   if(img2pixel_get_scale_mode(&state)==0)
    {
-      width = img2pixel_get_out_width();
-      height = img2pixel_get_out_height();
+      width = img2pixel_get_out_width(&state);
+      height = img2pixel_get_out_height(&state);
    }
    else
    {
-      width = sprite_in->width/img2pixel_get_out_swidth();
-      height = sprite_in->height/img2pixel_get_out_sheight();
+      width = sprite_in->width/img2pixel_get_out_swidth(&state);
+      height = sprite_in->height/img2pixel_get_out_sheight(&state);
    }
 
    if(sprite_out==NULL||sprite_out->width!=width||sprite_out->height!=height)
@@ -911,7 +913,7 @@ static void update_output()
    if(sprite_in==NULL)
       return;
 
-   img2pixel_process_image(sprite_in,sprite_out);
+   img2pixel_process_image(&state,sprite_in,sprite_out);
 
    HLH_gui_image_update(preview.img_out,sprite_out->width,sprite_out->height,(uint32_t *)sprite_out->data);
 }
@@ -930,8 +932,8 @@ static int win_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          sprite_in = sprite_new;
          sprite_in_org = SLK_rgb_sprite_create(sprite_in->width,sprite_in->height);
          SLK_rgb_sprite_copy(sprite_in_org,sprite_in);
-         img2pixel_lowpass_image(sprite_in_org,sprite_in);
-         img2pixel_sharpen_image(sprite_in,sprite_in);
+         img2pixel_lowpass_image(&state,sprite_in_org,sprite_in);
+         img2pixel_sharpen_image(&state,sprite_in,sprite_in);
 
          HLH_gui_image_update(preview.img_in,sprite_in_org->width,sprite_in_org->height,(uint32_t *)sprite_in_org->data);
 
@@ -964,8 +966,8 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
             sprite_in = sprite_new;
             sprite_in_org = SLK_rgb_sprite_create(sprite_in->width,sprite_in->height);
             SLK_rgb_sprite_copy(sprite_in_org,sprite_in);
-            img2pixel_lowpass_image(sprite_in_org,sprite_in);
-            img2pixel_sharpen_image(sprite_in,sprite_in);
+            img2pixel_lowpass_image(&state,sprite_in_org,sprite_in);
+            img2pixel_sharpen_image(&state,sprite_in,sprite_in);
 
             HLH_gui_image_update(preview.img_in,sprite_in_org->width,sprite_in_org->height,(uint32_t *)sprite_in_org->data);
 
@@ -974,7 +976,7 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       }
       else if(b==settings.save_img)
       {
-         image_write(sprite_out,img2pixel_get_palette());
+         image_write(sprite_out,img2pixel_get_palette(&state));
       }
       else if(b==settings.load_pre)
       {
@@ -988,7 +990,7 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          FILE *f = json_write();
          if(f!=NULL)
          {
-            img2pixel_preset_save(f);
+            img2pixel_preset_save(&state,f);
             fclose(f);
          }
       }
@@ -998,10 +1000,10 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       }
       else if(b==settings.dir_out)
       {
-         if(img2pixel_get_scale_mode()==0)
-            dir_output_select(img2pixel_get_process_mode(),img2pixel_get_sample_mode(),img2pixel_get_distance_mode(),img2pixel_get_scale_mode(),img2pixel_get_out_width(),img2pixel_get_out_height(),img2pixel_get_palette());
+         if(img2pixel_get_scale_mode(&state)==0)
+            dir_output_select(&state,img2pixel_get_process_mode(&state),img2pixel_get_sample_mode(&state),img2pixel_get_distance_mode(&state),img2pixel_get_scale_mode(&state),img2pixel_get_out_width(&state),img2pixel_get_out_height(&state),img2pixel_get_palette(&state));
          else
-            dir_output_select(img2pixel_get_process_mode(),img2pixel_get_sample_mode(),img2pixel_get_distance_mode(),img2pixel_get_scale_mode(),img2pixel_get_out_swidth(),img2pixel_get_out_sheight(),img2pixel_get_palette());
+            dir_output_select(&state,img2pixel_get_process_mode(&state),img2pixel_get_sample_mode(&state),img2pixel_get_distance_mode(&state),img2pixel_get_scale_mode(&state),img2pixel_get_out_swidth(&state),img2pixel_get_out_sheight(&state),img2pixel_get_palette(&state));
       }
 
       //Palette
@@ -1018,22 +1020,22 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          SLK_Palette *p = palette_select();
          if(p!=NULL)
          {
-            if(img2pixel_get_palette())
-               free(img2pixel_get_palette());
-            img2pixel_set_palette(p);
+            if(img2pixel_get_palette(&state))
+               free(img2pixel_get_palette(&state));
+            img2pixel_set_palette(&state,p);
             palette_draw();
-            HLH_gui_slider_set_value(settings.colors,img2pixel_get_palette()->used);
+            HLH_gui_slider_set_value(settings.colors,img2pixel_get_palette(&state)->used);
 
             update_output();
          }
       }
       else if(b==settings.save_pal)
       {
-         palette_write(img2pixel_get_palette());
+         palette_write(img2pixel_get_palette(&state));
       }
       else if(b==settings.gen_pal)
       {
-         img2pixel_quantize(img2pixel_get_palette()->used,sprite_in_org);
+         img2pixel_quantize(&state,img2pixel_get_palette(&state)->used,sprite_in_org);
          palette_draw();
 
          update_output();
@@ -1056,18 +1058,18 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(b==settings.gauss_plus) { HLH_gui_slider_set_value(settings.gauss,settings.gauss->value+1); }
       else if(b==settings.sample_left)
       {
-         img2pixel_set_sample_mode(img2pixel_get_sample_mode()-1);
-         if(img2pixel_get_sample_mode()<0)
-            img2pixel_set_sample_mode(5);
-         HLH_gui_label_set_text(settings.sample,text_sample[img2pixel_get_sample_mode()],-1);
+         img2pixel_set_sample_mode(&state,img2pixel_get_sample_mode(&state)-1);
+         if(img2pixel_get_sample_mode(&state)<0)
+            img2pixel_set_sample_mode(&state,5);
+         HLH_gui_label_set_text(settings.sample,text_sample[img2pixel_get_sample_mode(&state)],-1);
          update_output();
       }
       else if(b==settings.sample_right)
       {
-         img2pixel_set_sample_mode(img2pixel_get_sample_mode()+1);
-         if(img2pixel_get_sample_mode()>5)
-            img2pixel_set_sample_mode(0);
-         HLH_gui_label_set_text(settings.sample,text_sample[img2pixel_get_sample_mode()],-1);
+         img2pixel_set_sample_mode(&state,img2pixel_get_sample_mode(&state)+1);
+         if(img2pixel_get_sample_mode(&state)>5)
+            img2pixel_set_sample_mode(&state,0);
+         HLH_gui_label_set_text(settings.sample,text_sample[img2pixel_get_sample_mode(&state)],-1);
          update_output();
       }
 
@@ -1080,70 +1082,70 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(b==settings.weight_plus) { HLH_gui_slider_set_value(settings.weight,settings.weight->value+1); }
       else if(b==settings.dither_left)
       {
-         img2pixel_set_process_mode(img2pixel_get_process_mode()-1);
-         if(img2pixel_get_process_mode()<0)
-            img2pixel_set_process_mode(7);
+         img2pixel_set_process_mode(&state,img2pixel_get_process_mode(&state)-1);
+         if(img2pixel_get_process_mode(&state)<0)
+            img2pixel_set_process_mode(&state,7);
 
-         if(img2pixel_get_process_mode()==6||img2pixel_get_process_mode()==7||img2pixel_get_process_mode()==0)
+         if(img2pixel_get_process_mode(&state)==6||img2pixel_get_process_mode(&state)==7||img2pixel_get_process_mode(&state)==0)
             settings.panel43->e.flags|=HLH_GUI_INVISIBLE;
          else
             settings.panel43->e.flags&=~HLH_GUI_INVISIBLE;
          HLH_gui_element_repaint(&settings.panel43->e,NULL);
 
          update_output();
-         HLH_gui_label_set_text(settings.dither,text_dither[img2pixel_get_process_mode()],-1);
+         HLH_gui_label_set_text(settings.dither,text_dither[img2pixel_get_process_mode(&state)],-1);
       }
       else if(b==settings.dither_right)
       {
-         img2pixel_set_process_mode(img2pixel_get_process_mode()+1);
-         if(img2pixel_get_process_mode()>7)
-            img2pixel_set_process_mode(0);
+         img2pixel_set_process_mode(&state,img2pixel_get_process_mode(&state)+1);
+         if(img2pixel_get_process_mode(&state)>7)
+            img2pixel_set_process_mode(&state,0);
 
-         if(img2pixel_get_process_mode()==6||img2pixel_get_process_mode()==7||img2pixel_get_process_mode()==0)
+         if(img2pixel_get_process_mode(&state)==6||img2pixel_get_process_mode(&state)==7||img2pixel_get_process_mode(&state)==0)
             settings.panel43->e.flags|=HLH_GUI_INVISIBLE;
          else
             settings.panel43->e.flags&=~HLH_GUI_INVISIBLE;
          HLH_gui_element_repaint(&settings.panel43->e,NULL);
 
          update_output();
-         HLH_gui_label_set_text(settings.dither,text_dither[img2pixel_get_process_mode()],-1);
+         HLH_gui_label_set_text(settings.dither,text_dither[img2pixel_get_process_mode(&state)],-1);
       }
       else if(b==settings.dist_left)
       {
-         img2pixel_set_distance_mode(img2pixel_get_distance_mode()-1);;
-         if(img2pixel_get_distance_mode()<0)
-            img2pixel_set_distance_mode(8);
+         img2pixel_set_distance_mode(&state,img2pixel_get_distance_mode(&state)-1);;
+         if(img2pixel_get_distance_mode(&state)<0)
+            img2pixel_set_distance_mode(&state,8);
 
-         if(img2pixel_get_distance_mode()==8)
+         if(img2pixel_get_distance_mode(&state)==8)
             settings.panel48->e.flags&=~HLH_GUI_INVISIBLE;
          else
             settings.panel48->e.flags|=HLH_GUI_INVISIBLE;
          HLH_gui_element_repaint(&settings.panel48->e,NULL);
 
          update_output();
-         HLH_gui_label_set_text(settings.dist,text_space[img2pixel_get_distance_mode()],-1);
+         HLH_gui_label_set_text(settings.dist,text_space[img2pixel_get_distance_mode(&state)],-1);
       }
       else if(b==settings.dist_right)
       {
-         img2pixel_set_distance_mode(img2pixel_get_distance_mode()+1);;
-         if(img2pixel_get_distance_mode()>8)
-            img2pixel_set_distance_mode(0);
+         img2pixel_set_distance_mode(&state,img2pixel_get_distance_mode(&state)+1);;
+         if(img2pixel_get_distance_mode(&state)>8)
+            img2pixel_set_distance_mode(&state,0);
 
-         if(img2pixel_get_distance_mode()==8)
+         if(img2pixel_get_distance_mode(&state)==8)
             settings.panel48->e.flags&=~HLH_GUI_INVISIBLE;
          else
             settings.panel48->e.flags|=HLH_GUI_INVISIBLE;
          HLH_gui_element_repaint(&settings.panel48->e,NULL);
 
          update_output();
-         HLH_gui_label_set_text(settings.dist,text_space[img2pixel_get_distance_mode()],-1);
+         HLH_gui_label_set_text(settings.dist,text_space[img2pixel_get_distance_mode(&state)],-1);
       }
       else if(b==settings.tick_inline)
       {
          if(b->text[0]==' ')
-            img2pixel_set_inline(img2pixel_get_inline()+256);
+            img2pixel_set_inline(&state,img2pixel_get_inline(&state)+256);
          else
-            img2pixel_set_inline(img2pixel_get_inline()-256);
+            img2pixel_set_inline(&state,img2pixel_get_inline(&state)-256);
          b->text[0] = (b->text[0]==' ')?'X':' ';
          update_output();
          HLH_gui_element_repaint(e,NULL);
@@ -1151,27 +1153,27 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(b==settings.tick_outline)
       {
          if(b->text[0]==' ')
-            img2pixel_set_outline(img2pixel_get_outline()+256);
+            img2pixel_set_outline(&state,img2pixel_get_outline(&state)+256);
          else
-            img2pixel_set_outline(img2pixel_get_outline()-256);
+            img2pixel_set_outline(&state,img2pixel_get_outline(&state)-256);
          b->text[0] = (b->text[0]==' ')?'X':' ';
          update_output();
          HLH_gui_element_repaint(e,NULL);
       }
       else if(b==settings.inline_set)
       {
-         if(img2pixel_get_inline()<0)
-            img2pixel_set_inline(settings.pal4->selected-256);
+         if(img2pixel_get_inline(&state)<0)
+            img2pixel_set_inline(&state,settings.pal4->selected-256);
          else
-            img2pixel_set_inline(settings.pal4->selected);
+            img2pixel_set_inline(&state,settings.pal4->selected);
          update_output();
       }
       else if(b==settings.outline_set)
       {
-         if(img2pixel_get_outline()<0)
-            img2pixel_set_outline(settings.pal4->selected-256);
+         if(img2pixel_get_outline(&state)<0)
+            img2pixel_set_outline(&state,settings.pal4->selected-256);
          else
-            img2pixel_set_outline(settings.pal4->selected);
+            img2pixel_set_outline(&state,settings.pal4->selected);
          update_output();
       }
 
@@ -1205,46 +1207,46 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       if(s==settings.upscale) { sprintf(tmp,"%2d",settings.upscale->value); HLH_gui_label_set_text(settings.label11,tmp,-1); upscale = settings.upscale->value; }
 
       //Palette
-      else if(s==settings.red) { sprintf(tmp,"%4d",settings.red->value); HLH_gui_label_set_text(settings.label222,tmp,-1); img2pixel_get_palette()->colors[settings.pal2->selected].rgb.r = settings.red->value; palette_draw(); update_output(); }
-      else if(s==settings.green) { sprintf(tmp,"%4d",settings.green->value); HLH_gui_label_set_text(settings.label232,tmp,-1); img2pixel_get_palette()->colors[settings.pal2->selected].rgb.g = settings.green->value; palette_draw(); update_output(); }
-      else if(s==settings.blue) { sprintf(tmp,"%4d",settings.blue->value); HLH_gui_label_set_text(settings.label242,tmp,-1); img2pixel_get_palette()->colors[settings.pal2->selected].rgb.b = settings.blue->value; palette_draw(); update_output(); }
-      else if(s==settings.colors) { sprintf(tmp,"%4d",settings.colors->value); HLH_gui_label_set_text(settings.label252,tmp,-1); img2pixel_get_palette()->used = settings.colors->value; update_output(); }
+      else if(s==settings.red) { sprintf(tmp,"%4d",settings.red->value); HLH_gui_label_set_text(settings.label222,tmp,-1); img2pixel_get_palette(&state)->colors[settings.pal2->selected].rgb.r = settings.red->value; palette_draw(); update_output(); }
+      else if(s==settings.green) { sprintf(tmp,"%4d",settings.green->value); HLH_gui_label_set_text(settings.label232,tmp,-1); img2pixel_get_palette(&state)->colors[settings.pal2->selected].rgb.g = settings.green->value; palette_draw(); update_output(); }
+      else if(s==settings.blue) { sprintf(tmp,"%4d",settings.blue->value); HLH_gui_label_set_text(settings.label242,tmp,-1); img2pixel_get_palette(&state)->colors[settings.pal2->selected].rgb.b = settings.blue->value; palette_draw(); update_output(); }
+      else if(s==settings.colors) { sprintf(tmp,"%4d",settings.colors->value); HLH_gui_label_set_text(settings.label252,tmp,-1); img2pixel_get_palette(&state)->used = settings.colors->value; update_output(); }
 
       //Sample
-      else if(s==settings.width) { sprintf(tmp,"%4d",settings.width->value); HLH_gui_label_set_text(settings.label312,tmp,-1); img2pixel_set_out_width(settings.width->value); update_output(); }
-      else if(s==settings.height) { sprintf(tmp,"%4d",settings.height->value); HLH_gui_label_set_text(settings.label322,tmp,-1); img2pixel_set_out_height(settings.height->value); update_output(); }
-      else if(s==settings.xdiv) { sprintf(tmp,"%4d",settings.xdiv->value); HLH_gui_label_set_text(settings.label342,tmp,-1); img2pixel_set_out_swidth(settings.xdiv->value); update_output(); }
-      else if(s==settings.ydiv) { sprintf(tmp,"%4d",settings.ydiv->value); HLH_gui_label_set_text(settings.label352,tmp,-1); img2pixel_set_out_sheight(settings.ydiv->value); update_output(); }
-      else if(s==settings.xoff) { sprintf(tmp,"%4d",settings.xoff->value); HLH_gui_label_set_text(settings.label372,tmp,-1); img2pixel_set_offset_x(settings.xoff->value); update_output(); }
-      else if(s==settings.yoff) { sprintf(tmp,"%4d",settings.yoff->value); HLH_gui_label_set_text(settings.label382,tmp,-1); img2pixel_set_offset_y(settings.yoff->value); update_output(); }
+      else if(s==settings.width) { sprintf(tmp,"%4d",settings.width->value); HLH_gui_label_set_text(settings.label312,tmp,-1); img2pixel_set_out_width(&state,settings.width->value); update_output(); }
+      else if(s==settings.height) { sprintf(tmp,"%4d",settings.height->value); HLH_gui_label_set_text(settings.label322,tmp,-1); img2pixel_set_out_height(&state,settings.height->value); update_output(); }
+      else if(s==settings.xdiv) { sprintf(tmp,"%4d",settings.xdiv->value); HLH_gui_label_set_text(settings.label342,tmp,-1); img2pixel_set_out_swidth(&state,settings.xdiv->value); update_output(); }
+      else if(s==settings.ydiv) { sprintf(tmp,"%4d",settings.ydiv->value); HLH_gui_label_set_text(settings.label352,tmp,-1); img2pixel_set_out_sheight(&state,settings.ydiv->value); update_output(); }
+      else if(s==settings.xoff) { sprintf(tmp,"%4d",settings.xoff->value); HLH_gui_label_set_text(settings.label372,tmp,-1); img2pixel_set_offset_x(&state,settings.xoff->value); update_output(); }
+      else if(s==settings.yoff) { sprintf(tmp,"%4d",settings.yoff->value); HLH_gui_label_set_text(settings.label382,tmp,-1); img2pixel_set_offset_y(&state,settings.yoff->value); update_output(); }
       else if(s==settings.gauss)
       {
          sprintf(tmp,"%4d",settings.gauss->value);
          HLH_gui_label_set_text(settings.label392,tmp,-1);
-         img2pixel_set_gauss(settings.gauss->value);
-         img2pixel_lowpass_image(sprite_in_org,sprite_in);
-         img2pixel_sharpen_image(sprite_in,sprite_in);
+         img2pixel_set_gauss(&state,settings.gauss->value);
+         img2pixel_lowpass_image(&state,sprite_in_org,sprite_in);
+         img2pixel_sharpen_image(&state,sprite_in,sprite_in);
          update_output();
       }
 
       //Colors
-      else if(s==settings.amount) { sprintf(tmp,"%4d",settings.amount->value); HLH_gui_label_set_text(settings.label432,tmp,-1); img2pixel_set_dither_amount(settings.amount->value); update_output(); }
-      else if(s==settings.alpha) { sprintf(tmp,"%4d",settings.alpha->value); HLH_gui_label_set_text(settings.label442,tmp,-1); img2pixel_set_alpha_threshold(settings.alpha->value); update_output(); }
-      else if(s==settings.weight) { sprintf(tmp,"%4d",settings.weight->value); HLH_gui_label_set_text(settings.label482,tmp,-1); img2pixel_set_palette_weight(settings.weight->value); update_output(); }
+      else if(s==settings.amount) { sprintf(tmp,"%4d",settings.amount->value); HLH_gui_label_set_text(settings.label432,tmp,-1); img2pixel_set_dither_amount(&state,settings.amount->value); update_output(); }
+      else if(s==settings.alpha) { sprintf(tmp,"%4d",settings.alpha->value); HLH_gui_label_set_text(settings.label442,tmp,-1); img2pixel_set_alpha_threshold(&state,settings.alpha->value); update_output(); }
+      else if(s==settings.weight) { sprintf(tmp,"%4d",settings.weight->value); HLH_gui_label_set_text(settings.label482,tmp,-1); img2pixel_set_palette_weight(&state,settings.weight->value); update_output(); }
 
       //Process
-      else if(s==settings.bright) { sprintf(tmp,"%4d",settings.bright->value); HLH_gui_label_set_text(settings.label502,tmp,-1); img2pixel_set_brightness(settings.bright->value); update_output(); }
-      else if(s==settings.contra) { sprintf(tmp,"%4d",settings.contra->value); HLH_gui_label_set_text(settings.label512,tmp,-1); img2pixel_set_contrast(settings.contra->value); update_output(); }
-      else if(s==settings.satura) { sprintf(tmp,"%4d",settings.satura->value); HLH_gui_label_set_text(settings.label522,tmp,-1); img2pixel_set_saturation(settings.satura->value); update_output(); }
-      else if(s==settings.gamma) { sprintf(tmp,"%4d",settings.gamma->value); HLH_gui_label_set_text(settings.label532,tmp,-1); img2pixel_set_gamma(settings.gamma->value); update_output(); }
-      else if(s==settings.hue) { sprintf(tmp,"%4d",settings.hue->value); HLH_gui_label_set_text(settings.label552,tmp,-1); img2pixel_set_hue(settings.hue->value); update_output(); }
+      else if(s==settings.bright) { sprintf(tmp,"%4d",settings.bright->value); HLH_gui_label_set_text(settings.label502,tmp,-1); img2pixel_set_brightness(&state,settings.bright->value); update_output(); }
+      else if(s==settings.contra) { sprintf(tmp,"%4d",settings.contra->value); HLH_gui_label_set_text(settings.label512,tmp,-1); img2pixel_set_contrast(&state,settings.contra->value); update_output(); }
+      else if(s==settings.satura) { sprintf(tmp,"%4d",settings.satura->value); HLH_gui_label_set_text(settings.label522,tmp,-1); img2pixel_set_saturation(&state,settings.satura->value); update_output(); }
+      else if(s==settings.gamma) { sprintf(tmp,"%4d",settings.gamma->value); HLH_gui_label_set_text(settings.label532,tmp,-1); img2pixel_set_gamma(&state,settings.gamma->value); update_output(); }
+      else if(s==settings.hue) { sprintf(tmp,"%4d",settings.hue->value); HLH_gui_label_set_text(settings.label552,tmp,-1); img2pixel_set_hue(&state,settings.hue->value); update_output(); }
       else if(s==settings.sharp)
       {
          sprintf(tmp,"%4d",settings.sharp->value);
          HLH_gui_label_set_text(settings.label542,tmp,-1); 
-         img2pixel_set_sharpen(settings.sharp->value);
-         img2pixel_lowpass_image(sprite_in_org,sprite_in);
-         img2pixel_sharpen_image(sprite_in,sprite_in);
+         img2pixel_set_sharpen(&state,settings.sharp->value);
+         img2pixel_lowpass_image(&state,sprite_in_org,sprite_in);
+         img2pixel_sharpen_image(&state,sprite_in,sprite_in);
          update_output();
       }
    }
@@ -1260,7 +1262,7 @@ static int htab_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    {
       if(h==settings.htab)
       {
-         img2pixel_set_scale_mode(h->tab_current);
+         img2pixel_set_scale_mode(&state,h->tab_current);
          update_output();
       }
    }
@@ -1287,7 +1289,7 @@ static void palette_selection_update(Palette_selection *s, uint32_t *data)
    //HLH_gui_element_msg(&img->e,HLH_GUI_MSG_LAYOUT,0,NULL);
    HLH_gui_element_repaint(&s->e,NULL);
 
-   SLK_Color c = img2pixel_get_palette()->colors[s->selected];
+   SLK_Color c = img2pixel_get_palette(&state)->colors[s->selected];
    if(s==settings.pal2)
    {
       HLH_gui_slider_set_value(settings.red,c.rgb.r);
@@ -1338,7 +1340,7 @@ static int palsel_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       rect.t = e->bounds.t+pos_y*18*HLH_gui_get_scale();
       rect.r = rect.l+HLH_gui_get_scale()*18;
       rect.b = rect.t+HLH_gui_get_scale()*18;
-      SLK_Color c = img2pixel_get_palette()->colors[pal->selected];
+      SLK_Color c = img2pixel_get_palette(&state)->colors[pal->selected];
       uint32_t color;
       if(c.rgb.r+c.rgb.g+c.rgb.b>384)
          color = 0;
@@ -1360,7 +1362,7 @@ static int palsel_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          return 0;
       pal->selected = new;
 
-      SLK_Color c = img2pixel_get_palette()->colors[pal->selected];
+      SLK_Color c = img2pixel_get_palette(&state)->colors[pal->selected];
       if(pal==settings.pal2)
       {
          HLH_gui_slider_set_value(settings.red,c.rgb.r);
@@ -1376,53 +1378,53 @@ static int palsel_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
 void preset_load(FILE *f)
 {
-   img2pixel_preset_load(f);
+   img2pixel_preset_load(&state,f);
 
    //Load/Save
    HLH_gui_slider_set_value(settings.upscale,upscale);
 
    //Palette
    palette_draw();
-   HLH_gui_slider_set_value(settings.colors,img2pixel_get_palette()->used);
+   HLH_gui_slider_set_value(settings.colors,img2pixel_get_palette(&state)->used);
 
    //Sample
-   HLH_gui_slider_set_value(settings.width,img2pixel_get_out_width());
-   HLH_gui_slider_set_value(settings.height,img2pixel_get_out_height());
-   HLH_gui_slider_set_value(settings.xdiv,img2pixel_get_out_swidth());
-   HLH_gui_slider_set_value(settings.ydiv,img2pixel_get_out_sheight());
-   HLH_gui_htab_set(settings.htab,img2pixel_get_scale_mode());
-   HLH_gui_label_set_text(settings.sample,text_sample[img2pixel_get_sample_mode()],-1);
-   HLH_gui_slider_set_value(settings.xoff,img2pixel_get_offset_x());
-   HLH_gui_slider_set_value(settings.yoff,img2pixel_get_offset_y());
-   HLH_gui_slider_set_value(settings.gauss,img2pixel_get_gauss());
+   HLH_gui_slider_set_value(settings.width,img2pixel_get_out_width(&state));
+   HLH_gui_slider_set_value(settings.height,img2pixel_get_out_height(&state));
+   HLH_gui_slider_set_value(settings.xdiv,img2pixel_get_out_swidth(&state));
+   HLH_gui_slider_set_value(settings.ydiv,img2pixel_get_out_sheight(&state));
+   HLH_gui_htab_set(settings.htab,img2pixel_get_scale_mode(&state));
+   HLH_gui_label_set_text(settings.sample,text_sample[img2pixel_get_sample_mode(&state)],-1);
+   HLH_gui_slider_set_value(settings.xoff,img2pixel_get_offset_x(&state));
+   HLH_gui_slider_set_value(settings.yoff,img2pixel_get_offset_y(&state));
+   HLH_gui_slider_set_value(settings.gauss,img2pixel_get_gauss(&state));
 
    //Colors
-   HLH_gui_label_set_text(settings.dither,text_dither[img2pixel_get_process_mode()],-1);
-   HLH_gui_slider_set_value(settings.amount,img2pixel_get_dither_amount());
-   HLH_gui_slider_set_value(settings.alpha,img2pixel_get_alpha_threshold());
-   HLH_gui_label_set_text(settings.dist,text_space[img2pixel_get_distance_mode()],-1);
-   HLH_gui_slider_set_value(settings.weight,img2pixel_get_palette_weight());
-   if(img2pixel_get_process_mode()==6||img2pixel_get_process_mode()==7||img2pixel_get_process_mode()==0)
+   HLH_gui_label_set_text(settings.dither,text_dither[img2pixel_get_process_mode(&state)],-1);
+   HLH_gui_slider_set_value(settings.amount,img2pixel_get_dither_amount(&state));
+   HLH_gui_slider_set_value(settings.alpha,img2pixel_get_alpha_threshold(&state));
+   HLH_gui_label_set_text(settings.dist,text_space[img2pixel_get_distance_mode(&state)],-1);
+   HLH_gui_slider_set_value(settings.weight,img2pixel_get_palette_weight(&state));
+   if(img2pixel_get_process_mode(&state)==6||img2pixel_get_process_mode(&state)==7||img2pixel_get_process_mode(&state)==0)
       settings.panel43->e.flags|=HLH_GUI_INVISIBLE;
    else
       settings.panel43->e.flags&=~HLH_GUI_INVISIBLE;
-   if(img2pixel_get_distance_mode()==8)
+   if(img2pixel_get_distance_mode(&state)==8)
       settings.panel48->e.flags&=~HLH_GUI_INVISIBLE;
    else
       settings.panel48->e.flags|=HLH_GUI_INVISIBLE;
-   settings.tick_inline->text[0] = img2pixel_get_inline()<0?' ':'X';
-   settings.tick_outline->text[0] = img2pixel_get_outline()<0?' ':'X';
+   settings.tick_inline->text[0] = img2pixel_get_inline(&state)<0?' ':'X';
+   settings.tick_outline->text[0] = img2pixel_get_outline(&state)<0?' ':'X';
 
    //Process
-   HLH_gui_slider_set_value(settings.bright,img2pixel_get_brightness());
-   HLH_gui_slider_set_value(settings.contra,img2pixel_get_contrast());
-   HLH_gui_slider_set_value(settings.satura,img2pixel_get_saturation());
-   HLH_gui_slider_set_value(settings.gamma,img2pixel_get_gamma());
-   HLH_gui_slider_set_value(settings.sharp,img2pixel_get_sharpen());
-   HLH_gui_slider_set_value(settings.hue,img2pixel_get_hue());
+   HLH_gui_slider_set_value(settings.bright,img2pixel_get_brightness(&state));
+   HLH_gui_slider_set_value(settings.contra,img2pixel_get_contrast(&state));
+   HLH_gui_slider_set_value(settings.satura,img2pixel_get_saturation(&state));
+   HLH_gui_slider_set_value(settings.gamma,img2pixel_get_gamma(&state));
+   HLH_gui_slider_set_value(settings.sharp,img2pixel_get_sharpen(&state));
+   HLH_gui_slider_set_value(settings.hue,img2pixel_get_hue(&state));
 
-   img2pixel_lowpass_image(sprite_in_org,sprite_in);   
-   img2pixel_sharpen_image(sprite_in,sprite_in);
+   img2pixel_lowpass_image(&state,sprite_in_org,sprite_in);   
+   img2pixel_sharpen_image(&state,sprite_in,sprite_in);
    update_output();
 
    HLH_gui_element_msg(&preview.window->e,HLH_GUI_MSG_LAYOUT,0,NULL);
@@ -1441,8 +1443,8 @@ static void palette_draw()
 
    for(int y = 0;y<9;y++)
       for(int x = 0;x<31;x++)
-         if(y*31+x<img2pixel_get_palette()->used)
-            SLK_draw_rgb_fill_rectangle(x*9,y*9,9,9,img2pixel_get_palette()->colors[y*31+x]);
+         if(y*31+x<img2pixel_get_palette(&state)->used)
+            SLK_draw_rgb_fill_rectangle(x*9,y*9,9,9,img2pixel_get_palette(&state)->colors[y*31+x]);
 
    SLK_draw_rgb_set_target(old);
    palette_selection_update(settings.pal2,(uint32_t *)target->data);
