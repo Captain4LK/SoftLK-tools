@@ -20,6 +20,7 @@ extern "C"
 typedef struct dyn_array dyn_array;
 typedef struct
 {
+   int upscale;
    int brightness;
    int contrast;
    int img_gamma;

@@ -684,11 +684,11 @@ static void gui_buttons()
       //upscale bar and buttons
       BUTTON_BAR_PLUS(elements.save_upscale_plus,elements.save_bar_upscale);
       BUTTON_BAR_MINUS(elements.save_upscale_minus,elements.save_bar_upscale);
-      if(elements.save_bar_upscale->slider.value!=upscale)
+      if(elements.save_bar_upscale->slider.value!=state.upscale)
       {
-         upscale = elements.save_bar_upscale->slider.value;
+         state.upscale = elements.save_bar_upscale->slider.value;
          char tmp[16];
-         sprintf(tmp,"%d",upscale);
+         sprintf(tmp,"%d",state.upscale);
          SLK_gui_label_set_text(elements.save_label_upscale,tmp);
       }
    
@@ -756,7 +756,7 @@ static void gui_buttons()
       //Save image button
       if(elements.save_save->button.state.released)
       {
-         image_write(sprite_out,img2pixel_get_palette(&state));
+         image_write(&state,sprite_out,img2pixel_get_palette(&state));
          elements.save_save->button.state.released = 0;
       }
 
@@ -1274,8 +1274,8 @@ void preset_load(FILE *f)
    elements.color_bar_alpha->slider.value = img2pixel_get_alpha_threshold(&state);
       sprintf(ctmp,"%d",img2pixel_get_alpha_threshold(&state));
       SLK_gui_label_set_text(elements.color_label_alpha,ctmp);
-   elements.save_bar_upscale->slider.value = upscale;
-      sprintf(ctmp,"%d",upscale);
+   elements.save_bar_upscale->slider.value = state.upscale;
+      sprintf(ctmp,"%d",state.upscale);
       SLK_gui_label_set_text(elements.save_label_upscale,ctmp);
    elements.sample_bar_gauss->slider.value = img2pixel_get_gauss(&state);
       sprintf(ctmp,"%d",img2pixel_get_gauss(&state));

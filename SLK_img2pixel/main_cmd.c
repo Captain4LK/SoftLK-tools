@@ -123,7 +123,7 @@ int main(int argc, char **argv)
    img2pixel_process_image(&state,sprite_in,out);
 
    //Write image to output path
-   image_save(path_out,out,img2pixel_get_palette(&state));
+   image_save(&state,path_out,out,img2pixel_get_palette(&state));
 
    //Write palette to output path, if specified
    if(path_out_pal!=NULL)
@@ -217,6 +217,6 @@ static void parse_option(const char *name, const char *value)
    else if(strcmp(name,"outline")==0)
       img2pixel_set_outline(&state,atoi(value));
    else if(strcmp(name,"upscale")==0)
-      upscale = atoi(value);
+      state.upscale = atoi(value);
 }
 //-------------------------------------

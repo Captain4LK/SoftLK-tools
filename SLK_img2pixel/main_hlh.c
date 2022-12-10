@@ -976,7 +976,7 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       }
       else if(b==settings.save_img)
       {
-         image_write(sprite_out,img2pixel_get_palette(&state));
+         image_write(&state,sprite_out,img2pixel_get_palette(&state));
       }
       else if(b==settings.load_pre)
       {
@@ -1204,7 +1204,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       char tmp[512];
 
       //Save/Load
-      if(s==settings.upscale) { sprintf(tmp,"%2d",settings.upscale->value); HLH_gui_label_set_text(settings.label11,tmp,-1); upscale = settings.upscale->value; }
+      if(s==settings.upscale) { sprintf(tmp,"%2d",settings.upscale->value); HLH_gui_label_set_text(settings.label11,tmp,-1); state.upscale = settings.upscale->value; }
 
       //Palette
       else if(s==settings.red) { sprintf(tmp,"%4d",settings.red->value); HLH_gui_label_set_text(settings.label222,tmp,-1); img2pixel_get_palette(&state)->colors[settings.pal2->selected].rgb.r = settings.red->value; palette_draw(); update_output(); }
@@ -1381,7 +1381,7 @@ void preset_load(FILE *f)
    img2pixel_preset_load(&state,f);
 
    //Load/Save
-   HLH_gui_slider_set_value(settings.upscale,upscale);
+   HLH_gui_slider_set_value(settings.upscale,state.upscale);
 
    //Palette
    palette_draw();

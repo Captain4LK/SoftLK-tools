@@ -12,13 +12,12 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _UTILITY_H_
 
-extern int upscale;
 extern int win_preview_width;
 extern int win_preview_height;
 extern int gui_scale;
 
 SLK_RGB_sprite *image_select();
-void image_write(SLK_RGB_sprite *img, SLK_Palette *pal);
+void image_write(I2P_state *s, SLK_RGB_sprite *img, SLK_Palette *pal);
 FILE *json_select();
 FILE *json_write();
 SLK_Palette *palette_select();
@@ -26,7 +25,7 @@ void palette_write(SLK_Palette *pal);
 
 SLK_RGB_sprite *image_load(const char *path);
 SLK_Palette *palette_load(const char *path);
-void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal);
+void image_save(I2P_state *s, const char *path, SLK_RGB_sprite *img, SLK_Palette *pal);
 void dir_input_select();
 void dir_output_select(I2P_state *s, int dither_mode, int sample_mode, int distance_mode, int scale_mode, int width, int height, SLK_Palette *pal);
 

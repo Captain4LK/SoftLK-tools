@@ -64,7 +64,6 @@ static char path_dir_output[512] = {0};
 static char path_palette_load[512] = {0};
 static char path_palette_save[512] = {0};
 
-int upscale = 1;
 int win_preview_width = 260;
 int win_preview_height = 286;
 int gui_scale = 1;
@@ -72,7 +71,7 @@ int gui_scale = 1;
 
 //Function prototypes
 static uint8_t find_palette(SLK_Color in, SLK_Palette *pal);
-static void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal);
+static void image_save_w(I2P_state *s, const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal);
 static SLK_Palette *palette_png(FILE *f);
 static SLK_Palette *palette_gpl(FILE *f);
 static SLK_Palette *palette_hex(FILE *f);
@@ -107,7 +106,7 @@ SLK_RGB_sprite *image_select()
    return load;
 }
 
-void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
+void image_write(I2P_state *s, SLK_RGB_sprite *img, SLK_Palette *pal)
 {
    NFD_Init();
    
@@ -127,7 +126,7 @@ void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
 
    wchar_t buffer[512];
    convert_utf8_to_wchar(buffer,512,file_path);
-   image_save_w((wchar_t *)buffer,img,pal);
+   image_save_w(s,(wchar_t *)buffer,img,pal);
 
    NFD_FreePathU8(file_path);
    NFD_Quit();
@@ -288,7 +287,7 @@ void palette_write(SLK_Palette *pal)
    NFD_Quit();
 }
 
-void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)
+void image_save_w(I2P_state *s, const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)
 {
    if(img==NULL||path==NULL)
       return;
@@ -299,12 +298,12 @@ void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)
    strcpy(file.name,buffer);
 
    //Convert to png and upscale
-   SLK_RGB_sprite *tmp_up = SLK_rgb_sprite_create(upscale*img->width,upscale*img->height);
+   SLK_RGB_sprite *tmp_up = SLK_rgb_sprite_create(s->upscale*img->width,s->upscale*img->height);
    for(int y = 0;y<img->height;y++)
       for(int x = 0;x<img->width;x++)
-         for(int y_ = 0;y_<upscale;y_++)
-            for(int x_ = 0;x_<upscale;x_++)
-               SLK_rgb_sprite_set_pixel(tmp_up,x*upscale+x_,y*upscale+y_,SLK_rgb_sprite_get_pixel(img,x,y));
+         for(int y_ = 0;y_<s->upscale;y_++)
+            for(int x_ = 0;x_<s->upscale;x_++)
+               SLK_rgb_sprite_set_pixel(tmp_up,x*s->upscale+x_,y*s->upscale+y_,SLK_rgb_sprite_get_pixel(img,x,y));
 
    //qoi file
    if(strcmp(cf_get_ext(&file),".qoi")==0)
@@ -335,7 +334,7 @@ void image_save_w(const wchar_t *path, SLK_RGB_sprite *img, SLK_Palette *pal)
    SLK_rgb_sprite_destroy(tmp_up);
 }
 
-void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
+void image_save(I2P_state *s, const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
 {
    if(img==NULL||path==NULL)
       return;
@@ -344,12 +343,12 @@ void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
    strcpy(file.name,path);
 
    //Convert to rgb and upscale
-   SLK_RGB_sprite *tmp_up = SLK_rgb_sprite_create(upscale*img->width,upscale*img->height);
+   SLK_RGB_sprite *tmp_up = SLK_rgb_sprite_create(s->upscale*img->width,s->upscale*img->height);
    for(int y = 0;y<img->height;y++)
       for(int x = 0;x<img->width;x++)
-         for(int y_ = 0;y_<upscale;y_++)
-            for(int x_ = 0;x_<upscale;x_++)
-               SLK_rgb_sprite_set_pixel(tmp_up,x*upscale+x_,y*upscale+y_,SLK_rgb_sprite_get_pixel(img,x,y));
+         for(int y_ = 0;y_<s->upscale;y_++)
+            for(int x_ = 0;x_<s->upscale;x_++)
+               SLK_rgb_sprite_set_pixel(tmp_up,x*s->upscale+x_,y*s->upscale+y_,SLK_rgb_sprite_get_pixel(img,x,y));
 
    //qoi file
    if(strcmp(cf_get_ext(&file),".qoi")==0)
@@ -513,7 +512,7 @@ void dir_output_select(I2P_state *s, int dither_mode, int sample_mode, int dista
                sprintf(tmp,"%s/%s.png",buffer,name);
 
                wchar_t *wpath = (wchar_t *) utf8_to_utf16((const uint8_t *) tmp, NULL);
-               image_save_w(wpath,out,pal);
+               image_save_w(s,wpath,out,pal);
                free(wpath);
                if(scale_mode==1)
                   SLK_rgb_sprite_destroy(out);

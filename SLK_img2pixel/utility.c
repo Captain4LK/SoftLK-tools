@@ -55,7 +55,6 @@ static char path_dir_output[512] = {0};
 static char path_palette_load[512] = {0};
 static char path_palette_save[512] = {0};
 
-int upscale = 1;
 int win_preview_width = 260;
 int win_preview_height = 286;
 int gui_scale = 1;
@@ -82,7 +81,7 @@ SLK_RGB_sprite *image_select()
    return image_load(file_path);
 }
 
-void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
+void image_write(I2P_state *s, SLK_RGB_sprite *img, SLK_Palette *pal)
 {
    const char *filter_patterns[2] = {"*.png","*.qoi"};
    const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,2,filter_patterns,NULL);
@@ -90,7 +89,7 @@ void image_write(SLK_RGB_sprite *img, SLK_Palette *pal)
    if(file_path!=NULL)
       strncpy(path_image_save,file_path,512);
 
-   image_save(file_path,img,pal);
+   image_save(s,file_path,img,pal);
 }
 
 FILE *json_select()
@@ -193,7 +192,7 @@ void palette_write(SLK_Palette *pal)
    }
 }
 
-void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
+void image_save(I2P_state *s, const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
 {
    if(img==NULL||path==NULL)
       return;
@@ -202,12 +201,12 @@ void image_save(const char *path, SLK_RGB_sprite *img, SLK_Palette *pal)
    strcpy(file.name,path);
 
    //Convert to rgb and upscale
-   SLK_RGB_sprite *tmp_up = SLK_rgb_sprite_create(upscale*img->width,upscale*img->height);
+   SLK_RGB_sprite *tmp_up = SLK_rgb_sprite_create(s->upscale*img->width,s->upscale*img->height);
    for(int y = 0;y<img->height;y++)
       for(int x = 0;x<img->width;x++)
-         for(int y_ = 0;y_<upscale;y_++)
-            for(int x_ = 0;x_<upscale;x_++)
-               SLK_rgb_sprite_set_pixel(tmp_up,x*upscale+x_,y*upscale+y_,SLK_rgb_sprite_get_pixel(img,x,y));
+         for(int y_ = 0;y_<s->upscale;y_++)
+            for(int x_ = 0;x_<s->upscale;x_++)
+               SLK_rgb_sprite_set_pixel(tmp_up,x*s->upscale+x_,y*s->upscale+y_,SLK_rgb_sprite_get_pixel(img,x,y));
 
    //qoi file
    if(strcmp(cf_get_ext(&file),".qoi")==0)
@@ -350,7 +349,7 @@ void dir_output_select(I2P_state *s, int dither_mode, int sample_mode, int dista
                path_pop_ext(file.name,name,NULL);
                sprintf(tmp,"%s/%s.png",output_dir,name);
 
-               image_save(tmp,out,pal);
+               image_save(s,tmp,out,pal);
                if(scale_mode==1)
                   SLK_rgb_sprite_destroy(out);
                SLK_rgb_sprite_destroy(in);

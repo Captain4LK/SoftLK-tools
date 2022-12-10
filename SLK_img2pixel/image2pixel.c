@@ -172,6 +172,7 @@ static void post_process_image(I2P_state *s, const SLK_RGB_sprite *in, SLK_RGB_s
 
 void img2pixel_state_init(I2P_state *s)
 {
+   s->upscale = 1;
    s->brightness = 0;
    s->contrast = 0;
    s->img_gamma = 100;
@@ -231,7 +232,7 @@ void img2pixel_preset_load(I2P_state *s, FILE *f)
    s->dither_amount = HLH_json_get_object_integer(&root->root,"dither_amount",64);
    s->pixel_sample_mode = HLH_json_get_object_integer(&root->root,"sample_mode",0);
    s->alpha_threshold = HLH_json_get_object_integer(&root->root,"alpha_threshold",128);
-   upscale = HLH_json_get_object_integer(&root->root,"upscale",1);
+   s->upscale = HLH_json_get_object_integer(&root->root,"upscale",1);
    s->gauss = HLH_json_get_object_integer(&root->root,"gaussian_blur",128);
    s->offset_x = HLH_json_get_object_integer(&root->root,"offset_x",0);
    s->offset_y = HLH_json_get_object_integer(&root->root,"offset_y",0);
@@ -278,7 +279,7 @@ void img2pixel_preset_save(I2P_state *s, FILE *f)
    HLH_json_object_add_integer(&root->root,"outline",s->image_outline);
    HLH_json_object_add_integer(&root->root,"inline",s->image_inline);
    HLH_json_object_add_integer(&root->root,"alpha_threshold",s->alpha_threshold);
-   HLH_json_object_add_integer(&root->root,"upscale",upscale);
+   HLH_json_object_add_integer(&root->root,"upscale",s->upscale);
    HLH_json_object_add_integer(&root->root,"brightness",s->brightness);
    HLH_json_object_add_integer(&root->root,"contrast",s->contrast);
    HLH_json_object_add_integer(&root->root,"gamma",s->img_gamma);
