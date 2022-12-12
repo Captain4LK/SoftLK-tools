@@ -10,6 +10,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //External includes
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 //-------------------------------------
 
@@ -86,7 +87,10 @@ void HLH_gui_init(void)
 
    core_font_surface = SDL_CreateRGBSurface(0,1024,16,32,0xff0000,0x00ff00,0x0000ff,0xff000000);
    if(core_font_surface==NULL)
+   {
       fprintf(stderr,"SDL_CreateRGBSurface(): %s\n",SDL_GetError());
+      exit(EXIT_FAILURE);
+   }
 
    if(SDL_LockSurface(core_font_surface)<0)
       fprintf(stderr,"SDL_LockSurface(): %s\n",SDL_GetError());

@@ -892,8 +892,8 @@ void SLK_draw_pal_sprite_flip(const SLK_Pal_sprite *s, int x, int y, SLK_flip fl
 
    const uint8_t *src = &s->data[0];
    uint8_t *dst = &target_pal->data[x+y*target_pal->width];
-   int src_step = -(draw_end_x-draw_start_x)+s->width;
-   int dst_step = target_pal->width-(draw_end_x-draw_start_x);
+   int src_step;
+   int dst_step;
 
    switch(flip)
    {
@@ -2071,14 +2071,21 @@ SLK_Pal_sprite *SLK_pal_sprite_create(int width, int height)
 {
    SLK_Pal_sprite *s = backend_malloc(sizeof(*s));
    if(s==NULL)
+   {
       SLK_log_line("SLK_pal_sprite_create","malloc of size %zu failed, out of memory!",sizeof(*s));
+      return NULL;
+   }
 
    s->width = width;
    s->height = height;
 
    s->data = backend_malloc(width*height*sizeof(*s->data));
    if(s->data==NULL)
+   {
       SLK_log_line("SLK_pal_sprite_create","malloc of size %zu failed, out of memory!",width*height*sizeof(*s->data));
+      backend_free(s);
+      return NULL;
+   }
 
    memset(s->data,0,sizeof(*s->data)*width*height);
 
@@ -2184,14 +2191,21 @@ SLK_RGB_sprite *SLK_rgb_sprite_create(int width, int height)
 {   
    SLK_RGB_sprite *s = backend_malloc(sizeof(*s));
    if(s==NULL)
+   {
       SLK_log_line("SLK_rgb_sprite_create","malloc of size %zu failed, out of memory!",sizeof(*s));
+      return NULL;
+   }
    
    s->width = width;
    s->height = height;
    
    s->data = backend_malloc(width*height*sizeof(*s->data));
    if(s->data==NULL)
+   {
       SLK_log_line("SLK_rgb_sprite_create","malloc of size %zu failed, out of memory!",width*height*sizeof(*s->data));
+      backend_free(s);
+      return NULL;
+   }
 
    memset(s->data,0,width*height*sizeof(*s->data));
     

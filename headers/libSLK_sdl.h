@@ -1008,7 +1008,10 @@ SLK_Palette *backend_load_palette_file(FILE *f)
 
    SLK_Palette *palette = backend_malloc(sizeof(*palette));
    if(palette==NULL)
+   {
       SLK_log("malloc of size %zu failed, out of memory!",sizeof(*palette));
+      return NULL;
+   }
 
    memset(palette,0,sizeof(*palette));
    for(i = 0;i<259&&fgets(buffer,512,f);i++)
