@@ -17,7 +17,6 @@ extern "C"
 {
 #endif
 
-typedef struct dyn_array dyn_array;
 typedef struct
 {
    int upscale;
@@ -45,7 +44,7 @@ typedef struct
    int palette_weight;
    SLK_Palette *palette;
 
-   dyn_array *quant_cluster_list;
+   SLK_Color **quant_cluster_list;
    SLK_Color *quant_centroid_list;
    int *quant_assignment;
    int quant_k;

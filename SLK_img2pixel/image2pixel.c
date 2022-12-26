@@ -15,6 +15,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "../headers/libSLK.h"
 #define HLH_JSON_IMPLEMENTATION
 #include "../external/HLH_json.h"
+#define HLH_IMPLEMENTATION
+#include "../external/HLH.h"
 //-------------------------------------
 
 //Internal includes
@@ -23,36 +25,11 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //#defines
-#define dyn_array_init(type, array, space) \
-   do { ((dyn_array *)(array))->size = (space); ((dyn_array *)(array))->used = 0; ((dyn_array *)(array))->data = malloc(sizeof(type)*(((dyn_array *)(array))->size)); } while(0)
-
-#define dyn_array_free(type, array) \
-   do { if(((dyn_array *)(array))->data) { free(((dyn_array *)(array))->data); ((dyn_array *)(array))->data = NULL; ((dyn_array *)(array))->used = 0; ((dyn_array *)(array))->size = 0; }} while(0)
-
-#define dyn_array_add(type, array, grow, element) \
-   do { ((type *)((dyn_array *)(array)->data))[((dyn_array *)(array))->used] = (element); ((dyn_array *)(array))->used++; if(((dyn_array *)(array))->used==((dyn_array *)(array))->size) { ((dyn_array *)(array))->size+=grow; ((dyn_array *)(array))->data = realloc(((dyn_array *)(array))->data,sizeof(type)*(((dyn_array *)(array))->size)); } } while(0)
-
-#define dyn_array_element(type, array, index) \
-   (((type *)((dyn_array *)(array)->data))[index])
-
-#define MIN(a,b) \
-   ((a)<(b)?(a):(b))
- 
-#define MAX(a,b) \
-   ((a)>(b)?(a):(b))
-
 #define DEG2RAD(a) \
    ((a)*M_PI/180.0f)
 //-------------------------------------
 
 //Typedefs
-struct dyn_array
-{
-   uint32_t used;
-   uint32_t size;
-   void *data;
-};
-
 typedef struct
 {
    double c0;
@@ -158,11 +135,11 @@ static void quant_cluster_list_init(I2P_state *s);
 static void quant_cluster_list_free(I2P_state *s);
 static void quant_compute_kmeans(I2P_state *s, SLK_RGB_sprite *data, int pal_in);
 static void quant_get_cluster_centroid(I2P_state *s, SLK_RGB_sprite *data, int pal_in, int weight_pal);
-static SLK_Color quant_colors_mean(dyn_array *color_list,SLK_Color color, int weight_color);
+static SLK_Color quant_colors_mean(SLK_Color *color_list,SLK_Color color, int weight_color);
 static SLK_Color quant_pick_random_color(SLK_RGB_sprite *data);
 static int quant_nearest_color_idx(I2P_state *s, SLK_Color color, SLK_Color *color_list);
 static double quant_distance(SLK_Color color0, SLK_Color color1);
-static double quant_colors_variance(dyn_array *color_list);
+static double quant_colors_variance(SLK_Color *color_list);
 
 //Post processing
 static void post_process_image(I2P_state *s, const SLK_RGB_sprite *in, SLK_RGB_sprite *out);
@@ -341,9 +318,9 @@ void img2pixel_sharpen_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
             }
          }
 
-         out->data[y*out->width+x].rgb.r = MAX(0x0,MIN(0xff,(int)r));
-         out->data[y*out->width+x].rgb.g = MAX(0x0,MIN(0xff,(int)g));
-         out->data[y*out->width+x].rgb.b = MAX(0x0,MIN(0xff,(int)b));
+         out->data[y*out->width+x].rgb.r = HLH_max(0x0,HLH_min(0xff,(int)r));
+         out->data[y*out->width+x].rgb.g = HLH_max(0x0,HLH_min(0xff,(int)g));
+         out->data[y*out->width+x].rgb.b = HLH_max(0x0,HLH_min(0xff,(int)b));
          out->data[y*out->width+x].rgb.a = in->data[y*out->width+x].rgb.a;
       }
    }
@@ -410,9 +387,9 @@ void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
             }
          }
 
-         out->data[y*out->width+x].rgb.r = MAX(0x0,MIN(0xff,(int)r));
-         out->data[y*out->width+x].rgb.g = MAX(0x0,MIN(0xff,(int)g));
-         out->data[y*out->width+x].rgb.b = MAX(0x0,MIN(0xff,(int)b));
+         out->data[y*out->width+x].rgb.r = HLH_max(0x0,HLH_min(0xff,(int)r));
+         out->data[y*out->width+x].rgb.g = HLH_max(0x0,HLH_min(0xff,(int)g));
+         out->data[y*out->width+x].rgb.b = HLH_max(0x0,HLH_min(0xff,(int)b));
          out->data[y*out->width+x].rgb.a = in->data[y*out->width+x].rgb.a;
       }
    }
@@ -513,17 +490,17 @@ void img2pixel_process_image(I2P_state *s, const SLK_RGB_sprite *in, SLK_RGB_spr
          float r = (float)in.rgb.r;
          float g = (float)in.rgb.g;
          float b = (float)in.rgb.b;
-         in.rgb.r = MAX(0x0,MIN(0xff,(int)(rr*r)+(gr*g)+(br*b)+wr));
-         in.rgb.g = MAX(0x0,MIN(0xff,(int)(rg*r)+(gg*g)+(bg*b)+wg));
-         in.rgb.b = MAX(0x0,MIN(0xff,(int)(rb*r)+(gb*g)+(bb*b)+wb));
+         in.rgb.r = HLH_max(0x0,HLH_min(0xff,(int)(rr*r)+(gr*g)+(br*b)+wr));
+         in.rgb.g = HLH_max(0x0,HLH_min(0xff,(int)(rg*r)+(gg*g)+(bg*b)+wg));
+         in.rgb.b = HLH_max(0x0,HLH_min(0xff,(int)(rb*r)+(gb*g)+(bb*b)+wb));
 
          //Gamma
          //Only ajust if not the default value --> better performance
          if(s->img_gamma!=100)
          {
-            in.rgb.r = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.rgb.r/255.0f,gamma_factor))));
-            in.rgb.g = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.rgb.g/255.0f,gamma_factor))));
-            in.rgb.b = MAX(0x0,MIN(0xff,(int)(255.0f*pow((float)in.rgb.b/255.0f,gamma_factor))));
+            in.rgb.r = HLH_max(0x0,HLH_min(0xff,(int)(255.0f*pow((float)in.rgb.r/255.0f,gamma_factor))));
+            in.rgb.g = HLH_max(0x0,HLH_min(0xff,(int)(255.0f*pow((float)in.rgb.g/255.0f,gamma_factor))));
+            in.rgb.b = HLH_max(0x0,HLH_min(0xff,(int)(255.0f*pow((float)in.rgb.b/255.0f,gamma_factor))));
          }
 
          in.rgb.a = a;
@@ -1012,9 +989,9 @@ static void dither_threshold(I2P_state *s, SLK_Color *in, SLK_Color *out, int wi
          uint8_t mod = (1<<dim)-1;
          uint8_t tresshold_id = ((y&mod)<<dim)+(x&mod);
          SLK_Color c;
-         c.rgb.r = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.r+255.0f*amount*(threshold[tresshold_id]-0.5f))));
-         c.rgb.g = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.g+255.0f*amount*(threshold[tresshold_id]-0.5f))));
-         c.rgb.b = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.b+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.r = HLH_max(0x0,HLH_min(0xff,(int)((float)cin.rgb.r+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.g = HLH_max(0x0,HLH_min(0xff,(int)((float)cin.rgb.g+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.b = HLH_max(0x0,HLH_min(0xff,(int)((float)cin.rgb.b+255.0f*amount*(threshold[tresshold_id]-0.5f))));
          c.rgb.a = cin.rgb.a;
          out[y*width+x] = palette_find_closest(pal,pal_d3,c,distance_mode);
          out[y*width+x].rgb.a = 255;
@@ -1043,9 +1020,9 @@ static void dither_threshold_apply(I2P_state *s, SLK_Color *in, SLK_Color *out, 
          uint8_t mod = (1<<dim)-1;
          uint8_t tresshold_id = ((y&mod)<<dim)+(x&mod);
          SLK_Color c;
-         c.rgb.r = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.r+255.0f*amount*(threshold[tresshold_id]-0.5f))));
-         c.rgb.g = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.g+255.0f*amount*(threshold[tresshold_id]-0.5f))));
-         c.rgb.b = MAX(0x0,MIN(0xff,(int)((float)cin.rgb.b+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.r = HLH_max(0x0,HLH_min(0xff,(int)((float)cin.rgb.r+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.g = HLH_max(0x0,HLH_min(0xff,(int)((float)cin.rgb.g+255.0f*amount*(threshold[tresshold_id]-0.5f))));
+         c.rgb.b = HLH_max(0x0,HLH_min(0xff,(int)((float)cin.rgb.b+255.0f*amount*(threshold[tresshold_id]-0.5f))));
          c.rgb.a = cin.rgb.a;
          out[y*width+x] = c;
          out[y*width+x].rgb.a = 255;
@@ -1128,9 +1105,9 @@ static void floyd_apply_error(SLK_Color *d, double error_r, double error_g, doub
    g = in->rgb.g+error_g;
    b = in->rgb.b+error_b;
 
-   in->rgb.r = MAX(0x0,MIN(r,0xff));
-   in->rgb.g = MAX(0x0,MIN(g,0xff));
-   in->rgb.b = MAX(0x0,MIN(b,0xff));
+   in->rgb.r = HLH_max(0x0,HLH_min(r,0xff));
+   in->rgb.g = HLH_max(0x0,HLH_min(g,0xff));
+   in->rgb.b = HLH_max(0x0,HLH_min(b,0xff));
 }
 
 static SLK_Color palette_find_closest(SLK_Palette *pal, Color_d3 *pal_d3, SLK_Color c, int distance_mode)
@@ -1287,8 +1264,8 @@ static Color_d3 color_to_hsv(SLK_Color c)
    float r = (float)c.rgb.r/255.0f;
    float g = (float)c.rgb.g/255.0f;
    float b = (float)c.rgb.b/255.0f;
-   float cmax = MAX(r,MAX(g,b));
-   float cmin = MIN(r,MIN(g,b));
+   float cmax = HLH_max(r,HLH_max(g,b));
+   float cmin = HLH_min(r,HLH_min(g,b));
    float diff = cmax-cmin;
    Color_d3 hsv = {0};
 
@@ -1394,9 +1371,9 @@ static SLK_Color palette_find_closest_cie76(SLK_Palette *pal, Color_d3 *pal_d3, 
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
-   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
-   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
+   cin.rgb.r = HLH_max(0x0,HLH_min(0xff,c.rgb.r));
+   cin.rgb.g = HLH_max(0x0,HLH_min(0xff,c.rgb.g));
+   cin.rgb.b = HLH_max(0x0,HLH_min(0xff,c.rgb.b));
    Color_d3 in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1420,9 +1397,9 @@ static SLK_Color palette_find_closest_cie94(SLK_Palette *pal, Color_d3 *pal_d3, 
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
-   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
-   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
+   cin.rgb.r = HLH_max(0x0,HLH_min(0xff,c.rgb.r));
+   cin.rgb.g = HLH_max(0x0,HLH_min(0xff,c.rgb.g));
+   cin.rgb.b = HLH_max(0x0,HLH_min(0xff,c.rgb.b));
    Color_d3 in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1446,9 +1423,9 @@ static SLK_Color palette_find_closest_ciede2000(SLK_Palette *pal, Color_d3 *pal_
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
-   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
-   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
+   cin.rgb.r = HLH_max(0x0,HLH_min(0xff,c.rgb.r));
+   cin.rgb.g = HLH_max(0x0,HLH_min(0xff,c.rgb.g));
+   cin.rgb.b = HLH_max(0x0,HLH_min(0xff,c.rgb.b));
    Color_d3 in = color_to_lab(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1472,9 +1449,9 @@ static SLK_Color palette_find_closest_xyz(SLK_Palette *pal, Color_d3 *pal_d3, SL
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
-   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
-   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
+   cin.rgb.r = HLH_max(0x0,HLH_min(0xff,c.rgb.r));
+   cin.rgb.g = HLH_max(0x0,HLH_min(0xff,c.rgb.g));
+   cin.rgb.b = HLH_max(0x0,HLH_min(0xff,c.rgb.b));
    Color_d3 in = color_to_xyz(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1498,9 +1475,9 @@ static SLK_Color palette_find_closest_ycc(SLK_Palette *pal, Color_d3 *pal_d3, SL
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
-   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
-   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
+   cin.rgb.r = HLH_max(0x0,HLH_min(0xff,c.rgb.r));
+   cin.rgb.g = HLH_max(0x0,HLH_min(0xff,c.rgb.g));
+   cin.rgb.b = HLH_max(0x0,HLH_min(0xff,c.rgb.b));
    Color_d3 in = color_to_ycc(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1524,9 +1501,9 @@ static SLK_Color palette_find_closest_yiq(SLK_Palette *pal, Color_d3 *pal_d3, SL
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
-   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
-   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
+   cin.rgb.r = HLH_max(0x0,HLH_min(0xff,c.rgb.r));
+   cin.rgb.g = HLH_max(0x0,HLH_min(0xff,c.rgb.g));
+   cin.rgb.b = HLH_max(0x0,HLH_min(0xff,c.rgb.b));
    Color_d3 in = color_to_yiq(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1550,9 +1527,9 @@ static SLK_Color palette_find_closest_yuv(SLK_Palette *pal, Color_d3 *pal_d3, SL
    double min_dist = 10000000000000.0f;
    int min_index = 0;
    SLK_Color cin;
-   cin.rgb.r = MAX(0x0,MIN(0xff,c.rgb.r));
-   cin.rgb.g = MAX(0x0,MIN(0xff,c.rgb.g));
-   cin.rgb.b = MAX(0x0,MIN(0xff,c.rgb.b));
+   cin.rgb.r = HLH_max(0x0,HLH_min(0xff,c.rgb.r));
+   cin.rgb.g = HLH_max(0x0,HLH_min(0xff,c.rgb.g));
+   cin.rgb.b = HLH_max(0x0,HLH_min(0xff,c.rgb.b));
    Color_d3 in = color_to_yuv(cin);
 
    for(int i = 0;i<pal->used;i++)
@@ -1840,7 +1817,7 @@ static void sample_bicubic(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *ou
          float c2 = cubic_hermite((float)c02.rgb.r,(float)c12.rgb.r,(float)c22.rgb.r,(float)c32.rgb.r,six);
          float c3 = cubic_hermite((float)c03.rgb.r,(float)c13.rgb.r,(float)c23.rgb.r,(float)c33.rgb.r,six);
          float val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].rgb.r = MAX(0x0,MIN(0xff,(int)val));
+         out[y*width+x].rgb.r = HLH_max(0x0,HLH_min(0xff,(int)val));
 
          //g value
          c0 = cubic_hermite((float)c00.rgb.g,(float)c10.rgb.g,(float)c20.rgb.g,(float)c30.rgb.g,six);
@@ -1848,7 +1825,7 @@ static void sample_bicubic(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *ou
          c2 = cubic_hermite((float)c02.rgb.g,(float)c12.rgb.g,(float)c22.rgb.g,(float)c32.rgb.g,six);
          c3 = cubic_hermite((float)c03.rgb.g,(float)c13.rgb.g,(float)c23.rgb.g,(float)c33.rgb.g,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].rgb.g = MAX(0x0,MIN(0xff,(int)val));
+         out[y*width+x].rgb.g = HLH_max(0x0,HLH_min(0xff,(int)val));
 
          //b value
          c0 = cubic_hermite((float)c00.rgb.b,(float)c10.rgb.b,(float)c20.rgb.b,(float)c30.rgb.b,six);
@@ -1856,7 +1833,7 @@ static void sample_bicubic(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *ou
          c2 = cubic_hermite((float)c02.rgb.b,(float)c12.rgb.b,(float)c22.rgb.b,(float)c32.rgb.b,six);
          c3 = cubic_hermite((float)c03.rgb.b,(float)c13.rgb.b,(float)c23.rgb.b,(float)c33.rgb.b,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].rgb.b = MAX(0x0,MIN(0xff,(int)val));
+         out[y*width+x].rgb.b = HLH_max(0x0,HLH_min(0xff,(int)val));
 
          //a value
          c0 = cubic_hermite((float)c00.rgb.a,(float)c10.rgb.a,(float)c20.rgb.a,(float)c30.rgb.a,six);
@@ -1864,7 +1841,7 @@ static void sample_bicubic(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *ou
          c2 = cubic_hermite((float)c02.rgb.a,(float)c12.rgb.a,(float)c22.rgb.a,(float)c32.rgb.a,six);
          c3 = cubic_hermite((float)c03.rgb.a,(float)c13.rgb.a,(float)c23.rgb.a,(float)c33.rgb.a,six);
          val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].rgb.a = MAX(0x0,MIN(0xff,(int)val));
+         out[y*width+x].rgb.a = HLH_max(0x0,HLH_min(0xff,(int)val));
       }
    }
 }
@@ -1931,10 +1908,10 @@ static void sample_lanczos(I2P_state *s, const SLK_RGB_sprite *in, SLK_Color *ou
             a[i] = a0*(double)p0.rgb.a+a1*(double)p1.rgb.a+a2*(double)p2.rgb.a+a3*(double)p3.rgb.a+a4*(double)p4.rgb.a+a5*(double)p5.rgb.a;
          }
 
-         p.rgb.r = MAX(0x0,MIN(0xff,(int)(b0*r[0]+b1*r[1]+b2*r[2]+b3*r[3]+b4*r[4]+b5*r[5])));
-         p.rgb.g = MAX(0x0,MIN(0xff,(int)(b0*g[0]+b1*g[1]+b2*g[2]+b3*g[3]+b4*g[4]+b5*g[5])));
-         p.rgb.b = MAX(0x0,MIN(0xff,(int)(b0*b[0]+b1*b[1]+b2*b[2]+b3*b[3]+b4*b[4]+b5*b[5])));
-         p.rgb.a = MAX(0x0,MIN(0xff,(int)(b0*a[0]+b1*a[1]+b2*a[2]+b3*a[3]+b4*a[4]+b5*a[5])));
+         p.rgb.r = HLH_max(0x0,HLH_min(0xff,(int)(b0*r[0]+b1*r[1]+b2*r[2]+b3*r[3]+b4*r[4]+b5*r[5])));
+         p.rgb.g = HLH_max(0x0,HLH_min(0xff,(int)(b0*g[0]+b1*g[1]+b2*g[2]+b3*g[3]+b4*g[4]+b5*g[5])));
+         p.rgb.b = HLH_max(0x0,HLH_min(0xff,(int)(b0*b[0]+b1*b[1]+b2*b[2]+b3*b[3]+b4*b[4]+b5*b[5])));
+         p.rgb.a = HLH_max(0x0,HLH_min(0xff,(int)(b0*a[0]+b1*a[1]+b2*a[2]+b3*a[3]+b4*a[4]+b5*a[5])));
          out[y*width+x] = p;
       }
    }
@@ -1957,9 +1934,7 @@ static void quant_cluster_list_init(I2P_state *s)
 {
    quant_cluster_list_free(s);
    
-   s->quant_cluster_list = malloc(sizeof(*s->quant_cluster_list)*s->quant_k);
-   for(int i = 0;i<s->quant_k;i++)
-      dyn_array_init(SLK_Color,&s->quant_cluster_list[i],2);
+   s->quant_cluster_list = calloc(sizeof(*s->quant_cluster_list),s->quant_k);
 }
 
 static void quant_cluster_list_free(I2P_state *s)
@@ -1968,7 +1943,7 @@ static void quant_cluster_list_free(I2P_state *s)
       return;
 
    for(int i = 0;i<s->quant_k;i++)
-      dyn_array_free(SLK_Color,&s->quant_cluster_list[i]);
+      HLH_array_free(s->quant_cluster_list[i]);
 
    free(s->quant_cluster_list);
    s->quant_cluster_list = NULL;
@@ -2001,7 +1976,8 @@ static void quant_compute_kmeans(I2P_state *s, SLK_RGB_sprite *data, int pal_in)
       {
          SLK_Color color = data->data[i];
          s->quant_assignment[i] = quant_nearest_color_idx(s,color,s->quant_centroid_list);
-         dyn_array_add(SLK_Color,&s->quant_cluster_list[s->quant_assignment[i]],1,color);
+         HLH_array_push(s->quant_cluster_list[s->quant_assignment[i]],color);
+         //dyn_array_add(SLK_Color,&s->quant_cluster_list[s->quant_assignment[i]],1,color);
       }
 
       delta_max = 0.0;
@@ -2009,7 +1985,7 @@ static void quant_compute_kmeans(I2P_state *s, SLK_RGB_sprite *data, int pal_in)
       {
          variance = quant_colors_variance(&s->quant_cluster_list[i]);
          delta = fabs(previous_variance[i]-variance);
-         delta_max = MAX(delta,delta_max);
+         delta_max = HLH_max(delta,delta_max);
          previous_variance[i] = variance;
       }
 
@@ -2024,7 +2000,7 @@ static void quant_get_cluster_centroid(I2P_state *s, SLK_RGB_sprite *data, int p
 {
    for(int i = 0;i<s->quant_k;i++)
    {
-      if(s->quant_cluster_list[i].used>0)
+      if(HLH_array_length(s->quant_cluster_list[i])>0)
       {
          if(pal_in)
             s->quant_centroid_list[i] = quant_colors_mean(&s->quant_cluster_list[i],s->palette->colors[i],weight_pal);
@@ -2041,15 +2017,15 @@ static void quant_get_cluster_centroid(I2P_state *s, SLK_RGB_sprite *data, int p
    }
 }
 
-static SLK_Color quant_colors_mean(dyn_array *color_list,SLK_Color color, int weight_color)
+static SLK_Color quant_colors_mean(SLK_Color *color_list,SLK_Color color, int weight_color)
 {
    int r = 0,g = 0,b = 0;
-   int length = color_list->used;
+   int length = HLH_array_length(color_list);
    for(int i = 0;i<length;i++)
    {
-      r+=dyn_array_element(SLK_Color,color_list,i).rgb.r;
-      g+=dyn_array_element(SLK_Color,color_list,i).rgb.g;
-      b+=dyn_array_element(SLK_Color,color_list,i).rgb.b;
+      r+=color_list[i].rgb.r;
+      g+=color_list[i].rgb.g;
+      b+=color_list[i].rgb.b;
    }
 
    if(weight_color!=0)
@@ -2106,15 +2082,15 @@ static double quant_distance(SLK_Color color0, SLK_Color color1)
    return sqrt(distance)/(3.0*255.0);
 }
 
-static double quant_colors_variance(dyn_array *color_list)
+static double quant_colors_variance(SLK_Color *color_list)
 {
-   int length = color_list->used;
+   int length = HLH_array_length(color_list);
    SLK_Color mean = quant_colors_mean(color_list,SLK_color_create(0,0,0,0),0);
    double dist = 0.0;
    double dist_sum = 0.0;
    for(int i = 0;i<length;i++)
    {
-      dist = quant_distance(dyn_array_element(SLK_Color,color_list,i),mean);
+      dist = quant_distance(color_list[i],mean);
       dist_sum+=dist*dist;
    }
 
