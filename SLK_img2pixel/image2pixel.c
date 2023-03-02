@@ -158,7 +158,7 @@ void img2pixel_state_init(I2P_state *s)
    s->alpha_threshold = 128;
    s->sharpen = 0;
    s->hue = 0;
-   s->gauss = 80;
+   s->gauss = 1;
    s->offset_x = 0;
    s->offset_y = 0;
    s->image_outline = -1;
@@ -210,7 +210,7 @@ void img2pixel_preset_load(I2P_state *s, FILE *f)
    s->pixel_sample_mode = HLH_json_get_object_integer(&root->root,"sample_mode",0);
    s->alpha_threshold = HLH_json_get_object_integer(&root->root,"alpha_threshold",128);
    s->upscale = HLH_json_get_object_integer(&root->root,"upscale",1);
-   s->gauss = HLH_json_get_object_integer(&root->root,"gaussian_blur",128);
+   s->gauss = HLH_json_get_object_integer(&root->root,"gaussian_blur",1);
    s->offset_x = HLH_json_get_object_integer(&root->root,"offset_x",0);
    s->offset_y = HLH_json_get_object_integer(&root->root,"offset_y",0);
    s->image_outline = HLH_json_get_object_integer(&root->root,"outline",-1);
@@ -331,7 +331,7 @@ void img2pixel_sharpen_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
 
 void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
 {
-   double iarr = 1./(r+r+1.);
+   float iarr = 1.f/(r+r+1.f);
 
    #pragma omp parallel for schedule(dynamic, 1)
    for(int i = 0;i<src->height;i++)
@@ -365,9 +365,9 @@ void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=src->data[ri].rgb.g-fv_g;
          val_b+=src->data[ri].rgb.b-fv_b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
+         dst->data[ti].rgb.r = val_r*iarr+.5f;
+         dst->data[ti].rgb.g = val_g*iarr+.5f;
+         dst->data[ti].rgb.b = val_b*iarr+.5f;
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri++;
@@ -380,9 +380,9 @@ void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=src->data[ri].rgb.g-src->data[li].rgb.g;
          val_b+=src->data[ri].rgb.b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
+         dst->data[ti].rgb.r = val_r*iarr+.5f;
+         dst->data[ti].rgb.g = val_g*iarr+.5f;
+         dst->data[ti].rgb.b = val_b*iarr+.5f;
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri++;
@@ -396,9 +396,9 @@ void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=lv_g-src->data[li].rgb.g;
          val_b+=lv_b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
+         dst->data[ti].rgb.r = val_r*iarr+.5f;
+         dst->data[ti].rgb.g = val_g*iarr+.5f;
+         dst->data[ti].rgb.b = val_b*iarr+.5f;
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          li++;
@@ -409,7 +409,7 @@ void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
 
 void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
 {
-   double iarr = 1./(r+r+1.);
+   float iarr = 1.f/(r+r+1.f);
 
    #pragma omp parallel for schedule(dynamic, 1)
    for(int i = 0;i<src->width;i++)
@@ -443,9 +443,9 @@ void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=src->data[ri].rgb.g-fv_g;
          val_b+=src->data[ri].rgb.b-fv_b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
+         dst->data[ti].rgb.r = val_r*iarr+.5f;
+         dst->data[ti].rgb.g = val_g*iarr+.5f;
+         dst->data[ti].rgb.b = val_b*iarr+.5f;
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri+=src->width;
@@ -458,9 +458,9 @@ void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=src->data[ri].rgb.g-src->data[li].rgb.g;
          val_b+=src->data[ri].rgb.b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
+         dst->data[ti].rgb.r = val_r*iarr+.5f;
+         dst->data[ti].rgb.g = val_g*iarr+.5f;
+         dst->data[ti].rgb.b = val_b*iarr+.5f;
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri+=src->width;
@@ -474,9 +474,9 @@ void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=lv_g-src->data[li].rgb.g;
          val_b+=lv_b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
+         dst->data[ti].rgb.r = val_r*iarr+.5f;
+         dst->data[ti].rgb.g = val_g*iarr+.5f;
+         dst->data[ti].rgb.b = val_b*iarr+.5f;
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          li+=src->width;
@@ -485,22 +485,28 @@ void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
    }
 }
 
-void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *out)
+void img2pixel_lowpass_image2(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 {
    if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
       return;
 
-   if(s->gauss==0)
+   if(s->gauss==0||s->gauss>48)
    {
       SLK_rgb_sprite_copy(out,in);
       return;
    }
+   
+   double sigma_table[48] = {1.13,1.52,1.82,2.18,2.54,2.84,3.18,3.54,3.86,4.18,4.54,4.86,
+                             5.18,5.54,5.86,6.18,6.54,6.86,7.18,7.54,7.86,8.18,8.54,8.86,
+                             9.18,9.54,9.86,10.18,10.54,10.86,11.18,11.54,11.86,12.18,12.54,12.86,
+                             13.18,13.54,13.86,14.18,14.54,14.86,15.18,15.54,15.86,16.18,16.54,16.86};
 
    //Approximation of gauss blur by applyng three box blurs
    int rad0 = 0;
    int rad1 = 0;
    int rad2 = 0;
-   double sigma = (double)s->gauss/100.;
+   //double sigma = (double)s->gauss/100.;
+   double sigma = sigma_table[s->gauss-1];
    int wl = (int)floor(sqrt((12.*sigma*sigma/3.)+1.));
    if(wl&1)
       wl--;
@@ -509,11 +515,12 @@ void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
    rad0 = ((0<m?wl:wu)-1)/2;
    rad1 = ((1<m?wl:wu)-1)/2;
    rad2 = ((2<m?wl:wu)-1)/2;
+   printf("%d %d %d\n",rad0,rad1,rad2);
 
    //Box blurs split of in horizontal and vertical blurs
    SLK_RGB_sprite *tmp_data = SLK_rgb_sprite_create(out->width,out->height);
 
-   //NOTE: in boxblur_h/t a round call has been removed, if we ever see
+   //NOTE: in boxblur_h/t round,max,min calls has been removed, if we ever see
    //weird behaviour of blurring, this might be the cause
    boxblur_h(in,tmp_data,rad0);
    boxblur_t(tmp_data,out,rad0);
@@ -521,6 +528,177 @@ void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
    boxblur_t(tmp_data,out,rad1);
    boxblur_h(out,tmp_data,rad2);
    boxblur_t(tmp_data,out,rad2);
+
+   SLK_rgb_sprite_destroy(tmp_data);
+}
+
+void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *out)
+{
+   if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
+      return;
+
+   //if the image is too small, don't even bother
+   if(s->gauss==0||in->width<3||in->height<3)
+   {
+      SLK_rgb_sprite_copy(out,in);
+      return;
+   }
+
+   SLK_RGB_sprite *tmp_data = SLK_rgb_sprite_create(out->width,out->height);
+
+   double sigma = (double)s->gauss/100.0f;
+   double weights[7] = {0};
+   double sum = 0.;
+   for(int i = 0;i<7;i++)
+       weights[i] = exp(-((i-3.)*(i-3.))/(2.*sigma*sigma))/(sqrt(2.*M_PI*sigma*sigma));
+   for(int i = 0;i<7;i++)
+      sum+=weights[i];
+   for(int i = 0;i<7;i++)
+      weights[i]/=sum;
+
+   //Horizontal
+   SLK_RGB_sprite *src = in;
+   SLK_RGB_sprite *dst = tmp_data;
+   for(int i = 0;i<src->height;i++)
+   {
+      for(int j = 0;j<3;j++)
+      {
+         double acc_r = 0.;
+         double acc_g = 0.;
+         double acc_b = 0.;
+         for(int k = 0;k<3-j;k++)
+         {
+            acc_r+=weights[k]*src->data[i*src->width].rgb.r;
+            acc_g+=weights[k]*src->data[i*src->width].rgb.g;
+            acc_b+=weights[k]*src->data[i*src->width].rgb.b;
+         }
+         for(int k = -j;k<4;k++)
+         {
+            acc_r+=weights[k+3]*src->data[i*src->width+j+k].rgb.r;
+            acc_g+=weights[k+3]*src->data[i*src->width+j+k].rgb.g;
+            acc_b+=weights[k+3]*src->data[i*src->width+j+k].rgb.b;
+         }
+
+         dst->data[i*src->width+j].rgb.r = acc_r;
+         dst->data[i*src->width+j].rgb.g = acc_g;
+         dst->data[i*src->width+j].rgb.b = acc_b;
+         dst->data[i*src->width+j].rgb.a = src->data[i*src->width+j].rgb.a;
+      }
+
+      for(int j = 3;j<src->width-3;j++)
+      {
+         double acc_r = 0.;
+         double acc_g = 0.;
+         double acc_b = 0.;
+         for(int k = -3;k<4;k++)
+         {
+            acc_r+=weights[k+3]*src->data[i*src->width+j+k].rgb.r;
+            acc_g+=weights[k+3]*src->data[i*src->width+j+k].rgb.g;
+            acc_b+=weights[k+3]*src->data[i*src->width+j+k].rgb.b;
+         }
+
+         dst->data[i*src->width+j].rgb.r = acc_r;
+         dst->data[i*src->width+j].rgb.g = acc_g;
+         dst->data[i*src->width+j].rgb.b = acc_b;
+         dst->data[i*src->width+j].rgb.a = src->data[i*src->width+j].rgb.a;
+      }
+
+      for(int j = src->width-3;j<src->width;j++)
+      {
+         double acc_r = 0.;
+         double acc_g = 0.;
+         double acc_b = 0.;
+         for(int k = 3+src->width-j;k<7;k++)
+         {
+            acc_r+=weights[k]*src->data[i*src->width+src->width-1].rgb.r;
+            acc_g+=weights[k]*src->data[i*src->width+src->width-1].rgb.g;
+            acc_b+=weights[k]*src->data[i*src->width+src->width-1].rgb.b;
+         }
+         for(int k = -3;k<src->width-j;k++)
+         {
+            acc_r+=weights[k+3]*src->data[i*src->width+j+k].rgb.r;
+            acc_g+=weights[k+3]*src->data[i*src->width+j+k].rgb.g;
+            acc_b+=weights[k+3]*src->data[i*src->width+j+k].rgb.b;
+         }
+
+         dst->data[i*src->width+j].rgb.r = acc_r;
+         dst->data[i*src->width+j].rgb.g = acc_g;
+         dst->data[i*src->width+j].rgb.b = acc_b;
+         dst->data[i*src->width+j].rgb.a = src->data[i*src->width+j].rgb.a;
+      }
+   }
+
+   //Vertical
+   src = tmp_data;
+   dst = out;
+   for(int i = 0;i<src->width;i++)
+   {
+      for(int j = 0;j<3;j++)
+      {
+         double acc_r = 0.;
+         double acc_g = 0.;
+         double acc_b = 0.;
+         for(int k = 0;k<3-j;k++)
+         {
+            acc_r+=weights[k]*src->data[i].rgb.r;
+            acc_g+=weights[k]*src->data[i].rgb.g;
+            acc_b+=weights[k]*src->data[i].rgb.b;
+         }
+         for(int k = -j;k<4;k++)
+         {
+            acc_r+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.r;
+            acc_g+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.g;
+            acc_b+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.b;
+         }
+
+         dst->data[j*src->width+i].rgb.r = acc_r;
+         dst->data[j*src->width+i].rgb.g = acc_g;
+         dst->data[j*src->width+i].rgb.b = acc_b;
+         dst->data[j*src->width+i].rgb.a = src->data[j*src->width+i].rgb.a;
+      }
+
+      for(int j = 3;j<src->height-3;j++)
+      {
+         double acc_r = 0.;
+         double acc_g = 0.;
+         double acc_b = 0.;
+         for(int k = -3;k<4;k++)
+         {
+            acc_r+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.r;
+            acc_g+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.g;
+            acc_b+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.b;
+         }
+
+         dst->data[j*src->width+i].rgb.r = acc_r;
+         dst->data[j*src->width+i].rgb.g = acc_g;
+         dst->data[j*src->width+i].rgb.b = acc_b;
+         dst->data[j*src->width+i].rgb.a = src->data[j*src->width+i].rgb.a;
+      }
+
+      for(int j = src->height-3;j<src->height;j++)
+      {
+         double acc_r = 0.;
+         double acc_g = 0.;
+         double acc_b = 0.;
+         for(int k = 3+src->height-j;k<7;k++)
+         {
+            acc_r+=weights[k]*src->data[i+src->width*(src->height-1)].rgb.r;
+            acc_g+=weights[k]*src->data[i+src->width*(src->height-1)].rgb.g;
+            acc_b+=weights[k]*src->data[i+src->width*(src->height-1)].rgb.b;
+         }
+         for(int k = -3;k<src->height-j;k++)
+         {
+            acc_r+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.r;
+            acc_g+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.g;
+            acc_b+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.b;
+         }
+
+         dst->data[j*src->width+i].rgb.r = acc_r;
+         dst->data[j*src->width+i].rgb.g = acc_g;
+         dst->data[j*src->width+i].rgb.b = acc_b;
+         dst->data[j*src->width+i].rgb.a = src->data[j*src->width+i].rgb.a;
+      }
+   }
 
    SLK_rgb_sprite_destroy(tmp_data);
 }
@@ -657,7 +835,7 @@ void img2pixel_reset_to_defaults(I2P_state *s)
    s->alpha_threshold = 128;
    s->sharpen = 0;
    s->hue = 0;
-   s->gauss = 80;
+   s->gauss = 1;
    s->offset_x = 0;
    s->offset_y = 0;
    s->image_outline = -1;
@@ -2110,7 +2288,7 @@ static void quant_compute_kmeans(I2P_state *s, SLK_RGB_sprite *data, int pal_in)
       delta_max = 0.0;
       for(int i = 0;i<s->quant_k;i++)
       {
-         variance = quant_colors_variance(&s->quant_cluster_list[i]);
+         variance = quant_colors_variance(s->quant_cluster_list[i]);
          delta = fabs(previous_variance[i]-variance);
          delta_max = HLH_max(delta,delta_max);
          previous_variance[i] = variance;
@@ -2130,9 +2308,9 @@ static void quant_get_cluster_centroid(I2P_state *s, SLK_RGB_sprite *data, int p
       if(HLH_array_length(s->quant_cluster_list[i])>0)
       {
          if(pal_in)
-            s->quant_centroid_list[i] = quant_colors_mean(&s->quant_cluster_list[i],s->palette->colors[i],weight_pal);
+            s->quant_centroid_list[i] = quant_colors_mean(s->quant_cluster_list[i],s->palette->colors[i],weight_pal);
          else
-            s->quant_centroid_list[i] = quant_colors_mean(&s->quant_cluster_list[i],SLK_color_create(0,0,0,0),0);
+            s->quant_centroid_list[i] = quant_colors_mean(s->quant_cluster_list[i],SLK_color_create(0,0,0,0),0);
       }
       else
       {

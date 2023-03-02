@@ -31,6 +31,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //--------------------------------
 #define HLH_max(a,b) ((a)>(b)?(a):(b))
 #define HLH_min(a,b) ((a)<(b)?(a):(b))
+#define HLH_non_zero(a) ((a)+((a)==0))
 //--------------------------------
 
 //Dynamic array/"stretchy buffer"
@@ -62,10 +63,10 @@ typedef struct
    size_t size;
 }HLH_aheader;
 #define HLH_array_header(a) ((HLH_aheader *)(a-HLH_array_header_offset(a)))
-#define HLH_array_header_offset(a) ((sizeof(HLH_aheader)*2-1)/sizeof(*a))
+#define HLH_array_header_offset(a) ((sizeof(HLH_aheader)+sizeof(*a)-1)/sizeof(*a))
 #define HLH_array_maygrow(a,n) (((a)==NULL||HLH_array_header(a)->length+n>HLH_array_header(a)->size)?(HLH_array_grow(a,n,0),0):0)
 #define HLH_array_grow(a,n,min) ((a) = _HLH_array_grow(a,sizeof(*a),n,min))
-static void *_HLH_array_grow(void *old, size_t size, size_t grow, size_t min);
+void *_HLH_array_grow(void *old, size_t size, size_t grow, size_t min);
 //--------------------------------
 
 //Internal
@@ -74,9 +75,9 @@ static void *_HLH_array_grow(void *old, size_t size, size_t grow, size_t min);
 //malloc family functions are hidden behind functions
 //so that they only need to be overriden with HLH_MALLOC/-FREE/-REALLOC in
 //the file containing the implementation
-static void *_HLH_malloc(size_t size);
-static void _HLH_free(void *ptr);
-static void *_HLH_realloc(void *ptr, size_t new_size);
+void *_HLH_malloc(size_t size);
+void _HLH_free(void *ptr);
+void *_HLH_realloc(void *ptr, size_t new_size);
 //--------------------------------
 
 #endif
@@ -97,24 +98,24 @@ static void *_HLH_realloc(void *ptr, size_t new_size);
 #define HLH_REALLOC realloc
 #endif
 
-static void *_HLH_malloc(size_t size)
+void *_HLH_malloc(size_t size)
 {
    return HLH_MALLOC(size);
 }
 
-static void _HLH_free(void *ptr)
+void _HLH_free(void *ptr)
 {
    HLH_FREE(ptr);
 }
 
-static void *_HLH_realloc(void *ptr, size_t new_size)
+void *_HLH_realloc(void *ptr, size_t new_size)
 {
    return HLH_REALLOC(ptr,new_size);
 }
 
-static void *_HLH_array_grow(void *old, size_t size, size_t grow, size_t min)
+void *_HLH_array_grow(void *old, size_t size, size_t grow, size_t min)
 {
-   size_t header_off = (sizeof(HLH_aheader)*2-1)/size;
+   size_t header_off = (sizeof(HLH_aheader)+size-1)/size;
 
    if(min<4)
       min = 4;

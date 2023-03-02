@@ -41,7 +41,7 @@ In general, I try to keep the amount of external dependencies as low as possible
 Current development version: SLK_img2pixel 1.5-dev
 
 ----------------------------------------
-Version:                SLK_img2pixel 1.5 (
+Version:                SLK_img2pixel 1.5 (tba)
 ----------------------------------------
 
 CHANGES:

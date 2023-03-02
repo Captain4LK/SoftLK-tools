@@ -16,13 +16,13 @@ elif [ $1 = "gui_hlh" ]; then
    sources="$sources main_hlh.c ../HLH_gui/HLH_gui_all.c"
    echo $sources
 
-   gcc -o ../bin/SLK_img2pix $sources -Wall -Wextra -lm -lSDL2 -Og -g -Wstrict-aliasing=3 -fopenmp -Wno-unused
+   gcc -o ../bin/SLK_img2pix $sources -Wall -Wextra -lm -lSDL2 -O3 -s -Wstrict-aliasing=3 -fopenmp -Wno-unused
 
 elif [ $1 = "cmd" ]; then
    sources="$sources main_cmd.c gui.c"
    echo $sources
 
-   gcc -o ../bin/SLK_img2pix_cmd $sources -Wall -Wextra -lm -Og -g -flto=auto -Wstrict-aliasing=3
+   gcc -o ../bin/SLK_img2pix_cmd $sources -Wall -Wextra -lm -O3 -s -flto=auto -Wstrict-aliasing=3 
 
 elif [ $1 = "video" ]; then
    sources="$sources main_video.c gui.c"
