@@ -46,7 +46,7 @@ Version:                SLK_img2pixel 1.5 (
 
 CHANGES:
 
-* optimized and corrected gaussian blur: about 2.5x faster and more correct for large blurring radius
+* optimized and corrected gaussian blur: about 5x faster and more correct for large blurring radius
 
 ----------------------------------------
 Version:                SLK_img2pixel 1.4 (17.09.2022)

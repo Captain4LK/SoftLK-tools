@@ -365,9 +365,9 @@ void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=src->data[ri].rgb.g-fv_g;
          val_b+=src->data[ri].rgb.b-fv_b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri++;
@@ -380,9 +380,9 @@ void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=src->data[ri].rgb.g-src->data[li].rgb.g;
          val_b+=src->data[ri].rgb.b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri++;
@@ -396,9 +396,9 @@ void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=lv_g-src->data[li].rgb.g;
          val_b+=lv_b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          li++;
@@ -443,9 +443,9 @@ void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=src->data[ri].rgb.g-fv_g;
          val_b+=src->data[ri].rgb.b-fv_b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri+=src->width;
@@ -458,9 +458,9 @@ void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=src->data[ri].rgb.g-src->data[li].rgb.g;
          val_b+=src->data[ri].rgb.b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri+=src->width;
@@ -474,9 +474,9 @@ void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=lv_g-src->data[li].rgb.g;
          val_b+=lv_b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
-         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
-         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,val_r*iarr));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,val_g*iarr));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,val_b*iarr));
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          li+=src->width;
@@ -513,6 +513,8 @@ void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
    //Box blurs split of in horizontal and vertical blurs
    SLK_RGB_sprite *tmp_data = SLK_rgb_sprite_create(out->width,out->height);
 
+   //NOTE: in boxblur_h/t a round call has been removed, if we ever see
+   //weird behaviour of blurring, this might be the cause
    boxblur_h(in,tmp_data,rad0);
    boxblur_t(tmp_data,out,rad0);
    boxblur_h(out,tmp_data,rad1);
