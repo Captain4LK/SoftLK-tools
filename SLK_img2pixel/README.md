@@ -38,7 +38,15 @@ In general, I try to keep the amount of external dependencies as low as possible
 
 # Changelog
 
-Current development version: SLK_img2pixel 1.4-dev
+Current development version: SLK_img2pixel 1.5-dev
+
+----------------------------------------
+Version:                SLK_img2pixel 1.5 (
+----------------------------------------
+
+CHANGES:
+
+* optimized and corrected gaussian blur: about 2.5x faster and more correct for large blurring radius
 
 ----------------------------------------
 Version:                SLK_img2pixel 1.4 (17.09.2022)
