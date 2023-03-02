@@ -57,6 +57,7 @@ void img2pixel_preset_save(I2P_state *s, FILE *f);
 
 void         img2pixel_sharpen_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *out);
 void         img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *out);
+void         img2pixel_lowpass_image2(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *out);
 void         img2pixel_quantize(I2P_state *s, int colors, SLK_RGB_sprite *in);
 void         img2pixel_process_image(I2P_state *s, const SLK_RGB_sprite *in, SLK_RGB_sprite *out);
 void         img2pixel_reset_to_defaults(I2P_state *s);

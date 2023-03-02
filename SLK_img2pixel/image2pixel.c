@@ -329,6 +329,162 @@ void img2pixel_sharpen_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
    SLK_rgb_sprite_destroy(tmp_data2);
 }
 
+void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
+{
+   double iarr = 1./(r+r+1.);
+
+   #pragma omp parallel for schedule(dynamic, 1)
+   for(int i = 0;i<src->height;i++)
+   {
+      int ti = i*src->width;
+      int li = ti;
+      int ri = ti+r;
+
+      int fv_r = src->data[ti].rgb.r;
+      int fv_g = src->data[ti].rgb.g;
+      int fv_b = src->data[ti].rgb.b;
+
+      int lv_r = src->data[ti+src->width-1].rgb.r;
+      int lv_g = src->data[ti+src->width-1].rgb.g;
+      int lv_b = src->data[ti+src->width-1].rgb.b;
+
+      int val_r = (r+1)*fv_r;
+      int val_g = (r+1)*fv_g;
+      int val_b = (r+1)*fv_b;
+
+      for(int j = 0;j<r;j++)
+      {
+         val_r+=src->data[ti+j].rgb.r;
+         val_g+=src->data[ti+j].rgb.g;
+         val_b+=src->data[ti+j].rgb.b;
+      }
+
+      for(int j = 0;j<=r;j++)
+      {
+         val_r+=src->data[ri].rgb.r-fv_r;
+         val_g+=src->data[ri].rgb.g-fv_g;
+         val_b+=src->data[ri].rgb.b-fv_b;
+
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.a = src->data[ti].rgb.a;
+
+         ri++;
+         ti++;
+      }
+
+      for(int j = r+1;j<src->width-r;j++)
+      {
+         val_r+=src->data[ri].rgb.r-src->data[li].rgb.r;
+         val_g+=src->data[ri].rgb.g-src->data[li].rgb.g;
+         val_b+=src->data[ri].rgb.b-src->data[li].rgb.b;
+
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.a = src->data[ti].rgb.a;
+
+         ri++;
+         li++;
+         ti++;
+      }
+
+      for(int j = src->width-r;j<src->width;j++)
+      {
+         val_r+=lv_r-src->data[li].rgb.r;
+         val_g+=lv_g-src->data[li].rgb.g;
+         val_b+=lv_b-src->data[li].rgb.b;
+
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.a = src->data[ti].rgb.a;
+
+         li++;
+         ti++;
+      }
+   }
+}
+
+void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
+{
+   double iarr = 1./(r+r+1.);
+
+   #pragma omp parallel for schedule(dynamic, 1)
+   for(int i = 0;i<src->width;i++)
+   {
+      int ti = i;
+      int li = ti;
+      int ri = ti+r*src->width;
+
+      int fv_r = src->data[ti].rgb.r;
+      int fv_g = src->data[ti].rgb.g;
+      int fv_b = src->data[ti].rgb.b;
+
+      int lv_r = src->data[ti+src->width*(src->height-1)].rgb.r;
+      int lv_g = src->data[ti+src->width*(src->height-1)].rgb.g;
+      int lv_b = src->data[ti+src->width*(src->height-1)].rgb.b;
+
+      int val_r = (r+1)*fv_r;
+      int val_g = (r+1)*fv_g;
+      int val_b = (r+1)*fv_b;
+
+      for(int j = 0;j<r;j++)
+      {
+         val_r+=src->data[ti+j*src->width].rgb.r;
+         val_g+=src->data[ti+j*src->width].rgb.g;
+         val_b+=src->data[ti+j*src->width].rgb.b;
+      }
+
+      for(int j = 0;j<=r;j++)
+      {
+         val_r+=src->data[ri].rgb.r-fv_r;
+         val_g+=src->data[ri].rgb.g-fv_g;
+         val_b+=src->data[ri].rgb.b-fv_b;
+
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.a = src->data[ti].rgb.a;
+
+         ri+=src->width;
+         ti+=src->width;
+      }
+
+      for(int j = r+1;j<src->height-r;j++)
+      {
+         val_r+=src->data[ri].rgb.r-src->data[li].rgb.r;
+         val_g+=src->data[ri].rgb.g-src->data[li].rgb.g;
+         val_b+=src->data[ri].rgb.b-src->data[li].rgb.b;
+
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.a = src->data[ti].rgb.a;
+
+         ri+=src->width;
+         li+=src->width;
+         ti+=src->width;
+      }
+
+      for(int j = src->height-r;j<src->height;j++)
+      {
+         val_r+=lv_r-src->data[li].rgb.r;
+         val_g+=lv_g-src->data[li].rgb.g;
+         val_b+=lv_b-src->data[li].rgb.b;
+
+         dst->data[ti].rgb.r = HLH_max(0x0,HLH_min(0xff,round(val_r*iarr)));
+         dst->data[ti].rgb.g = HLH_max(0x0,HLH_min(0xff,round(val_g*iarr)));
+         dst->data[ti].rgb.b = HLH_max(0x0,HLH_min(0xff,round(val_b*iarr)));
+         dst->data[ti].rgb.a = src->data[ti].rgb.a;
+
+         li+=src->width;
+         ti+=src->width;
+      }
+   }
+}
+
 void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 {
    if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
@@ -340,62 +496,31 @@ void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
       return;
    }
 
-   SLK_RGB_sprite *tmp_data2 = SLK_rgb_sprite_create(out->width,out->height);
-   if(tmp_data2==NULL)
-      return;
-   
-   SLK_rgb_sprite_copy(tmp_data2,in);
+   //Approximation of gauss blur by applyng three box blurs
+   int rad0 = 0;
+   int rad1 = 0;
+   int rad2 = 0;
+   double sigma = (double)s->gauss/100.;
+   int wl = (int)floor(sqrt((12.*sigma*sigma/3.)+1.));
+   if(wl&1)
+      wl--;
+   int wu = wl+2;
+   int m = (int)round((12.*sigma*sigma-3.*wl*wl-12.*wl-9.)/(-4.*wl-4.));
+   rad0 = ((0<m?wl:wu)-1)/2;
+   rad1 = ((1<m?wl:wu)-1)/2;
+   rad2 = ((2<m?wl:wu)-1)/2;
 
-   //Setup lowpass kernel
-   //We need to divide each cell
-   //by the sum of all cells to make 
-   //sure the sum of all cells will be 1
-   //otherwise the blur would either darken
-   //or lighten the image
-   double gauss_factor = (double)s->gauss/100.0f;
-   double lowpass_kernel[7][7];
-   for(int y = 0;y<7;y++)
-      for(int x = 0;x<7;x++)
-         lowpass_kernel[x][y] = gauss_calc((double)x-3.0f,(double)y-3.0f,gauss_factor);
-   double norm_val = 0.0f;
-   for(int y = 0;y<7;y++)
-      for(int x = 0;x<7;x++)
-         norm_val+=lowpass_kernel[x][y];
-   for(int y = 0;y<7;y++)
-      for(int x = 0;x<7;x++)
-         lowpass_kernel[x][y] = lowpass_kernel[x][y]/norm_val;
+   //Box blurs split of in horizontal and vertical blurs
+   SLK_RGB_sprite *tmp_data = SLK_rgb_sprite_create(out->width,out->height);
 
-   #pragma omp parallel for schedule(dynamic, 1)
-   for(int y = 0;y<out->height;y++)
-   {
-      for(int x = 0;x<out->width;x++)
-      {
-         double r = 0.0f;
-         double g = 0.0f;
-         double b = 0.0f;
+   boxblur_h(in,tmp_data,rad0);
+   boxblur_t(tmp_data,out,rad0);
+   boxblur_h(out,tmp_data,rad1);
+   boxblur_t(tmp_data,out,rad1);
+   boxblur_h(out,tmp_data,rad2);
+   boxblur_t(tmp_data,out,rad2);
 
-         //Apply kernel
-         for(int yk = -3;yk<4;yk++)
-         {
-            for(int xk = -3;xk<4;xk++)
-            {
-               SLK_Color c = kernel_data_get(x+xk,y+yk,out->width,out->height,tmp_data2);
-
-               r+=lowpass_kernel[xk+3][yk+3]*(double)c.rgb.r;
-               g+=lowpass_kernel[xk+3][yk+3]*(double)c.rgb.g;
-               b+=lowpass_kernel[xk+3][yk+3]*(double)c.rgb.b;
-            }
-         }
-
-         out->data[y*out->width+x].rgb.r = HLH_max(0x0,HLH_min(0xff,(int)r));
-         out->data[y*out->width+x].rgb.g = HLH_max(0x0,HLH_min(0xff,(int)g));
-         out->data[y*out->width+x].rgb.b = HLH_max(0x0,HLH_min(0xff,(int)b));
-         out->data[y*out->width+x].rgb.a = in->data[y*out->width+x].rgb.a;
-      }
-   }
-
-   //Cleanup
-   SLK_rgb_sprite_destroy(tmp_data2);
+   SLK_rgb_sprite_destroy(tmp_data);
 }
 
 void img2pixel_quantize(I2P_state *s, int colors, SLK_RGB_sprite *in)
