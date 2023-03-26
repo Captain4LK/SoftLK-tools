@@ -334,11 +334,11 @@ nfdresult_t NFD_OpenDialogN(nfdnchar_t** outPath,
                             const nfdnfilteritem_t* filterList,
                             nfdfiltersize_t filterCount,
                             const nfdnchar_t* defaultPath) {
-    ::IFileOpenDialog* fileOpenDialog;
+    ::IFileOpenDialog *fileOpenDialog;
 
     // Create dialog
     HRESULT result = ::CoCreateInstance(::CLSID_FileOpenDialog,
-                                        nullptr,
+                                        NULL,
                                         CLSCTX_ALL,
                                         ::IID_IFileOpenDialog,
                                         reinterpret_cast<void**>(&fileOpenDialog));

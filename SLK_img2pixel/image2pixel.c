@@ -17,6 +17,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "../external/HLH_json.h"
 #define HLH_IMPLEMENTATION
 #include "../external/HLH.h"
+
+#include <stdint.h>
 //-------------------------------------
 
 //Internal includes
@@ -329,24 +331,28 @@ void img2pixel_sharpen_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
    SLK_rgb_sprite_destroy(tmp_data2);
 }
 
-void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
+void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, float rad)
 {
-   float iarr = 1.f/(r+r+1.f);
+   int r = (int)rad;
+   int32_t frf = rad*256.-r*256.;
+   int32_t iarrf = (1./(rad+rad+1.))*256;
+   float fr = rad-r;
+   float iarr = 1.f/(rad+rad+1.f);
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int i = 0;i<src->height;i++)
    {
       int ti = i*src->width;
       int li = ti;
       int ri = ti+r;
 
-      int fv_r = src->data[ti].rgb.r;
-      int fv_g = src->data[ti].rgb.g;
-      int fv_b = src->data[ti].rgb.b;
+      int fv_r = ((int32_t)src->data[ti].rgb.r)<<8;
+      int fv_g = ((int32_t)src->data[ti].rgb.g)<<8;
+      int fv_b = ((int32_t)src->data[ti].rgb.b)<<8;
 
-      int lv_r = src->data[ti+src->width-1].rgb.r;
-      int lv_g = src->data[ti+src->width-1].rgb.g;
-      int lv_b = src->data[ti+src->width-1].rgb.b;
+      int lv_r = ((int32_t)src->data[ti+src->width-1].rgb.r)<<8;
+      int lv_g = ((int32_t)src->data[ti+src->width-1].rgb.g)<<8;
+      int lv_b = ((int32_t)src->data[ti+src->width-1].rgb.b)<<8;
 
       int val_r = (r+1)*fv_r;
       int val_g = (r+1)*fv_g;
@@ -354,51 +360,99 @@ void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
 
       for(int j = 0;j<r;j++)
       {
-         val_r+=src->data[ti+j].rgb.r;
-         val_g+=src->data[ti+j].rgb.g;
-         val_b+=src->data[ti+j].rgb.b;
+         val_r+=((int32_t)src->data[ti+j].rgb.r)<<8;
+         val_g+=((int32_t)src->data[ti+j].rgb.g)<<8;
+         val_b+=((int32_t)src->data[ti+j].rgb.b)<<8;
       }
 
       for(int j = 0;j<=r;j++)
       {
-         val_r+=src->data[ri].rgb.r-fv_r;
-         val_g+=src->data[ri].rgb.g-fv_g;
-         val_b+=src->data[ri].rgb.b-fv_b;
+         val_r+=(((int32_t)src->data[ri].rgb.r)<<8)-fv_r;
+         val_g+=(((int32_t)src->data[ri].rgb.g)<<8)-fv_g;
+         val_b+=(((int32_t)src->data[ri].rgb.b)<<8)-fv_b;
 
-         dst->data[ti].rgb.r = val_r*iarr+.5f;
-         dst->data[ti].rgb.g = val_g*iarr+.5f;
-         dst->data[ti].rgb.b = val_b*iarr+.5f;
+         int32_t frac_r = frf*((fv_r>>8)+src->data[ri+1].rgb.r);
+         int32_t frac_g = frf*((fv_g>>8)+src->data[ri+1].rgb.g);
+         int32_t frac_b = frf*((fv_b>>8)+src->data[ri+1].rgb.b);
+         dst->data[ti].rgb.r = (iarrf*(val_r+frac_r)+32768)>>16;
+         dst->data[ti].rgb.g = (iarrf*(val_g+frac_g)+32768)>>16;
+         dst->data[ti].rgb.b = (iarrf*(val_b+frac_b)+32768)>>16;
+         //float frac_r = fr*(fv_r+src->data[ri+1].rgb.r);
+         //float frac_g = fr*(fv_g+src->data[ri+1].rgb.g);
+         //float frac_b = fr*(fv_b+src->data[ri+1].rgb.b);
+
+         //dst->data[ti].rgb.r = (val_r+frac_r)*iarr+.5f;
+         //dst->data[ti].rgb.g = (val_g+frac_g)*iarr+.5f;
+         //dst->data[ti].rgb.b = (val_b+frac_b)*iarr+.5f;
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri++;
          ti++;
       }
 
+      //printf("%d %d %d %d\n",li,ti,ri,r);
       for(int j = r+1;j<src->width-r;j++)
       {
-         val_r+=src->data[ri].rgb.r-src->data[li].rgb.r;
-         val_g+=src->data[ri].rgb.g-src->data[li].rgb.g;
-         val_b+=src->data[ri].rgb.b-src->data[li].rgb.b;
+         //val_r+=src->data[ri].rgb.r-src->data[li].rgb.r;
+         //val_g+=src->data[ri].rgb.g-src->data[li].rgb.g;
+         //val_b+=src->data[ri].rgb.b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = val_r*iarr+.5f;
-         dst->data[ti].rgb.g = val_g*iarr+.5f;
-         dst->data[ti].rgb.b = val_b*iarr+.5f;
+         val_r+=(((int32_t)(src->data[ri].rgb.r-src->data[li].rgb.r))<<8);
+         val_g+=(((int32_t)(src->data[ri].rgb.g-src->data[li].rgb.g))<<8);
+         val_b+=(((int32_t)(src->data[ri].rgb.b-src->data[li].rgb.b))<<8);
+
+         //float frac_r = fr*(src->data[li].rgb.r+src->data[ri+1].rgb.r);
+         //float frac_g = fr*(src->data[li].rgb.g+src->data[ri+1].rgb.g);
+         //float frac_b = fr*(src->data[li].rgb.b+src->data[ri+1].rgb.b);
+         int32_t frac_r = frf*(src->data[li].rgb.r+src->data[ri+1].rgb.r);
+         int32_t frac_g = frf*(src->data[li].rgb.g+src->data[ri+1].rgb.g);
+         int32_t frac_b = frf*(src->data[li].rgb.b+src->data[ri+1].rgb.b);
+
+         dst->data[ti].rgb.r = (iarrf*(val_r+frac_r)+32768)>>16;
+         dst->data[ti].rgb.g = (iarrf*(val_g+frac_g)+32768)>>16;
+         dst->data[ti].rgb.b = (iarrf*(val_b+frac_b)+32768)>>16;
+         //dst->data[ti].rgb.r = (val_r+frac_r)*iarr+.5f;
+         //dst->data[ti].rgb.g = (val_g+frac_g)*iarr+.5f;
+         //dst->data[ti].rgb.b = (val_b+frac_b)*iarr+.5f;
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri++;
          li++;
          ti++;
       }
+      /*val_r>>=8;
+      val_g>>=8;
+      val_b>>=8;
+      fv_r>>=8;
+      fv_g>>=8;
+      fv_b>>=8;
+      lv_r>>=8;
+      lv_g>>=8;
+      lv_b>>=8;*/
 
       for(int j = src->width-r;j<src->width;j++)
       {
-         val_r+=lv_r-src->data[li].rgb.r;
-         val_g+=lv_g-src->data[li].rgb.g;
-         val_b+=lv_b-src->data[li].rgb.b;
+         //val_r+=lv_r-src->data[li].rgb.r;
+         //val_g+=lv_g-src->data[li].rgb.g;
+         //val_b+=lv_b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = val_r*iarr+.5f;
-         dst->data[ti].rgb.g = val_g*iarr+.5f;
-         dst->data[ti].rgb.b = val_b*iarr+.5f;
+         //float frac_r = fr*(src->data[li].rgb.r+lv_r);
+         //float frac_g = fr*(src->data[li].rgb.g+lv_r);
+         //float frac_b = fr*(src->data[li].rgb.b+lv_r);
+         val_r+=-(((int32_t)src->data[li].rgb.r)<<8)+lv_r;
+         val_g+=-(((int32_t)src->data[li].rgb.g)<<8)+lv_g;
+         val_b+=-(((int32_t)src->data[li].rgb.b)<<8)+lv_b;
+
+         int32_t frac_r = frf*((lv_r>>8)+src->data[li].rgb.r);
+         int32_t frac_g = frf*((lv_g>>8)+src->data[li].rgb.g);
+         int32_t frac_b = frf*((lv_b>>8)+src->data[li].rgb.b);
+
+         dst->data[ti].rgb.r = (iarrf*(val_r+frac_r)+32768)>>16;
+         dst->data[ti].rgb.g = (iarrf*(val_g+frac_g)+32768)>>16;
+         dst->data[ti].rgb.b = (iarrf*(val_b+frac_b)+32768)>>16;
+         //dst->data[ti].rgb.r = (val_r+frac_r)*iarr+.5f;
+         //dst->data[ti].rgb.g = (val_g+frac_g)*iarr+.5f;
+         //dst->data[ti].rgb.b = (val_b+frac_b)*iarr+.5f;
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          li++;
@@ -407,11 +461,13 @@ void boxblur_h(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
    }
 }
 
-void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
+void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, float rad)
 {
-   float iarr = 1.f/(r+r+1.f);
+   int r = (int)rad;
+   float fr = rad-r;
+   float iarr = 1.f/(rad+rad+1.f);
 
-   #pragma omp parallel for schedule(dynamic, 1)
+   //#pragma omp parallel for schedule(dynamic, 1)
    for(int i = 0;i<src->width;i++)
    {
       int ti = i;
@@ -443,9 +499,14 @@ void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=src->data[ri].rgb.g-fv_g;
          val_b+=src->data[ri].rgb.b-fv_b;
 
-         dst->data[ti].rgb.r = val_r*iarr+.5f;
-         dst->data[ti].rgb.g = val_g*iarr+.5f;
-         dst->data[ti].rgb.b = val_b*iarr+.5f;
+         float frac_r = fr*(fv_r+src->data[ri+src->width].rgb.r);
+         float frac_g = fr*(fv_g+src->data[ri+src->width].rgb.g);
+         float frac_b = fr*(fv_b+src->data[ri+src->width].rgb.b);
+
+         dst->data[ti].rgb.r = (val_r+frac_r)*iarr+.5f;
+         dst->data[ti].rgb.g = (val_g+frac_g)*iarr+.5f;
+         dst->data[ti].rgb.b = (val_b+frac_b)*iarr+.5f;
+
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri+=src->width;
@@ -458,9 +519,13 @@ void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=src->data[ri].rgb.g-src->data[li].rgb.g;
          val_b+=src->data[ri].rgb.b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = val_r*iarr+.5f;
-         dst->data[ti].rgb.g = val_g*iarr+.5f;
-         dst->data[ti].rgb.b = val_b*iarr+.5f;
+         float frac_r = fr*(src->data[li].rgb.r+src->data[ri+src->width].rgb.r);
+         float frac_g = fr*(src->data[li].rgb.g+src->data[ri+src->width].rgb.g);
+         float frac_b = fr*(src->data[li].rgb.b+src->data[ri+src->width].rgb.b);
+
+         dst->data[ti].rgb.r = (val_r+frac_r)*iarr+.5f;
+         dst->data[ti].rgb.g = (val_g+frac_g)*iarr+.5f;
+         dst->data[ti].rgb.b = (val_b+frac_b)*iarr+.5f;
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          ri+=src->width;
@@ -474,9 +539,13 @@ void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
          val_g+=lv_g-src->data[li].rgb.g;
          val_b+=lv_b-src->data[li].rgb.b;
 
-         dst->data[ti].rgb.r = val_r*iarr+.5f;
-         dst->data[ti].rgb.g = val_g*iarr+.5f;
-         dst->data[ti].rgb.b = val_b*iarr+.5f;
+         float frac_r = fr*(src->data[li].rgb.r+lv_r);
+         float frac_g = fr*(src->data[li].rgb.g+lv_r);
+         float frac_b = fr*(src->data[li].rgb.b+lv_r);
+
+         dst->data[ti].rgb.r = (val_r+frac_r)*iarr+.5f;
+         dst->data[ti].rgb.g = (val_g+frac_g)*iarr+.5f;
+         dst->data[ti].rgb.b = (val_b+frac_b)*iarr+.5f;
          dst->data[ti].rgb.a = src->data[ti].rgb.a;
 
          li+=src->width;
@@ -487,10 +556,10 @@ void boxblur_t(SLK_RGB_sprite *src, SLK_RGB_sprite *dst, int r)
 
 void img2pixel_lowpass_image2(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *out)
 {
-   if(in==NULL||out==NULL||in->width!=out->width||in->height!=out->height)
+   if(in==NULL||out==NULL||in->data==NULL||out->data==NULL||in->width!=out->width||in->height!=out->height)
       return;
 
-   if(s->gauss==0||s->gauss>48)
+   if(s->gauss==0)
    {
       SLK_rgb_sprite_copy(out,in);
       return;
@@ -506,28 +575,31 @@ void img2pixel_lowpass_image2(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *
    int rad1 = 0;
    int rad2 = 0;
    //double sigma = (double)s->gauss/100.;
-   double sigma = sigma_table[s->gauss-1];
-   int wl = (int)floor(sqrt((12.*sigma*sigma/3.)+1.));
-   if(wl&1)
-      wl--;
-   int wu = wl+2;
-   int m = (int)round((12.*sigma*sigma-3.*wl*wl-12.*wl-9.)/(-4.*wl-4.));
-   rad0 = ((0<m?wl:wu)-1)/2;
-   rad1 = ((1<m?wl:wu)-1)/2;
-   rad2 = ((2<m?wl:wu)-1)/2;
-   printf("%d %d %d\n",rad0,rad1,rad2);
+   double sigma = s->gauss/100.;
+   float wl =(sqrt((12.*sigma*sigma/3.)+1.));
+   //if(wl&1)
+      //wl--;
+   //int wu = wl+2;
+   float m =((12.*sigma*sigma-3.*wl*wl-12.*wl-9.)/(-4.*wl-4.));
+   //printf("%f %f\n",(wl-1.f)/2.f,m);
+   //rad0 = ((0<m?wl:wu)-1)/2;
+   //rad1 = ((1<m?wl:wu)-1)/2;
+   //rad2 = ((2<m?wl:wu)-1)/2;
+   //printf("%d %d %d\n",rad0,rad1,rad2);
+   
+   wl = (wl-1.)/2.;
 
    //Box blurs split of in horizontal and vertical blurs
    SLK_RGB_sprite *tmp_data = SLK_rgb_sprite_create(out->width,out->height);
 
    //NOTE: in boxblur_h/t round,max,min calls has been removed, if we ever see
    //weird behaviour of blurring, this might be the cause
-   boxblur_h(in,tmp_data,rad0);
-   boxblur_t(tmp_data,out,rad0);
-   boxblur_h(out,tmp_data,rad1);
-   boxblur_t(tmp_data,out,rad1);
-   boxblur_h(out,tmp_data,rad2);
-   boxblur_t(tmp_data,out,rad2);
+   boxblur_h(in,tmp_data,wl);
+   boxblur_t(tmp_data,out,wl);
+   boxblur_h(out,tmp_data,wl);
+   boxblur_t(tmp_data,out,wl);
+   boxblur_h(out,tmp_data,wl);
+   boxblur_t(tmp_data,out,wl);
 
    SLK_rgb_sprite_destroy(tmp_data);
 }
@@ -538,7 +610,9 @@ void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
       return;
 
    //if the image is too small, don't even bother
-   if(s->gauss==0||in->width<3||in->height<3)
+   double sigma = (double)s->gauss/100.0f;
+   int rad = sigma*2.57;
+   if(s->gauss==0||in->width<rad||in->height<rad)
    {
       SLK_rgb_sprite_copy(out,in);
       return;
@@ -546,85 +620,108 @@ void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
 
    SLK_RGB_sprite *tmp_data = SLK_rgb_sprite_create(out->width,out->height);
 
-   double sigma = (double)s->gauss/100.0f;
-   double weights[7] = {0};
+   double *weights = malloc(sizeof(*weights)*(2*rad+1));
+   int32_t *weights32 = malloc(sizeof(*weights32)*(2*rad+1));
    double sum = 0.;
-   for(int i = 0;i<7;i++)
-       weights[i] = exp(-((i-3.)*(i-3.))/(2.*sigma*sigma))/(sqrt(2.*M_PI*sigma*sigma));
-   for(int i = 0;i<7;i++)
+   for(int i = 0;i<2*rad+1;i++)
+       weights[i] = exp(-((i-rad)*(i-rad))/(2.*sigma*sigma))/(sqrt(2.*M_PI*sigma*sigma));
+   for(int i = 0;i<2*rad+1;i++)
       sum+=weights[i];
-   for(int i = 0;i<7;i++)
+   for(int i = 0;i<2*rad+1;i++)
       weights[i]/=sum;
+   for(int i = 0;i<2*rad+1;i++)
+      weights32[i] = weights[i]*65536;
 
    //Horizontal
    SLK_RGB_sprite *src = in;
    SLK_RGB_sprite *dst = tmp_data;
    for(int i = 0;i<src->height;i++)
    {
-      for(int j = 0;j<3;j++)
+      SLK_Color *sc = &src->data[i*src->width];
+      SLK_Color *ds = &dst->data[i*src->width];
+
+      for(int j = 0;j<rad;j++)
       {
-         double acc_r = 0.;
-         double acc_g = 0.;
-         double acc_b = 0.;
-         for(int k = 0;k<3-j;k++)
+         int32_t acc_r = 0;
+         int32_t acc_g = 0;
+         int32_t acc_b = 0;
+
+         for(int k = 0;k<rad-j;k++)
          {
-            acc_r+=weights[k]*src->data[i*src->width].rgb.r;
-            acc_g+=weights[k]*src->data[i*src->width].rgb.g;
-            acc_b+=weights[k]*src->data[i*src->width].rgb.b;
+            acc_r+=weights32[k]*sc->rgb.r;
+            acc_g+=weights32[k]*sc->rgb.g;
+            acc_b+=weights32[k]*sc->rgb.b;
          }
-         for(int k = -j;k<4;k++)
+         for(int k = -j;k<=rad;k++)
          {
-            acc_r+=weights[k+3]*src->data[i*src->width+j+k].rgb.r;
-            acc_g+=weights[k+3]*src->data[i*src->width+j+k].rgb.g;
-            acc_b+=weights[k+3]*src->data[i*src->width+j+k].rgb.b;
+            acc_r+=weights32[k+rad]*(sc+k)->rgb.r;
+            acc_g+=weights32[k+rad]*(sc+k)->rgb.g;
+            acc_b+=weights32[k+rad]*(sc+k)->rgb.b;
          }
 
-         dst->data[i*src->width+j].rgb.r = acc_r;
-         dst->data[i*src->width+j].rgb.g = acc_g;
-         dst->data[i*src->width+j].rgb.b = acc_b;
-         dst->data[i*src->width+j].rgb.a = src->data[i*src->width+j].rgb.a;
+         ds->rgb.r = (acc_r+32768)/65536;
+         ds->rgb.g = (acc_g+32768)/65536;
+         ds->rgb.b = (acc_b+32768)/65536;
+         ds->rgb.a = sc->rgb.a;
+
+         sc++;
+         ds++;
       }
 
-      for(int j = 3;j<src->width-3;j++)
+      for(int j = rad;j<src->width-rad;j++)
       {
-         double acc_r = 0.;
-         double acc_g = 0.;
-         double acc_b = 0.;
-         for(int k = -3;k<4;k++)
+         int32_t acc_r = 0;
+         int32_t acc_g = 0;
+         int32_t acc_b = 0;
+
+         //Center pixel
+         acc_r+=weights32[rad]*sc->rgb.r;
+         acc_g+=weights32[rad]*sc->rgb.g;
+         acc_b+=weights32[rad]*sc->rgb.b;
+
+         //Other pixels can have mirrored weights --> less multiplications
+         for(int k = 0;k<rad;k++)
          {
-            acc_r+=weights[k+3]*src->data[i*src->width+j+k].rgb.r;
-            acc_g+=weights[k+3]*src->data[i*src->width+j+k].rgb.g;
-            acc_b+=weights[k+3]*src->data[i*src->width+j+k].rgb.b;
+            acc_r+=weights32[k]*((sc-rad+k)->rgb.r+(sc+k+1)->rgb.r);
+            acc_g+=weights32[k]*((sc-rad+k)->rgb.g+(sc+k+1)->rgb.g);
+            acc_b+=weights32[k]*((sc-rad+k)->rgb.b+(sc+k+1)->rgb.b);
          }
 
-         dst->data[i*src->width+j].rgb.r = acc_r;
-         dst->data[i*src->width+j].rgb.g = acc_g;
-         dst->data[i*src->width+j].rgb.b = acc_b;
-         dst->data[i*src->width+j].rgb.a = src->data[i*src->width+j].rgb.a;
+         ds->rgb.r = (acc_r+32768)/65536;
+         ds->rgb.g = (acc_g+32768)/65536;
+         ds->rgb.b = (acc_b+32768)/65536;
+         ds->rgb.a = sc->rgb.a;
+
+         sc++;
+         ds++;
       }
 
-      for(int j = src->width-3;j<src->width;j++)
+      for(int j = src->width-rad;j<src->width;j++)
       {
-         double acc_r = 0.;
-         double acc_g = 0.;
-         double acc_b = 0.;
-         for(int k = 3+src->width-j;k<7;k++)
+         int32_t acc_r = 0;
+         int32_t acc_g = 0;
+         int32_t acc_b = 0;
+
+         for(int k = rad+src->width-j;k<2*rad+1;k++)
          {
-            acc_r+=weights[k]*src->data[i*src->width+src->width-1].rgb.r;
-            acc_g+=weights[k]*src->data[i*src->width+src->width-1].rgb.g;
-            acc_b+=weights[k]*src->data[i*src->width+src->width-1].rgb.b;
+            acc_r+=weights32[k]*(sc+src->width-j-1)->rgb.r;
+            acc_g+=weights32[k]*(sc+src->width-j-1)->rgb.g;
+            acc_b+=weights32[k]*(sc+src->width-j-1)->rgb.b;
          }
-         for(int k = -3;k<src->width-j;k++)
+         for(int k = -rad;k<src->width-j;k++)
          {
-            acc_r+=weights[k+3]*src->data[i*src->width+j+k].rgb.r;
-            acc_g+=weights[k+3]*src->data[i*src->width+j+k].rgb.g;
-            acc_b+=weights[k+3]*src->data[i*src->width+j+k].rgb.b;
+            acc_r+=weights32[k+rad]*(sc+k)->rgb.r;
+            acc_g+=weights32[k+rad]*(sc+k)->rgb.g;
+            acc_b+=weights32[k+rad]*(sc+k)->rgb.b;
          }
 
-         dst->data[i*src->width+j].rgb.r = acc_r;
-         dst->data[i*src->width+j].rgb.g = acc_g;
-         dst->data[i*src->width+j].rgb.b = acc_b;
-         dst->data[i*src->width+j].rgb.a = src->data[i*src->width+j].rgb.a;
+         ds->rgb.r = (acc_r+32768)/65536;
+         ds->rgb.g = (acc_g+32768)/65536;
+         ds->rgb.b = (acc_b+32768)/65536;
+         ds->rgb.a = sc->rgb.a;
+
+         sc++;
+         ds++;
       }
    }
 
@@ -633,72 +730,84 @@ void img2pixel_lowpass_image(I2P_state *s, SLK_RGB_sprite *in, SLK_RGB_sprite *o
    dst = out;
    for(int i = 0;i<src->width;i++)
    {
-      for(int j = 0;j<3;j++)
+      for(int j = 0;j<rad;j++)
       {
-         double acc_r = 0.;
-         double acc_g = 0.;
-         double acc_b = 0.;
-         for(int k = 0;k<3-j;k++)
+         int32_t acc_r = 0;
+         int32_t acc_g = 0;
+         int32_t acc_b = 0;
+         for(int k = 0;k<rad-j;k++)
          {
-            acc_r+=weights[k]*src->data[i].rgb.r;
-            acc_g+=weights[k]*src->data[i].rgb.g;
-            acc_b+=weights[k]*src->data[i].rgb.b;
+            acc_r+=weights32[k]*src->data[i].rgb.r;
+            acc_g+=weights32[k]*src->data[i].rgb.g;
+            acc_b+=weights32[k]*src->data[i].rgb.b;
          }
-         for(int k = -j;k<4;k++)
+         for(int k = -j;k<=rad;k++)
          {
-            acc_r+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.r;
-            acc_g+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.g;
-            acc_b+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.b;
+            acc_r+=weights32[k+rad]*src->data[(j+k)*src->width+i].rgb.r;
+            acc_g+=weights32[k+rad]*src->data[(j+k)*src->width+i].rgb.g;
+            acc_b+=weights32[k+rad]*src->data[(j+k)*src->width+i].rgb.b;
          }
 
-         dst->data[j*src->width+i].rgb.r = acc_r;
-         dst->data[j*src->width+i].rgb.g = acc_g;
-         dst->data[j*src->width+i].rgb.b = acc_b;
+         dst->data[j*src->width+i].rgb.r = (acc_r+32768)/65536;
+         dst->data[j*src->width+i].rgb.g = (acc_g+32768)/65536;
+         dst->data[j*src->width+i].rgb.b = (acc_b+32768)/65536;
          dst->data[j*src->width+i].rgb.a = src->data[j*src->width+i].rgb.a;
       }
 
-      for(int j = 3;j<src->height-3;j++)
+      for(int j = rad;j<src->height-rad;j++)
       {
-         double acc_r = 0.;
-         double acc_g = 0.;
-         double acc_b = 0.;
-         for(int k = -3;k<4;k++)
+         int32_t acc_r = 0;
+         int32_t acc_g = 0;
+         int32_t acc_b = 0;
+
+         //Center pixel
+         acc_r+=weights32[rad]*src->data[j*src->width+i].rgb.r;
+         acc_g+=weights32[rad]*src->data[j*src->width+i].rgb.g;
+         acc_b+=weights32[rad]*src->data[j*src->width+i].rgb.b;
+
+         //Other pixels can have mirrored weights --> less multiplications
+         for(int k = 0;k<rad;k++)
          {
-            acc_r+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.r;
-            acc_g+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.g;
-            acc_b+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.b;
+            acc_r+=weights32[k]*(src->data[(j-rad+k)*src->width+i].rgb.r+src->data[(j+k+1)*src->width+i].rgb.r);
+            acc_g+=weights32[k]*(src->data[(j-rad+k)*src->width+i].rgb.g+src->data[(j+k+1)*src->width+i].rgb.g);
+            acc_b+=weights32[k]*(src->data[(j-rad+k)*src->width+i].rgb.b+src->data[(j+k+1)*src->width+i].rgb.b);
          }
 
-         dst->data[j*src->width+i].rgb.r = acc_r;
-         dst->data[j*src->width+i].rgb.g = acc_g;
-         dst->data[j*src->width+i].rgb.b = acc_b;
+         dst->data[j*src->width+i].rgb.r = (acc_r+32768)/65536;
+         dst->data[j*src->width+i].rgb.g = (acc_g+32768)/65536;
+         dst->data[j*src->width+i].rgb.b = (acc_b+32768)/65536;
          dst->data[j*src->width+i].rgb.a = src->data[j*src->width+i].rgb.a;
       }
 
-      for(int j = src->height-3;j<src->height;j++)
+      for(int j = src->height-rad;j<src->height;j++)
       {
-         double acc_r = 0.;
-         double acc_g = 0.;
-         double acc_b = 0.;
-         for(int k = 3+src->height-j;k<7;k++)
+         int32_t acc_r = 0;
+         int32_t acc_g = 0;
+         int32_t acc_b = 0;
+         for(int k = rad+src->height-j;k<2*rad+1;k++)
          {
-            acc_r+=weights[k]*src->data[i+src->width*(src->height-1)].rgb.r;
-            acc_g+=weights[k]*src->data[i+src->width*(src->height-1)].rgb.g;
-            acc_b+=weights[k]*src->data[i+src->width*(src->height-1)].rgb.b;
+            acc_r+=weights32[k]*src->data[i+src->width*(src->height-1)].rgb.r;
+            acc_g+=weights32[k]*src->data[i+src->width*(src->height-1)].rgb.g;
+            acc_b+=weights32[k]*src->data[i+src->width*(src->height-1)].rgb.b;
          }
-         for(int k = -3;k<src->height-j;k++)
+         for(int k = -rad;k<src->height-j;k++)
          {
-            acc_r+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.r;
-            acc_g+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.g;
-            acc_b+=weights[k+3]*src->data[(j+k)*src->width+i].rgb.b;
+            acc_r+=weights32[k+rad]*src->data[(j+k)*src->width+i].rgb.r;
+            acc_g+=weights32[k+rad]*src->data[(j+k)*src->width+i].rgb.g;
+            acc_b+=weights32[k+rad]*src->data[(j+k)*src->width+i].rgb.b;
          }
 
-         dst->data[j*src->width+i].rgb.r = acc_r;
-         dst->data[j*src->width+i].rgb.g = acc_g;
-         dst->data[j*src->width+i].rgb.b = acc_b;
+         dst->data[j*src->width+i].rgb.r = (acc_r+32768)/65536;
+         dst->data[j*src->width+i].rgb.g = (acc_g+32768)/65536;
+         dst->data[j*src->width+i].rgb.b = (acc_b+32768)/65536;
          dst->data[j*src->width+i].rgb.a = src->data[j*src->width+i].rgb.a;
       }
    }
+
+   //memcpy(out->data,tmp_data->data,sizeof(*out->data)*out->width*out->height);
+
+   free(weights);
+   free(weights32);
 
    SLK_rgb_sprite_destroy(tmp_data);
 }
