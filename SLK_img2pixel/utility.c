@@ -44,8 +44,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Variables
-static char input_dir[256];
-static char output_dir[256];
+static char input_dir[CUTE_PATH_MAX_PATH];
+static char output_dir[CUTE_PATH_MAX_PATH];
 static char path_image_load[512] = {0};
 static char path_image_save[512] = {0};
 static char path_preset_load[512] = {0};

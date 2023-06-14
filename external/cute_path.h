@@ -99,6 +99,7 @@ void path_do_unit_tests();
 #endif
 
 #include <string.h> // strncpy, strncat, strlen
+#include <stdint.h> //intptr_t
 #define CUTE_PATH_STRNCPY strncpy
 #define CUTE_PATH_STRNCAT strncat
 #define CUTE_PATH_STRLEN strlen
@@ -110,39 +111,52 @@ int path_is_slash(char c)
 
 int path_pop_ext(const char* path, char* out, char* ext)
 {
-	int initial_skipped_periods = 0;
-	while (*path == '.')
-	{
-		++path;
-		++initial_skipped_periods;
-	}
+   if(path==NULL)
+      return 0;
 
-	const char* period = path;
-	char c;
-	while ((c = *period++)) if (c == '.') break;
+   if(out!=NULL)
+      out[0] = '\0';
+   if(ext!=NULL)
+      ext[0] = '\0';
 
-	int has_period = c == '.';
-	int len = (int)(period - path) - 1 + initial_skipped_periods;
-	if (len > CUTE_PATH_MAX_PATH - 1) len = CUTE_PATH_MAX_PATH - 1;
+   char *last_dot = strrchr(path,'.');
 
-	if (out)
-	{
-		CUTE_PATH_STRNCPY(out, path - initial_skipped_periods, len);
-		out[len] = 0;
-	}
+   //No dot, or string is '.' or '..' --> no extension
+   if(last_dot==NULL||!strcmp(path,".")||!strcmp(path,".."))
+   {
+      if(out==NULL)
+         return 0;
 
-	if (ext)
-	{
-		if (has_period)
-		{
-			CUTE_PATH_STRNCPY(ext, path - initial_skipped_periods + len + 1, CUTE_PATH_MAX_EXT);
-		}
-		else
-		{
-			ext[0] = 0;
-		}
-	}
-	return len;
+      strncpy(out,path,CUTE_PATH_MAX_PATH-1);
+      out[CUTE_PATH_MAX_PATH-1] = '\0';
+      return strlen(out);
+   }
+
+   //slash after dot --> no extension
+   if(last_dot[1]=='/'||last_dot[1]=='\\')
+   {
+      if(out==NULL)
+         return 0;
+
+      strncpy(out,path,CUTE_PATH_MAX_PATH-1);
+      out[CUTE_PATH_MAX_PATH-1] = '\0';
+      return strlen(out);
+   }
+
+   if(ext!=NULL)
+   {
+      strncpy(ext,last_dot+1,CUTE_PATH_MAX_EXT-1);
+      ext[CUTE_PATH_MAX_EXT-1] = '\0';
+   }
+
+   if(out==NULL)
+      return 0;
+   intptr_t len_copy = (intptr_t)(last_dot-path);
+#define cp_min(a,b) ((a)<(b)?(a):(b))
+   strncpy(out,path,cp_min(len_copy,CUTE_PATH_MAX_PATH-1));
+   out[cp_min(len_copy,CUTE_PATH_MAX_PATH-1)] = '\0';
+#undef cp_min
+   return strlen(out);
 }
 
 int path_pop(const char* path, char* out, char* pop)
