@@ -152,6 +152,13 @@ typedef struct
    int max;
 }HLH_gui_slider;
 
+typedef struct
+{
+   HLH_gui_element e;
+   int entries;
+   char **labels;
+}HLH_gui_menubar;
+
 struct HLH_gui_window
 {
    HLH_gui_element e;
@@ -233,5 +240,8 @@ void HLH_gui_image_update(HLH_gui_image *img, int width, int height, uint32_t *d
 //slider
 HLH_gui_slider *HLH_gui_slider_create(HLH_gui_element *parent, uint32_t flags, int value, int min, int max);
 void HLH_gui_slider_set_value(HLH_gui_slider *slider, int value);
+
+//menubar
+HLH_gui_menubar *HLH_gui_menubar_create(HLH_gui_element *parent, uint32_t flags);
 
 #endif

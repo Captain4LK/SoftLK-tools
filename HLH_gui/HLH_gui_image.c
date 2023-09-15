@@ -81,19 +81,19 @@ static int img_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    else if(msg==HLH_GUI_MSG_PAINT)
    {
       int view_x,view_y;
-      float view_height,view_width;
-      float width = e->bounds.r-e->bounds.l;
-      float height = e->bounds.b-e->bounds.t;
-      float ratio = width/height;
-      if(ratio>(float)img->width/(float)img->height)
+      int view_width,view_height;
+      int width = e->bounds.r-e->bounds.l;
+      int height = e->bounds.b-e->bounds.t;
+
+      if(width*img->height>img->width*height)
       {
          view_height = height;
-         view_width = ((float)img->width/(float)img->height)*(float)height;
+         view_width = (img->width*height)/img->height;
       }
       else
       {
          view_width = width;
-         view_height = ((float)img->height/(float)img->width)*(float)width;
+         view_height = (img->height*width)/img->width;
       }
 
       view_x = (width-view_width)/2+e->bounds.l;
@@ -114,8 +114,6 @@ static int img_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       SDL_RenderCopy(p->win->renderer,img->texture,NULL,&dst);
 
       SDL_RenderSetClipRect(p->win->renderer,NULL);
-      //HLH_gui_rect bounds = HLH_gui_rect_make(view_x,view_x+view_width,view_y,view_y+view_height);
-      //HLH_gui_draw_block(dp,bounds,0xffffff);
    }
    else if(msg==HLH_GUI_MSG_GET_WIDTH)
    {

@@ -71,8 +71,9 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    else if(msg==HLH_GUI_MSG_PAINT)
    {
       HLH_gui_draw_block(dp,e->bounds,0x0);
-      float t = ((float)(s->value-s->min)/(float)(s->max-s->min));
-      HLH_gui_draw_block(dp,HLH_gui_rect_make(e->bounds.l+t*(e->bounds.r-e->bounds.l-1)-HLH_gui_get_scale(),e->bounds.l+t*(e->bounds.r-e->bounds.l-1)+HLH_gui_get_scale(),e->bounds.t+2*HLH_gui_get_scale(),e->bounds.b-2*HLH_gui_get_scale()),0xc8c8c8);
+
+      int pos = e->bounds.l+((s->value-s->min)*(e->bounds.r-e->bounds.l-1))/(s->max-s->min);
+      HLH_gui_draw_block(dp,HLH_gui_rect_make(pos-HLH_gui_get_scale(), pos+HLH_gui_get_scale(), e->bounds.t+2*HLH_gui_get_scale(), e->bounds.b-2*HLH_gui_get_scale()),0xc8c8c8);
    }
    else if(msg==HLH_GUI_MSG_MOUSE_DRAG||msg==HLH_GUI_MSG_LEFT_DOWN)
    {
@@ -80,8 +81,9 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       int width = e->bounds.r-e->bounds.l;
       if(width==0)
          return 0;
-      float t = ((float)(e->window->mouse_x-e->bounds.l)/(float)width);
-      s->value = s->min+t*(s->max-s->min);
+
+      int pos_rel = e->window->mouse_x-e->bounds.l;
+      s->value = s->min+(pos_rel*(s->max-s->min))/width;
       s->value = MAX(s->min,MIN(s->value,s->max));
 
       if(old!=s->value)

@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2022 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2022,2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -40,7 +40,12 @@ void HLH_gui_draw_block(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color)
    r.y = rect.t;
    r.w = rect.r-rect.l;
    r.h = rect.b-rect.t;
-   SDL_SetRenderDrawColor(p->win->renderer,color&255,(color>>8)&255,(color>>16)&255,(color>>24)&255);
+
+   uint8_t cr = color&255;
+   uint8_t cg = (color>>8)&255;
+   uint8_t cb = (color>>16)&255;
+   uint8_t ca = (uint8_t)((color>>24)&255);
+   SDL_SetRenderDrawColor(p->win->renderer,cr,cg,cb,ca);
    SDL_RenderFillRect(p->win->renderer,&r);
 }
 
@@ -53,7 +58,7 @@ void HLH_gui_draw_string(HLH_gui_painter *p, HLH_gui_rect bounds, const char *st
    int y = (bounds.t+bounds.b-HLH_GUI_GLYPH_HEIGHT*scale)/2;
 
    if(align_center)
-      x+=(bounds.r-bounds.l-bytes*HLH_GUI_GLYPH_WIDTH*scale)/2;
+      x+=(bounds.r-bounds.l-(int)bytes*HLH_GUI_GLYPH_WIDTH*scale)/2;
 
    SDL_Rect clip;
    clip.x = p->clip.l;
