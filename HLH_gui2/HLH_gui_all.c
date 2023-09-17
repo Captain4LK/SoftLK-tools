@@ -34,6 +34,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "HLH_gui_element.c"
 #include "HLH_gui_rect.c"
 #include "HLH_gui_point.c"
+#include "HLH_gui_draw.c"
 
 //Elements
+#include "HLH_gui_frame.c"
 //-------------------------------------

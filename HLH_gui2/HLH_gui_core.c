@@ -214,10 +214,10 @@ int HLH_gui_message_loop(void)
                   win->target = SDL_CreateTexture(win->renderer,SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_TARGET,win->width,win->height);
                   if(win->target==NULL)
                      fprintf(stderr,"SDL_CreateTexture(): %s\n",SDL_GetError());
+                  if(SDL_SetRenderTarget(win->renderer,win->target)<0)
+                     fprintf(stderr,"SDL_SetRenderTarget(): %s\n",SDL_GetError());
 
                   win->e.bounds = HLH_gui_rect_make(0,0,win->width,win->height);
-                  //win->e.clip = HLH_gui_rect_make(0,win->width,0,win->height);
-
 
                   HLH_gui_element_pack(&win->e,win->e.bounds);
                   HLH_gui_element_redraw(&win->e);
@@ -286,8 +286,40 @@ int HLH_gui_message_loop(void)
    }
 }
 
+void HLH_gui_set_scale(int scale)
+{
+   core_scale = scale;
+}
+
+int HLH_gui_get_scale(void)
+{
+   return core_scale;
+}
+
 static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
+   HLH_gui_window *win = (HLH_gui_window *)e;
+
+   if(msg==HLH_GUI_MSG_GET_WIDTH)
+   {
+      return win->width;
+   }
+   else if(msg==HLH_GUI_MSG_GET_HEIGHT)
+   {
+      return win->height;
+   }
+   else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
+   {
+      HLH_gui_rect *space = dp;
+      space->minx = 0;
+      space->miny = 0;
+      space->maxx = win->width;
+      space->maxy = win->height;
+   }
+   else if(msg==HLH_GUI_MSG_DRAW)
+   {
+   }
+
    return 0;
 }
 

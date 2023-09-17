@@ -27,12 +27,14 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function prototypes
 static void element_compute_required(HLH_gui_element *e);
+static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_point availible);
 static HLH_gui_point element_size_siblings(HLH_gui_element *e);
+static HLH_gui_point element_get_share(HLH_gui_element *e);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, uint32_t flags, HLH_gui_msg_handler msg_handler)
+HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, uint64_t flags, HLH_gui_msg_handler msg_handler)
 {
    HLH_gui_element *e = calloc(1,bytes);
    e->flags = flags;
@@ -45,9 +47,6 @@ HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, u
       parent->child_count++;
       parent->children = realloc(parent->children,sizeof(*parent->children)*parent->child_count);
       parent->children[parent->child_count-1] = e;
-
-      if(parent->child_count>1)
-         parent->children[parent->child_count-2]->next = e;
    }
 
    return e;
@@ -88,6 +87,20 @@ void HLH_gui_element_redraw(HLH_gui_element *e)
 void HLH_gui_element_pack(HLH_gui_element *e, HLH_gui_rect space)
 {
    element_compute_required(e);
+   element_set_rect(e,HLH_gui_point_make(space.minx,space.miny),HLH_gui_point_make(space.maxx-space.minx,space.maxy-space.miny));
+}
+
+HLH_gui_point HLH_gui_element_size(HLH_gui_element *e, HLH_gui_point children)
+{
+   int width = HLH_gui_element_msg(e,HLH_GUI_MSG_GET_WIDTH,0,(void *)&children);
+   int height = HLH_gui_element_msg(e,HLH_GUI_MSG_GET_HEIGHT,0,(void *)&children);
+
+   return HLH_gui_point_make(width,height);
+}
+
+void HLH_gui_element_child_space(HLH_gui_element *e, HLH_gui_rect *space)
+{
+   HLH_gui_element_msg(e,HLH_GUI_MSG_GET_CHILD_SPACE,0,(void *)space);
 }
 
 static void element_compute_required(HLH_gui_element *e)
@@ -117,26 +130,183 @@ static void element_compute_required(HLH_gui_element *e)
    }
 
    e->child_size_required = element_size_siblings(e);
+   e->size_required = HLH_gui_point_add(HLH_gui_element_size(e,e->child_size_required),HLH_gui_point_add(e->pad_in,e->pad_out));
+
+   if(e->flags&HLH_GUI_FIXED_X)
+      e->size_required.x = e->fixed_size.x;
+   if(e->flags&HLH_GUI_FIXED_Y)
+      e->size_required.y = e->fixed_size.y;
+}
+
+static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_point availible)
+{
+   e->size = HLH_gui_point_sub(e->size_required,e->pad_out);
+   origin = HLH_gui_point_add(origin,HLH_gui_point_make(e->pad_out.x/2,e->pad_out.y/2));
+   availible = HLH_gui_point_sub(availible,e->pad_out);
+
+   if(e->size.x>availible.x)
+      e->size.x = availible.x;
+   if(e->size.y>availible.y)
+      e->size.y = availible.y;
+
+   if(e->flags&HLH_GUI_FILL_X||e->flags&HLH_GUI_EXPAND)
+      e->size.x = availible.x;
+   if(e->flags&HLH_GUI_FILL_Y||e->flags&HLH_GUI_EXPAND)
+      e->size.y = availible.y;
+
+   uint64_t place = e->flags&HLH_GUI_PLACE;
+   switch(place)
+   {
+   case HLH_GUI_PLACE_CENTER:
+      origin.x+=(availible.x-e->size.x)/2;
+      origin.y+=(availible.y-e->size.y)/2;
+      break;
+   case HLH_GUI_PLACE_NORTH:
+      origin.x+=(availible.x-e->size.x)/2;
+      break;
+   case HLH_GUI_PLACE_EAST:
+      origin.x+=(availible.x-e->size.x);
+      origin.y+=(availible.y-e->size.y)/2;
+      break;
+   case HLH_GUI_PLACE_SOUTH:
+      origin.x+=(availible.x-e->size.x)/2;
+      origin.y+=(availible.y-e->size.y);
+      break;
+   case HLH_GUI_PLACE_WEST:
+      origin.y+=(availible.y-e->size.y)/2;
+      break;
+   case HLH_GUI_PLACE_NE:
+      origin.x+=(availible.x-e->size.x);
+      break;
+   case HLH_GUI_PLACE_SE:
+      origin.x+=(availible.x-e->size.x);
+      origin.y+=(availible.y-e->size.y);
+      break;
+   case HLH_GUI_PLACE_NW:
+      break;
+   case HLH_GUI_PLACE_SW:
+      origin.y+=(availible.y-e->size.y);
+      break;
+   }
+
+   e->bounds = HLH_gui_rect_make(origin.x,origin.y,origin.x+e->size.x,origin.y+e->size.y);
+
+   HLH_gui_rect child_space;
+   HLH_gui_element_child_space(e,&child_space);
+   origin = HLH_gui_point_make(child_space.minx,child_space.miny);
+   HLH_gui_point space = HLH_gui_point_make(child_space.maxx,child_space.maxy);
+   HLH_gui_point slack = HLH_gui_point_make(space.x-e->child_size_required.x,space.y-e->child_size_required.y);
+   HLH_gui_point share = element_get_share(e);
+   
+   for(int i = 0;i<e->child_count;i++)
+   {
+      HLH_gui_element *c = e->children[i];
+
+      if(c->flags&HLH_GUI_IGNORE)
+         continue;
+
+      if(c->flags&HLH_GUI_EXPAND)
+      {
+         uint64_t pack = c->flags&HLH_GUI_PACK;
+         if(pack==HLH_GUI_PACK_NORTH||pack==HLH_GUI_PACK_SOUTH)
+         {
+            c->size_required.x+=slack.x;
+            int l = slack.y/share.y;
+            c->size_required.y+=l;
+            slack.y-=l;
+            share.y--;
+         }
+         else if(pack==HLH_GUI_PACK_EAST||pack==HLH_GUI_PACK_WEST)
+         {
+            int l = slack.x/share.x;
+            c->size_required.x+=l;
+            slack.x-=l;
+            share.x--;
+            c->size_required.y+=slack.y;
+         }
+      }
+
+      HLH_gui_point origin_new = origin;
+      HLH_gui_point space_new = space;
+
+      uint64_t pack = c->flags&HLH_GUI_PACK;
+      switch(pack)
+      {
+      case HLH_GUI_PACK_NORTH: 
+         origin_new.y+=c->size_required.y;
+         space_new.y-=c->size_required.y;
+         element_set_rect(c,origin,HLH_gui_point_make(space.x,c->size_required.y));
+         break;
+      case HLH_GUI_PACK_WEST:
+         origin_new.x+=c->size_required.x;
+         space_new.x-=c->size_required.x;
+         element_set_rect(c,origin,HLH_gui_point_make(c->size_required.x,space.y));
+         break;
+      case HLH_GUI_PACK_SOUTH:
+         space.y-=c->size_required.y;
+         element_set_rect(c,HLH_gui_point_make(origin.x,origin.y+space.y-c->size_required.y),HLH_gui_point_make(space.x,c->size_required.y));
+         break;
+      case HLH_GUI_PACK_EAST:
+         space_new.x-=c->size_required.x;
+         element_set_rect(e,HLH_gui_point_make(origin.x+space.x-c->size_required.x,origin.y),HLH_gui_point_make(c->size_required.x,space.y));
+         break;
+      }
+
+      origin = origin_new;
+      space = space_new;
+   }
 }
 
 static HLH_gui_point element_size_siblings(HLH_gui_element *e)
 {
    HLH_gui_point size = HLH_gui_point_make(0,0);
-   if(e==NULL)
-      return size;
 
-   size = element_size_siblings(e->next);
+   for(int i = e->child_count-1;i>=0;i--)
+   {
+      HLH_gui_element *child = e->children[i];
 
-   if(e->flags&HLH_GUI_PACK_NORTH||e->flags&HLH_GUI_PACK_SOUTH)
-   {
-      size.x = hlh_gui_max(size.x,e->size_required.x);
-      size.y+=e->size_required.y;
-   }
-   else if(e->flags&HLH_GUI_PACK_EAST||e->flags&HLH_GUI_PACK_WEST)
-   {
+      uint64_t pack = child->flags&HLH_GUI_PACK;
+      if(pack==HLH_GUI_PACK_NORTH||pack==HLH_GUI_PACK_SOUTH)
+      {
+         size.x = hlh_gui_max(size.x,child->size_required.x);
+         size.y+=child->size_required.y;
+      }
+      else if(pack==HLH_GUI_PACK_EAST||pack==HLH_GUI_PACK_WEST)
+      {
+         size.x+=child->size_required.x;
+         size.y = hlh_gui_max(size.y,child->size_required.y);
+      }
    }
 
    return size;
+}
+
+static HLH_gui_point element_get_share(HLH_gui_element *e)
+{
+   HLH_gui_point share = HLH_gui_point_make(0,0);
+
+   for(int i = 0;i<e->child_count;i++)
+   {
+      HLH_gui_element *child = e->children[i];
+      if(!(child->flags&HLH_GUI_EXPAND))
+         continue;
+      
+      uint64_t pack = child->flags&HLH_GUI_PACK;
+      if(pack==HLH_GUI_PACK_NORTH||pack==HLH_GUI_PACK_SOUTH)
+      {
+         if(share.x==0)
+            share.x = 1;
+         share.y++;
+      }
+      else if(pack==HLH_GUI_PACK_EAST||pack==HLH_GUI_PACK_WEST)
+      {
+         if(share.y==0)
+            share.y = 1;
+         share.x++;
+      }
+   }
+
+   return share;
 }
 
 #undef hlh_gui_max

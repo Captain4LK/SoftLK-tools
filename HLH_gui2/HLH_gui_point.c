@@ -33,4 +33,13 @@ HLH_gui_point HLH_gui_point_make(int x, int y)
 {
    return (HLH_gui_point){.x = x, .y = y};
 }
+
+HLH_gui_point HLH_gui_point_add(HLH_gui_point a, HLH_gui_point b)
+{
+   return HLH_gui_point_make(a.x+b.x,a.y+b.y);
+}
+HLH_gui_point HLH_gui_point_sub(HLH_gui_point a, HLH_gui_point b)
+{
+   return HLH_gui_point_make(a.x-b.x,a.y-b.y);
+}
 //-------------------------------------

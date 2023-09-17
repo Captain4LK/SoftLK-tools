@@ -25,6 +25,42 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
+static int frame_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
+HLH_gui_frame *HLH_gui_frame_create(HLH_gui_element *parent, uint64_t flags)
+{
+   HLH_gui_frame *frame = (HLH_gui_frame *) HLH_gui_element_create(sizeof(*frame),parent,flags,frame_msg);
+
+   return frame;
+}
+
+static int frame_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_GET_WIDTH)
+   {
+      HLH_gui_point *in = dp;
+      return in->x+6;
+   }
+   else if(msg==HLH_GUI_MSG_GET_HEIGHT)
+   {
+      HLH_gui_point *in = dp;
+      return in->y+6;
+   }
+   else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
+   {
+      HLH_gui_rect *space = dp;
+      space->minx+=3;
+      space->miny+=3;
+      space->maxx-=6;
+      space->maxy-=6;
+   }
+   else if(msg==HLH_GUI_MSG_DRAW)
+   {
+      HLH_gui_draw_rectangle_fill(e,e->bounds,0x00ff00);
+      HLH_gui_draw_rectangle(e,e->bounds,0xff0000);
+   }
+
+   return 0;
+}
 //-------------------------------------
