@@ -30,6 +30,7 @@ static void element_compute_required(HLH_gui_element *e);
 static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_point availible);
 static HLH_gui_point element_size_siblings(HLH_gui_element *e);
 static HLH_gui_point element_get_share(HLH_gui_element *e);
+static void element_redraw(HLH_gui_element *e);
 //-------------------------------------
 
 //Function implementations
@@ -54,6 +55,8 @@ HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, u
 
 int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
+   if(e==NULL)
+      return 0;
    if(e->flags&HLH_GUI_DESTROY&&msg!=HLH_GUI_MSG_DESTROY)
       return 0;
    if(e->flags&HLH_GUI_IGNORE)
@@ -75,13 +78,15 @@ int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
 void HLH_gui_element_redraw(HLH_gui_element *e)
 {
-   if(e->flags&HLH_GUI_INVISIBLE||e->flags&HLH_GUI_IGNORE)
-      return;
+   element_redraw(e);
 
-   HLH_gui_element_msg(e,HLH_GUI_MSG_DRAW,0,NULL);
-
-   for(int i = 0;i<e->child_count;i++)
-      HLH_gui_element_redraw(e->children[i]);
+   if(SDL_SetRenderTarget(e->window->renderer,NULL)<0)
+      fprintf(stderr,"SDL_SetRenderTarget(): %s\n",SDL_GetError());
+   if(SDL_RenderClear(e->window->renderer)<0)
+      fprintf(stderr,"SDL_RenderClear(): %s\n",SDL_GetError());
+   if(SDL_RenderCopy(e->window->renderer,e->window->target,NULL,NULL)<0)
+      fprintf(stderr,"SDL_RenderCopy(): %s\n",SDL_GetError());
+   SDL_RenderPresent(e->window->renderer);
 }
 
 void HLH_gui_element_pack(HLH_gui_element *e, HLH_gui_rect space)
@@ -101,6 +106,30 @@ HLH_gui_point HLH_gui_element_size(HLH_gui_element *e, HLH_gui_point children)
 void HLH_gui_element_child_space(HLH_gui_element *e, HLH_gui_rect *space)
 {
    HLH_gui_element_msg(e,HLH_GUI_MSG_GET_CHILD_SPACE,0,(void *)space);
+}
+
+HLH_gui_element *HLH_gui_element_by_point(HLH_gui_element *e, HLH_gui_point pt)
+{
+   for(int i = 0;i<e->child_count;i++)
+   {
+      HLH_gui_element *c = e->children[i];
+      if(HLH_gui_rect_inside(c->bounds,pt))
+      {
+         HLH_gui_element *leaf = HLH_gui_element_by_point(c,pt);
+
+         if(leaf!=NULL&&HLH_gui_element_priority(leaf,pt)>=HLH_gui_element_priority(e,pt))
+            return leaf;
+
+         return c;
+      }
+   }
+
+   return NULL;
+}
+
+int HLH_gui_element_priority(HLH_gui_element *e, HLH_gui_point pt)
+{
+   return HLH_gui_element_msg(e,HLH_GUI_MSG_GET_PRIORITY,0,&pt);
 }
 
 static void element_compute_required(HLH_gui_element *e)
@@ -191,7 +220,7 @@ static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_p
 
    e->bounds = HLH_gui_rect_make(origin.x,origin.y,origin.x+e->size.x,origin.y+e->size.y);
 
-   HLH_gui_rect child_space;
+   HLH_gui_rect child_space = {.minx = origin.x, .miny = origin.y, .maxx = origin.x+e->size.x, .maxy = origin.y+e->size.y};
    HLH_gui_element_child_space(e,&child_space);
    origin = HLH_gui_point_make(child_space.minx,child_space.miny);
    HLH_gui_point space = HLH_gui_point_make(child_space.maxx,child_space.maxy);
@@ -307,6 +336,17 @@ static HLH_gui_point element_get_share(HLH_gui_element *e)
    }
 
    return share;
+}
+
+static void element_redraw(HLH_gui_element *e)
+{
+   if(e->flags&HLH_GUI_INVISIBLE||e->flags&HLH_GUI_IGNORE)
+      return;
+
+   HLH_gui_element_msg(e,HLH_GUI_MSG_DRAW,0,NULL);
+
+   for(int i = 0;i<e->child_count;i++)
+      element_redraw(e->children[i]);
 }
 
 #undef hlh_gui_max

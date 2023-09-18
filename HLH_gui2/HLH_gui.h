@@ -15,6 +15,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #include <SDL2/SDL.h>
 
+#define HLH_GUI_GLYPH_WIDTH (9)
+#define HLH_GUI_GLYPH_HEIGHT (16)
+
 typedef struct HLH_gui_element HLH_gui_element;
 typedef struct HLH_gui_window HLH_gui_window;
 
@@ -26,6 +29,9 @@ typedef enum
    HLH_GUI_MSG_GET_WIDTH = 2,
    HLH_GUI_MSG_GET_HEIGHT = 3,
    HLH_GUI_MSG_GET_CHILD_SPACE = 4,
+   HLH_GUI_MSG_CLICK = 5,
+   HLH_GUI_MSG_HIT = 6,
+   HLH_GUI_MSG_GET_PRIORITY = 7,
 }HLH_gui_msg;
 
 typedef struct
@@ -39,6 +45,17 @@ typedef struct
    int x;
    int y;
 }HLH_gui_point;
+
+typedef struct
+{
+   uint8_t button;
+   HLH_gui_point pos;
+}HLH_gui_mouse;
+
+#define HLH_GUI_MOUSE_LEFT      (UINT8_C(0x1))
+#define HLH_GUI_MOUSE_RIGHT     (UINT8_C(0x2))
+#define HLH_GUI_MOUSE_MIDDLE    (UINT8_C(0x4))
+#define HLH_GUI_MOUSE_OUT       (UINT8_C(0x8))
 
 //Flags (not enum because enum is int, we need u64)
 #define HLH_GUI_PACK            (UINT64_C(0x7))
@@ -69,6 +86,7 @@ typedef struct
 #define HLH_GUI_FILL_X       (UINT64_C(0x4000))
 #define HLH_GUI_FILL_Y       (UINT64_C(0x8000))
 #define HLH_GUI_EXPAND       (UINT64_C(0x10000))
+#define HLH_GUI_REMOUSE      (UINT64_C(0x20000))
 
 
 typedef int (*HLH_gui_msg_handler)(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
@@ -99,8 +117,7 @@ struct HLH_gui_element
 struct HLH_gui_window
 {
    HLH_gui_element e;
-   HLH_gui_element *hover;
-   HLH_gui_element *pressed;
+   HLH_gui_element *last_mouse;
 
    int width;
    int height;
@@ -119,11 +136,20 @@ typedef struct
    HLH_gui_element e;
 }HLH_gui_frame;
 
+typedef struct
+{
+   HLH_gui_element e;
+
+   int text_len;
+   char *text;
+}HLH_gui_textbutton;
+
 void HLH_gui_init(void);
 HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height);
 int HLH_gui_message_loop(void);
 void HLH_gui_set_scale(int scale);
 int HLH_gui_get_scale(void);
+void HLH_gui_handle_mouse(HLH_gui_window *win, HLH_gui_mouse m);
 
 //Element
 HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, uint64_t flags, HLH_gui_msg_handler msg_handler);
@@ -132,9 +158,12 @@ void HLH_gui_element_redraw(HLH_gui_element *e);
 void HLH_gui_element_pack(HLH_gui_element *e, HLH_gui_rect space);
 HLH_gui_point HLH_gui_element_size(HLH_gui_element *e, HLH_gui_point children);
 void HLH_gui_element_child_space(HLH_gui_element *e, HLH_gui_rect *space);
+HLH_gui_element *HLH_gui_element_by_point(HLH_gui_element *e, HLH_gui_point pt);
+int HLH_gui_element_priority(HLH_gui_element *e, HLH_gui_point pt);
 
 //Rectangle
 HLH_gui_rect HLH_gui_rect_make(int minx, int miny, int maxx, int maxy);
+int HLH_gui_rect_inside(HLH_gui_rect r, HLH_gui_point p);
 
 //Point
 HLH_gui_point HLH_gui_point_make(int x, int y);
@@ -144,8 +173,12 @@ HLH_gui_point HLH_gui_point_sub(HLH_gui_point a, HLH_gui_point b);
 //Drawing
 void HLH_gui_draw_rectangle(HLH_gui_element *e, HLH_gui_rect rect, uint32_t color_border);
 void HLH_gui_draw_rectangle_fill(HLH_gui_element *e, HLH_gui_rect rect, uint32_t color);
+void HLH_gui_draw_string(HLH_gui_element *e, HLH_gui_rect bounds, const char *text, int len, uint32_t color, int align_center);
 
 //Frame
 HLH_gui_frame *HLH_gui_frame_create(HLH_gui_element *parent, uint64_t flags);
+
+//Button
+HLH_gui_textbutton *HLH_gui_textbutton_create(HLH_gui_element *parent, uint64_t flags, const char *text);
 
 #endif

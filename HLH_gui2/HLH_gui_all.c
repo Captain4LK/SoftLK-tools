@@ -38,4 +38,5 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Elements
 #include "HLH_gui_frame.c"
+#include "HLH_gui_textbutton.c"
 //-------------------------------------

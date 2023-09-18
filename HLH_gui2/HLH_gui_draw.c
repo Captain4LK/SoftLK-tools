@@ -59,4 +59,41 @@ void HLH_gui_draw_rectangle_fill(HLH_gui_element *e, HLH_gui_rect rect, uint32_t
    SDL_SetRenderDrawColor(win->renderer,cr,cg,cb,ca);
    SDL_RenderFillRect(win->renderer,&r);
 }
+
+void HLH_gui_draw_string(HLH_gui_element *e, HLH_gui_rect bounds, const char *text, int len, uint32_t color, int align_center)
+{
+   int scale = HLH_gui_get_scale();
+   //HLH_gui_rect old_clip = p->clip;
+   //p->clip = HLH_gui_rect_intersect(bounds,old_clip);
+   int x = bounds.minx;
+   int y = (bounds.miny+bounds.maxy-HLH_GUI_GLYPH_HEIGHT*scale)/2;
+
+   if(align_center)
+      x+=(bounds.maxx-bounds.minx-len*HLH_GUI_GLYPH_WIDTH*scale)/2;
+
+   SDL_SetTextureColorMod(e->window->font,color&255,(color>>8)&255,(color>>16)&255);
+
+   for(int i = 0;i<len;i++)
+   {
+      uint8_t c = text[i];
+      if(c>127)
+         c = '?';
+
+      SDL_Rect dst;
+      dst.x = x;
+      dst.y = y;
+      dst.w = 8*scale;
+      dst.h = 16*scale;
+      SDL_Rect src;
+      src.x = c*8;
+      src.y = 0;
+      src.w = 8;
+      src.h = 16;
+      SDL_RenderCopy(e->window->renderer,e->window->font,&src,&dst);
+
+      x+=HLH_GUI_GLYPH_WIDTH*scale;
+   }
+
+   SDL_RenderSetClipRect(e->window->renderer,NULL);
+}
 //-------------------------------------

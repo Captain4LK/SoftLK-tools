@@ -71,6 +71,7 @@ static const uint64_t core_font[] =
 //Function prototypes
 HLH_gui_window *core_find_window(SDL_Window *win);
 static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static void core_element_destroy(HLH_gui_element *e); //Only use for destroying windows!!!
 //-------------------------------------
 
 //Function implementations
@@ -109,7 +110,7 @@ HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height)
 {
    HLH_gui_window *window = (HLH_gui_window *)HLH_gui_element_create(sizeof(*window),NULL,0,core_window_msg);
    window->e.window = window;
-   window->hover = &window->e;
+   //window->hover = &window->e;
    window->width = width;
    window->height = height;
    core_window_count++;
@@ -154,13 +155,7 @@ int HLH_gui_message_loop(void)
          fprintf(stderr,"SDL_PushEvent(): %s\n",SDL_GetError());
    }
 
-   /*//Relayout all
-   for(int i = 0;i<core_window_count;i++)
-      HLH_gui_element_redraw(&win->e);
-
-   //Redraw all
-   for(int i = 0;i<core_window_count;i++)
-      HLH_gui_element_redraw(&win->e);*/
+   HLH_gui_mouse mouse = {0};
 
    for(;;)
    {
@@ -221,22 +216,14 @@ int HLH_gui_message_loop(void)
 
                   HLH_gui_element_pack(&win->e,win->e.bounds);
                   HLH_gui_element_redraw(&win->e);
-
-                  //TODO(Captain4LK): redo layout and redraw
-                  //HLH_gui_element_msg(&win->e,HLH_GUI_MSG_LAYOUT,0,NULL);
-                  //core_update();
                }
             }
             break;
          case SDL_WINDOWEVENT_LEAVE:
-            if(win->pressed==NULL)
-            {
-               win->mouse_x = -1;
-               win->mouse_y = -1;
-            }
 
-            //TODO(Captain4LK): handle mouse input
-            //core_window_input_event(win,HLH_GUI_MSG_MOUSE_MOVE,0,NULL);
+            mouse.pos.x = -1;
+            mouse.pos.y = -1;
+            HLH_gui_handle_mouse(win,mouse);
             break;
          case SDL_WINDOWEVENT_CLOSE:
             //TODO(Captain4LK): only close current window
@@ -251,36 +238,43 @@ int HLH_gui_message_loop(void)
          //Hack to prevent flooding the event queue
          SDL_GetMouseState(&win->mouse_x,&win->mouse_y);
          SDL_FlushEvent(SDL_MOUSEMOTION);
-         //win->mouse_x = event.motion.x;
-         //win->mouse_y = event.motion.y;
 
-
-         //TODO(Captain4LK): handle mouse motion
-         //core_window_input_event(win,HLH_GUI_MSG_MOUSE_MOVE,0,NULL);
+         mouse.pos.x = event.motion.x;
+         mouse.pos.y = event.motion.y;
+         HLH_gui_handle_mouse(win,mouse);
 
          break;
       case SDL_MOUSEBUTTONDOWN:
-      case SDL_MOUSEBUTTONUP:
+         win = core_find_window(SDL_GetWindowFromID(event.window.windowID));
+         if(win==NULL)
+            continue;
+
+         mouse.pos.x = event.motion.x;
+         mouse.pos.y = event.motion.y;
+         switch(event.button.button)
          {
-            win = core_find_window(SDL_GetWindowFromID(event.window.windowID));
-            if(win==NULL)
-               continue;
-
-            win->mouse_x = event.button.x;
-            win->mouse_y = event.button.y;
-
-            //TODO(Captain4LK): handle mouse buttons
-
-            /*HLH_gui_msg msg = HLH_GUI_MSG_LEFT_UP;
-            switch(event.button.button)
-            {
-            case SDL_BUTTON_LEFT: msg = event.type==SDL_MOUSEBUTTONDOWN?HLH_GUI_MSG_LEFT_DOWN:HLH_GUI_MSG_LEFT_UP; break;
-            case SDL_BUTTON_MIDDLE: msg = event.type==SDL_MOUSEBUTTONDOWN?HLH_GUI_MSG_MIDDLE_DOWN:HLH_GUI_MSG_MIDDLE_UP; break;
-            case SDL_BUTTON_RIGHT: msg = event.type==SDL_MOUSEBUTTONDOWN?HLH_GUI_MSG_RIGHT_DOWN:HLH_GUI_MSG_RIGHT_UP; break;
-            }
-
-            core_window_input_event(win,msg,0,NULL);*/
+         case SDL_BUTTON_LEFT: mouse.button|=HLH_GUI_MOUSE_LEFT; break;
+         case SDL_BUTTON_RIGHT: mouse.button|=HLH_GUI_MOUSE_RIGHT; break;
+         case SDL_BUTTON_MIDDLE: mouse.button|=HLH_GUI_MOUSE_MIDDLE; break;
          }
+         HLH_gui_handle_mouse(win,mouse);
+
+         break;
+      case SDL_MOUSEBUTTONUP:
+         win = core_find_window(SDL_GetWindowFromID(event.window.windowID));
+         if(win==NULL)
+            continue;
+
+         mouse.pos.x = event.motion.x;
+         mouse.pos.y = event.motion.y;
+         switch(event.button.button)
+         {
+         case SDL_BUTTON_LEFT: mouse.button&=~HLH_GUI_MOUSE_LEFT; break;
+         case SDL_BUTTON_RIGHT: mouse.button&=~HLH_GUI_MOUSE_RIGHT; break;
+         case SDL_BUTTON_MIDDLE: mouse.button&=~HLH_GUI_MOUSE_MIDDLE; break;
+         }
+         HLH_gui_handle_mouse(win,mouse);
+
          break;
       }
    }
@@ -294,6 +288,38 @@ void HLH_gui_set_scale(int scale)
 int HLH_gui_get_scale(void)
 {
    return core_scale;
+}
+
+void HLH_gui_handle_mouse(HLH_gui_window *win, HLH_gui_mouse m)
+{
+   HLH_gui_element *click = NULL;
+
+   if(win->e.flags&HLH_GUI_REMOUSE)
+   {
+      click = win->last_mouse;
+   }
+   else
+   {
+      click = HLH_gui_element_by_point(&win->e,m.pos);
+      HLH_gui_element *last = win->last_mouse;
+
+      if(last!=NULL&&last!=click)
+      {
+         m.button|=HLH_GUI_MOUSE_OUT;
+         HLH_gui_element_msg(click,HLH_GUI_MSG_HIT,0,&m);
+         m.button&=~HLH_GUI_MOUSE_OUT;
+      }
+   }
+
+   if(click!=NULL)
+   {
+      int remouse = HLH_gui_element_msg(click,HLH_GUI_MSG_HIT,0,&m);
+      if(remouse)
+         win->e.flags|=HLH_GUI_REMOUSE;
+      else
+         win->e.flags&=~HLH_GUI_REMOUSE;
+      win->last_mouse = click;
+   }
 }
 
 static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -316,8 +342,12 @@ static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
       space->maxx = win->width;
       space->maxy = win->height;
    }
-   else if(msg==HLH_GUI_MSG_DRAW)
+   else if(msg==HLH_GUI_MSG_DESTROY)
    {
+      SDL_DestroyTexture(win->target);
+      SDL_DestroyTexture(win->font);
+      SDL_DestroyRenderer(win->renderer);
+      SDL_DestroyWindow(win->window);
    }
 
    return 0;
@@ -333,5 +363,16 @@ HLH_gui_window *core_find_window(SDL_Window *win)
          return core_windows[i];
 
    return NULL;
+}
+
+static void core_element_destroy(HLH_gui_element *e)
+{
+   for(int i = 0;i<e->child_count;i++)
+      core_element_destroy(e->children[i]);
+
+   HLH_gui_element_msg(e,HLH_GUI_MSG_DESTROY,0,NULL);
+   if(e->children!=NULL)
+      free(e->children);
+   free(e);
 }
 //-------------------------------------

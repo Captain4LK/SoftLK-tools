@@ -35,6 +35,7 @@ int main(int argc, char **argv)
    HLH_gui_window *win = HLH_gui_window_create("Test",800,600);
 
    HLH_gui_frame *frame = HLH_gui_frame_create(&win->e,HLH_GUI_EXPAND);
+   HLH_gui_textbutton *text = HLH_gui_textbutton_create(&frame->e,0,"Test");
 
    return HLH_gui_message_loop();
 }
