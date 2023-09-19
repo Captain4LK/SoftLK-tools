@@ -25,46 +25,45 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static int frame_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_frame *HLH_gui_frame_create(HLH_gui_element *parent, uint64_t flags)
+HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint64_t flags, const char *text)
 {
-   HLH_gui_frame *frame = (HLH_gui_frame *) HLH_gui_element_create(sizeof(*frame),parent,flags,frame_msg);
-   frame->e.type = "frame";
+   HLH_gui_label *label = (HLH_gui_label *) HLH_gui_element_create(sizeof(*label),parent,flags,label_msg);
+   label->e.type = "label";
 
-   return frame;
+   label->text_len = (int)strlen(text);
+   label->text = malloc(label->text_len+1);
+   strcpy(label->text,text);
+
+   return label;
 }
 
-static int frame_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
+   HLH_gui_label *label = (HLH_gui_label *)e;
+
    if(msg==HLH_GUI_MSG_GET_WIDTH)
    {
-      HLH_gui_point *in = dp;
-      return in->x+6;
+      return label->text_len*HLH_GUI_GLYPH_WIDTH*HLH_gui_get_scale()+2*HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {
-      HLH_gui_point *in = dp;
-      return in->y+6;
+      return HLH_GUI_GLYPH_HEIGHT*HLH_gui_get_scale()+2*HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
    {
-      HLH_gui_rect *space = dp;
-      space->minx+=3;
-      space->miny+=3;
-      space->maxx-=6;
-      space->maxy-=6;
    }
    else if(msg==HLH_GUI_MSG_DRAW)
    {
-      HLH_gui_draw_rectangle_fill(e,e->bounds,0x5a5a5a);
-      HLH_gui_draw_rectangle(e,e->bounds,0x000000);
+      HLH_gui_draw_string(e,e->bounds,label->text,label->text_len,0x000000,1);
    }
    else if(msg==HLH_GUI_MSG_DESTROY)
    {
+      free(label->text);
    }
 
    return 0;

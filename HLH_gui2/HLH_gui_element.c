@@ -78,6 +78,9 @@ int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
 void HLH_gui_element_redraw(HLH_gui_element *e)
 {
+   if(SDL_SetRenderTarget(e->window->renderer,e->window->target)<0)
+      fprintf(stderr,"SDL_SetRenderTarget(): %s\n",SDL_GetError());
+
    element_redraw(e);
 
    if(SDL_SetRenderTarget(e->window->renderer,NULL)<0)
@@ -220,13 +223,13 @@ static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_p
 
    e->bounds = HLH_gui_rect_make(origin.x,origin.y,origin.x+e->size.x,origin.y+e->size.y);
 
-   HLH_gui_rect child_space = {.minx = origin.x, .miny = origin.y, .maxx = origin.x+e->size.x, .maxy = origin.y+e->size.y};
+   //Fake rect, actually collection of two points
+   HLH_gui_rect child_space = {.minx = origin.x, .miny = origin.y, .maxx = e->size.x, .maxy = e->size.y};
    HLH_gui_element_child_space(e,&child_space);
    origin = HLH_gui_point_make(child_space.minx,child_space.miny);
    HLH_gui_point space = HLH_gui_point_make(child_space.maxx,child_space.maxy);
    HLH_gui_point slack = HLH_gui_point_make(space.x-e->child_size_required.x,space.y-e->child_size_required.y);
    HLH_gui_point share = element_get_share(e);
-   
    for(int i = 0;i<e->child_count;i++)
    {
       HLH_gui_element *c = e->children[i];

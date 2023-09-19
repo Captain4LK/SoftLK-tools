@@ -306,7 +306,7 @@ void HLH_gui_handle_mouse(HLH_gui_window *win, HLH_gui_mouse m)
       if(last!=NULL&&last!=click)
       {
          m.button|=HLH_GUI_MOUSE_OUT;
-         HLH_gui_element_msg(click,HLH_GUI_MSG_HIT,0,&m);
+         HLH_gui_element_msg(last,HLH_GUI_MSG_HIT,0,&m);
          m.button&=~HLH_GUI_MOUSE_OUT;
       }
    }

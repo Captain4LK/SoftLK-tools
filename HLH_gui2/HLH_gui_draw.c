@@ -31,15 +31,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 void HLH_gui_draw_rectangle(HLH_gui_element *e, HLH_gui_rect rect, uint32_t color_border)
 {
-   HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(rect.minx,rect.miny,rect.maxx,rect.miny+HLH_gui_get_scale()*2),color_border);
-   HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(rect.minx,rect.miny+HLH_gui_get_scale()*2,rect.minx+HLH_gui_get_scale()*2,rect.maxy-HLH_gui_get_scale()*2),color_border);
-   HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(rect.maxx-HLH_gui_get_scale()*2,rect.miny+HLH_gui_get_scale()*2,rect.maxx,rect.maxy-HLH_gui_get_scale()*2),color_border);
-   HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(rect.minx,rect.maxy-HLH_gui_get_scale()*2,rect.maxx,rect.maxy),color_border);
-
-   //HLH_gui_draw_block(p,HLH_gui_rect_make(rect.l,rect.r,rect.t,rect.t+2*HLH_gui_get_scale()),color_border);
-   //HLH_gui_draw_block(p,HLH_gui_rect_make(rect.l,rect.l+2*HLH_gui_get_scale(),rect.t+2*HLH_gui_get_scale(),rect.b-2*HLH_gui_get_scale()),color_border);
-   //HLH_gui_draw_block(p,HLH_gui_rect_make(rect.r-2*HLH_gui_get_scale(),rect.r,rect.t+2*HLH_gui_get_scale(),rect.b-2*HLH_gui_get_scale()),color_border);
-   //HLH_gui_draw_block(p,HLH_gui_rect_make(rect.l,rect.r,rect.b-2*HLH_gui_get_scale(),rect.b),color_border);
+   HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(rect.minx,rect.miny,rect.maxx,rect.miny+HLH_gui_get_scale()*1),color_border);
+   HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(rect.minx,rect.miny+HLH_gui_get_scale()*1,rect.minx+HLH_gui_get_scale()*1,rect.maxy-HLH_gui_get_scale()*1),color_border);
+   HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(rect.maxx-HLH_gui_get_scale()*1,rect.miny+HLH_gui_get_scale()*1,rect.maxx,rect.maxy-HLH_gui_get_scale()*1),color_border);
+   HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(rect.minx,rect.maxy-HLH_gui_get_scale()*1,rect.maxx,rect.maxy),color_border);
 }
 
 void HLH_gui_draw_rectangle_fill(HLH_gui_element *e, HLH_gui_rect rect, uint32_t color)
@@ -63,8 +58,6 @@ void HLH_gui_draw_rectangle_fill(HLH_gui_element *e, HLH_gui_rect rect, uint32_t
 void HLH_gui_draw_string(HLH_gui_element *e, HLH_gui_rect bounds, const char *text, int len, uint32_t color, int align_center)
 {
    int scale = HLH_gui_get_scale();
-   //HLH_gui_rect old_clip = p->clip;
-   //p->clip = HLH_gui_rect_intersect(bounds,old_clip);
    int x = bounds.minx;
    int y = (bounds.miny+bounds.maxy-HLH_GUI_GLYPH_HEIGHT*scale)/2;
 
