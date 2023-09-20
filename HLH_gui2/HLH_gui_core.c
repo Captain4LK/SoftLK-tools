@@ -223,7 +223,7 @@ int HLH_gui_message_loop(void)
 
             mouse.pos.x = -1;
             mouse.pos.y = -1;
-            HLH_gui_handle_mouse(win,mouse);
+            HLH_gui_handle_mouse(&win->e,mouse);
             break;
          case SDL_WINDOWEVENT_CLOSE:
             //TODO(Captain4LK): only close current window
@@ -241,7 +241,7 @@ int HLH_gui_message_loop(void)
 
          mouse.pos.x = event.motion.x;
          mouse.pos.y = event.motion.y;
-         HLH_gui_handle_mouse(win,mouse);
+         HLH_gui_handle_mouse(&win->e,mouse);
 
          break;
       case SDL_MOUSEBUTTONDOWN:
@@ -257,7 +257,7 @@ int HLH_gui_message_loop(void)
          case SDL_BUTTON_RIGHT: mouse.button|=HLH_GUI_MOUSE_RIGHT; break;
          case SDL_BUTTON_MIDDLE: mouse.button|=HLH_GUI_MOUSE_MIDDLE; break;
          }
-         HLH_gui_handle_mouse(win,mouse);
+         HLH_gui_handle_mouse(&win->e,mouse);
 
          break;
       case SDL_MOUSEBUTTONUP:
@@ -273,7 +273,7 @@ int HLH_gui_message_loop(void)
          case SDL_BUTTON_RIGHT: mouse.button&=~HLH_GUI_MOUSE_RIGHT; break;
          case SDL_BUTTON_MIDDLE: mouse.button&=~HLH_GUI_MOUSE_MIDDLE; break;
          }
-         HLH_gui_handle_mouse(win,mouse);
+         HLH_gui_handle_mouse(&win->e,mouse);
 
          break;
       }
@@ -290,18 +290,18 @@ int HLH_gui_get_scale(void)
    return core_scale;
 }
 
-void HLH_gui_handle_mouse(HLH_gui_window *win, HLH_gui_mouse m)
+void HLH_gui_handle_mouse(HLH_gui_element *e, HLH_gui_mouse m)
 {
    HLH_gui_element *click = NULL;
 
-   if(win->e.flags&HLH_GUI_REMOUSE)
+   if(e->flags&HLH_GUI_REMOUSE)
    {
-      click = win->last_mouse;
+      click = e->last_mouse;
    }
    else
    {
-      click = HLH_gui_element_by_point(&win->e,m.pos);
-      HLH_gui_element *last = win->last_mouse;
+      click = HLH_gui_element_by_point(e,m.pos);
+      HLH_gui_element *last = e->last_mouse;
 
       if(last!=NULL&&last!=click)
       {
@@ -315,10 +315,10 @@ void HLH_gui_handle_mouse(HLH_gui_window *win, HLH_gui_mouse m)
    {
       int remouse = HLH_gui_element_msg(click,HLH_GUI_MSG_HIT,0,&m);
       if(remouse)
-         win->e.flags|=HLH_GUI_REMOUSE;
+         e->flags|=HLH_GUI_REMOUSE;
       else
-         win->e.flags&=~HLH_GUI_REMOUSE;
-      win->last_mouse = click;
+         e->flags&=~HLH_GUI_REMOUSE;
+      e->last_mouse = click;
    }
 }
 

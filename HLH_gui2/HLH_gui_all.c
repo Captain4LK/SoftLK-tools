@@ -43,4 +43,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "HLH_gui_textbutton.c"
 #include "HLH_gui_checkbutton.c"
 #include "HLH_gui_radiobutton.c"
+#include "HLH_gui_menu.c"
+#include "HLH_gui_menubar.c"
 //-------------------------------------

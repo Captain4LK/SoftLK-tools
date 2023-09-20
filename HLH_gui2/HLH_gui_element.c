@@ -135,6 +135,17 @@ int HLH_gui_element_priority(HLH_gui_element *e, HLH_gui_point pt)
    return HLH_gui_element_msg(e,HLH_GUI_MSG_GET_PRIORITY,0,&pt);
 }
 
+void HLH_gui_element_invisible(HLH_gui_element *e, int invisible)
+{
+   if(invisible)
+      e->flags|=HLH_GUI_INVISIBLE;
+   else
+      e->flags&=~HLH_GUI_INVISIBLE;
+
+   for(int i = 0;i<e->child_count;i++)
+      HLH_gui_element_invisible(e->children[i],invisible);
+}
+
 static void element_compute_required(HLH_gui_element *e)
 {
    HLH_gui_point size_max = HLH_gui_point_make(0,0);
@@ -345,6 +356,14 @@ static void element_redraw(HLH_gui_element *e)
 {
    if(e->flags&HLH_GUI_INVISIBLE||e->flags&HLH_GUI_IGNORE)
       return;
+
+   if(e->window==NULL)
+   {
+      if(e->parent!=NULL)
+         e->window = e->parent->window;
+      else
+         return;
+   }
 
    HLH_gui_element_msg(e,HLH_GUI_MSG_DRAW,0,NULL);
 

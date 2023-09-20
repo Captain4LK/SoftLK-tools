@@ -30,8 +30,9 @@ typedef enum
    HLH_GUI_MSG_GET_HEIGHT = 3,
    HLH_GUI_MSG_GET_CHILD_SPACE = 4,
    HLH_GUI_MSG_CLICK = 5,
-   HLH_GUI_MSG_HIT = 6,
-   HLH_GUI_MSG_GET_PRIORITY = 7,
+   HLH_GUI_MSG_CLICK_MENU = 6,
+   HLH_GUI_MSG_HIT = 7,
+   HLH_GUI_MSG_GET_PRIORITY = 8,
 }HLH_gui_msg;
 
 typedef struct
@@ -112,6 +113,7 @@ struct HLH_gui_element
 
    const char *type;
 
+   HLH_gui_element *last_mouse;
    HLH_gui_element *parent;
    HLH_gui_element **children;
    int child_count;
@@ -123,7 +125,6 @@ struct HLH_gui_element
 struct HLH_gui_window
 {
    HLH_gui_element e;
-   HLH_gui_element *last_mouse;
 
    int width;
    int height;
@@ -192,14 +193,25 @@ typedef struct
    char *text;
    int state;
    int index;
-}HLH_gui_menu;
+}HLH_gui_menubutton;
+
+typedef struct
+{
+   HLH_gui_element e;
+
+   int text_len;
+   char *text;
+   int state;
+   HLH_gui_element *pull;
+   uint64_t side;
+}HLH_gui_pulldown;
 
 void HLH_gui_init(void);
 HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height);
 int HLH_gui_message_loop(void);
 void HLH_gui_set_scale(int scale);
 int HLH_gui_get_scale(void);
-void HLH_gui_handle_mouse(HLH_gui_window *win, HLH_gui_mouse m);
+void HLH_gui_handle_mouse(HLH_gui_element *e, HLH_gui_mouse m);
 
 //Element
 HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, uint64_t flags, HLH_gui_msg_handler msg_handler);
@@ -210,6 +222,7 @@ HLH_gui_point HLH_gui_element_size(HLH_gui_element *e, HLH_gui_point children);
 void HLH_gui_element_child_space(HLH_gui_element *e, HLH_gui_rect *space);
 HLH_gui_element *HLH_gui_element_by_point(HLH_gui_element *e, HLH_gui_point pt);
 int HLH_gui_element_priority(HLH_gui_element *e, HLH_gui_point pt);
+void HLH_gui_element_invisible(HLH_gui_element *e, int invisible);
 
 //Rectangle
 HLH_gui_rect HLH_gui_rect_make(int minx, int miny, int maxx, int maxy);
@@ -238,5 +251,12 @@ HLH_gui_checkbutton *HLH_gui_checkbutton_create(HLH_gui_element *parent, uint64_
 void HLH_gui_checkbutton_set(HLH_gui_element *e, int checked, int trigger_msg, int redraw);
 HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, uint64_t flags, const char *text);
 void HLH_gui_radiobutton_set(HLH_gui_element *e, int trigger_msg, int redraw);
+
+//Menu
+//Creates group with label_count buttons as children
+HLH_gui_group *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, int label_count, HLH_gui_msg_handler msg_usr);
+
+//Menubar
+HLH_gui_group *HLH_gui_menubar_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, HLH_gui_element **panels, int child_count, HLH_gui_msg_handler msg_usr);
 
 #endif

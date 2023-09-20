@@ -43,20 +43,20 @@ static int group_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    if(msg==HLH_GUI_MSG_GET_WIDTH)
    {
       HLH_gui_point *in = dp;
-      return in->x+6;
+      return in->x+0;
    }
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {
       HLH_gui_point *in = dp;
-      return in->y+6;
+      return in->y+0;
    }
    else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
    {
       HLH_gui_rect *space = dp;
-      space->minx+=3;
-      space->miny+=3;
-      space->maxx-=6;
-      space->maxy-=6;
+      space->minx+=0;
+      space->miny+=0;
+      space->maxx-=0;
+      space->maxy-=0;
    }
    else if(msg==HLH_GUI_MSG_DRAW)
    {
