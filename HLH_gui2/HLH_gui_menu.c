@@ -26,17 +26,18 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function prototypes
 static int menubutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static void menubutton_draw(HLH_gui_menubutton *b);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_group *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, int label_count, HLH_gui_msg_handler msg_usr)
+HLH_gui_frame *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, int label_count, HLH_gui_msg_handler msg_usr)
 {
-   HLH_gui_group *group = HLH_gui_group_create(parent,flags);
+   HLH_gui_frame *frame = HLH_gui_frame_create(parent,flags);
 
    for(int i = 0;i<label_count;i++)
    {
-      HLH_gui_menubutton *button = (HLH_gui_menubutton *) HLH_gui_element_create(sizeof(*button),&group->e,cflags,menubutton_msg);
+      HLH_gui_menubutton *button = (HLH_gui_menubutton *) HLH_gui_element_create(sizeof(*button),&frame->e,cflags,menubutton_msg);
       button->e.type = "menubutton";
 
       button->index = i;
@@ -45,7 +46,7 @@ HLH_gui_group *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint
       strcpy(button->text,labels[i]);
    }
 
-   return group;
+   return frame;
 }
 
 static int menubutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -62,33 +63,7 @@ static int menubutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    }
    else if(msg==HLH_GUI_MSG_DRAW)
    {
-      int scale = HLH_gui_get_scale();
-
-      //Infill
-      HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+HLH_gui_get_scale(),e->bounds.miny+HLH_gui_get_scale(),e->bounds.maxx-HLH_gui_get_scale(),e->bounds.maxy-HLH_gui_get_scale()),0x5a5a5a);
-
-      //Outline
-      HLH_gui_draw_rectangle(e,e->bounds,0x000000);
-
-      //Border
-      if(button->state)
-      {
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+1*scale,e->bounds.miny+2*scale,e->bounds.minx+2*scale,e->bounds.maxy-2*scale),0x000000);
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+1*scale,e->bounds.maxy-2*scale,e->bounds.maxx-2*scale,e->bounds.maxy-1*scale),0x000000);
-
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.maxx-2*scale,e->bounds.miny+2*scale,e->bounds.maxx-1*scale,e->bounds.maxy-2*scale),0x323232);
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+2*scale,e->bounds.miny+1*scale,e->bounds.maxx-1*scale,e->bounds.miny+2*scale),0x323232);
-      }
-      else
-      {
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+1*scale,e->bounds.miny+2*scale,e->bounds.minx+2*scale,e->bounds.maxy-2*scale),0x323232);
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+1*scale,e->bounds.maxy-2*scale,e->bounds.maxx-2*scale,e->bounds.maxy-1*scale),0x323232);
-
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.maxx-2*scale,e->bounds.miny+2*scale,e->bounds.maxx-1*scale,e->bounds.maxy-2*scale),0xc8c8c8);
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+2*scale,e->bounds.miny+1*scale,e->bounds.maxx-1*scale,e->bounds.miny+2*scale),0xc8c8c8);
-      }
-
-      HLH_gui_draw_string(e,e->bounds,button->text,button->text_len,0x000000,1);
+      menubutton_draw(button);
    }
    else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
    {
@@ -129,3 +104,52 @@ static int menubutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
    return 0;
 }
+
+static void menubutton_draw(HLH_gui_menubutton *b)
+{
+   uint64_t style = b->e.flags&HLH_GUI_STYLE;
+
+   if(style==HLH_GUI_STYLE_00)
+   {
+      HLH_gui_rect bounds = b->e.bounds;
+      int scale = HLH_gui_get_scale();
+
+      //Infill
+      HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+scale,bounds.miny+scale,bounds.maxx-scale,bounds.maxy-scale),0x5a5a5a);
+
+      //Outline
+      HLH_gui_draw_rectangle(&b->e,bounds,0x000000);
+
+      //Border
+      if(b->state)
+      {
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0x000000);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x000000);
+
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0x323232);
+      }
+      else
+      {
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x323232);
+
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xc8c8c8);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xc8c8c8);
+      }
+
+      HLH_gui_draw_string(&b->e,bounds,b->text,b->text_len,0x000000,1);
+   }
+   else if(style==HLH_GUI_STYLE_01)
+   {
+      HLH_gui_rect bounds = b->e.bounds;
+
+      if(b->state)
+         HLH_gui_draw_rectangle_fill(&b->e,bounds,0x323232);
+      else
+         HLH_gui_draw_rectangle_fill(&b->e,bounds,0x5a5a5a);
+
+      HLH_gui_draw_string(&b->e,bounds,b->text,b->text_len,0x000000,1);
+   }
+}
+//-------------------------------------

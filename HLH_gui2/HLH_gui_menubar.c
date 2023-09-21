@@ -26,6 +26,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function prototypes
 static int pulldown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static void pulldown_draw(HLH_gui_pulldown *p);
 //-------------------------------------
 
 //Function implementations
@@ -77,33 +78,7 @@ static int pulldown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    }
    else if(msg==HLH_GUI_MSG_DRAW)
    {
-      int scale = HLH_gui_get_scale();
-
-      //Infill
-      HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+HLH_gui_get_scale(),e->bounds.miny+HLH_gui_get_scale(),e->bounds.maxx-HLH_gui_get_scale(),e->bounds.maxy-HLH_gui_get_scale()),0x5a5a5a);
-
-      //Outline
-      HLH_gui_draw_rectangle(e,e->bounds,0x000000);
-
-      //Border
-      if(pull->state)
-      {
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+1*scale,e->bounds.miny+2*scale,e->bounds.minx+2*scale,e->bounds.maxy-2*scale),0x000000);
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+1*scale,e->bounds.maxy-2*scale,e->bounds.maxx-2*scale,e->bounds.maxy-1*scale),0x000000);
-
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.maxx-2*scale,e->bounds.miny+2*scale,e->bounds.maxx-1*scale,e->bounds.maxy-2*scale),0x323232);
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+2*scale,e->bounds.miny+1*scale,e->bounds.maxx-1*scale,e->bounds.miny+2*scale),0x323232);
-      }
-      else
-      {
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+1*scale,e->bounds.miny+2*scale,e->bounds.minx+2*scale,e->bounds.maxy-2*scale),0x323232);
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+1*scale,e->bounds.maxy-2*scale,e->bounds.maxx-2*scale,e->bounds.maxy-1*scale),0x323232);
-
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.maxx-2*scale,e->bounds.miny+2*scale,e->bounds.maxx-1*scale,e->bounds.maxy-2*scale),0xc8c8c8);
-         HLH_gui_draw_rectangle_fill(e,HLH_gui_rect_make(e->bounds.minx+2*scale,e->bounds.miny+1*scale,e->bounds.maxx-1*scale,e->bounds.miny+2*scale),0xc8c8c8);
-      }
-
-      HLH_gui_draw_string(e,e->bounds,pull->text,pull->text_len,0x000000,1);
+      pulldown_draw(pull);
    }
    else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
    {
@@ -192,5 +167,52 @@ static int pulldown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    }
 
    return 0;
+}
+
+static void pulldown_draw(HLH_gui_pulldown *p)
+{
+   uint64_t style = p->e.flags&HLH_GUI_STYLE;
+   if(style==HLH_GUI_STYLE_00)
+   {
+      HLH_gui_rect bounds = p->e.bounds;
+      int scale = HLH_gui_get_scale();
+
+      //Infill
+      HLH_gui_draw_rectangle_fill(&p->e,HLH_gui_rect_make(bounds.minx+HLH_gui_get_scale(),bounds.miny+HLH_gui_get_scale(),bounds.maxx-HLH_gui_get_scale(),bounds.maxy-HLH_gui_get_scale()),0x5a5a5a);
+
+      //Outline
+      HLH_gui_draw_rectangle(&p->e,bounds,0x000000);
+
+      //Border
+      if(p->state)
+      {
+         HLH_gui_draw_rectangle_fill(&p->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0x000000);
+         HLH_gui_draw_rectangle_fill(&p->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x000000);
+
+         HLH_gui_draw_rectangle_fill(&p->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&p->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0x323232);
+      }
+      else
+      {
+         HLH_gui_draw_rectangle_fill(&p->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&p->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x323232);
+
+         HLH_gui_draw_rectangle_fill(&p->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xc8c8c8);
+         HLH_gui_draw_rectangle_fill(&p->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xc8c8c8);
+      }
+
+      HLH_gui_draw_string(&p->e,bounds,p->text,p->text_len,0x000000,1);
+   }
+   else if(style==HLH_GUI_STYLE_01)
+   {
+      HLH_gui_rect bounds = p->e.bounds;
+
+      if(p->state)
+         HLH_gui_draw_rectangle_fill(&p->e,bounds,0x323232);
+      else
+         HLH_gui_draw_rectangle_fill(&p->e,bounds,0x5a5a5a);
+
+      HLH_gui_draw_string(&p->e,bounds,p->text,p->text_len,0x000000,1);
+   }
 }
 //-------------------------------------

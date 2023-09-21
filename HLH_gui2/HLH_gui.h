@@ -58,7 +58,8 @@ typedef struct
 #define HLH_GUI_MOUSE_MIDDLE    (UINT8_C(0x4))
 #define HLH_GUI_MOUSE_OUT       (UINT8_C(0x8))
 
-//Flags (not enum because enum is int, we need u64)
+//Flags (not enum because enums are int, we need u64)
+//-------------------------------------
 #define HLH_GUI_PACK            (UINT64_C(0x7))
 #define    HLH_GUI_PACK_NORTH   (UINT64_C(0x0))
 #define    HLH_GUI_PACK_EAST    (UINT64_C(0x1))
@@ -77,18 +78,36 @@ typedef struct
 #define    HLH_GUI_PLACE_NW     (UINT64_C(0x38))
 #define    HLH_GUI_PLACE_SW     (UINT64_C(0x40))
 
-#define HLH_GUI_INVISIBLE    (UINT64_C(0x80))
-#define HLH_GUI_IGNORE       (UINT64_C(0x100))
-#define HLH_GUI_DESTROY      (UINT64_C(0x200))
-#define HLH_GUI_MAX_X        (UINT64_C(0x400))
-#define HLH_GUI_MAX_Y        (UINT64_C(0x800))
-#define HLH_GUI_FIXED_X      (UINT64_C(0x1000))
-#define HLH_GUI_FIXED_Y      (UINT64_C(0x2000))
-#define HLH_GUI_FILL_X       (UINT64_C(0x4000))
-#define HLH_GUI_FILL_Y       (UINT64_C(0x8000))
-#define HLH_GUI_EXPAND       (UINT64_C(0x10000))
-#define HLH_GUI_REMOUSE      (UINT64_C(0x20000))
+#define HLH_GUI_INVISIBLE       (UINT64_C(0x80))
+#define HLH_GUI_IGNORE          (UINT64_C(0x100))
+#define HLH_GUI_DESTROY         (UINT64_C(0x200))
+#define HLH_GUI_MAX_X           (UINT64_C(0x400))
+#define HLH_GUI_MAX_Y           (UINT64_C(0x800))
+#define HLH_GUI_FIXED_X         (UINT64_C(0x1000))
+#define HLH_GUI_FIXED_Y         (UINT64_C(0x2000))
+#define HLH_GUI_FILL_X          (UINT64_C(0x4000))
+#define HLH_GUI_FILL_Y          (UINT64_C(0x8000))
+#define HLH_GUI_EXPAND          (UINT64_C(0x10000))
+#define HLH_GUI_REMOUSE         (UINT64_C(0x20000))
 
+#define HLH_GUI_STYLE           (UINT64_C(0x3c0000))
+#define    HLH_GUI_STYLE_00     (UINT64_C(0x00000))
+#define    HLH_GUI_STYLE_01     (UINT64_C(0x40000))
+#define    HLH_GUI_STYLE_02     (UINT64_C(0x80000))
+#define    HLH_GUI_STYLE_03     (UINT64_C(0xc0000))
+#define    HLH_GUI_STYLE_04     (UINT64_C(0x100000))
+#define    HLH_GUI_STYLE_05     (UINT64_C(0x140000))
+#define    HLH_GUI_STYLE_06     (UINT64_C(0x180000))
+#define    HLH_GUI_STYLE_07     (UINT64_C(0x1c0000))
+#define    HLH_GUI_STYLE_08     (UINT64_C(0x200000))
+#define    HLH_GUI_STYLE_09     (UINT64_C(0x240000))
+#define    HLH_GUI_STYLE_10     (UINT64_C(0x280000))
+#define    HLH_GUI_STYLE_11     (UINT64_C(0x2c0000))
+#define    HLH_GUI_STYLE_12     (UINT64_C(0x300000))
+#define    HLH_GUI_STYLE_13     (UINT64_C(0x340000))
+#define    HLH_GUI_STYLE_14     (UINT64_C(0x380000))
+#define    HLH_GUI_STYLE_15     (UINT64_C(0x3c0000))
+//-------------------------------------
 
 typedef int (*HLH_gui_msg_handler)(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 
@@ -146,6 +165,8 @@ typedef struct
 typedef struct
 {
    HLH_gui_element e;
+
+   int frame;
 }HLH_gui_group;
 
 typedef struct
@@ -253,8 +274,8 @@ HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, uint64_
 void HLH_gui_radiobutton_set(HLH_gui_element *e, int trigger_msg, int redraw);
 
 //Menu
-//Creates group with label_count buttons as children
-HLH_gui_group *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, int label_count, HLH_gui_msg_handler msg_usr);
+//Creates frame with label_count buttons as children
+HLH_gui_frame *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, int label_count, HLH_gui_msg_handler msg_usr);
 
 //Menubar
 HLH_gui_group *HLH_gui_menubar_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, HLH_gui_element **panels, int child_count, HLH_gui_msg_handler msg_usr);
