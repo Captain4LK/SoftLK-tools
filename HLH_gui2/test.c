@@ -92,6 +92,11 @@ int main(int argc, char **argv)
    HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 4");
    HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 5");
 
+   group = HLH_gui_group_create(&group2->e,HLH_GUI_STYLE_01|HLH_GUI_EXPAND);
+   HLH_gui_slider_set(HLH_gui_slider_create(&group->e,HLH_GUI_FILL_X,0),20,200,0,0);
+   HLH_gui_slider_set(HLH_gui_slider_create(&group->e,HLH_GUI_FILL_Y|HLH_GUI_PACK_EAST,1),20,200,0,0);
+   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_EAST,"button 5");
+
    return HLH_gui_message_loop();
 }
 //-------------------------------------

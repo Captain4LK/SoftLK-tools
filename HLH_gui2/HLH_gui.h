@@ -33,6 +33,7 @@ typedef enum
    HLH_GUI_MSG_CLICK_MENU = 6,
    HLH_GUI_MSG_HIT = 7,
    HLH_GUI_MSG_GET_PRIORITY = 8,
+   HLH_GUI_MSG_SLIDER_VALUE_CHANGED = 9,
 }HLH_gui_msg;
 
 typedef struct
@@ -227,6 +228,15 @@ typedef struct
    int direction; //0 --> horizontal; 1 --> vertical
 }HLH_gui_separator;
 
+typedef struct
+{
+   HLH_gui_element e;
+
+   int value;
+   int range;
+   int direction; //0 --> horizontal; 1 --> vertical
+}HLH_gui_slider;
+
 void HLH_gui_init(void);
 HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height);
 int HLH_gui_message_loop(void);
@@ -244,6 +254,7 @@ void HLH_gui_element_child_space(HLH_gui_element *e, HLH_gui_rect *space);
 HLH_gui_element *HLH_gui_element_by_point(HLH_gui_element *e, HLH_gui_point pt);
 int HLH_gui_element_priority(HLH_gui_element *e, HLH_gui_point pt);
 void HLH_gui_element_invisible(HLH_gui_element *e, int invisible);
+void HLH_gui_element_ignore(HLH_gui_element *e, int ignore);
 
 //Rectangle
 HLH_gui_rect HLH_gui_rect_make(int minx, int miny, int maxx, int maxy);
@@ -281,5 +292,9 @@ HLH_gui_group *HLH_gui_menubar_create(HLH_gui_element *parent, uint64_t flags, u
 
 //Seperator
 HLH_gui_separator *HLH_gui_separator_create(HLH_gui_element *parent, uint64_t flags, int direction);
+
+//Slider
+HLH_gui_slider *HLH_gui_slider_create(HLH_gui_element *parent, uint64_t flags, int direction);
+void HLH_gui_slider_set(HLH_gui_slider *slider, int value, int range, int trigger_msg, int redraw);
 
 #endif

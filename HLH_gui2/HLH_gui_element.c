@@ -146,6 +146,17 @@ void HLH_gui_element_invisible(HLH_gui_element *e, int invisible)
       HLH_gui_element_invisible(e->children[i],invisible);
 }
 
+void HLH_gui_element_ignore(HLH_gui_element *e, int ignore)
+{
+   if(ignore)
+      e->flags|=HLH_GUI_IGNORE;
+   else
+      e->flags&=~HLH_GUI_IGNORE;
+
+   for(int i = 0;i<e->child_count;i++)
+      HLH_gui_element_ignore(e->children[i],ignore);
+}
+
 static void element_compute_required(HLH_gui_element *e)
 {
    HLH_gui_point size_max = HLH_gui_point_make(0,0);
@@ -291,7 +302,7 @@ static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_p
          break;
       case HLH_GUI_PACK_EAST:
          space_new.x-=c->size_required.x;
-         element_set_rect(e,HLH_gui_point_make(origin.x+space.x-c->size_required.x,origin.y),HLH_gui_point_make(c->size_required.x,space.y));
+         element_set_rect(c,HLH_gui_point_make(origin.x+space.x-c->size_required.x,origin.y),HLH_gui_point_make(c->size_required.x,space.y));
          break;
       }
 
