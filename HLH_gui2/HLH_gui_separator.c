@@ -25,48 +25,52 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static int frame_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int separator_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static void separator_draw(HLH_gui_separator *s);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_frame *HLH_gui_frame_create(HLH_gui_element *parent, uint64_t flags)
+HLH_gui_separator *HLH_gui_separator_create(HLH_gui_element *parent, uint64_t flags, int direction)
 {
-   HLH_gui_frame *frame = (HLH_gui_frame *) HLH_gui_element_create(sizeof(*frame),parent,flags,frame_msg);
-   frame->e.type = "frame";
+   HLH_gui_separator *separator = (HLH_gui_separator *) HLH_gui_element_create(sizeof(*separator),parent,flags,separator_msg);
+   separator->direction = direction;
 
-   return frame;
+   return separator;
 }
 
-static int frame_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int separator_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
+   HLH_gui_separator *separator = (HLH_gui_separator *)e;
+
    if(msg==HLH_GUI_MSG_GET_WIDTH)
    {
-      HLH_gui_point *in = dp;
-      return in->x+HLH_gui_get_scale()*2;
+      if(separator->direction==0)
+         return 0;
+      return HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {
-      HLH_gui_point *in = dp;
-      return in->y+HLH_gui_get_scale()*2;
+      if(separator->direction==1)
+         return 0;
+      return HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
    {
-      HLH_gui_rect *space = dp;
-      space->minx+=HLH_gui_get_scale();
-      space->miny+=HLH_gui_get_scale();
-      space->maxx-=HLH_gui_get_scale()*2;
-      space->maxy-=HLH_gui_get_scale()*2;
    }
    else if(msg==HLH_GUI_MSG_DRAW)
    {
-      HLH_gui_draw_rectangle_fill(e,e->bounds,0x5a5a5a);
-      HLH_gui_draw_rectangle(e,e->bounds,0x000000);
+      separator_draw(separator);
    }
    else if(msg==HLH_GUI_MSG_DESTROY)
    {
    }
 
    return 0;
+}
+
+static void separator_draw(HLH_gui_separator *s)
+{
+   HLH_gui_draw_rectangle_fill(&s->e,s->e.bounds,0x000000);
 }
 //-------------------------------------

@@ -56,9 +56,10 @@ int main(int argc, char **argv)
    };
 
    HLH_gui_element *menus[3];
-   menus[0] = (HLH_gui_element *)HLH_gui_menu_create(NULL,0,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu0,3,NULL);
-   menus[1] = (HLH_gui_element *)HLH_gui_menu_create(NULL,0,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu1,3,NULL);
-   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(NULL,0,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,5,NULL);
+   menus[0] = (HLH_gui_element *)HLH_gui_menu_create(NULL,HLH_GUI_STYLE_01,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu0,3,NULL);
+   menus[1] = (HLH_gui_element *)HLH_gui_menu_create(NULL,HLH_GUI_STYLE_01,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu1,3,NULL);
+   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(NULL,HLH_GUI_STYLE_01,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,5,NULL);
+   HLH_gui_separator_create(menus[1],HLH_GUI_FILL_X,0);
    HLH_gui_checkbutton_create(menus[1],HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"check");
 
    const char *menubar[] = 
@@ -70,11 +71,12 @@ int main(int argc, char **argv)
 
    HLH_gui_group *group2 = HLH_gui_group_create(&win->e,HLH_GUI_EXPAND);
    HLH_gui_menubar_create(&group2->e,HLH_GUI_FILL_X,HLH_GUI_PACK_WEST|HLH_GUI_STYLE_01,menubar,menus,3,NULL);
+   HLH_gui_separator_create(&group2->e,HLH_GUI_FILL_X,0);
    //HLH_gui_group *HLH_gui_menubar_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, HLH_gui_element **panels, int child_count, HLH_gui_msg_handler msg_usr);
 
    //HLH_gui_menu_create(&group2->e,0,HLH_GUI_FILL_X|HLH_GUI_PACK_WEST,labels,4,NULL);
 
-   HLH_gui_frame *group = HLH_gui_frame_create(&group2->e,0);
+   HLH_gui_group *group = HLH_gui_group_create(&group2->e,HLH_GUI_STYLE_01);
    group->e.pad_out = HLH_gui_point_make(0,10);
    //HLH_gui_label *label = HLH_gui_label_create(&group->e,0,"Hello, World!");
    //HLH_gui_textbutton *text = HLH_gui_textbutton_create(&group->e,0,"Test");

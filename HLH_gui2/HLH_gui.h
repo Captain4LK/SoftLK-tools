@@ -160,13 +160,6 @@ struct HLH_gui_window
 typedef struct
 {
    HLH_gui_element e;
-}HLH_gui_frame;
-
-typedef struct
-{
-   HLH_gui_element e;
-
-   int frame;
 }HLH_gui_group;
 
 typedef struct
@@ -227,6 +220,13 @@ typedef struct
    uint64_t side;
 }HLH_gui_pulldown;
 
+typedef struct
+{
+   HLH_gui_element e;
+
+   int direction; //0 --> horizontal; 1 --> vertical
+}HLH_gui_separator;
+
 void HLH_gui_init(void);
 HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height);
 int HLH_gui_message_loop(void);
@@ -261,7 +261,6 @@ void HLH_gui_draw_string(HLH_gui_element *e, HLH_gui_rect bounds, const char *te
 
 //Groups
 HLH_gui_group *HLH_gui_group_create(HLH_gui_element *parent, uint64_t flags);
-HLH_gui_frame *HLH_gui_frame_create(HLH_gui_element *parent, uint64_t flags);
 
 //Label
 HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint64_t flags, const char *text);
@@ -274,10 +273,13 @@ HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, uint64_
 void HLH_gui_radiobutton_set(HLH_gui_element *e, int trigger_msg, int redraw);
 
 //Menu
-//Creates frame with label_count buttons as children
-HLH_gui_frame *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, int label_count, HLH_gui_msg_handler msg_usr);
+//Creates group with label_count buttons as children
+HLH_gui_group *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, int label_count, HLH_gui_msg_handler msg_usr);
 
 //Menubar
 HLH_gui_group *HLH_gui_menubar_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, HLH_gui_element **panels, int child_count, HLH_gui_msg_handler msg_usr);
+
+//Seperator
+HLH_gui_separator *HLH_gui_separator_create(HLH_gui_element *parent, uint64_t flags, int direction);
 
 #endif

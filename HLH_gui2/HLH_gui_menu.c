@@ -31,13 +31,13 @@ static void menubutton_draw(HLH_gui_menubutton *b);
 
 //Function implementations
 
-HLH_gui_frame *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, int label_count, HLH_gui_msg_handler msg_usr)
+HLH_gui_group *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, int label_count, HLH_gui_msg_handler msg_usr)
 {
-   HLH_gui_frame *frame = HLH_gui_frame_create(parent,flags);
+   HLH_gui_group *group = HLH_gui_group_create(parent,flags);
 
    for(int i = 0;i<label_count;i++)
    {
-      HLH_gui_menubutton *button = (HLH_gui_menubutton *) HLH_gui_element_create(sizeof(*button),&frame->e,cflags,menubutton_msg);
+      HLH_gui_menubutton *button = (HLH_gui_menubutton *) HLH_gui_element_create(sizeof(*button),&group->e,cflags,menubutton_msg);
       button->e.type = "menubutton";
 
       button->index = i;
@@ -46,7 +46,7 @@ HLH_gui_frame *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint
       strcpy(button->text,labels[i]);
    }
 
-   return frame;
+   return group;
 }
 
 static int menubutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
