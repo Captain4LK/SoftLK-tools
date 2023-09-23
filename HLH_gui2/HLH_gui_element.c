@@ -157,6 +157,17 @@ void HLH_gui_element_ignore(HLH_gui_element *e, int ignore)
       HLH_gui_element_ignore(e->children[i],ignore);
 }
 
+void HLH_gui_element_destroy(HLH_gui_element *e)
+{
+   for(int i = 0;i<e->child_count;i++)
+      HLH_gui_element_destroy(e->children[i]);
+
+   HLH_gui_element_msg(e,HLH_GUI_MSG_DESTROY,0,NULL);
+   if(e->children!=NULL)
+      free(e->children);
+   free(e);
+}
+
 static void element_compute_required(HLH_gui_element *e)
 {
    HLH_gui_point size_max = HLH_gui_point_make(0,0);

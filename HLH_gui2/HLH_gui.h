@@ -243,6 +243,7 @@ int HLH_gui_message_loop(void);
 void HLH_gui_set_scale(int scale);
 int HLH_gui_get_scale(void);
 void HLH_gui_handle_mouse(HLH_gui_element *e, HLH_gui_mouse m);
+void HLH_gui_window_close(HLH_gui_window *win);
 
 //Element
 HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, uint64_t flags, HLH_gui_msg_handler msg_handler);
@@ -255,6 +256,7 @@ HLH_gui_element *HLH_gui_element_by_point(HLH_gui_element *e, HLH_gui_point pt);
 int HLH_gui_element_priority(HLH_gui_element *e, HLH_gui_point pt);
 void HLH_gui_element_invisible(HLH_gui_element *e, int invisible);
 void HLH_gui_element_ignore(HLH_gui_element *e, int ignore);
+void HLH_gui_element_destroy(HLH_gui_element *e); //Only use on root elements (no parents or windows)
 
 //Rectangle
 HLH_gui_rect HLH_gui_rect_make(int minx, int miny, int maxx, int maxy);
@@ -281,7 +283,7 @@ HLH_gui_textbutton *HLH_gui_textbutton_create(HLH_gui_element *parent, uint64_t 
 HLH_gui_checkbutton *HLH_gui_checkbutton_create(HLH_gui_element *parent, uint64_t flags, const char *text);
 void HLH_gui_checkbutton_set(HLH_gui_element *e, int checked, int trigger_msg, int redraw);
 HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, uint64_t flags, const char *text);
-void HLH_gui_radiobutton_set(HLH_gui_element *e, int trigger_msg, int redraw);
+void HLH_gui_radiobutton_set(HLH_gui_radiobutton *r, int trigger_msg, int redraw);
 
 //Menu
 //Creates group with label_count buttons as children

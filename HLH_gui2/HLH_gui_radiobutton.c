@@ -41,26 +41,25 @@ HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, uint64_
    button->text = malloc(button->text_len+1);
    strcpy(button->text,text);
 
-   HLH_gui_radiobutton_set(&button->e,0,0);
+   HLH_gui_radiobutton_set(button,0,0);
 
    return button;
 }
 
-void HLH_gui_radiobutton_set(HLH_gui_element *e, int trigger_msg, int redraw)
+void HLH_gui_radiobutton_set(HLH_gui_radiobutton *r, int trigger_msg, int redraw)
 {
-   if(e==NULL)
+   if(r==NULL)
       return;
 
-   HLH_gui_radiobutton *button = (HLH_gui_radiobutton *)e;
-   int previously = button->checked;
-   if(e->parent!=NULL)
+   int previously = r->checked;
+   if(r->e.parent!=NULL)
    {
-      for(int i = 0;i<e->parent->child_count;i++)
+      for(int i = 0;i<r->e.parent->child_count;i++)
       {
-         HLH_gui_element *c = e->parent->children[i];
+         HLH_gui_element *c = r->e.parent->children[i];
 
          //Valid pointer comparison
-         if(e->type==radiobutton_type)
+         if(c->type==radiobutton_type)
          {
             HLH_gui_radiobutton *b = (HLH_gui_radiobutton *)c;
             b->checked = 0;
@@ -68,17 +67,17 @@ void HLH_gui_radiobutton_set(HLH_gui_element *e, int trigger_msg, int redraw)
       }
    }
 
-   button->checked = 1;
+   r->checked = 1;
    if(redraw)
    {
-      if(e->parent!=NULL)
-         HLH_gui_element_redraw(e->parent);
+      if(r->e.parent!=NULL)
+         HLH_gui_element_redraw(r->e.parent);
       else
-         HLH_gui_element_redraw(e);
+         HLH_gui_element_redraw(&r->e);
    }
 
    if(trigger_msg&&!previously)
-      HLH_gui_element_msg(e,HLH_GUI_MSG_CLICK,0,NULL);
+      HLH_gui_element_msg(&r->e,HLH_GUI_MSG_CLICK,0,NULL);
 }
 
 static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -122,7 +121,7 @@ static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
 
       if(click)
       {
-         HLH_gui_radiobutton_set(e,1,1);
+         HLH_gui_radiobutton_set(button,1,1);
          button->state = 0;
       }
 

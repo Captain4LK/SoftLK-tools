@@ -163,6 +163,9 @@ static int pulldown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    else if(msg==HLH_GUI_MSG_DESTROY)
    {
       free(pull->text);
+
+      if(pull->pull!=NULL)
+         HLH_gui_element_destroy(pull->pull);
       //TODO(Captain4LK): free pulldown menus
    }
 

@@ -71,7 +71,6 @@ static const uint64_t core_font[] =
 //Function prototypes
 HLH_gui_window *core_find_window(SDL_Window *win);
 static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static void core_element_destroy(HLH_gui_element *e); //Only use for destroying windows!!!
 //-------------------------------------
 
 //Function implementations
@@ -171,6 +170,8 @@ int HLH_gui_message_loop(void)
       switch(event.type)
       {
       case SDL_QUIT:
+         for(int i = 0;i<core_window_count;i++)
+            HLH_gui_element_destroy(&core_windows[i]->e);
          return 0;
       case SDL_DROPFILE:
          win = core_find_window(SDL_GetWindowFromID(event.drop.windowID));
@@ -226,8 +227,28 @@ int HLH_gui_message_loop(void)
             HLH_gui_handle_mouse(&win->e,mouse);
             break;
          case SDL_WINDOWEVENT_CLOSE:
-            //TODO(Captain4LK): only close current window
-            return 0;
+            //Close all if window 0, otherwise close current one
+            if(win==core_windows[0])
+            {
+               for(int i = 0;i<core_window_count;i++)
+                  HLH_gui_element_destroy(&core_windows[i]->e);
+
+               return 0;
+            }
+            
+            for(int i = 0;i<core_window_count;i++)
+            {
+               if(core_windows[i]==win)
+               {
+                  HLH_gui_element_destroy(&win->e);
+                  core_windows[i] = core_windows[core_window_count-1];
+                  core_window_count--;
+                  core_windows = realloc(core_windows,sizeof(*core_windows)*core_window_count);
+                  break;
+               }
+            }
+
+            break;
          }
          break;
       case SDL_MOUSEMOTION:
@@ -322,6 +343,16 @@ void HLH_gui_handle_mouse(HLH_gui_element *e, HLH_gui_mouse m)
    }
 }
 
+void HLH_gui_window_close(HLH_gui_window *win)
+{
+   SDL_Event event = {0};
+   event.type = SDL_WINDOWEVENT;
+   event.window.event = SDL_WINDOWEVENT_CLOSE;
+   event.window.windowID = SDL_GetWindowID(win->window);
+
+   SDL_PushEvent(&event);
+}
+
 static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    HLH_gui_window *win = (HLH_gui_window *)e;
@@ -363,16 +394,5 @@ HLH_gui_window *core_find_window(SDL_Window *win)
          return core_windows[i];
 
    return NULL;
-}
-
-static void core_element_destroy(HLH_gui_element *e)
-{
-   for(int i = 0;i<e->child_count;i++)
-      core_element_destroy(e->children[i]);
-
-   HLH_gui_element_msg(e,HLH_GUI_MSG_DESTROY,0,NULL);
-   if(e->children!=NULL)
-      free(e->children);
-   free(e);
 }
 //-------------------------------------

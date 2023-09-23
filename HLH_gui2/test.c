@@ -25,6 +25,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
+static void ui_construct(void);
+static int button_quit_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
 //Function implementations
@@ -32,6 +34,14 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 int main(int argc, char **argv)
 {
    HLH_gui_init();
+
+   ui_construct();
+
+   return HLH_gui_message_loop();
+}
+
+static void ui_construct(void)
+{
    HLH_gui_window *win = HLH_gui_window_create("Test",800,600);
    
    const char *menu0[] =
@@ -97,6 +107,19 @@ int main(int argc, char **argv)
    HLH_gui_slider_set(HLH_gui_slider_create(&group->e,HLH_GUI_FILL_Y|HLH_GUI_PACK_EAST,1),20,200,0,0);
    HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_EAST,"button 5");
 
-   return HLH_gui_message_loop();
+   win = HLH_gui_window_create("Test 2",800,600);
+   group = HLH_gui_group_create(&win->e,HLH_GUI_EXPAND);
+   HLH_gui_textbutton_create(&group->e,0,"Quit")->e.msg_usr = button_quit_msg;
+}
+
+static int button_quit_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      puts("QUIT");
+      HLH_gui_window_close(e->window);
+   }
+
+   return 0;
 }
 //-------------------------------------
