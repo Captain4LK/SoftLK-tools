@@ -25,16 +25,16 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static int textbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static void textbutton_draw(HLH_gui_textbutton *t);
+static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static void button_draw(HLH_gui_button *t);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_textbutton *HLH_gui_textbutton_create(HLH_gui_element *parent, uint64_t flags, const char *text)
+HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint64_t flags, const char *text)
 {
-   HLH_gui_textbutton *button = (HLH_gui_textbutton *) HLH_gui_element_create(sizeof(*button),parent,flags,textbutton_msg);
-   button->e.type = "textbutton";
+   HLH_gui_button *button = (HLH_gui_button *) HLH_gui_element_create(sizeof(*button),parent,flags,button_msg);
+   button->e.type = "button";
 
    button->text_len = (int)strlen(text);
    button->text = malloc(button->text_len+1);
@@ -43,9 +43,9 @@ HLH_gui_textbutton *HLH_gui_textbutton_create(HLH_gui_element *parent, uint64_t 
    return button;
 }
 
-static int textbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
-   HLH_gui_textbutton *button = (HLH_gui_textbutton *)e;
+   HLH_gui_button *button = (HLH_gui_button *)e;
 
    if(msg==HLH_GUI_MSG_GET_WIDTH)
    {
@@ -57,7 +57,7 @@ static int textbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    }
    else if(msg==HLH_GUI_MSG_DRAW)
    {
-      textbutton_draw(button);
+      button_draw(button);
    }
    else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
    {
@@ -99,7 +99,7 @@ static int textbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    return 0;
 }
 
-static void textbutton_draw(HLH_gui_textbutton *t)
+static void button_draw(HLH_gui_button *t)
 {
    uint64_t style = t->e.flags&HLH_GUI_STYLE;
 

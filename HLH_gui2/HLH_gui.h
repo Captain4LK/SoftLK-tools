@@ -170,7 +170,7 @@ typedef struct
    int text_len;
    char *text;
    int state;
-}HLH_gui_textbutton;
+}HLH_gui_button;
 
 typedef struct
 {
@@ -279,7 +279,7 @@ HLH_gui_group *HLH_gui_group_create(HLH_gui_element *parent, uint64_t flags);
 HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint64_t flags, const char *text);
 
 //Buttons
-HLH_gui_textbutton *HLH_gui_textbutton_create(HLH_gui_element *parent, uint64_t flags, const char *text);
+HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint64_t flags, const char *text);
 HLH_gui_checkbutton *HLH_gui_checkbutton_create(HLH_gui_element *parent, uint64_t flags, const char *text);
 void HLH_gui_checkbutton_set(HLH_gui_element *e, int checked, int trigger_msg, int redraw);
 HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, uint64_t flags, const char *text);

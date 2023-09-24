@@ -89,12 +89,12 @@ static void ui_construct(void)
    HLH_gui_group *group = HLH_gui_group_create(&group2->e,HLH_GUI_STYLE_01);
    group->e.pad_out = HLH_gui_point_make(0,10);
    //HLH_gui_label *label = HLH_gui_label_create(&group->e,0,"Hello, World!");
-   //HLH_gui_textbutton *text = HLH_gui_textbutton_create(&group->e,0,"Test");
+   //HLH_gui_button *text = HLH_gui_button_create(&group->e,0,"Test");
 
 
-   HLH_gui_textbutton_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 1");
-   HLH_gui_textbutton_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 2");
-   HLH_gui_textbutton_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 3");
+   HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 1");
+   HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 2");
+   HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 3");
    HLH_gui_checkbutton_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"check button");
    HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 1");
    HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 2");
@@ -109,7 +109,7 @@ static void ui_construct(void)
 
    win = HLH_gui_window_create("Test 2",128,64,NULL);
    group = HLH_gui_group_create(&win->e,HLH_GUI_EXPAND);
-   HLH_gui_textbutton_create(&group->e,0,"Quit")->e.msg_usr = button_quit_msg;
+   HLH_gui_button_create(&group->e,0,"Quit")->e.msg_usr = button_quit_msg;
 }
 
 static int button_quit_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
