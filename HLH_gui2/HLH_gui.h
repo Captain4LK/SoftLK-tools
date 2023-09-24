@@ -238,7 +238,7 @@ typedef struct
 }HLH_gui_slider;
 
 void HLH_gui_init(void);
-HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height);
+HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height, const char *path_icon);
 int HLH_gui_message_loop(void);
 void HLH_gui_set_scale(int scale);
 int HLH_gui_get_scale(void);

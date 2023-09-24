@@ -13,6 +13,16 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
+#define STBI_NO_JPEG
+#define STBI_NO_PSD
+#define STBI_NO_TGA
+#define STBI_NO_HDR
+#define STBI_NO_PIC
+#define STBI_NO_PNM
+#include "stb_image.h"
 //-------------------------------------
 
 //Internal includes
@@ -105,7 +115,7 @@ void HLH_gui_init(void)
    SDL_UnlockSurface(core_font_surface);
 }
 
-HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height)
+HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height, const char *path_icon)
 {
    HLH_gui_window *window = (HLH_gui_window *)HLH_gui_element_create(sizeof(*window),NULL,0,core_window_msg);
    window->e.window = window;

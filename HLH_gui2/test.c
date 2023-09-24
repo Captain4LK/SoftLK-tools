@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 
 static void ui_construct(void)
 {
-   HLH_gui_window *win = HLH_gui_window_create("Test",800,600);
+   HLH_gui_window *win = HLH_gui_window_create("Test",800,600,NULL);
    
    const char *menu0[] =
    {
@@ -107,7 +107,7 @@ static void ui_construct(void)
    HLH_gui_slider_set(HLH_gui_slider_create(&group->e,HLH_GUI_FILL_Y|HLH_GUI_PACK_EAST,1),20,200,0,0);
    HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_EAST,"button 5");
 
-   win = HLH_gui_window_create("Test 2",800,600);
+   win = HLH_gui_window_create("Test 2",128,64,NULL);
    group = HLH_gui_group_create(&win->e,HLH_GUI_EXPAND);
    HLH_gui_textbutton_create(&group->e,0,"Quit")->e.msg_usr = button_quit_msg;
 }
