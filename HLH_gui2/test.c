@@ -66,9 +66,9 @@ static void ui_construct(void)
    };
 
    HLH_gui_element *menus[3];
-   menus[0] = (HLH_gui_element *)HLH_gui_menu_create(NULL,HLH_GUI_STYLE_01,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu0,3,NULL);
-   menus[1] = (HLH_gui_element *)HLH_gui_menu_create(NULL,HLH_GUI_STYLE_01,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu1,3,NULL);
-   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(NULL,HLH_GUI_STYLE_01,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,5,NULL);
+   menus[0] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu0,3,NULL);
+   menus[1] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu1,3,NULL);
+   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,5,NULL);
    HLH_gui_separator_create(menus[1],HLH_GUI_FILL_X,0);
    HLH_gui_checkbutton_create(menus[1],HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"check",NULL);
 

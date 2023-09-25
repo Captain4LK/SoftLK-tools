@@ -109,7 +109,7 @@ typedef struct
 #define    HLH_GUI_STYLE_14     (UINT64_C(0x380000))
 #define    HLH_GUI_STYLE_15     (UINT64_C(0x3c0000))
 
-//TODO(Captain4LK): NO_PARENT flag, makes element root, but gets window ptr from passed parent
+#define HLH_GUI_NO_PARENT       (UINT64_C(0x400000))
 //-------------------------------------
 
 typedef int (*HLH_gui_msg_handler)(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);

@@ -44,10 +44,14 @@ HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, u
    if(parent!=NULL)
    {
       e->window = parent->window;
-      e->parent = parent;
-      parent->child_count++;
-      parent->children = realloc(parent->children,sizeof(*parent->children)*parent->child_count);
-      parent->children[parent->child_count-1] = e;
+
+      if(!(flags&HLH_GUI_NO_PARENT))
+      {
+         e->parent = parent;
+         parent->child_count++;
+         parent->children = realloc(parent->children,sizeof(*parent->children)*parent->child_count);
+         parent->children[parent->child_count-1] = e;
+      }
    }
 
    return e;
@@ -378,14 +382,6 @@ static void element_redraw(HLH_gui_element *e)
 {
    if(e->flags&HLH_GUI_INVISIBLE||e->flags&HLH_GUI_IGNORE)
       return;
-
-   if(e->window==NULL)
-   {
-      if(e->parent!=NULL)
-         e->window = e->parent->window;
-      else
-         return;
-   }
 
    HLH_gui_element_msg(e,HLH_GUI_MSG_DRAW,0,NULL);
 
