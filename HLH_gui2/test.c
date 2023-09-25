@@ -106,6 +106,7 @@ static void ui_construct(void)
    HLH_gui_slider_set(HLH_gui_slider_create(&group->e,HLH_GUI_FILL_X,0),20,200,0,0);
    HLH_gui_slider_set(HLH_gui_slider_create(&group->e,HLH_GUI_FILL_Y|HLH_GUI_PACK_EAST,1),20,200,0,0);
    HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_EAST,"button 5",NULL);
+   HLH_gui_img_create_path(&group->e,HLH_GUI_EXPAND|HLH_GUI_PACK_EAST,"/home/lukash/Pictures/logo3d.png");
 
    win = HLH_gui_window_create("Test 2",128,64,"icons.png");
    group = HLH_gui_group_create(&win->e,HLH_GUI_EXPAND);

@@ -108,6 +108,8 @@ typedef struct
 #define    HLH_GUI_STYLE_13     (UINT64_C(0x340000))
 #define    HLH_GUI_STYLE_14     (UINT64_C(0x380000))
 #define    HLH_GUI_STYLE_15     (UINT64_C(0x3c0000))
+
+//TODO(Captain4LK): NO_PARENT flag, makes element root, but gets window ptr from passed parent
 //-------------------------------------
 
 typedef int (*HLH_gui_msg_handler)(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
@@ -244,6 +246,15 @@ typedef struct
    int direction; //0 --> horizontal; 1 --> vertical
 }HLH_gui_slider;
 
+typedef struct
+{
+   HLH_gui_element e;
+
+   int width;
+   int height;
+   SDL_Texture *img;
+}HLH_gui_image;
+
 void HLH_gui_init(void);
 HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height, const char *path_icon);
 int HLH_gui_message_loop(void);
@@ -305,5 +316,14 @@ HLH_gui_separator *HLH_gui_separator_create(HLH_gui_element *parent, uint64_t fl
 //Slider
 HLH_gui_slider *HLH_gui_slider_create(HLH_gui_element *parent, uint64_t flags, int direction);
 void HLH_gui_slider_set(HLH_gui_slider *slider, int value, int range, int trigger_msg, int redraw);
+
+//Image
+HLH_gui_image *HLH_gui_img_create_path(HLH_gui_element *parent, uint64_t flags, const char *path);
+HLH_gui_image *HLH_gui_img_create_data(HLH_gui_element *parent, uint64_t flags, int width, int height, uint32_t *pix);
+void HLH_gui_img_update(HLH_gui_image *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), repack needed!!!
+
+//Utils
+uint32_t *HLH_gui_image_load(const char *path, int *width, int *height);
+void HLH_gui_image_free(uint32_t *pix);
 
 #endif

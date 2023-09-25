@@ -16,17 +16,12 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
-#define STBI_NO_JPEG
-#define STBI_NO_PSD
-#define STBI_NO_TGA
-#define STBI_NO_HDR
-#define STBI_NO_PIC
-#define STBI_NO_PNM
 #include "stb_image.h"
 //-------------------------------------
 
 //Internal includes
 #include "HLH_gui.h"
+#include "HLH_gui_internal.h"
 //-------------------------------------
 
 //#defines
@@ -374,6 +369,55 @@ void HLH_gui_window_close(HLH_gui_window *win)
    event.window.windowID = SDL_GetWindowID(win->window);
 
    SDL_PushEvent(&event);
+}
+
+uint32_t *HLH_gui_image_load(const char *path, int *width, int *height)
+{
+   if(path==NULL)
+      return NULL;
+
+   int n;
+   return (uint32_t *)stbi_load(path,width,height,&n,4);
+}
+
+void HLH_gui_image_free(uint32_t *pix)
+{
+   if(pix==NULL)
+      return;
+
+   stbi_image_free(pix);
+}
+
+SDL_Texture *HLH_gui_texture_load(HLH_gui_window *win, const char *path, int *width, int *height)
+{
+   if(path==NULL||width==NULL||height==NULL)
+      return NULL;
+
+   int n;
+   unsigned char *data = stbi_load(path,width,height,&n,4);
+   if(data!=NULL)
+   {
+      SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(data,*width,*height,32,(*width)*4,0x000000ff,0x0000ff00,0x00ff0000,0xff000000);
+      SDL_Texture *tex = SDL_CreateTextureFromSurface(win->renderer,surface);
+      SDL_FreeSurface(surface);
+      stbi_image_free(data);
+
+      return tex;
+   }
+
+   return NULL;
+}
+
+SDL_Texture *HLH_gui_texture_from_data(HLH_gui_window *win, uint32_t *pix, int width, int height)
+{
+   if(pix==NULL)
+      return NULL;
+
+   SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(pix,width,height,32,width*4,0x000000ff,0x0000ff00,0x00ff0000,0xff000000);
+   SDL_Texture *tex = SDL_CreateTextureFromSurface(win->renderer,surface);
+   SDL_FreeSurface(surface);
+
+   return tex;
 }
 
 static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
