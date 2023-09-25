@@ -70,7 +70,7 @@ static void ui_construct(void)
    menus[1] = (HLH_gui_element *)HLH_gui_menu_create(NULL,HLH_GUI_STYLE_01,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu1,3,NULL);
    menus[2] = (HLH_gui_element *)HLH_gui_menu_create(NULL,HLH_GUI_STYLE_01,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,5,NULL);
    HLH_gui_separator_create(menus[1],HLH_GUI_FILL_X,0);
-   HLH_gui_checkbutton_create(menus[1],HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"check");
+   HLH_gui_checkbutton_create(menus[1],HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"check",NULL);
 
    const char *menubar[] = 
    {
@@ -89,27 +89,29 @@ static void ui_construct(void)
    HLH_gui_group *group = HLH_gui_group_create(&group2->e,HLH_GUI_STYLE_01);
    group->e.pad_out = HLH_gui_point_make(0,10);
    //HLH_gui_label *label = HLH_gui_label_create(&group->e,0,"Hello, World!");
-   //HLH_gui_button *text = HLH_gui_button_create(&group->e,0,"Test");
+   //HLH_gui_button *text = HLH_gui_button_create(&group->e,0,"Test",NULL);
 
 
-   HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 1");
-   HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 2");
-   HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 3");
-   HLH_gui_checkbutton_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"check button");
-   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 1");
-   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 2");
-   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 3");
-   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 4");
-   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 5");
+   HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 1",NULL);
+   HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 2",NULL);
+   HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"test 3",NULL);
+   HLH_gui_checkbutton_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_MAX_X,"check button",NULL);
+   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 1",NULL);
+   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 2",NULL);
+   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 3",NULL);
+   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 4",NULL);
+   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 5",NULL);
 
    group = HLH_gui_group_create(&group2->e,HLH_GUI_STYLE_01|HLH_GUI_EXPAND);
    HLH_gui_slider_set(HLH_gui_slider_create(&group->e,HLH_GUI_FILL_X,0),20,200,0,0);
    HLH_gui_slider_set(HLH_gui_slider_create(&group->e,HLH_GUI_FILL_Y|HLH_GUI_PACK_EAST,1),20,200,0,0);
-   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_EAST,"button 5");
+   HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_EAST,"button 5",NULL);
 
-   win = HLH_gui_window_create("Test 2",128,64,NULL);
+   win = HLH_gui_window_create("Test 2",128,64,"icons.png");
    group = HLH_gui_group_create(&win->e,HLH_GUI_EXPAND);
-   HLH_gui_button_create(&group->e,0,"Quit")->e.msg_usr = button_quit_msg;
+   HLH_gui_rect icon = HLH_gui_rect_make(0,0,8,8);
+   HLH_gui_button_create(&group->e,0,NULL,&icon);
+   HLH_gui_button_create(&group->e,0,"Quit",NULL)->e.msg_usr = button_quit_msg;
 }
 
 static int button_quit_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)

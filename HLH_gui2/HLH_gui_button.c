@@ -31,14 +31,22 @@ static void button_draw(HLH_gui_button *t);
 
 //Function implementations
 
-HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint64_t flags, const char *text)
+HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds)
 {
    HLH_gui_button *button = (HLH_gui_button *) HLH_gui_element_create(sizeof(*button),parent,flags,button_msg);
    button->e.type = "button";
 
-   button->text_len = (int)strlen(text);
-   button->text = malloc(button->text_len+1);
-   strcpy(button->text,text);
+   if(text!=NULL)
+   {
+      button->text_len = (int)strlen(text);
+      button->text = malloc(button->text_len+1);
+      strcpy(button->text,text);
+   }
+   else if(icon_bounds!=NULL)
+   {
+      button->is_icon = 1;
+      button->icon_bounds = *icon_bounds;
+   }
 
    return button;
 }
@@ -49,11 +57,17 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
    if(msg==HLH_GUI_MSG_GET_WIDTH)
    {
-      return button->text_len*HLH_GUI_GLYPH_WIDTH*HLH_gui_get_scale()+10*HLH_gui_get_scale();
+      if(button->is_icon)
+         return (button->icon_bounds.maxx-button->icon_bounds.minx)+6*HLH_gui_get_scale();
+      else
+         return button->text_len*HLH_GUI_GLYPH_WIDTH*HLH_gui_get_scale()+10*HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {
-      return HLH_GUI_GLYPH_HEIGHT*HLH_gui_get_scale()+8*HLH_gui_get_scale();
+      if(button->is_icon)
+         return (button->icon_bounds.maxy-button->icon_bounds.miny)+6*HLH_gui_get_scale();
+      else
+         return HLH_GUI_GLYPH_HEIGHT*HLH_gui_get_scale()+8*HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_DRAW)
    {
@@ -93,7 +107,8 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    }
    else if(msg==HLH_GUI_MSG_DESTROY)
    {
-      free(button->text);
+      if(button->text!=NULL)
+         free(button->text);
    }
 
    return 0;
@@ -102,6 +117,44 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 static void button_draw(HLH_gui_button *t)
 {
    uint64_t style = t->e.flags&HLH_GUI_STYLE;
+
+   if(t->is_icon)
+   {
+      int scale = HLH_gui_get_scale();
+      HLH_gui_rect bounds = t->e.bounds;
+
+      //Infill
+      HLH_gui_draw_rectangle_fill(&t->e,HLH_gui_rect_make(bounds.minx+scale,bounds.miny+scale,bounds.maxx-scale,bounds.maxy-scale),0x5a5a5a);
+
+      //Outline
+      HLH_gui_draw_rectangle(&t->e,bounds,0x000000);
+
+      //Border
+      if(t->state)
+      {
+         HLH_gui_draw_rectangle_fill(&t->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0x000000);
+         HLH_gui_draw_rectangle_fill(&t->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x000000);
+
+         HLH_gui_draw_rectangle_fill(&t->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&t->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0x323232);
+      }
+      else
+      {
+         HLH_gui_draw_rectangle_fill(&t->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&t->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x323232);
+
+         HLH_gui_draw_rectangle_fill(&t->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xc8c8c8);
+         HLH_gui_draw_rectangle_fill(&t->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xc8c8c8);
+      }
+
+      int width = t->icon_bounds.maxx-t->icon_bounds.minx;
+      int height = t->icon_bounds.maxy-t->icon_bounds.miny;
+      SDL_Rect src = {.x = t->icon_bounds.minx, .y = t->icon_bounds.miny, .w = width, .h = height};
+      SDL_Rect dst = {.x = bounds.minx+3*scale,.y = bounds.miny+3*scale, .w = width, .h = height};
+      SDL_RenderCopy(t->e.window->renderer,t->e.window->icons,&src,&dst);
+
+      return;
+   }
 
    if(style==HLH_GUI_STYLE_00)
    {

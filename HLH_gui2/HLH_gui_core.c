@@ -138,6 +138,19 @@ HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height, 
    if(window->font==NULL)
       fprintf(stderr,"SDL_CreateTextureFromSurface(): %s\n",SDL_GetError());
 
+   if(path_icon!=NULL)
+   {
+      int w, h, n;
+      unsigned char *data = stbi_load(path_icon,&w,&h,&n,4);
+      if(data!=NULL)
+      {
+         SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(data,w,h,32,w*4,0x000000ff,0x0000ff00,0x00ff0000,0xff000000);
+         window->icons = SDL_CreateTextureFromSurface(window->renderer,surface);
+         SDL_FreeSurface(surface);
+         stbi_image_free(data);
+      }
+   }
+
    return window;
 }
 
@@ -387,6 +400,8 @@ static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
    {
       SDL_DestroyTexture(win->target);
       SDL_DestroyTexture(win->font);
+      if(win->icons!=NULL)
+         SDL_DestroyTexture(win->icons);
       SDL_DestroyRenderer(win->renderer);
       SDL_DestroyWindow(win->window);
    }

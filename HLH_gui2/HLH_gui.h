@@ -156,6 +156,7 @@ struct HLH_gui_window
    SDL_Renderer *renderer;
    SDL_Texture *target;
    SDL_Texture *font;
+   SDL_Texture *icons;
 };
 
 typedef struct
@@ -167,6 +168,8 @@ typedef struct
 {
    HLH_gui_element e;
 
+   int is_icon;
+   HLH_gui_rect icon_bounds;
    int text_len;
    char *text;
    int state;
@@ -176,6 +179,8 @@ typedef struct
 {
    HLH_gui_element e;
 
+   int is_icon;
+   HLH_gui_rect icon_bounds;
    int text_len;
    char *text;
    int state;
@@ -186,6 +191,8 @@ typedef struct
 {
    HLH_gui_element e;
 
+   int is_icon;
+   HLH_gui_rect icon_bounds;
    int text_len;
    char *text;
    int state;
@@ -279,10 +286,10 @@ HLH_gui_group *HLH_gui_group_create(HLH_gui_element *parent, uint64_t flags);
 HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint64_t flags, const char *text);
 
 //Buttons
-HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint64_t flags, const char *text);
-HLH_gui_checkbutton *HLH_gui_checkbutton_create(HLH_gui_element *parent, uint64_t flags, const char *text);
+HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds);
+HLH_gui_checkbutton *HLH_gui_checkbutton_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds);
 void HLH_gui_checkbutton_set(HLH_gui_element *e, int checked, int trigger_msg, int redraw);
-HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, uint64_t flags, const char *text);
+HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds);
 void HLH_gui_radiobutton_set(HLH_gui_radiobutton *r, int trigger_msg, int redraw);
 
 //Menu
