@@ -54,6 +54,19 @@ HLH_gui_image *HLH_gui_img_create_data(HLH_gui_element *parent, uint64_t flags, 
    return img;
 }
 
+void HLH_gui_img_update(HLH_gui_image *img, uint32_t *pix, int width, int height, int redraw)
+{
+   if(img->img!=NULL)
+      SDL_DestroyTexture(img->img);
+
+   img->width = width;
+   img->height = height;
+   img->img = HLH_gui_texture_from_data(img->e.window,pix,width,height);
+
+   if(redraw)
+      HLH_gui_element_redraw(&img->e);
+}
+
 static int image_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    HLH_gui_image *img = (HLH_gui_image *)e;
@@ -117,18 +130,5 @@ static void image_draw(HLH_gui_image *img)
    dst.w = view_width;
    dst.h = view_height;
    SDL_RenderCopy(img->e.window->renderer,img->img,NULL,&dst);
-}
-
-void HLH_gui_img_update(HLH_gui_image *img, uint32_t *pix, int width, int height, int redraw)
-{
-   if(img->img!=NULL)
-      SDL_DestroyTexture(img->img);
-
-   img->width = width;
-   img->height = height;
-   img->img = HLH_gui_texture_from_data(img->e.window,pix,width,height);
-
-   if(redraw)
-      HLH_gui_element_redraw(&img->e);
 }
 //-------------------------------------

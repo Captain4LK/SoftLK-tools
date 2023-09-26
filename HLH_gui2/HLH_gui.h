@@ -255,6 +255,20 @@ typedef struct
    SDL_Texture *img;
 }HLH_gui_image;
 
+typedef struct
+{
+   HLH_gui_element e;
+
+   //both images need same aspect ratio!!!
+   int width0;
+   int height0;
+   int width1;
+   int height1;
+   int slider; //Value from 0 to 2048
+   SDL_Texture *img0;
+   SDL_Texture *img1;
+}HLH_gui_imgcmp;
+
 void HLH_gui_init(void);
 HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height, const char *path_icon);
 int HLH_gui_message_loop(void);
@@ -321,6 +335,9 @@ void HLH_gui_slider_set(HLH_gui_slider *slider, int value, int range, int trigge
 HLH_gui_image *HLH_gui_img_create_path(HLH_gui_element *parent, uint64_t flags, const char *path);
 HLH_gui_image *HLH_gui_img_create_data(HLH_gui_element *parent, uint64_t flags, int width, int height, uint32_t *pix);
 void HLH_gui_img_update(HLH_gui_image *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), repack needed!!!
+
+//Imgcmp
+HLH_gui_imgcmp *HLH_gui_imgcmp_create(HLH_gui_element *parent, uint64_t flags, uint32_t *pix0, int width0, int height0, uint32_t *pix1, int width1, int height1);
 
 //Utils
 uint32_t *HLH_gui_image_load(const char *path, int *width, int *height);

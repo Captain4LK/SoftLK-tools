@@ -106,7 +106,17 @@ static void ui_construct(void)
    HLH_gui_slider_set(HLH_gui_slider_create(&group->e,HLH_GUI_FILL_X,0),20,200,0,0);
    HLH_gui_slider_set(HLH_gui_slider_create(&group->e,HLH_GUI_FILL_Y|HLH_GUI_PACK_EAST,1),20,200,0,0);
    HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_EAST,"button 5",NULL);
-   HLH_gui_img_create_path(&group->e,HLH_GUI_EXPAND|HLH_GUI_PACK_EAST,"/home/lukash/Pictures/logo3d.png");
+
+   int w0 = 0;
+   int h0 = 0;
+   int w1 = 0;
+   int h1 = 0;
+   uint32_t *pix0 = HLH_gui_image_load("logo0.png",&w0,&h0);
+   uint32_t *pix1 = HLH_gui_image_load("logo1.png",&w1,&h1);
+   HLH_gui_imgcmp_create(&group->e,HLH_GUI_EXPAND|HLH_GUI_PACK_EAST,pix0,w0,h0,pix1,w1,h1);
+   HLH_gui_image_free(pix0);
+   HLH_gui_image_free(pix1);
+   //HLH_gui_img_create_path(&group->e,HLH_GUI_EXPAND|HLH_GUI_PACK_EAST,"/home/lukash/Pictures/logo3d.png");
 
    win = HLH_gui_window_create("Test 2",128,64,"icons.png");
    group = HLH_gui_group_create(&win->e,HLH_GUI_EXPAND);

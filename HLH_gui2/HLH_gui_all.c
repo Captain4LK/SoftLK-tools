@@ -47,4 +47,5 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "HLH_gui_separator.c"
 #include "HLH_gui_slider.c"
 #include "HLH_gui_image.c"
+#include "HLH_gui_imgcmp.c"
 //-------------------------------------
