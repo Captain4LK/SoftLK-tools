@@ -312,7 +312,7 @@ static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_p
          element_set_rect(c,origin,HLH_gui_point_make(c->size_required.x,space.y));
          break;
       case HLH_GUI_PACK_SOUTH:
-         space.y-=c->size_required.y;
+         space_new.y-=c->size_required.y;
          element_set_rect(c,HLH_gui_point_make(origin.x,origin.y+space.y-c->size_required.y),HLH_gui_point_make(space.x,c->size_required.y));
          break;
       case HLH_GUI_PACK_EAST:

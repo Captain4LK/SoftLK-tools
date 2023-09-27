@@ -42,7 +42,7 @@ HLH_gui_image *HLH_gui_img_create_path(HLH_gui_element *parent, uint64_t flags, 
    return img;
 }
 
-HLH_gui_image *HLH_gui_img_create_data(HLH_gui_element *parent, uint64_t flags, int width, int height, uint32_t *pix)
+HLH_gui_image *HLH_gui_img_create_data(HLH_gui_element *parent, uint64_t flags, uint32_t *pix, int width, int height)
 {
    HLH_gui_image *img = (HLH_gui_image *) HLH_gui_element_create(sizeof(*img),parent,flags,image_msg);
    img->e.type = "image";

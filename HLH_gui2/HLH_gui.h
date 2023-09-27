@@ -154,6 +154,8 @@ struct HLH_gui_window
    int mouse_x;
    int mouse_y;
 
+   HLH_gui_element *keyboard;
+
    SDL_Window *window;
    SDL_Renderer *renderer;
    SDL_Texture *target;
@@ -333,11 +335,13 @@ void HLH_gui_slider_set(HLH_gui_slider *slider, int value, int range, int trigge
 
 //Image
 HLH_gui_image *HLH_gui_img_create_path(HLH_gui_element *parent, uint64_t flags, const char *path);
-HLH_gui_image *HLH_gui_img_create_data(HLH_gui_element *parent, uint64_t flags, int width, int height, uint32_t *pix);
+HLH_gui_image *HLH_gui_img_create_data(HLH_gui_element *parent, uint64_t flags, uint32_t *pix, int width, int height);
 void HLH_gui_img_update(HLH_gui_image *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), repack needed!!!
 
 //Imgcmp
 HLH_gui_imgcmp *HLH_gui_imgcmp_create(HLH_gui_element *parent, uint64_t flags, uint32_t *pix0, int width0, int height0, uint32_t *pix1, int width1, int height1);
+void HLH_gui_imgcmp_update0(HLH_gui_imgcmp *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), repack needed!!!
+void HLH_gui_imgcmp_update1(HLH_gui_imgcmp *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), repack needed!!!
 
 //Utils
 uint32_t *HLH_gui_image_load(const char *path, int *width, int *height);
