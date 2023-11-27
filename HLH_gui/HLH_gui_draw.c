@@ -49,6 +49,22 @@ void HLH_gui_draw_block(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color)
    SDL_RenderFillRect(p->win->renderer,&r);
 }
 
+void HLH_gui_draw_block_nc(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color)
+{
+   SDL_Rect r;
+   r.x = rect.l;
+   r.y = rect.t;
+   r.w = rect.r-rect.l;
+   r.h = rect.b-rect.t;
+
+   uint8_t cr = color&255;
+   uint8_t cg = (color>>8)&255;
+   uint8_t cb = (color>>16)&255;
+   uint8_t ca = (uint8_t)((color>>24)&255);
+   SDL_SetRenderDrawColor(p->win->renderer,cr,cg,cb,ca);
+   SDL_RenderFillRect(p->win->renderer,&r);
+}
+
 void HLH_gui_draw_string(HLH_gui_painter *p, HLH_gui_rect bounds, const char *str, size_t bytes, uint32_t color, int align_center)
 {
    int scale = HLH_gui_get_scale();

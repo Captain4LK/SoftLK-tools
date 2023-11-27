@@ -54,6 +54,7 @@ typedef enum
 
 typedef enum
 {
+   HLH_GUI_PAINT_AFTER = 1<<15,
    HLH_GUI_DESTROY = 1<<16,
    HLH_GUI_DESTROY_DESCENDENT = 1<<17,
    HLH_GUI_V_FILL = 1<<18,
@@ -66,6 +67,7 @@ typedef enum
    HLH_GUI_PANEL_HORIZONTAL = 1<<0,
    HLH_GUI_PANEL_DARK = 1<<1,
    HLH_GUI_PANEL_LIGHT = 1<<2,
+
 }HLH_gui_flag;
 
 typedef int (*HLH_gui_msg_handler)(HLH_gui_element *e, HLH_gui_msg, int di, void *dp);
@@ -210,6 +212,7 @@ int HLH_gui_rect_inside(HLH_gui_rect a, int x, int y);
 
 //Drawing
 void HLH_gui_draw_block(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color);
+void HLH_gui_draw_block_nc(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color);
 void HLH_gui_draw_string(HLH_gui_painter *p, HLH_gui_rect bounds, const char *str, size_t bytes, uint32_t color, int align_center);
 void HLH_gui_draw_rectangle(HLH_gui_painter *p, HLH_gui_rect rect, uint32_t color_border);
 

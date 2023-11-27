@@ -70,6 +70,10 @@ void HLH_gui_radiobutton_set(HLH_gui_radiobutton *r, int trigger_msg, int redraw
          if(c->type==radiobutton_type)
          {
             HLH_gui_radiobutton *b = (HLH_gui_radiobutton *)c;
+
+            //Send message to previous button
+            if(b->checked&&trigger_msg)
+               HLH_gui_element_msg(&b->e,HLH_GUI_MSG_CLICK,0,NULL);
             b->checked = 0;
          }
       }
@@ -85,7 +89,7 @@ void HLH_gui_radiobutton_set(HLH_gui_radiobutton *r, int trigger_msg, int redraw
    }
 
    if(trigger_msg&&!previously)
-      HLH_gui_element_msg(&r->e,HLH_GUI_MSG_CLICK,0,NULL);
+      HLH_gui_element_msg(&r->e,HLH_GUI_MSG_CLICK,1,NULL);
 }
 
 static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -260,6 +264,21 @@ static void radiobutton_draw(HLH_gui_radiobutton *r)
 
       if(r->checked)
          HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+4*scale,bounds.miny+offset+3*scale,bounds.minx+dim+offset-2*scale,bounds.miny+offset-3*scale+dim),0x000000);
+   }
+   else if(style==HLH_GUI_STYLE_02)
+   {
+      int scale = HLH_gui_get_scale();
+      HLH_gui_rect bounds = r->e.bounds;
+
+      if(r->checked)
+         HLH_gui_draw_rectangle_fill(&r->e,bounds,0x323232);
+      else
+         HLH_gui_draw_rectangle_fill(&r->e,bounds,0x5a5a5a);
+
+      int height = (bounds.maxy-bounds.miny);
+      int dim = (HLH_GUI_GLYPH_HEIGHT)*HLH_gui_get_scale();
+      int offset = (height-dim)/2;
+      HLH_gui_draw_string(&r->e,HLH_gui_rect_make(bounds.minx+dim+2*scale,bounds.miny,bounds.maxx,bounds.maxy),r->text,r->text_len,0x000000,1);
    }
 }
 //-------------------------------------

@@ -122,6 +122,7 @@ struct HLH_gui_element
    HLH_gui_point fixed_size;
    int usr;
    void *usr_ptr;
+   HLH_gui_msg_handler msg_usr;
 
    //Private -- do not modify
    uint64_t flags;
@@ -141,7 +142,6 @@ struct HLH_gui_element
    int child_count;
 
    HLH_gui_msg_handler msg_base;
-   HLH_gui_msg_handler msg_usr;
 };
 
 struct HLH_gui_window

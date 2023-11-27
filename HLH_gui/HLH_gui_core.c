@@ -469,13 +469,18 @@ static void core_element_paint(HLH_gui_element *e, HLH_gui_painter *p)
       return;
 
    p->clip = clip;
-   HLH_gui_element_msg(e,HLH_GUI_MSG_PAINT,0,p);
+
+   if(!(e->flags&HLH_GUI_PAINT_AFTER))
+      HLH_gui_element_msg(e,HLH_GUI_MSG_PAINT,0,p);
 
    for(uint32_t i = 0;i<e->child_count;i++)
    {
       p->clip = clip;
       core_element_paint(e->children[i],p);
    }
+
+   if(e->flags&HLH_GUI_PAINT_AFTER)
+      HLH_gui_element_msg(e,HLH_GUI_MSG_PAINT,0,p);
 }
 
 static void core_window_end_paint(HLH_gui_window *w, HLH_gui_painter *p)
@@ -516,6 +521,12 @@ static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
    {
       HLH_gui_element_move(e->children[0],e->bounds,0);
       HLH_gui_element_repaint(e,NULL);
+   }
+   else if(msg==HLH_GUI_MSG_PAINT)
+   {
+      HLH_gui_painter *painter = dp;
+      HLH_gui_draw_block(painter,e->bounds,0xffffff);
+      puts("H");
    }
 
    return 0;

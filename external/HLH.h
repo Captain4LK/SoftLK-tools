@@ -1,7 +1,7 @@
 /*
 Misc helper macros/functions/data structures etc.
 
-Written in 2022 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2022,2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -53,7 +53,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //e.g: void foo(int **a) { HLH_array_push(*a,1); }
 #define HLH_array_push(a,o) (HLH_array_maygrow(a,1),(a)[HLH_array_header(a)->length++] = (o))
 #define HLH_array_length(a) ((a)!=NULL?HLH_array_header(a)->length:0)
-#define HLH_array_length_set(a,n) do { if((a)==NULL) HLH_array_grow(a,n,0); else HLH_array_maygrow(a,n-HLH_array_header(a)->length); HLH_array_header(a)->length = n; }while(0)
+#define HLH_array_length_set(a,n) do { if((a)==NULL) HLH_array_grow((a),1,(n)); else HLH_array_maygrow((a),(n)-HLH_array_header(a)->length); HLH_array_header(a)->length = (n); }while(0)
 #define HLH_array_free(a) ((a)!=NULL?(_HLH_free(a-HLH_array_header_offset(a)),0):0)
 
 //Internal
