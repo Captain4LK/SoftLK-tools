@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -31,6 +31,7 @@ static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_p
 static HLH_gui_point element_size_siblings(HLH_gui_element *e);
 static HLH_gui_point element_get_share(HLH_gui_element *e);
 static void element_redraw(HLH_gui_element *e);
+static Uint32 sdl_callback(Uint32 interval, void *param);
 //-------------------------------------
 
 //Function implementations
@@ -40,6 +41,7 @@ HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, u
    HLH_gui_element *e = calloc(1,bytes);
    e->flags = flags;
    e->msg_base = msg_handler;
+   e->timer = 0;
 
    if(parent!=NULL)
    {
@@ -52,6 +54,8 @@ HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, u
          parent->children = realloc(parent->children,sizeof(*parent->children)*parent->child_count);
          parent->children[parent->child_count-1] = e;
       }
+      if(parent->flags&HLH_GUI_OVERLAY)
+         e->flags|=HLH_GUI_OVERLAY;
    }
 
    return e;
@@ -67,6 +71,8 @@ int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       return 0;
    if(msg==HLH_GUI_MSG_DRAW&&e->flags&HLH_GUI_INVISIBLE)
       return 0;
+   if(e->window->blocking!=NULL&&(msg<HLH_GUI_MSG_NO_BLOCK_START||msg>HLH_GUI_MSG_NO_BLOCK_END))
+      return 0;
 
    if(e->msg_usr!=NULL)
    {
@@ -80,10 +86,42 @@ int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    return 0;
 }
 
+int HLH_gui_element_msg_all(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(e==NULL)
+      return 0;
+   if(e->flags&HLH_GUI_DESTROY&&msg!=HLH_GUI_MSG_DESTROY)
+      return 0;
+   if(e->flags&HLH_GUI_IGNORE)
+      return 0;
+   if(msg==HLH_GUI_MSG_DRAW&&e->flags&HLH_GUI_INVISIBLE)
+      return 0;
+   for(int i = 0;i<e->child_count;i++)
+      HLH_gui_element_msg_all(e->children[i],msg,di,dp);
+
+   HLH_gui_element_msg(e,msg,di,dp);
+
+   return 0;
+}
+
 void HLH_gui_element_redraw(HLH_gui_element *e)
 {
-   if(SDL_SetRenderTarget(e->window->renderer,e->window->target)<0)
-      fprintf(stderr,"SDL_SetRenderTarget(): %s\n",SDL_GetError());
+   if(e->flags&HLH_GUI_OVERLAY)
+   {
+      if(SDL_SetRenderTarget(e->window->renderer,e->window->overlay)<0)
+         fprintf(stderr,"SDL_SetRenderTarget(): %s\n",SDL_GetError());
+      //if(SDL_SetRenderDrawColor(e->window->renderer,0,0,0,0)<0)
+         //fprintf(stderr,"SDL_SetRenderDrawColor(): %s\n",SDL_GetError());
+      //if(SDL_RenderClear(e->window->renderer)<0)
+         //fprintf(stderr,"SDL_RenderClear(): %s\n",SDL_GetError());
+      //if(SDL_SetRenderDrawColor(e->window->renderer,0,0,0,255)<0)
+         //fprintf(stderr,"SDL_SetRenderDrawColor(): %s\n",SDL_GetError());
+   }
+   else
+   {
+      if(SDL_SetRenderTarget(e->window->renderer,e->window->target)<0)
+         fprintf(stderr,"SDL_SetRenderTarget(): %s\n",SDL_GetError());
+   }
 
    element_redraw(e);
 
@@ -92,6 +130,8 @@ void HLH_gui_element_redraw(HLH_gui_element *e)
    if(SDL_RenderClear(e->window->renderer)<0)
       fprintf(stderr,"SDL_RenderClear(): %s\n",SDL_GetError());
    if(SDL_RenderCopy(e->window->renderer,e->window->target,NULL,NULL)<0)
+      fprintf(stderr,"SDL_RenderCopy(): %s\n",SDL_GetError());
+   if(SDL_RenderCopy(e->window->renderer,e->window->overlay,NULL,NULL)<0)
       fprintf(stderr,"SDL_RenderCopy(): %s\n",SDL_GetError());
    SDL_RenderPresent(e->window->renderer);
 }
@@ -167,9 +207,34 @@ void HLH_gui_element_destroy(HLH_gui_element *e)
       HLH_gui_element_destroy(e->children[i]);
 
    HLH_gui_element_msg(e,HLH_GUI_MSG_DESTROY,0,NULL);
+   if(e->timer!=0)
+      SDL_RemoveTimer(e->timer);
    if(e->children!=NULL)
       free(e->children);
    free(e);
+}
+
+static Uint32 sdl_callback(Uint32 interval, void *param)
+{
+   HLH_gui_element *e = param;
+   SDL_Event event;
+   event.type = HLH_gui_timer_event;
+   event.user.windowID = SDL_GetWindowID(e->window->window);
+   event.user.data1 = param;
+   SDL_PushEvent(&event);
+
+   return e->timer_interval;
+}
+
+void HLH_gui_element_timer(HLH_gui_element *e, int interval)
+{
+   if(e->timer!=0)
+   {
+      SDL_RemoveTimer(e->timer);
+      e->timer = 0;
+   }
+   e->timer_interval = interval;
+   e->timer = SDL_AddTimer(interval,sdl_callback,e);
 }
 
 static void element_compute_required(HLH_gui_element *e)

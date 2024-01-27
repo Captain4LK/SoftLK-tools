@@ -12,6 +12,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _HLH_GUI_INTERNAL_H_
 
+extern uint32_t HLH_gui_timer_event;
+
 SDL_Texture *HLH_gui_texture_load(HLH_gui_window *win, const char *path, int *width, int *height);
 SDL_Texture *HLH_gui_texture_from_data(HLH_gui_window *win, uint32_t *pix, int width, int height);
 

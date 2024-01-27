@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -24,16 +24,22 @@ typedef struct HLH_gui_window HLH_gui_window;
 typedef enum
 {
    HLH_GUI_MSG_INVALID = -1,
+   HLH_GUI_MSG_NO_BLOCK_START = 0,
    HLH_GUI_MSG_DESTROY = 0,
    HLH_GUI_MSG_DRAW = 1,
    HLH_GUI_MSG_GET_WIDTH = 2,
    HLH_GUI_MSG_GET_HEIGHT = 3,
    HLH_GUI_MSG_GET_CHILD_SPACE = 4,
-   HLH_GUI_MSG_CLICK = 5,
-   HLH_GUI_MSG_CLICK_MENU = 6,
-   HLH_GUI_MSG_HIT = 7,
-   HLH_GUI_MSG_GET_PRIORITY = 8,
+   HLH_GUI_MSG_GET_PRIORITY = 5,
+   HLH_GUI_MSG_NO_BLOCK_END = 5,
+   HLH_GUI_MSG_CLICK = 6,
+   HLH_GUI_MSG_CLICK_MENU = 7,
+   HLH_GUI_MSG_HIT = 8,
    HLH_GUI_MSG_SLIDER_VALUE_CHANGED = 9,
+   HLH_GUI_MSG_BUTTON_DOWN = 10,
+   HLH_GUI_MSG_BUTTON_REPEAT = 11,
+   HLH_GUI_MSG_BUTTON_UP = 12,
+   HLH_GUI_MSG_TIMER = 13,
 }HLH_gui_msg;
 
 typedef struct
@@ -61,12 +67,11 @@ typedef struct
 
 //Flags (not enum because enums are int, we need u64)
 //-------------------------------------
-#define HLH_GUI_PACK            (UINT64_C(0x7))
+#define HLH_GUI_PACK            (UINT64_C(0x3))
 #define    HLH_GUI_PACK_NORTH   (UINT64_C(0x0))
 #define    HLH_GUI_PACK_EAST    (UINT64_C(0x1))
 #define    HLH_GUI_PACK_SOUTH   (UINT64_C(0x2))
 #define    HLH_GUI_PACK_WEST    (UINT64_C(0x3))
-#define    HLH_GUI_PACK_CENTER  (UINT64_C(0x4))
 
 #define HLH_GUI_PLACE           (UINT64_C(0x78))
 #define    HLH_GUI_PLACE_CENTER (UINT64_C(0x0))
@@ -110,6 +115,7 @@ typedef struct
 #define    HLH_GUI_STYLE_15     (UINT64_C(0x3c0000))
 
 #define HLH_GUI_NO_PARENT       (UINT64_C(0x400000))
+#define HLH_GUI_OVERLAY         (UINT64_C(0x800000))
 //-------------------------------------
 
 typedef int (*HLH_gui_msg_handler)(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
@@ -133,6 +139,8 @@ struct HLH_gui_element
    HLH_gui_rect bounds;
    HLH_gui_point size_required;
    HLH_gui_point child_size_required;
+   SDL_TimerID timer;
+   int timer_interval;
 
    const char *type;
 
@@ -155,10 +163,12 @@ struct HLH_gui_window
    int mouse_y;
 
    HLH_gui_element *keyboard;
+   HLH_gui_window *blocking;
 
    SDL_Window *window;
    SDL_Renderer *renderer;
    SDL_Texture *target;
+   SDL_Texture *overlay;
    SDL_Texture *font;
    SDL_Texture *icons;
 };
@@ -278,10 +288,13 @@ void HLH_gui_set_scale(int scale);
 int HLH_gui_get_scale(void);
 void HLH_gui_handle_mouse(HLH_gui_element *e, HLH_gui_mouse m);
 void HLH_gui_window_close(HLH_gui_window *win);
+void HLH_gui_overlay_clear(HLH_gui_element *e);
+void HLH_gui_window_block(HLH_gui_window *root, HLH_gui_window *blocking);
 
 //Element
 HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, uint64_t flags, HLH_gui_msg_handler msg_handler);
 int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+int HLH_gui_element_msg_all(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 void HLH_gui_element_redraw(HLH_gui_element *e);
 void HLH_gui_element_pack(HLH_gui_element *e, HLH_gui_rect space);
 HLH_gui_point HLH_gui_element_size(HLH_gui_element *e, HLH_gui_point children);
@@ -291,6 +304,7 @@ int HLH_gui_element_priority(HLH_gui_element *e, HLH_gui_point pt);
 void HLH_gui_element_invisible(HLH_gui_element *e, int invisible);
 void HLH_gui_element_ignore(HLH_gui_element *e, int ignore);
 void HLH_gui_element_destroy(HLH_gui_element *e); //Only use on root elements (no parents or windows)
+void HLH_gui_element_timer(HLH_gui_element *e, int interval); //Use sparingly
 
 //Rectangle
 HLH_gui_rect HLH_gui_rect_make(int minx, int miny, int maxx, int maxy);

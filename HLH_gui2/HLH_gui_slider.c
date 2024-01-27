@@ -127,32 +127,32 @@ static void slider_draw(HLH_gui_slider *s)
       int scale = HLH_gui_get_scale();
       HLH_gui_rect bounds = s->e.bounds;
 
-      HLH_gui_draw_rectangle_fill(&s->e,bounds,0x5a5a5a);
+      HLH_gui_draw_rectangle_fill(&s->e,bounds,0xff5a5a5a);
 
-      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-1*scale),0x323232);
-      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x323232);
+      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-1*scale),0xff323232);
+      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0xff323232);
 
-      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xc8c8c8);
-      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xc8c8c8);
+      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xffc8c8c8);
+      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xffc8c8c8);
 
       int width = (s->value*(bounds.maxx-bounds.minx-scale*6))/s->range;
-      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+3*scale,bounds.miny+3*scale,bounds.minx+3*scale+width,bounds.maxy-3*scale),0x323232);
+      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+3*scale,bounds.miny+3*scale,bounds.minx+3*scale+width,bounds.maxy-3*scale),0xff323232);
    }
    else
    {
       int scale = HLH_gui_get_scale();
       HLH_gui_rect bounds = s->e.bounds;
 
-      HLH_gui_draw_rectangle_fill(&s->e,bounds,0x5a5a5a);
+      HLH_gui_draw_rectangle_fill(&s->e,bounds,0xff5a5a5a);
 
-      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-1*scale),0x323232);
-      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x323232);
+      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-1*scale),0xff323232);
+      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0xff323232);
 
-      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xc8c8c8);
-      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xc8c8c8);
+      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xffc8c8c8);
+      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xffc8c8c8);
 
       int height = (s->value*(bounds.maxy-bounds.miny-scale*6))/s->range;
-      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+3*scale,bounds.maxy-3*scale-height,bounds.maxx-3*scale,bounds.maxy-3*scale),0x323232);
+      HLH_gui_draw_rectangle_fill(&s->e,HLH_gui_rect_make(bounds.minx+3*scale,bounds.maxy-3*scale-height,bounds.maxx-3*scale,bounds.maxy-3*scale),0xff323232);
    }
 }
 //-------------------------------------

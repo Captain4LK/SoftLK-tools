@@ -71,6 +71,6 @@ static int separator_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
 static void separator_draw(HLH_gui_separator *s)
 {
-   HLH_gui_draw_rectangle_fill(&s->e,s->e.bounds,0x000000);
+   HLH_gui_draw_rectangle_fill(&s->e,s->e.bounds,0xff000000);
 }
 //-------------------------------------

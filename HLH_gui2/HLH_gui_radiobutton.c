@@ -164,27 +164,27 @@ static void radiobutton_draw(HLH_gui_radiobutton *r)
       HLH_gui_rect bounds = r->e.bounds;
 
       //Infill
-      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+scale,bounds.miny+scale,bounds.maxx-scale,bounds.maxy-scale),0x5a5a5a);
+      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+scale,bounds.miny+scale,bounds.maxx-scale,bounds.maxy-scale),0xff5a5a5a);
 
       //Outline
-      HLH_gui_draw_rectangle(&r->e,bounds,0x000000);
+      HLH_gui_draw_rectangle(&r->e,bounds,0xff000000);
 
       //Border
       if(r->state||r->checked)
       {
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0x000000);
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x000000);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0xff000000);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0xff000000);
 
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0x323232);
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xff323232);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xff323232);
       }
       else
       {
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0x323232);
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0xff323232);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0xff323232);
 
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xc8c8c8);
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xc8c8c8);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xffc8c8c8);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xffc8c8c8);
       }
 
       int width = r->icon_bounds.maxx-r->icon_bounds.minx;
@@ -202,43 +202,43 @@ static void radiobutton_draw(HLH_gui_radiobutton *r)
       HLH_gui_rect bounds = r->e.bounds;
 
       //Infill
-      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+HLH_gui_get_scale(),bounds.miny+HLH_gui_get_scale(),bounds.maxx-HLH_gui_get_scale(),bounds.maxy-HLH_gui_get_scale()),0x5a5a5a);
+      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+HLH_gui_get_scale(),bounds.miny+HLH_gui_get_scale(),bounds.maxx-HLH_gui_get_scale(),bounds.maxy-HLH_gui_get_scale()),0xff5a5a5a);
 
       //Outline
-      HLH_gui_draw_rectangle(&r->e,bounds,0x000000);
+      HLH_gui_draw_rectangle(&r->e,bounds,0xff000000);
 
       //Border
       if(r->state)
       {
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0x000000);
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x000000);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0xff000000);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0xff000000);
 
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0x323232);
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xff323232);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xff323232);
       }
       else
       {
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-1*scale),0x323232);
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-1*scale),0xff323232);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0xff323232);
 
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xc8c8c8);
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xc8c8c8);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xffc8c8c8);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xffc8c8c8);
       }
 
       //Checkbox
       int height = (bounds.maxy-bounds.miny);
       int dim = (HLH_GUI_GLYPH_HEIGHT)*HLH_gui_get_scale();
       int offset = (height-dim)/2;
-      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+1*scale,bounds.miny+offset+scale,bounds.minx+offset+2*scale,bounds.maxy-offset),0xc8c8c8);
-      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+1*scale,bounds.maxy-offset-scale,bounds.minx+offset+dim,bounds.maxy-offset),0xc8c8c8);
+      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+1*scale,bounds.miny+offset+scale,bounds.minx+offset+2*scale,bounds.maxy-offset),0xffc8c8c8);
+      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+1*scale,bounds.maxy-offset-scale,bounds.minx+offset+dim,bounds.maxy-offset),0xffc8c8c8);
 
-      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+2*scale,bounds.miny+offset,bounds.minx+offset+dim+1*scale,bounds.miny+offset+scale),0x323232);
-      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+dim+offset+0*scale,bounds.miny+offset+scale,bounds.minx+dim+offset+1*scale,bounds.maxy-offset-scale),0x323232);
+      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+2*scale,bounds.miny+offset,bounds.minx+offset+dim+1*scale,bounds.miny+offset+scale),0xff323232);
+      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+dim+offset+0*scale,bounds.miny+offset+scale,bounds.minx+dim+offset+1*scale,bounds.maxy-offset-scale),0xff323232);
 
-      HLH_gui_draw_string(&r->e,HLH_gui_rect_make(bounds.minx+dim+2*scale,bounds.miny,bounds.maxx,bounds.maxy),r->text,r->text_len,0x000000,1);
+      HLH_gui_draw_string(&r->e,HLH_gui_rect_make(bounds.minx+dim+2*scale,bounds.miny,bounds.maxx,bounds.maxy),r->text,r->text_len,0xff000000,1);
 
       if(r->checked)
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+4*scale,bounds.miny+offset+3*scale,bounds.minx+dim+offset-2*scale,bounds.miny+offset-3*scale+dim),0x000000);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+4*scale,bounds.miny+offset+3*scale,bounds.minx+dim+offset-2*scale,bounds.miny+offset-3*scale+dim),0xff000000);
    }
    else if(style==HLH_GUI_STYLE_01)
    {
@@ -246,24 +246,24 @@ static void radiobutton_draw(HLH_gui_radiobutton *r)
       HLH_gui_rect bounds = r->e.bounds;
 
       if(r->state)
-         HLH_gui_draw_rectangle_fill(&r->e,bounds,0x323232);
+         HLH_gui_draw_rectangle_fill(&r->e,bounds,0xff323232);
       else
-         HLH_gui_draw_rectangle_fill(&r->e,bounds,0x5a5a5a);
+         HLH_gui_draw_rectangle_fill(&r->e,bounds,0xff5a5a5a);
 
       //Checkbox
       int height = (bounds.maxy-bounds.miny);
       int dim = (HLH_GUI_GLYPH_HEIGHT)*HLH_gui_get_scale();
       int offset = (height-dim)/2;
-      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+1*scale,bounds.miny+offset+scale,bounds.minx+offset+2*scale,bounds.maxy-offset),0xc8c8c8);
-      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+1*scale,bounds.maxy-offset-scale,bounds.minx+offset+dim,bounds.maxy-offset),0xc8c8c8);
+      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+1*scale,bounds.miny+offset+scale,bounds.minx+offset+2*scale,bounds.maxy-offset),0xffc8c8c8);
+      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+1*scale,bounds.maxy-offset-scale,bounds.minx+offset+dim,bounds.maxy-offset),0xffc8c8c8);
 
-      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+2*scale,bounds.miny+offset,bounds.minx+offset+dim+1*scale,bounds.miny+offset+scale),0x323232);
-      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+dim+offset+0*scale,bounds.miny+offset+scale,bounds.minx+dim+offset+1*scale,bounds.maxy-offset-scale),0x323232);
+      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+2*scale,bounds.miny+offset,bounds.minx+offset+dim+1*scale,bounds.miny+offset+scale),0xff323232);
+      HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+dim+offset+0*scale,bounds.miny+offset+scale,bounds.minx+dim+offset+1*scale,bounds.maxy-offset-scale),0xff323232);
 
-      HLH_gui_draw_string(&r->e,HLH_gui_rect_make(bounds.minx+dim+2*scale,bounds.miny,bounds.maxx,bounds.maxy),r->text,r->text_len,0x000000,1);
+      HLH_gui_draw_string(&r->e,HLH_gui_rect_make(bounds.minx+dim+2*scale,bounds.miny,bounds.maxx,bounds.maxy),r->text,r->text_len,0xff000000,1);
 
       if(r->checked)
-         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+4*scale,bounds.miny+offset+3*scale,bounds.minx+dim+offset-2*scale,bounds.miny+offset-3*scale+dim),0x000000);
+         HLH_gui_draw_rectangle_fill(&r->e,HLH_gui_rect_make(bounds.minx+offset+4*scale,bounds.miny+offset+3*scale,bounds.minx+dim+offset-2*scale,bounds.miny+offset-3*scale+dim),0xff000000);
    }
    else if(style==HLH_GUI_STYLE_02)
    {
@@ -271,14 +271,14 @@ static void radiobutton_draw(HLH_gui_radiobutton *r)
       HLH_gui_rect bounds = r->e.bounds;
 
       if(r->checked)
-         HLH_gui_draw_rectangle_fill(&r->e,bounds,0x323232);
+         HLH_gui_draw_rectangle_fill(&r->e,bounds,0xff323232);
       else
-         HLH_gui_draw_rectangle_fill(&r->e,bounds,0x5a5a5a);
+         HLH_gui_draw_rectangle_fill(&r->e,bounds,0xff5a5a5a);
 
       int height = (bounds.maxy-bounds.miny);
       int dim = (HLH_GUI_GLYPH_HEIGHT)*HLH_gui_get_scale();
       int offset = (height-dim)/2;
-      HLH_gui_draw_string(&r->e,HLH_gui_rect_make(bounds.minx+dim+2*scale,bounds.miny,bounds.maxx,bounds.maxy),r->text,r->text_len,0x000000,1);
+      HLH_gui_draw_string(&r->e,HLH_gui_rect_make(bounds.minx+dim+2*scale,bounds.miny,bounds.maxx,bounds.maxy),r->text,r->text_len,0xff000000,1);
    }
 }
 //-------------------------------------

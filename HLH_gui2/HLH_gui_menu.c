@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -43,6 +43,7 @@ HLH_gui_group *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint
       button->index = i;
       button->text_len = (int)strlen(labels[i]);
       button->text = malloc(button->text_len+1);
+      button->e.msg_usr = msg_usr;
       strcpy(button->text,labels[i]);
    }
 
@@ -115,41 +116,41 @@ static void menubutton_draw(HLH_gui_menubutton *b)
       int scale = HLH_gui_get_scale();
 
       //Infill
-      HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+scale,bounds.miny+scale,bounds.maxx-scale,bounds.maxy-scale),0x5a5a5a);
+      HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+scale,bounds.miny+scale,bounds.maxx-scale,bounds.maxy-scale),0xff5a5a5a);
 
       //Outline
-      HLH_gui_draw_rectangle(&b->e,bounds,0x000000);
+      HLH_gui_draw_rectangle(&b->e,bounds,0xff000000);
 
       //Border
       if(b->state)
       {
-         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0x000000);
-         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x000000);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0xff000000);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0xff000000);
 
-         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0x323232);
-         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xff323232);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xff323232);
       }
       else
       {
-         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0x323232);
-         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0x323232);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.miny+2*scale,bounds.minx+2*scale,bounds.maxy-2*scale),0xff323232);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+1*scale,bounds.maxy-2*scale,bounds.maxx-2*scale,bounds.maxy-1*scale),0xff323232);
 
-         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xc8c8c8);
-         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xc8c8c8);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.maxx-2*scale,bounds.miny+2*scale,bounds.maxx-1*scale,bounds.maxy-2*scale),0xffc8c8c8);
+         HLH_gui_draw_rectangle_fill(&b->e,HLH_gui_rect_make(bounds.minx+2*scale,bounds.miny+1*scale,bounds.maxx-1*scale,bounds.miny+2*scale),0xffc8c8c8);
       }
 
-      HLH_gui_draw_string(&b->e,bounds,b->text,b->text_len,0x000000,1);
+      HLH_gui_draw_string(&b->e,bounds,b->text,b->text_len,0xff000000,1);
    }
    else if(style==HLH_GUI_STYLE_01)
    {
       HLH_gui_rect bounds = b->e.bounds;
 
       if(b->state)
-         HLH_gui_draw_rectangle_fill(&b->e,bounds,0x323232);
+         HLH_gui_draw_rectangle_fill(&b->e,bounds,0xff323232);
       else
-         HLH_gui_draw_rectangle_fill(&b->e,bounds,0x5a5a5a);
+         HLH_gui_draw_rectangle_fill(&b->e,bounds,0xff5a5a5a);
 
-      HLH_gui_draw_string(&b->e,bounds,b->text,b->text_len,0x000000,1);
+      HLH_gui_draw_string(&b->e,bounds,b->text,b->text_len,0xff000000,1);
    }
 }
 //-------------------------------------

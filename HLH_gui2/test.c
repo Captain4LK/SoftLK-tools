@@ -101,6 +101,7 @@ static void ui_construct(void)
    HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 3",NULL);
    HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 4",NULL);
    HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_NORTH,"button 5",NULL);
+   //HLH_gui_element_timer(&group->e,1000);
 
    group = HLH_gui_group_create(&group2->e,HLH_GUI_STYLE_01|HLH_GUI_EXPAND);
    HLH_gui_slider_set(HLH_gui_slider_create(&group->e,HLH_GUI_FILL_X,0),20,200,0,0);

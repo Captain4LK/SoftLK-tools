@@ -1,7 +1,7 @@
 /*
 SLK_img2pixel - a tool for converting images to pixelart
 
-Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -18,6 +18,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "img2pixel.h"
+#include "util.h"
 #include "gui.h"
 //-------------------------------------
 
@@ -33,6 +34,9 @@ static HLH_gui_imgcmp *gui_imgcmp;
 
 //Function prototypes
 static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
 //Function implementations
@@ -45,32 +49,32 @@ void gui_construct(void)
    //-------------------------------------
    const char *menu0[] = 
    {
-      "Test 1",
-      "Test 2",
-      "Test 3",
+      "Image",
+      "Preset",
+      "Palette",
    };
    const char *menu1[] = 
    {
-      "Test 4",
-      "Test 5",
-      "Test 6",
+      "Image",
+      "Preset",
+      "Palette",
    };
    const char *menu2[] = 
    {
-      "Test 7",
+      "About",
       "Test 8",
       "Test 9",
    };
    HLH_gui_element *menus[3];
-   menus[0] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu0,3,NULL);
-   menus[1] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu1,3,NULL);
-   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,3,NULL);
+   menus[0] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu0,3,menu_load_msg);
+   menus[1] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu1,3,menu_save_msg);
+   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,3,menu_help_msg);
 
    const char *menubar[] = 
    {
-      "Menu 0",
-      "Menu 1",
-      "Menu 2",
+      "Load",
+      "Save",
+      "Help",
    };
 
    HLH_gui_group *root_group = HLH_gui_group_create(&win->e,HLH_GUI_EXPAND);
@@ -128,6 +132,62 @@ static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
       }
    }
 
+   return 0;
+}
+
+static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_menubutton *m = (HLH_gui_menubutton *)e;
+
+   if(msg==HLH_GUI_MSG_CLICK_MENU)
+   {
+      //Image
+      if(m->index==0)
+      {
+         Image32 *img = image_select();
+         if(img!=NULL)
+         {
+            HLH_gui_imgcmp_update0(,img->data,img->width,img->height,1);
+         }
+      }
+      //Preset
+      else if(m->index==1)
+      {
+      }
+      //Palette
+      else if(m->index==2)
+      {
+      }
+   }
+
+   return 0;
+}
+
+static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_menubutton *m = (HLH_gui_menubutton *)e;
+
+   if(msg==HLH_GUI_MSG_CLICK_MENU)
+   {
+      //Image
+      if(m->index==0)
+      {
+      }
+      //Preset
+      else if(m->index==1)
+      {
+      }
+      //Palette
+      else if(m->index==2)
+      {
+      }
+   }
+
+   return 0;
+}
+
+static int menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
    return 0;
 }
 //-------------------------------------

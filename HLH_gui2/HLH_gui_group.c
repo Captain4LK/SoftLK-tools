@@ -94,12 +94,12 @@ static void group_draw(HLH_gui_group *g)
 
    if(style==HLH_GUI_STYLE_00)
    {
-      HLH_gui_draw_rectangle_fill(&g->e,g->e.bounds,0x5a5a5a);
+      HLH_gui_draw_rectangle_fill(&g->e,g->e.bounds,0xff5a5a5a);
    }
    else if(style==HLH_GUI_STYLE_01)
    {
-      HLH_gui_draw_rectangle_fill(&g->e,g->e.bounds,0x5a5a5a);
-      HLH_gui_draw_rectangle(&g->e,g->e.bounds,0x000000);
+      HLH_gui_draw_rectangle_fill(&g->e,g->e.bounds,0xff5a5a5a);
+      HLH_gui_draw_rectangle(&g->e,g->e.bounds,0xff000000);
    }
 }
 //-------------------------------------
