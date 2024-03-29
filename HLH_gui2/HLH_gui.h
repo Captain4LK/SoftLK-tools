@@ -5,7 +5,7 @@ Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] 
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
-You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
+You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
 #ifndef _HLH_GUI_H_
@@ -45,7 +45,7 @@ typedef enum
 typedef struct
 {
    int minx, miny;
-   int maxx,maxy;
+   int maxx, maxy;
 }HLH_gui_rect;
 
 typedef struct
@@ -57,13 +57,15 @@ typedef struct
 typedef struct
 {
    uint8_t button;
+   int wheel;
    HLH_gui_point pos;
 }HLH_gui_mouse;
 
 #define HLH_GUI_MOUSE_LEFT      (UINT8_C(0x1))
 #define HLH_GUI_MOUSE_RIGHT     (UINT8_C(0x2))
 #define HLH_GUI_MOUSE_MIDDLE    (UINT8_C(0x4))
-#define HLH_GUI_MOUSE_OUT       (UINT8_C(0x8))
+#define HLH_GUI_MOUSE_DBLE      (UINT8_C(0x8))
+#define HLH_GUI_MOUSE_OUT       (UINT8_C(0x10))
 
 //Flags (not enum because enums are int, we need u64)
 //-------------------------------------

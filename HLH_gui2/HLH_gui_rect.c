@@ -5,7 +5,7 @@ Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutan
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
-You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
+You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
 //External includes
@@ -31,7 +31,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 HLH_gui_rect HLH_gui_rect_make(int minx, int miny, int maxx, int maxy)
 {
-   return (HLH_gui_rect){.minx = minx, .miny = miny, .maxx = maxx, .maxy = maxy};
+   return (HLH_gui_rect){
+             .minx = minx, .miny = miny, .maxx = maxx, .maxy = maxy
+   };
 }
 
 int HLH_gui_rect_inside(HLH_gui_rect r, HLH_gui_point p)

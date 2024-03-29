@@ -1,7 +1,7 @@
 /*
 SLK_img2pixel - a tool for converting images to pixelart
 
-Written in 2021,2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2021,2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -37,13 +37,19 @@ static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst,
 
 void SLK_image64_blur(SLK_image64 *img, float sz)
 {
+   if(img==NULL)
+      return;
+
+   if(sz<=0.01f)
+      return;
+
    //Can't blur images this small
    if(img->w<=(int)sz||img->h<=(int)sz)
       return;
 
    //Horizontal
-   uint64_t *buffer0 = malloc(sizeof(*buffer0)*img->h);
-   uint64_t *buffer1 = malloc(sizeof(*buffer1)*img->h);
+   uint64_t *buffer0 = malloc(sizeof(*buffer0)*img->w);
+   uint64_t *buffer1 = malloc(sizeof(*buffer1)*img->w);
    for(int y = 0;y<img->h;y++)
    {
       boxblur_line((uint16_t *)(img->data+y*img->w),(uint16_t *)buffer0,img->w,sz);
@@ -52,8 +58,8 @@ void SLK_image64_blur(SLK_image64 *img, float sz)
    }
 
    //Vertical
-   buffer0 = realloc(buffer0,sizeof(*buffer0)*img->w);
-   buffer1 = realloc(buffer1,sizeof(*buffer1)*img->w);
+   buffer0 = realloc(buffer0,sizeof(*buffer0)*img->h);
+   buffer1 = realloc(buffer1,sizeof(*buffer1)*img->h);
    for(int x = 0;x<img->w;x++)
    {
       for(int y = 0;y<img->h;y++)
@@ -78,32 +84,34 @@ static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst,
    int32_t alpha1 = 64-alpha;
    int32_t alpha_total = alpha-alpha1;
    int32_t s1,s2,d;
-   s1 = s2 = -((2*r+2)/2)*4;
+   s1 = s2 = -((r+1)/2)*4;
    d = 0;
 
-   int32_t amp_div = HLH_max(1,(2*r+1)*64+alpha*2);
-   int32_t amp = (65536.*64)/HLH_max(1,(2*r+1)*64+alpha*2);
+   int32_t amp = (65536*64)/HLH_max(1,(2*r+1)*64+alpha*2);
    int32_t amp_clip;
    if(amp>128)
       amp_clip = (((int64_t)65536*65536*64)/amp)-1;
    else
       amp_clip = 0x7fffffff;
 
-   int32_t sum_r = src[0]*alpha_total;
-   int32_t sum_g = src[1]*alpha_total;
-   int32_t sum_b = src[2]*alpha_total;
-   int32_t sum_a = src[3]*alpha_total;
+   int32_t sum_r = 0;
+   int32_t sum_g = 0;
+   int32_t sum_b = 0;
+   int32_t sum_a = 0;
 
-   for(int i = 0;i<r+1;i++)
-   {
-      sum_r+=src[0]*(alpha+alpha1);
-      sum_g+=src[1]*(alpha+alpha1);
-      sum_b+=src[2]*(alpha+alpha1);
-      sum_a+=src[3]*(alpha+alpha1);
-      s1+=4;
-      //if(i==r) //TODO: maybe?
-         //pix1 = src[1];
-   }
+   sum_r+=src[0]*(alpha+alpha1)*(r);
+   sum_g+=src[1]*(alpha+alpha1)*(r);
+   sum_b+=src[2]*(alpha+alpha1)*(r);
+   sum_a+=src[3]*(alpha+alpha1)*(r);
+   sum_r+=src[0]*alpha;
+   sum_g+=src[1]*alpha;
+   sum_b+=src[2]*alpha;
+   sum_a+=src[3]*alpha;
+   sum_r+=src[0]*alpha;
+   sum_g+=src[1]*alpha;
+   sum_b+=src[2]*alpha;
+   sum_a+=src[3]*alpha;
+   s1 = 0;
 
    for(int i = 0;i<r;i++)
    {
@@ -114,7 +122,7 @@ static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst,
       s1+=4;
    }
 
-   for(int i = 0;i<=r;i++)
+   for(int i = 0;i<r+1;i++)
    {
       sum_r+=src[s1]*alpha1+src[s1+4]*alpha;
       sum_g+=src[s1+1]*alpha1+src[s1+5]*alpha;
@@ -138,8 +146,9 @@ static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst,
       sum_a-=src[3]*(alpha+alpha1);
       s2+=4;
    }
+   s2 = 0;
 
-   for(int i = r+1;i<width-r;i++)
+   for(int i = 0;i<width-2*r-2;i++)
    {
       sum_r+=src[s1]*alpha1+src[s1+4]*alpha;
       sum_g+=src[s1+1]*alpha1+src[s1+5]*alpha;
@@ -164,13 +173,12 @@ static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst,
       s2+=4;
    }
 
-   for(int i = width-r;i<width;i++)
+   for(int i = 0;i<r+1;i++)
    {
-      sum_r+=src[width*4-1]*alpha1+src[width*4-1+4]*alpha;
-      sum_g+=src[width*4-1+1]*alpha1+src[width*4-1+5]*alpha;
-      sum_b+=src[width*4-1+2]*alpha1+src[width*4-1+6]*alpha;
-      sum_a+=src[width*4-1+3]*alpha1+src[width*4-1+7]*alpha;
-      s1+=4;
+      sum_r+=src[(width-1)*4]*(alpha1+alpha);
+      sum_g+=src[(width-1)*4+1]*(alpha1+alpha);
+      sum_b+=src[(width-1)*4+2]*(alpha1+alpha);
+      sum_a+=src[(width-1)*4+3]*(alpha1+alpha);
 
       uint64_t cr = (((uint64_t)sum_r*amp)/(65536*64));
       uint64_t cg = (((uint64_t)sum_g*amp)/(65536*64));

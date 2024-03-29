@@ -34,6 +34,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 SLK_image32 *SLK_image32_dup(const SLK_image32 *src)
 {
+   if(src==NULL)
+      return NULL;
+
    SLK_image32 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->w*src->h);
    img->w = src->w;
    img->h = src->h;
@@ -42,12 +45,43 @@ SLK_image32 *SLK_image32_dup(const SLK_image32 *src)
    return img;
 }
 
+SLK_image32 *SLK_image32_dup64(const SLK_image64 *src)
+{
+   if(src==NULL)
+      return NULL;
+
+   SLK_image32 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->w*src->h);
+   img->w = src->w;
+   img->h = src->h;
+   for(int i = 0;i<img->w*img->h;i++)
+      img->data[i] = SLK_color64_to_32(src->data[i]);
+
+   return img;
+}
+
 SLK_image64 *SLK_image64_dup(const SLK_image64 *src)
 {
+   if(src==NULL)
+      return NULL;
+
    SLK_image64 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->w*src->h);
    img->w = src->w;
    img->h = src->h;
    memcpy(img->data,src->data,sizeof(*img->data)*img->w*img->h);
+
+   return img;
+}
+
+SLK_image64 *SLK_image64_dup32(const SLK_image32 *src)
+{
+   if(src==NULL)
+      return NULL;
+
+   SLK_image64 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->w*src->h);
+   img->w = src->w;
+   img->h = src->h;
+   for(int i = 0;i<img->w*img->h;i++)
+      img->data[i] = SLK_color32_to_64(src->data[i]);
 
    return img;
 }

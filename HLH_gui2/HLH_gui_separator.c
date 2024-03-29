@@ -5,7 +5,7 @@ Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutan
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
-You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
+You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
 //External includes
@@ -33,7 +33,7 @@ static void separator_draw(HLH_gui_separator *s);
 
 HLH_gui_separator *HLH_gui_separator_create(HLH_gui_element *parent, uint64_t flags, int direction)
 {
-   HLH_gui_separator *separator = (HLH_gui_separator *) HLH_gui_element_create(sizeof(*separator),parent,flags,separator_msg);
+   HLH_gui_separator *separator = (HLH_gui_separator *) HLH_gui_element_create(sizeof(*separator), parent, flags, separator_msg);
    separator->direction = direction;
 
    return separator;
@@ -56,21 +56,19 @@ static int separator_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       return HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
-   {
-   }
+   {}
    else if(msg==HLH_GUI_MSG_DRAW)
    {
       separator_draw(separator);
    }
    else if(msg==HLH_GUI_MSG_DESTROY)
-   {
-   }
+   {}
 
    return 0;
 }
 
 static void separator_draw(HLH_gui_separator *s)
 {
-   HLH_gui_draw_rectangle_fill(&s->e,s->e.bounds,0xff000000);
+   HLH_gui_draw_rectangle_fill(&s->e, s->e.bounds, 0xff000000);
 }
 //-------------------------------------
