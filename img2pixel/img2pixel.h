@@ -1,7 +1,7 @@
 /*
 SLK_img2pixel - a tool for converting images to pixelart
 
-Written in 2021,2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -26,6 +26,39 @@ typedef struct
    uint64_t data[];
 }SLK_image64;
 
+typedef enum
+{
+   SLK_RGB_EUCLIDIAN,
+   SLK_RGB_WEIGHTED,
+   SLK_RGB_REDMEAN,
+   SLK_LAB_CIE76,
+   SLK_LAB_CIE94,
+   SLK_LAB_CIEDE2000,
+}SLK_color_distance;
+
+typedef enum
+{
+   SLK_DITHER_NONE,
+   SLK_DITHER_BAYER8X8,
+   SLK_DITHER_BAYER4X4,
+   SLK_DITHER_BAYER2X2,
+   SLK_DITHER_CLUSTER8X8,
+   SLK_DITHER_CLUSTER4X4,
+   SLK_DITHER_FLOYD,
+   SLK_DITHER_FLOYD2,
+}SLK_dither;
+
+typedef struct
+{
+   SLK_color_distance color_dist;
+   SLK_dither dither_mode;
+   int use_kmeans;
+   int alpha_threshold;
+   uint32_t palette[256];
+   int palette_colors;
+   float dither_amount;
+}SLK_dither_config;
+
 uint64_t SLK_color32_to_64(uint32_t c);
 uint16_t SLK_color64_r(uint64_t c);
 uint16_t SLK_color64_g(uint64_t c);
@@ -47,7 +80,8 @@ void SLK_image64_sharpen(SLK_image64 *img, float amount);
 void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed);
 void SLK_image64_hscb(SLK_image64 *img, float hue, float saturation, float contrast, float brightness);
 void SLK_image64_gamma(SLK_image64 *img, float gamma);
-SLK_image32 *SLK_image64_dither(SLK_image64 *img, int dither_mode, int distance_mode, int alpha_threshold);
 SLK_image64 *SLK_image64_sample(const SLK_image64 *img, int width, int height, int sample_mode, float x_off, float y_off);
+//DITHER_FLOYD and DITHER_FLOYD2 modify input image!
+SLK_image32 *SLK_image64_dither(SLK_image64 *img, const SLK_dither_config *config);
 
 #endif

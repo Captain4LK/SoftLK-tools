@@ -300,15 +300,20 @@ static void gui_process()
    SLK_image64 *img = SLK_image64_dup32(gui_input);
    SLK_image64_blur(img,blur_amount/16.f);
    SLK_image64 *sampled = SLK_image64_sample(img,img->w/8,img->h/8,0,0.f,0.f);
-   SLK_image64_hscb(sampled,0.f,1.f,1.f,1.f);
+   SLK_image64_hscb(sampled,0.f,1.f,1.f,0.f);
    SLK_image64_gamma(sampled,1.f);
-   SLK_image32 *dithered = SLK_image64_dither(sampled,0,0,0);
+   SLK_dither_config dither = {0};
+   dither.dither_mode = SLK_DITHER_BAYER8X8;
+   dither.dither_amount = 0.5f;
+   dither.alpha_threshold = 128;
+   dither.palette[0] = 0xffff0000;
+   dither.palette[1] = 0xff00ff00;
+   dither.palette[2] = 0xff0000ff;
+   dither.palette[3] = 0xff000000;
+   dither.palette_colors = 4;
+   SLK_image32 *dithered = SLK_image64_dither(sampled,&dither);
    free(img);
    free(sampled);
-//SLK_image64 *SLK_image64_sample(const SLK_image64 *img, int width, int height, int sample_mode, float x_off, float y_off)
-//void SLK_image64_hscb(SLK_image64 *img, float hue, float saturation, float contrast, float brightness);
-
-   //SLK_image32 *out = SLK_image32_dup64(sampled);
 
    HLH_gui_imgcmp_update1(gui_imgcmp,dithered->data,dithered->w,dithered->h,1);
    free(dithered);
