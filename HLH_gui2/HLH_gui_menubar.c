@@ -64,6 +64,24 @@ HLH_gui_group *HLH_gui_menubar_create(HLH_gui_element *parent, uint64_t flags, u
    return group;
 }
 
+void HLH_gui_menubar_label_set(HLH_gui_group *bar, const char *label, int which)
+{
+   if(bar==NULL)
+      return;
+
+   if(which<0||which>=bar->e.child_count)
+      return;
+
+   HLH_gui_pulldown *pull = (HLH_gui_pulldown *)bar->e.children[which];
+   free(pull->text);
+   pull->text_len = strlen(label);
+   pull->text = malloc(pull->text_len+1);
+   strcpy(pull->text,label);
+
+   HLH_gui_element_pack(&pull->e.window->e, pull->e.window->e.bounds);
+   HLH_gui_element_redraw(&pull->e.window->e);
+}
+
 static int pulldown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    HLH_gui_pulldown *pull = (HLH_gui_pulldown *)e;

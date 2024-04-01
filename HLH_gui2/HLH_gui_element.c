@@ -67,7 +67,7 @@ int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       return 0;
    if(e->flags & HLH_GUI_DESTROY&&msg!=HLH_GUI_MSG_DESTROY)
       return 0;
-   if(e->flags & HLH_GUI_IGNORE)
+   if(HLH_gui_element_ignored(e))
       return 0;
    if(msg==HLH_GUI_MSG_DRAW&&e->flags & HLH_GUI_INVISIBLE)
       return 0;
@@ -92,7 +92,7 @@ int HLH_gui_element_msg_all(HLH_gui_element *e, HLH_gui_msg msg, int di, void *d
       return 0;
    if(e->flags & HLH_GUI_DESTROY&&msg!=HLH_GUI_MSG_DESTROY)
       return 0;
-   if(e->flags & HLH_GUI_IGNORE)
+   if(HLH_gui_element_ignored(e))
       return 0;
    if(msg==HLH_GUI_MSG_DRAW&&e->flags & HLH_GUI_INVISIBLE)
       return 0;
@@ -160,6 +160,9 @@ HLH_gui_element *HLH_gui_element_by_point(HLH_gui_element *e, HLH_gui_point pt)
    for(int i = 0; i<e->child_count; i++)
    {
       HLH_gui_element *c = e->children[i];
+
+      if(HLH_gui_element_ignored(c))
+         continue;
       if(HLH_gui_rect_inside(c->bounds, pt))
       {
          HLH_gui_element *leaf = HLH_gui_element_by_point(c, pt);
@@ -196,9 +199,17 @@ void HLH_gui_element_ignore(HLH_gui_element *e, int ignore)
       e->flags |= HLH_GUI_IGNORE;
    else
       e->flags &= ~HLH_GUI_IGNORE;
+}
 
-   for(int i = 0; i<e->child_count; i++)
-      HLH_gui_element_ignore(e->children[i], ignore);
+int HLH_gui_element_ignored(HLH_gui_element *e)
+{
+   if(e==NULL)
+      return 0;
+
+   if(e->flags&HLH_GUI_IGNORE)
+      return 1;
+
+   return HLH_gui_element_ignored(e->parent);
 }
 
 void HLH_gui_element_destroy(HLH_gui_element *e)
@@ -336,7 +347,7 @@ static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_p
    {
       HLH_gui_element *c = e->children[i];
 
-      if(c->flags & HLH_GUI_IGNORE)
+      if(HLH_gui_element_ignored(c))
          continue;
 
       if(c->flags & HLH_GUI_EXPAND)
@@ -445,7 +456,7 @@ static HLH_gui_point element_get_share(HLH_gui_element *e)
 
 static void element_redraw(HLH_gui_element *e)
 {
-   if(e->flags & HLH_GUI_INVISIBLE||e->flags & HLH_GUI_IGNORE)
+   if(e->flags & HLH_GUI_INVISIBLE||HLH_gui_element_ignored(e))
       return;
 
    HLH_gui_element_msg(e, HLH_GUI_MSG_DRAW, 0, NULL);

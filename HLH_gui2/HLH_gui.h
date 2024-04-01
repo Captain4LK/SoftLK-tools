@@ -305,6 +305,7 @@ HLH_gui_element *HLH_gui_element_by_point(HLH_gui_element *e, HLH_gui_point pt);
 int HLH_gui_element_priority(HLH_gui_element *e, HLH_gui_point pt);
 void HLH_gui_element_invisible(HLH_gui_element *e, int invisible);
 void HLH_gui_element_ignore(HLH_gui_element *e, int ignore);
+int HLH_gui_element_ignored(HLH_gui_element *e);
 void HLH_gui_element_destroy(HLH_gui_element *e); //Only use on root elements (no parents or windows)
 void HLH_gui_element_timer(HLH_gui_element *e, int interval); //Use sparingly
 
@@ -341,6 +342,7 @@ HLH_gui_group *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint
 
 //Menubar
 HLH_gui_group *HLH_gui_menubar_create(HLH_gui_element *parent, uint64_t flags, uint64_t cflags, const char **labels, HLH_gui_element **panels, int child_count, HLH_gui_msg_handler msg_usr);
+void HLH_gui_menubar_label_set(HLH_gui_group *bar, const char *label, int which);
 
 //Seperator
 HLH_gui_separator *HLH_gui_separator_create(HLH_gui_element *parent, uint64_t flags, int direction);
