@@ -52,11 +52,13 @@ typedef struct
 {
    SLK_color_distance color_dist;
    SLK_dither dither_mode;
-   int use_kmeans;
    int alpha_threshold;
    uint32_t palette[256];
    int palette_colors;
    float dither_amount;
+
+   int use_kmeans;
+   int palette_weight;
 }SLK_dither_config;
 
 uint64_t SLK_color32_to_64(uint32_t c);
@@ -80,8 +82,9 @@ void SLK_image64_sharpen(SLK_image64 *img, float amount);
 void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed);
 void SLK_image64_hscb(SLK_image64 *img, float hue, float saturation, float contrast, float brightness);
 void SLK_image64_gamma(SLK_image64 *img, float gamma);
+SLK_image32 *SLK_image32_postprocess(SLK_image32 *img, uint32_t *color_inline, uint32_t *color_outline);
 SLK_image64 *SLK_image64_sample(const SLK_image64 *img, int width, int height, int sample_mode, float x_off, float y_off);
-//DITHER_FLOYD and DITHER_FLOYD2 modify input image!
+//modifies input image!
 SLK_image32 *SLK_image64_dither(SLK_image64 *img, const SLK_dither_config *config);
 
 #endif

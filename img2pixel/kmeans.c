@@ -42,7 +42,6 @@ static uint64_t rand_xor_next(rand_xor *xor);
 
 void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed)
 {
-   uint8_t *asign = NULL;
    uint32_t *centers = choose_centers(img,colors,seed);
    uint32_t **clusters = malloc(sizeof(*clusters)*colors);
    memset(clusters,0,sizeof(*clusters)*colors);
@@ -52,8 +51,6 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
       //Reset clusters
       for(int j = 0;j<colors;j++)
          HLH_array_length_set(clusters[j],0);
-
-      HLH_array_length_set(asign,0);
 
       for(int j = 0;j<img->w*img->h;j++)
       {
@@ -88,7 +85,6 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
          }
 
          HLH_array_push(clusters[min_i],cur);
-         HLH_array_push(asign,min_i);
       }
 
       //Recalculate centers
@@ -118,6 +114,8 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
          {
             centers[j] = img->data[rand()%(img->w*img->h)];
          }
+
+         palette[j] = centers[j];
       }
    }
 
