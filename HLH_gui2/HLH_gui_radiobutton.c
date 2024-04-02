@@ -100,8 +100,10 @@ static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
    {
       if(button->is_icon)
          return (button->icon_bounds.maxx - button->icon_bounds.minx) + 6 * HLH_gui_get_scale();
-      else
+      else if(button->text_len>0)
          return (HLH_GUI_GLYPH_HEIGHT + 8) * HLH_gui_get_scale() + button->text_len * HLH_GUI_GLYPH_WIDTH * HLH_gui_get_scale() + 10 * HLH_gui_get_scale();
+      else
+         return (HLH_GUI_GLYPH_HEIGHT + 8) * HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {

@@ -14,4 +14,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 void gui_construct(void);
 
+//NULL --> defaults
+void gui_load_preset(const char *path);
+
 #endif

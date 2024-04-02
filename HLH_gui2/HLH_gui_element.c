@@ -67,8 +67,23 @@ int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       return 0;
    if(e->flags & HLH_GUI_DESTROY&&msg!=HLH_GUI_MSG_DESTROY)
       return 0;
+
+   //TODO(Captain4LK): which msgs can we safely ignore while ignored?
    if(HLH_gui_element_ignored(e))
-      return 0;
+   {
+      switch(msg)
+      {
+      case HLH_GUI_MSG_HIT:
+      case HLH_GUI_MSG_DRAW:
+      case HLH_GUI_MSG_GET_WIDTH:
+      case HLH_GUI_MSG_GET_HEIGHT:
+      case HLH_GUI_MSG_GET_CHILD_SPACE:
+      case HLH_GUI_MSG_GET_PRIORITY:
+         return 0;
+      default:
+      }
+   }
+
    if(msg==HLH_GUI_MSG_DRAW&&e->flags & HLH_GUI_INVISIBLE)
       return 0;
    if(e->window->blocking!=NULL&&(msg<HLH_GUI_MSG_NO_BLOCK_START||msg>HLH_GUI_MSG_NO_BLOCK_END))
@@ -343,6 +358,8 @@ static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_p
    HLH_gui_point space = HLH_gui_point_make(child_space.maxx, child_space.maxy);
    HLH_gui_point slack = HLH_gui_point_make(space.x - e->child_size_required.x, space.y - e->child_size_required.y);
    HLH_gui_point share = element_get_share(e);
+   HLH_gui_point origin_org = origin;
+   HLH_gui_point space_org = space;
    for(int i = 0; i<e->child_count; i++)
    {
       HLH_gui_element *c = e->children[i];
@@ -378,9 +395,22 @@ static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_p
       switch(pack)
       {
       case HLH_GUI_PACK_NORTH:
-         origin_new.y += c->size_required.y;
-         space_new.y -= c->size_required.y;
-         element_set_rect(c, origin, HLH_gui_point_make(space.x, c->size_required.y));
+         if(1||origin.x==origin_org.x)
+         {
+            origin_new.y += c->size_required.y;
+            space_new.y -= c->size_required.y;
+            origin_new.x = origin_org.x;
+            space_new.x = space_org.x;
+            element_set_rect(c, HLH_gui_point_make(origin.x,origin.y), HLH_gui_point_make(space.x, c->size_required.y));
+         }
+         else
+         {
+            origin_new.y += c->size_required.y;
+            space_new.y -= c->size_required.y;
+            origin_new.x = origin_org.x+c->size_required.x;
+            space_new.x = space_org.x-c->size_required.x;
+            element_set_rect(c, HLH_gui_point_make(origin_org.x,origin_new.y), HLH_gui_point_make(c->size_required.x, c->size_required.y));
+         }
          break;
       case HLH_GUI_PACK_WEST:
          origin_new.x += c->size_required.x;
@@ -404,9 +434,36 @@ static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_p
 
 static HLH_gui_point element_size_siblings(HLH_gui_element *e)
 {
+#if 1
    HLH_gui_point size = HLH_gui_point_make(0, 0);
+   int local_x = 0;
 
-   for(int i = e->child_count - 1; i>=0; i--)
+   for(int i = 0;i<e->child_count;i++)
+   {
+      HLH_gui_element *child = e->children[i];
+
+      uint64_t pack = child->flags & HLH_GUI_PACK;
+      if(pack==HLH_GUI_PACK_NORTH||pack==HLH_GUI_PACK_SOUTH)
+      {
+         size.x = hlh_gui_max(local_x+child->size_required.x,size.x);
+         local_x = 0;
+         size.y+=child->size_required.y;
+      }
+      else if(pack==HLH_GUI_PACK_EAST||pack==HLH_GUI_PACK_WEST)
+      {
+         local_x += child->size_required.x;
+         size.y = hlh_gui_max(size.y, child->size_required.y);
+      }
+   }
+
+   size.x = hlh_gui_max(local_x,size.x);
+
+   return size;
+#else
+   HLH_gui_point size = HLH_gui_point_make(0, 0);
+   int local_y = 0;
+
+   for(int i = e->child_count-1;i>=0;i--)
    {
       HLH_gui_element *child = e->children[i];
 
@@ -424,6 +481,7 @@ static HLH_gui_point element_size_siblings(HLH_gui_element *e)
    }
 
    return size;
+#endif
 }
 
 static HLH_gui_point element_get_share(HLH_gui_element *e)

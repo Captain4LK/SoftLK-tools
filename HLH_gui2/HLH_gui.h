@@ -128,7 +128,7 @@ struct HLH_gui_element
    HLH_gui_point pad_in;
    HLH_gui_point pad_out;
    HLH_gui_point fixed_size;
-   int usr;
+   uint32_t usr;
    void *usr_ptr;
    HLH_gui_msg_handler msg_usr;
 
@@ -332,7 +332,7 @@ HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint64_t flags, con
 //Buttons
 HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds);
 HLH_gui_checkbutton *HLH_gui_checkbutton_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds);
-void HLH_gui_checkbutton_set(HLH_gui_element *e, int checked, int trigger_msg, int redraw);
+void HLH_gui_checkbutton_set(HLH_gui_checkbutton *c, int checked, int trigger_msg, int redraw);
 HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds);
 void HLH_gui_radiobutton_set(HLH_gui_radiobutton *r, int trigger_msg, int redraw);
 

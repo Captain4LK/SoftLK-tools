@@ -51,21 +51,20 @@ HLH_gui_checkbutton *HLH_gui_checkbutton_create(HLH_gui_element *parent, uint64_
    return button;
 }
 
-void HLH_gui_checkbutton_set(HLH_gui_element *e, int checked, int trigger_msg, int redraw)
+void HLH_gui_checkbutton_set(HLH_gui_checkbutton *c, int checked, int trigger_msg, int redraw)
 {
-   if(e==NULL)
+   if(c==NULL)
       return;
 
-   HLH_gui_checkbutton *b = (HLH_gui_checkbutton *)e;
-   int previously = b->checked;
-   b->checked = checked;
-   if(previously!=b->checked)
+   int previously = c->checked;
+   c->checked = checked;
+   if(previously!=c->checked)
    {
       if(redraw)
-         HLH_gui_element_redraw(e);
+         HLH_gui_element_redraw(&c->e);
 
       if(trigger_msg)
-         HLH_gui_element_msg(e, HLH_GUI_MSG_CLICK, b->checked, NULL);
+         HLH_gui_element_msg(&c->e, HLH_GUI_MSG_CLICK, c->checked, NULL);
    }
 }
 

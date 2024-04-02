@@ -43,6 +43,7 @@ int main(int argc, char **argv)
    HLH_gui_init();
 
    gui_construct();
+   gui_load_preset(NULL);
 
    return HLH_gui_message_loop();
 }

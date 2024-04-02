@@ -9,6 +9,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
+#include <stdlib.h>
 #include <stdint.h>
 //-------------------------------------
 
@@ -32,6 +33,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 void SLK_image64_sharpen(SLK_image64 *img, float amount)
 {
+   if(amount<1e-2)
+      return;
+
    SLK_image64 *blur = SLK_image64_dup(img);
    SLK_image64_blur(blur, 1.f);
 
@@ -51,5 +55,7 @@ void SLK_image64_sharpen(SLK_image64 *img, float amount)
       img->data[i]|=(g+((g-gb)*amount_fixed)/256)>>16;
       img->data[i]|=(b+((b-bb)*amount_fixed)/256)>>16;
    }
+
+   free(blur);
 }
 //-------------------------------------
