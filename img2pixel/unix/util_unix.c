@@ -31,6 +31,13 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Variables
 static char path_image_load[512] = {0};
+static char path_palette_load[512] = {0};
+static char path_preset_load[512] = {0};
+static char path_palette_save[512] = {0};
+static char path_preset_save[512] = {0};
+
+static char path_palette[512] = {0};
+static char path_preset[512] = {0};
 //-------------------------------------
 
 //Function prototypes
@@ -59,5 +66,45 @@ SLK_image32 *image_select()
    HLH_gui_image_free(data);
 
    return img32;
+}
+
+const char *palette_load_select()
+{
+   const char *filter_patterns[] = {"*.pal","*.png","*.gpl","*.hex"};
+   const char *file_path = tinyfd_openFileDialog("Load a palette",path_palette_load,4,filter_patterns,NULL,0);
+
+   memset(path_palette,0,sizeof(path_palette));
+   if(file_path!=NULL)
+      strncpy(path_palette,file_path,511);
+
+   return path_palette;
+}
+
+const char *preset_load_select()
+{
+   const char *filter_patterns[2] = {"*.json"};
+   const char *file_path = tinyfd_openFileDialog("Select a preset",path_preset_load,1,filter_patterns,NULL,0);
+
+   memset(path_preset,0,sizeof(path_preset));
+   if(file_path!=NULL)
+      strncpy(path_preset,file_path,511);
+
+   return path_preset;
+}
+
+const char *palette_save_select()
+{
+}
+
+const char *preset_save_select()
+{
+   const char *filter_patterns[2] = {"*.json"};
+   const char *file_path = tinyfd_saveFileDialog("Save preset",path_preset_save,1,filter_patterns,NULL);
+
+   memset(path_preset,0,sizeof(path_preset));
+   if(file_path!=NULL)
+      strncpy(path_preset,file_path,511);
+
+   return path_preset;
 }
 //-------------------------------------

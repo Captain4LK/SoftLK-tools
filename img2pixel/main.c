@@ -9,12 +9,15 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
 #define HLH_IMPLEMENTATION
 #include "HLH.h"
+#define HLH_JSON_IMPLEMENTATION
+#include "HLH_json.h"
 
 #include "HLH_gui.h"
 //-------------------------------------

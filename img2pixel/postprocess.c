@@ -55,7 +55,7 @@ SLK_image32 *SLK_image32_postprocess(SLK_image32 *img, uint32_t *color_inline, u
                empty++;
 
             if(empty!=0)
-               out->data[y*img->w+x] = *color_outline
+               out->data[y*img->w+x] = *color_inline;
          }
 
          if(color_outline!=NULL&&SLK_color32_a(img->data[y*img->w+x])==0)
@@ -71,7 +71,7 @@ SLK_image32 *SLK_image32_postprocess(SLK_image32 *img, uint32_t *color_inline, u
                empty++;
 
             if(empty!=0)
-               out->data[y*img->w+x] = *color_outline
+               out->data[y*img->w+x] = *color_outline;
          }
       }
    }

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 flags="-I../external/ -Wall -Wextra -Wno-unused -std=c99 -Wshadow"
-sources="color.c blur.c kmeans.c image.c sharp.c sample.c hscb.c gamma.c dither.c unix/util_unix.c ../external/tinyfiledialogs.c"
+sources="color.c blur.c kmeans.c image.c sharp.c sample.c hscb.c gamma.c postprocess.c dither.c palette.c unix/util_unix.c ../external/tinyfiledialogs.c"
 
 if [ $# -lt 1 ]; then
    echo "unspecified target, need either gui, gui_hlh, cmd or video"

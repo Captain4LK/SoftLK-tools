@@ -42,6 +42,11 @@ static uint64_t rand_xor_next(rand_xor *xor);
 
 void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed)
 {
+   if(img==NULL)
+      return;
+   if(palette==NULL)
+      return;
+
    uint32_t *centers = choose_centers(img,colors,seed);
    uint32_t **clusters = malloc(sizeof(*clusters)*colors);
    memset(clusters,0,sizeof(*clusters)*colors);

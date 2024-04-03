@@ -1,7 +1,7 @@
 /*
 JSON parser
 
-Written in 2021 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2021,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -97,6 +97,7 @@ double          HLH_json_get_object_real(HLH_json5 *json, const char *name, doub
 int64_t         HLH_json_get_object_integer(HLH_json5 *json, const char *name, int64_t fallback);
 int             HLH_json_get_object_boolean(HLH_json5 *json, const char *name, int fallback);
 HLH_json5      *HLH_json_get_object_object(HLH_json5 *json, const char *name, HLH_json5 *fallback);
+HLH_json5      *HLH_json_get_object_array(HLH_json5 *json, const char *name, HLH_json5 *fallback);
 char           *HLH_json_get_array_string(HLH_json5 *json, int index, char *fallback);
 double          HLH_json_get_array_real(HLH_json5 *json, int index, double fallback);
 int64_t         HLH_json_get_array_integer(HLH_json5 *json, int index, int64_t fallback);
@@ -471,6 +472,21 @@ HLH_json5 *HLH_json_get_object_object(HLH_json5 *json, const char *name, HLH_jso
       return fallback;
 
    if(o->type==HLH_json5_object)
+      return o;
+
+   return fallback;
+}
+
+HLH_json5 *HLH_json_get_object_array(HLH_json5 *json, const char *name, HLH_json5 *fallback)
+{
+   if(!json||json->type!=HLH_json5_object)
+      return fallback;
+
+   HLH_json5 *o = HLH_json_get_object(json,name);
+   if(!o)
+      return fallback;
+
+   if(o->type==HLH_json5_array)
       return o;
 
    return fallback;

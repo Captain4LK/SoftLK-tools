@@ -31,7 +31,14 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Function implementations
 uint64_t SLK_color32_to_64(uint32_t c)
 {
-   uint64_t color = c;
+   uint64_t r = SLK_color32_r(c)<<7;
+   uint64_t g = SLK_color32_g(c)<<7;
+   uint64_t b = SLK_color32_b(c)<<7;
+   uint64_t a = SLK_color32_a(c)<<7;
+
+   return (r)|(g<<16)|(b<<32)|(a<<48);
+
+   /*uint64_t color = c;
 
    color = ((color&0xff000000)<<24) 
          | ((color&0x00ff0000)<<16) 
@@ -39,55 +46,61 @@ uint64_t SLK_color32_to_64(uint32_t c)
          | ((color&0x000000ff)    );
    color = ((color | (color<<8))>>1)&0x7fff7fff7fff7fffULL;
 
-   return color;
+   return color;*/
 }
 
-uint16_t SLK_color64_r(uint64_t c)
+uint64_t SLK_color64_r(uint64_t c)
 {
    return c&0x7fff;
 }
 
-uint16_t SLK_color64_g(uint64_t c)
+uint64_t SLK_color64_g(uint64_t c)
 {
    return (c>>16)&0x7fff;
 }
 
-uint16_t SLK_color64_b(uint64_t c)
+uint64_t SLK_color64_b(uint64_t c)
 {
    return (c>>32)&0x7fff;
 }
 
-uint16_t SLK_color64_a(uint64_t c)
+uint64_t SLK_color64_a(uint64_t c)
 {
    return (c>>48)&0x7fff;
 }
 
 uint32_t SLK_color64_to_32(uint64_t c)
 {
-   uint32_t c0 = (c>>7)&255;
+   uint32_t r = SLK_color64_r(c)>>7;
+   uint32_t g = SLK_color64_g(c)>>7;
+   uint32_t b = SLK_color64_b(c)>>7;
+   uint32_t a = SLK_color64_a(c)>>7;
+
+   return (r)|(g<<8)|(b<<16)|(a<<24);
+   /*uint32_t c0 = (c>>7)&255;
    uint32_t c1 = (c>>23)&255;
    uint32_t c2 = (c>>39)&255;
    uint32_t c3 = (c>>55)&255;
 
-   return c0|(c1<<8)|(c2<<16)|(c3<<24);
+   return c0|(c1<<8)|(c2<<16)|(c3<<24);*/
 }
 
-uint8_t SLK_color32_r(uint32_t c)
+uint32_t SLK_color32_r(uint32_t c)
 {
    return c&255;
 }
 
-uint8_t SLK_color32_g(uint32_t c)
+uint32_t SLK_color32_g(uint32_t c)
 {
    return (c>>8)&255;
 }
 
-uint8_t SLK_color32_b(uint32_t c)
+uint32_t SLK_color32_b(uint32_t c)
 {
    return (c>>16)&255;
 }
 
-uint8_t SLK_color32_a(uint32_t c)
+uint32_t SLK_color32_a(uint32_t c)
 {
    return (c>>24)&255;
 }

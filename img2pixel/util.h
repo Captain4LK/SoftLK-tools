@@ -13,5 +13,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define _UTIL_H_
 
 SLK_image32 *image_select();
+const char *palette_load_select();
+const char *preset_load_select();
+
+const char *palette_save_select();
+const char *preset_save_select();
 
 #endif
