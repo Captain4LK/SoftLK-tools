@@ -132,6 +132,56 @@ void SLK_palette_load(const char *path, uint32_t *colors, int *color_count)
    }
 }
 
+void SLK_palette_save(const char *path, uint32_t *colors, int color_count)
+{
+   if(path==NULL)
+      return;
+
+   FILE *f = fopen(path,"w");
+   if(f==NULL)
+      return;
+
+   char ext[PATH_EXT];
+   slk_path_pop_ext(path,NULL,ext);
+
+   if(strcmp(ext,"gpl")==0)
+   {
+      fprintf(f,"GIMP Palette\n");
+      fprintf(f,"#Colors: %d\n",color_count);
+      for(int i = 0;i<color_count;i++)
+      {
+         uint32_t r = SLK_color32_r(colors[i]);
+         uint32_t g = SLK_color32_g(colors[i]);
+         uint32_t b = SLK_color32_b(colors[i]);
+         fprintf(f,"%d %d %d %x%x%x%x%x%x\n",r,g,b,(r>>4)&15,r&15,(g>>4)&15,g&15,(b>>4)&15,b&15);
+      }
+   }
+   else if(strcmp(ext,"hex")==0)
+   {
+      for(int i = 0;i<color_count;i++)
+      {
+         uint32_t r = SLK_color32_r(colors[i]);
+         uint32_t g = SLK_color32_g(colors[i]);
+         uint32_t b = SLK_color32_b(colors[i]);
+         fprintf(f,"%x%x%x%x%x%x\n",(r>>4)&15,r&15,(g>>4)&15,g&15,(b>>4)&15,b&15);
+      }
+   }
+   //Asume pal
+   else
+   {
+      fprintf(f,"JASC-PAL\n0100\n%d\n",color_count);
+      for(int i = 0;i<color_count;i++)
+      {
+         uint32_t r = SLK_color32_r(colors[i]);
+         uint32_t g = SLK_color32_g(colors[i]);
+         uint32_t b = SLK_color32_b(colors[i]);
+         fprintf(f,"%d %d %d\n",r,g,b);
+      }
+   }
+
+   fclose(f);
+}
+
 static int slk_path_pop_ext(const char *path, char *out, char *ext)
 {
    if(path==NULL)

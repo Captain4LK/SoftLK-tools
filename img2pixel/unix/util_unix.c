@@ -33,9 +33,11 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 static char path_image_load[512] = {0};
 static char path_palette_load[512] = {0};
 static char path_preset_load[512] = {0};
+static char path_image_save[512] = {0};
 static char path_palette_save[512] = {0};
 static char path_preset_save[512] = {0};
 
+static char path_image[512] = {0};
 static char path_palette[512] = {0};
 static char path_preset[512] = {0};
 //-------------------------------------
@@ -92,8 +94,28 @@ const char *preset_load_select()
    return path_preset;
 }
 
+const char *image_save_select()
+{
+   const char *filter_patterns[3] = {"*.png","*.bmp","*.tga"};
+   const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,3,filter_patterns,NULL);
+
+   memset(path_image,0,sizeof(path_image));
+   if(file_path!=NULL)
+      strncpy(path_image,file_path,511);
+
+   return path_image;
+}
+
 const char *palette_save_select()
 {
+   const char *filter_patterns[] = {"*.pal","*.hex","*.gpl"};
+   const char *file_path = tinyfd_saveFileDialog("Save palette",path_palette_save,3,filter_patterns,NULL);
+
+   memset(path_palette,0,sizeof(path_palette));
+   if(file_path!=NULL)
+      strncpy(path_palette,file_path,511);
+
+   return path_palette;
 }
 
 const char *preset_save_select()

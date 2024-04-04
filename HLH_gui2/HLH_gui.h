@@ -364,5 +364,6 @@ void HLH_gui_imgcmp_update1(HLH_gui_imgcmp *img, uint32_t *pix, int width, int h
 //Utils
 uint32_t *HLH_gui_image_load(const char *path, int *width, int *height);
 void HLH_gui_image_free(uint32_t *pix);
+void HLH_gui_image_save(const char *path, uint32_t *data, int width, int height);
 
 #endif

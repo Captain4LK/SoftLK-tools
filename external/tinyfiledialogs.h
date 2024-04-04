@@ -1,10 +1,10 @@
-/* If you compiled tinyfiledialogs.c (maybe renamed with an extension ".cpp")
-with a C++ compiler, then comment out << extern "C" >> bellow in this header file) */
+/* If you are using a C++ compiler to compile tinyfiledialogs.c (maybe renamed with an extension ".cpp")
+then comment out << extern "C" >> bellow in this header file) */
 
 /*_________
- /         \ tinyfiledialogs.h v3.8.4 [Dec 23, 2020] zlib licence
+ /         \ tinyfiledialogs.h v3.9.0 [Nov 3, 2022] zlib licence
  |tiny file| Unique header file created [November 9, 2014]
- | dialogs | Copyright (c) 2014 - 2020 Guillaume Vareille http://ysengrin.com
+ | dialogs | Copyright (c) 2014 - 2021 Guillaume Vareille http://ysengrin.com
  \____  ___/ http://tinyfiledialogs.sourceforge.net
       \|     git clone http://git.code.sf.net/p/tinyfiledialogs/code tinyfd
  ____________________________________________
@@ -52,7 +52,7 @@ misrepresented as being the original software.
 #ifdef	__cplusplus
 /* if tinydialogs.c is compiled as C++ code rather than C code, you may need to comment this out
 				and the corresponding closing bracket near the end of this file. */
-extern "C" { 
+extern "C" {
 #endif
 
 /******************************************************************************************************/
@@ -137,7 +137,7 @@ int tinyfd_messageBox(
 char * tinyfd_inputBox(
 	char const * aTitle , /* NULL or "" */
 	char const * aMessage , /* NULL or "" (\n and \t have no effect) */
-	char const * aDefaultInput ) ;  /* NULL passwordBox, "" inputbox */
+	char const * aDefaultInput ) ;  /* NULL = passwordBox, "" = inputbox */
 		/* returns NULL on cancel */
 
 char * tinyfd_saveFileDialog(

@@ -17,6 +17,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include "stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_STATIC
+#include "stb_image_write.h"
 //-------------------------------------
 
 //Internal includes
@@ -472,6 +475,98 @@ void HLH_gui_image_free(uint32_t *pix)
       return;
 
    stbi_image_free(pix);
+}
+
+void HLH_gui_image_save(const char *path, uint32_t *data, int width, int height)
+{
+   if(path==NULL||data==NULL||width<=0||height<=0)
+      return;
+
+
+   //Get extension
+   char ext[32] = {0};
+
+   char *last_dot = strrchr(path,'.');
+
+   //No dot, or string is '.' or '..' --> no extension --> asume png
+   if(last_dot==NULL||!strcmp(path,".")||!strcmp(path,".."))
+   {
+      ext[0] = 'p';
+      ext[1] = 'n';
+      ext[2] = 'g';
+   }
+   //slash after dot --> no extension --> asume png
+   else if(last_dot[1]=='/'||last_dot[1]=='\\')
+   {
+      ext[0] = 'p';
+      ext[1] = 'n';
+      ext[2] = 'g';
+   }
+   else
+   {
+      strncpy(ext,last_dot+1,31);
+      ext[31] = '\0';
+   }
+
+   puts(ext);
+
+   if(strcmp(ext,"bmp")==0)
+      stbi_write_bmp(path,width,height,4,data);
+   else if(strcmp(ext,"tga")==0)
+      stbi_write_tga(path,width,height,4,data);
+   else if(strcmp(ext,"jpg")==0||strcmp(ext,"JPG")==0)
+      stbi_write_jpg(path,width,height,4,data,96);
+   //Save as png if unknown
+   //Could error out here, but better to save something
+   else
+      stbi_write_png(path,width,height,4,data,width*4);
+   /*if(path==NULL)
+      return 0;
+
+   if(out!=NULL)
+      out[0] = '\0';
+   if(ext!=NULL)
+      ext[0] = '\0';
+
+   char *last_dot = strrchr(path,'.');
+
+   //No dot, or string is '.' or '..' --> no extension
+   if(last_dot==NULL||!strcmp(path,".")||!strcmp(path,".."))
+   {
+      if(out==NULL)
+         return 0;
+
+      strncpy(out,path,PATH_MAX-1);
+      out[PATH_MAX-1] = '\0';
+      return strlen(out);
+   }
+
+   //slash after dot --> no extension
+   if(last_dot[1]=='/'||last_dot[1]=='\\')
+   {
+      if(out==NULL)
+         return 0;
+
+      strncpy(out,path,PATH_MAX-1);
+      out[PATH_MAX-1] = '\0';
+      return strlen(out);
+   }
+
+   if(ext!=NULL)
+   {
+      strncpy(ext,last_dot+1,PATH_EXT-1);
+      ext[PATH_EXT-1] = '\0';
+   }
+
+   if(out==NULL)
+      return 0;
+   intptr_t len_copy = (intptr_t)(last_dot-path);
+#define min(a,b) ((a)<(b)?(a):(b))
+   strncpy(out,path,min(len_copy,PATH_MAX-1));
+   out[min(len_copy,PATH_MAX-1)] = '\0';
+#undef min
+   return strlen(out);
+   */
 }
 
 SDL_Texture *HLH_gui_texture_load(HLH_gui_window *win, const char *path, int *width, int *height)

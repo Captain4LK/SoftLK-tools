@@ -16,6 +16,7 @@ SLK_image32 *image_select();
 const char *palette_load_select();
 const char *preset_load_select();
 
+const char *image_save_select();
 const char *palette_save_select();
 const char *preset_save_select();
 

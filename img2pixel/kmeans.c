@@ -13,6 +13,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <limits.h>
 //-------------------------------------
 
 //Internal includes
@@ -128,6 +129,109 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
    for(int i = 0;i<colors;i++)
       HLH_array_free(clusters[i]);
    free(clusters);
+}
+
+uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed)
+{
+   if(img==NULL)
+      return 0xff000000;
+   if(palette==NULL)
+      return 0xff000000;
+
+   uint32_t *centers = choose_centers(img,colors,seed);
+   uint32_t **clusters = malloc(sizeof(*clusters)*colors);
+   memset(clusters,0,sizeof(*clusters)*colors);
+
+   for(int i = 0;i<16;i++)
+   {
+      //Reset clusters
+      for(int j = 0;j<colors;j++)
+         HLH_array_length_set(clusters[j],0);
+
+      for(int j = 0;j<img->w*img->h;j++)
+      {
+         uint32_t cur = img->data[j];
+         int32_t cr = cur&255;
+         int32_t cg = (cur>>8)&255;
+         int32_t cb = (cur>>16)&255;
+         int32_t ca = (cur>>24)&255;
+
+         uint64_t dist_min = UINT64_MAX;
+         int min_i = 0;
+         for(int c = 0;c<HLH_array_length(centers);c++)
+         {
+            int32_t r = centers[c]&255;
+            int32_t g = (centers[c]>>8)&255;
+            int32_t b = (centers[c]>>16)&255;
+            int32_t a = (centers[c]>>24)&255;
+
+            uint64_t dist = (cr-r)*(cr-r);
+            dist+=(cg-g)*(cg-g);
+            dist+=(cb-b)*(cb-b);
+
+            //uint64_t dist = (cur.r-centers[c].r)*(cur.r-centers[c].r);
+            //dist+=(cur.g-centers[c].g)*(cur.g-centers[c].g);
+            //dist+=(cur.b-centers[c].b)*(cur.b-centers[c].b);
+
+            if(dist<dist_min)
+            {
+               dist_min = dist;
+               min_i = c;
+            }
+         }
+
+         HLH_array_push(clusters[min_i],cur);
+      }
+
+      //Recalculate centers
+      for(int j = 0;j<colors;j++)
+      {
+         uint64_t sum_r = 0;
+         uint64_t sum_g = 0;
+         uint64_t sum_b = 0;
+         for(int c = 0;c<HLH_array_length(clusters[j]);c++)
+         {
+            sum_r+=clusters[j][c]&255;
+            sum_g+=(clusters[j][c]>>8)&255;
+            sum_b+=(clusters[j][c]>>16)&255;
+         }
+
+         if(HLH_array_length(clusters[j])>0)
+         {
+            centers[j]&=0xff000000;
+            centers[j]|= (sum_r/HLH_array_length(clusters[j]));
+            centers[j]|= (sum_g/HLH_array_length(clusters[j]))<<8;
+            centers[j]|= (sum_b/HLH_array_length(clusters[j]))<<16;
+         }
+         //Choose random data point in that case
+         //Not the best solution but better than not filling these colors
+         //This path doesn't really seem to get hit though
+         else
+         {
+            centers[j] = img->data[rand()%(img->w*img->h)];
+         }
+
+         palette[j] = centers[j];
+      }
+   }
+   
+   uint32_t largest = palette[0];
+   int max_size = 0;
+   for(int i = 0;i<colors;i++)
+   {
+      if(HLH_array_length(clusters[i])>max_size)
+      {
+         max_size = HLH_array_length(clusters[i]);
+         largest = palette[i];
+      }
+   }
+
+   HLH_array_free(centers);
+   for(int i = 0;i<colors;i++)
+      HLH_array_free(clusters[i]);
+   free(clusters);
+
+   return largest;
 }
 
 static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed)

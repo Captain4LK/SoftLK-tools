@@ -74,6 +74,7 @@ uint32_t SLK_color32_a(uint32_t c);
 
 //Max 256
 void SLK_palette_load(const char *path, uint32_t *colors, int *color_count);
+void SLK_palette_save(const char *path, uint32_t *colors, int color_count);
 
 SLK_image32 *SLK_image32_dup(const SLK_image32 *src);
 SLK_image32 *SLK_image32_dup64(const SLK_image64 *src);
@@ -83,6 +84,7 @@ SLK_image64 *SLK_image64_dup32(const SLK_image32 *src);
 void SLK_image64_blur(SLK_image64 *img, float sz);
 void SLK_image64_sharpen(SLK_image64 *img, float amount);
 void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed);
+uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed);
 void SLK_image64_hscb(SLK_image64 *img, float hue, float saturation, float contrast, float brightness);
 void SLK_image64_gamma(SLK_image64 *img, float gamma);
 SLK_image32 *SLK_image32_postprocess(SLK_image32 *img, uint32_t *color_inline, uint32_t *color_outline);

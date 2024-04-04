@@ -31,12 +31,13 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static SLK_image64 *slk_sample_round(const SLK_image64 *img, int width, int height, float x_off, float y_off);
-static SLK_image64 *slk_sample_floor(const SLK_image64 *img, int width, int height, float x_off, float y_off);
-static SLK_image64 *slk_sample_ceil(const SLK_image64 *img, int width, int height, float x_off, float y_off);
+static SLK_image64 *slk_sample_nearest(const SLK_image64 *img, int width, int height, float x_off, float y_off);
+//static SLK_image64 *slk_sample_floor(const SLK_image64 *img, int width, int height, float x_off, float y_off);
+//static SLK_image64 *slk_sample_ceil(const SLK_image64 *img, int width, int height, float x_off, float y_off);
 static SLK_image64 *slk_sample_linear(const SLK_image64 *img, int width, int height, float x_off, float y_off);
 static SLK_image64 *slk_sample_bicubic(const SLK_image64 *img, int width, int height, float x_off, float y_off);
 static SLK_image64 *slk_sample_lanczos(const SLK_image64 *img, int width, int height, float x_off, float y_off);
+static SLK_image64 *slk_sample_cluster(const SLK_image64 *img, int width, int height, float x_off, float y_off);
 
 static float slk_blend_linear(float sx, float sy, float c0, float c1, float c2, float c3);
 static float slk_blend_bicubic(float c0, float c1, float c2, float c3, float t);
@@ -51,18 +52,19 @@ SLK_image64 *SLK_image64_sample(const SLK_image64 *img, int width, int height, i
 
    switch(sample_mode)
    {
-   case 0: return slk_sample_round(img,width,height,x_off,y_off);
-   case 1: return slk_sample_floor(img,width,height,x_off,y_off);
-   case 2: return slk_sample_ceil(img,width,height,x_off,y_off);
-   case 3: return slk_sample_linear(img,width,height,x_off,y_off);
-   case 4: return slk_sample_bicubic(img,width,height,x_off,y_off);
-   case 5: return slk_sample_lanczos(img,width,height,x_off,y_off);
+   case 0: return slk_sample_nearest(img,width,height,x_off,y_off);
+   //case 1: return slk_sample_floor(img,width,height,x_off,y_off);
+   //case 2: return slk_sample_ceil(img,width,height,x_off,y_off);
+   case 1: return slk_sample_linear(img,width,height,x_off,y_off);
+   case 2: return slk_sample_bicubic(img,width,height,x_off,y_off);
+   case 3: return slk_sample_lanczos(img,width,height,x_off,y_off);
+   case 4: return slk_sample_cluster(img,width,height,x_off,y_off);
    }
 
    return NULL;
 }
 
-static SLK_image64 *slk_sample_round(const SLK_image64 *img, int width, int height, float x_off, float y_off)
+static SLK_image64 *slk_sample_nearest(const SLK_image64 *img, int width, int height, float x_off, float y_off)
 {
    SLK_image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
    out->w = width;
@@ -78,7 +80,7 @@ static SLK_image64 *slk_sample_round(const SLK_image64 *img, int width, int heig
          float dx = x+x_off;
          float dy = y+y_off;
 
-         out->data[y*width+x] = img->data[(int)roundf(dy*h)*img->w+(int)roundf(dx*w)];
+         out->data[y*width+x] = img->data[(int)ceilf(dy*h)*img->w+(int)ceilf(dx*w)];
       }
    }
 
@@ -144,10 +146,10 @@ static SLK_image64 *slk_sample_linear(const SLK_image64 *img, int width, int hei
    {
       for(int x = 0;x<width;x++)
       {
-         int ix = (int)(((float)x+x_off)*fw);
-         int iy = (int)(((float)y+y_off)*fh);
-         float six = (((float)x+x_off)*fw)-(float)ix;
-         float siy = (((float)y+y_off)*fh)-(float)iy;
+         int ix = (int)(((float)x+x_off+0.5f)*fw);
+         int iy = (int)(((float)y+y_off+0.5f)*fh);
+         float six = (((float)x+x_off+0.5f)*fw)-(float)ix;
+         float siy = (((float)y+y_off+0.5f)*fh)-(float)iy;
 
          uint64_t p0 = UINT64_C(0x7fff000000000000);
          uint64_t p1 = UINT64_C(0x7fff000000000000);
@@ -237,10 +239,10 @@ static SLK_image64 *slk_sample_bicubic(const SLK_image64 *img, int width, int he
    {
       for(int x = 0;x<width;x++)
       {
-         int ix = (int)(((float)x+x_off)*fw);
-         int iy = (int)(((float)y+y_off)*fh);
-         float six = (((float)x+x_off)*fw)-(float)ix;
-         float siy = (((float)y+y_off)*fh)-(float)iy;
+         int ix = (int)(((float)x+x_off+0.5f)*fw);
+         int iy = (int)(((float)y+y_off+0.5f)*fh);
+         float six = (((float)x+x_off+0.5f)*fw)-(float)ix;
+         float siy = (((float)y+y_off+0.5f)*fh)-(float)iy;
 
          uint64_t p00 = UINT64_C(0x7fff000000000000);
          uint64_t p01 = UINT64_C(0x7fff000000000000);
@@ -412,10 +414,10 @@ static SLK_image64 *slk_sample_lanczos(const SLK_image64 *img, int width, int he
    {
       for(int x = 0;x<width;x++)
       {
-         int ix = (int)(((float)x+x_off)*fw);
-         int iy = (int)(((float)y+y_off)*fh);
-         float six = (((float)x+x_off)*fw)-(float)ix;
-         float siy = (((float)y+y_off)*fh)-(float)iy;
+         int ix = (int)(((float)x+x_off+0.5f)*fw);
+         int iy = (int)(((float)y+y_off+0.5f)*fh);
+         float six = (((float)x+x_off+0.5f)*fw)-(float)ix;
+         float siy = (((float)y+y_off+0.5f)*fh)-(float)iy;
 
          float a0 = slk_lanczos(six+2.f);
          float a1 = slk_lanczos(six+1.f);
@@ -482,5 +484,45 @@ static float slk_lanczos(float v)
       return 0.f;
 
    return ((3.f*sinf(PI32*v)*sinf(PI32*v/3.f))/(PI32*PI32*v*v));
+}
+
+static SLK_image64 *slk_sample_cluster(const SLK_image64 *img, int width, int height, float x_off, float y_off)
+{
+   SLK_image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
+   out->w = width;
+   out->h = height;
+
+   float w = (img->w)/(float)width;
+   float h = (img->h)/(float)height;
+
+   float grid_x = ((float)img->w/(float)(width));
+   float grid_y = ((float)img->h/(float)(height));
+   int igrid_x = grid_x;
+   int igrid_y = grid_y;
+   SLK_image32 *cluster = malloc(sizeof(*cluster)+sizeof(*cluster->data)*igrid_x*igrid_y);
+   cluster->w = igrid_x;
+   cluster->h = igrid_y;
+   uint32_t colors[4];
+
+   for(int y = 0;y<height;y++)
+   {
+      for(int x = 0;x<width;x++)
+      {
+         for(int iy = 0;iy<igrid_y;iy++)
+         {
+            for(int ix = 0;ix<igrid_x;ix++)
+            {
+               cluster->data[iy*igrid_x+ix] = 0xff000000;
+               if(x*grid_x+ix>=0&&x*grid_x+ix<img->w&&y*grid_y+iy>=0&&y*grid_y+iy<img->h)
+                  cluster->data[iy*igrid_x+ix] = SLK_color64_to_32(img->data[((int)(y*grid_y)+iy)*img->w+(int)(x*grid_x)+ix]);
+            }
+         }
+         out->data[y*width+x] = SLK_color32_to_64(SLK_image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
+      }
+   }
+
+   free(cluster);
+
+   return out;
 }
 //-------------------------------------

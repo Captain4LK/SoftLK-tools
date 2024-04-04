@@ -66,6 +66,7 @@ static HLH_gui_imgcmp *gui_imgcmp;
 static HLH_gui_group *gui_groups_left[5];
 
 static SLK_image32 *gui_input = NULL;
+static SLK_image32 *gui_output = NULL;
 
 static HLH_gui_group *gui_bar_sample;
 static HLH_gui_group *gui_groups_sample[2];
@@ -98,7 +99,7 @@ static struct
 
    HLH_gui_group *group_palette;
 
-   HLH_gui_radiobutton *sample_sample_mode[6];
+   HLH_gui_radiobutton *sample_sample_mode[5];
    HLH_gui_radiobutton *sample_scale_mode[2];
    HLH_gui_radiobutton *dither_dither_mode[8];
    HLH_gui_radiobutton *dither_color_dist[6];
@@ -251,33 +252,37 @@ void gui_construct(void)
       HLH_gui_label_create(&gui_groups_left[0]->e,0,"Sample mode");
 
       HLH_gui_group *group_sample = HLH_gui_group_create(&gui_groups_left[0]->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
-      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Round   ",NULL);
+      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Nearest ",NULL);
       r->e.usr = 0;
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[0] = r;
       HLH_gui_radiobutton *first = r;
-      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Floor   ",NULL);
+      //r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Floor   ",NULL);
+      //r->e.usr = 1;
+      //r->e.msg_usr = radiobutton_sample_msg;
+      //gui.sample_sample_mode[1] = r;
+      //r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Ceil    ",NULL);
+      //r->e.usr = 2;
+      //r->e.msg_usr = radiobutton_sample_msg;
+      //gui.sample_sample_mode[2] = r;
+      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bilinear",NULL);
       r->e.usr = 1;
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[1] = r;
-      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Ceil    ",NULL);
+      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bicubic ",NULL);
       r->e.usr = 2;
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[2] = r;
-      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bilinear",NULL);
+      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Lanczos ",NULL);
       r->e.usr = 3;
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[3] = r;
-      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bicubic ",NULL);
+      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Cluster",NULL);
       r->e.usr = 4;
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[4] = r;
-      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Lanczos ",NULL);
-      r->e.usr = 5;
-      r->e.msg_usr = radiobutton_sample_msg;
-      gui.sample_sample_mode[5] = r;
       HLH_gui_radiobutton_set(first,1,1);
-      const char *bar_sample[1] = {"Round    >"};
+      const char *bar_sample[1] = {"Nearest  >"};
       gui_bar_sample = HLH_gui_menubar_create(&gui_groups_left[0]->e,0,HLH_GUI_PACK_WEST,bar_sample,(HLH_gui_element **)&group_sample,1,NULL);
 
       HLH_gui_label_create(&gui_groups_left[0]->e,0,"Sample x offset");
@@ -382,7 +387,7 @@ void gui_construct(void)
 
       HLH_gui_label_create(&gui_groups_left[1]->e,0,"Dither amount");
       slider = HLH_gui_slider_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,500,0,0);
+      HLH_gui_slider_set(slider,1,250,0,0);
       slider->e.msg_usr = slider_msg;
       slider->e.usr = SLIDER_DITHER_AMOUNT;
       gui.slider_dither_amount = slider;
@@ -611,7 +616,7 @@ static int radiobutton_sample_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
    HLH_gui_radiobutton *r = (HLH_gui_radiobutton *)e;
    if(msg==HLH_GUI_MSG_CLICK)
    {
-      if(di==1&&r->e.usr)
+      if(di)
       {
          sample_mode = r->e.usr;
          char tmp[256];
@@ -695,6 +700,8 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Image
       if(m->index==0)
       {
+         const char *image = image_save_select();
+         HLH_gui_image_save(image,gui_output->data,gui_output->w,gui_output->h);
       }
       //Preset
       else if(m->index==1)
@@ -741,6 +748,9 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Palette
       else if(m->index==2)
       {
+         const char *palette = palette_save_select();
+
+         SLK_palette_save(palette,dither_config.palette,dither_config.palette_colors);
       }
    }
 
@@ -1028,6 +1038,11 @@ static void gui_process()
 {
    if(gui_input==NULL||block_process)
       return;
+   if(gui_output!=NULL)
+   {
+      free(gui_output);
+      gui_output = NULL;
+   }
 
    SLK_image64 *img = SLK_image64_dup32(gui_input);
    SLK_image64_blur(img,blur_amount/16.f);
@@ -1049,12 +1064,12 @@ static void gui_process()
 
    SLK_image64_hscb(sampled,hue,saturation,contrast,brightness);
    SLK_image64_gamma(sampled,gamma);
-   SLK_image32 *dithered = SLK_image64_dither(sampled,&dither_config);
+   gui_output = SLK_image64_dither(sampled,&dither_config);
    free(img);
    free(sampled);
 
-   HLH_gui_imgcmp_update1(gui_imgcmp,dithered->data,dithered->w,dithered->h,1);
-   free(dithered);
+   HLH_gui_imgcmp_update1(gui_imgcmp,gui_output->data,gui_output->w,gui_output->h,1);
+   //free(dithered);
 }
 
 void gui_load_preset(const char *path)
@@ -1070,7 +1085,7 @@ void gui_load_preset(const char *path)
       HLH_json5_root *root = HLH_json_parse_file_stream(f);
 
       blur_amount = HLH_json_get_object_integer(&root->root,"blur_amount",0);
-      sample_mode = HLH_json_get_object_integer(&root->root,"sample_mode",2);
+      sample_mode = HLH_json_get_object_integer(&root->root,"sample_mode",0);
       x_offset = HLH_json_get_object_real(&root->root,"x_offset",0.f);
       y_offset = HLH_json_get_object_real(&root->root,"y_offset",0.f);
       scale_relative = HLH_json_get_object_boolean(&root->root,"scale_relative",0);
@@ -1104,7 +1119,7 @@ void gui_load_preset(const char *path)
    else
    {
       blur_amount = 0;
-      sample_mode = 2;
+      sample_mode = 0;
       x_offset = 0.f;
       y_offset = 0.f;
       scale_relative = 0;
@@ -1177,7 +1192,7 @@ void gui_load_preset(const char *path)
    HLH_gui_slider_set(gui.slider_hue,(int)(hue+180.f),360,1,1);
    HLH_gui_slider_set(gui.slider_gamma,(int)(gamma*100.f),500,1,1);
    HLH_gui_slider_set(gui.slider_alpha_threshold,dither_config.alpha_threshold,255,1,1);
-   HLH_gui_slider_set(gui.slider_dither_amount,(int)(dither_config.dither_amount*500.f),500,1,1);
+   HLH_gui_slider_set(gui.slider_dither_amount,(int)(dither_config.dither_amount*500.f),250,1,1);
    HLH_gui_slider_set(gui.slider_palette_weight,dither_config.palette_weight,16,1,1);
    HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-1,255,1,1);
 
