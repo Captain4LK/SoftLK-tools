@@ -68,7 +68,7 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
 
          uint64_t dist_min = UINT64_MAX;
          int min_i = 0;
-         for(int c = 0;c<HLH_array_length(centers);c++)
+         for(int c = 0;c<(int)HLH_array_length(centers);c++)
          {
             int32_t r = centers[c]&255;
             int32_t g = (centers[c]>>8)&255;
@@ -99,7 +99,7 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
          uint64_t sum_r = 0;
          uint64_t sum_g = 0;
          uint64_t sum_b = 0;
-         for(int c = 0;c<HLH_array_length(clusters[j]);c++)
+         for(int c = 0;c<(int)HLH_array_length(clusters[j]);c++)
          {
             sum_r+=clusters[j][c]&255;
             sum_g+=(clusters[j][c]>>8)&255;
@@ -158,7 +158,7 @@ uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int col
 
          uint64_t dist_min = UINT64_MAX;
          int min_i = 0;
-         for(int c = 0;c<HLH_array_length(centers);c++)
+         for(int c = 0;c<(int)HLH_array_length(centers);c++)
          {
             int32_t r = centers[c]&255;
             int32_t g = (centers[c]>>8)&255;
@@ -189,7 +189,7 @@ uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int col
          uint64_t sum_r = 0;
          uint64_t sum_g = 0;
          uint64_t sum_b = 0;
-         for(int c = 0;c<HLH_array_length(clusters[j]);c++)
+         for(int c = 0;c<(int)HLH_array_length(clusters[j]);c++)
          {
             sum_r+=clusters[j][c]&255;
             sum_g+=(clusters[j][c]>>8)&255;
@@ -216,7 +216,7 @@ uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int col
    }
    
    uint32_t largest = palette[0];
-   int max_size = 0;
+   size_t max_size = 0;
    for(int i = 0;i<colors;i++)
    {
       if(HLH_array_length(clusters[i])>max_size)

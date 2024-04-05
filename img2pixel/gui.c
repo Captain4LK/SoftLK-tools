@@ -13,6 +13,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 
 #include "HLH_gui.h"
 #include "HLH.h"
@@ -51,6 +52,9 @@ typedef enum
    SLIDER_COLOR_RED,
    SLIDER_COLOR_GREEN,
    SLIDER_COLOR_BLUE,
+   SLIDER_TINT_RED,
+   SLIDER_TINT_GREEN,
+   SLIDER_TINT_BLUE,
 }Slider_id;
 
 typedef enum
@@ -96,6 +100,9 @@ static struct
    HLH_gui_slider *slider_color_red;
    HLH_gui_slider *slider_color_green;
    HLH_gui_slider *slider_color_blue;
+   HLH_gui_slider *slider_tint_red;
+   HLH_gui_slider *slider_tint_green;
+   HLH_gui_slider *slider_tint_blue;
 
    HLH_gui_group *group_palette;
 
@@ -129,6 +136,14 @@ static float hue = 0.f;
 static float gamma = 1.f;
 static int kmeanspp = 0;
 SLK_dither_config dither_config = {.alpha_threshold = 128};
+static uint8_t tint_red = 255;
+static uint8_t tint_green = 255;
+static uint8_t tint_blue = 255;
+
+//cached
+static SLK_image64 *cache_sample;
+static SLK_image64 *cache_sharp;
+static SLK_image64 *cache_tint;
 //-------------------------------------
 
 //Function prototypes
@@ -221,13 +236,13 @@ void gui_construct(void)
       gui_groups_sample[1] = HLH_gui_group_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X);
       HLH_gui_label_create(&gui_groups_sample[1]->e,0,"Scale X");
       slider = HLH_gui_slider_create(&gui_groups_sample[1]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,16,0,0);
+      HLH_gui_slider_set(slider,1,32,0,0);
       slider->e.msg_usr = slider_msg;
       slider->e.usr = SLIDER_SCALE_X;
       gui.slider_scale_x = slider;
       HLH_gui_label_create(&gui_groups_sample[1]->e,0,"Scale Y");
       slider = HLH_gui_slider_create(&gui_groups_sample[1]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,16,0,0);
+      HLH_gui_slider_set(slider,1,32,0,0);
       slider->e.msg_usr = slider_msg;
       slider->e.usr = SLIDER_SCALE_Y;
       gui.slider_scale_y = slider;
@@ -257,14 +272,6 @@ void gui_construct(void)
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[0] = r;
       HLH_gui_radiobutton *first = r;
-      //r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Floor   ",NULL);
-      //r->e.usr = 1;
-      //r->e.msg_usr = radiobutton_sample_msg;
-      //gui.sample_sample_mode[1] = r;
-      //r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Ceil    ",NULL);
-      //r->e.usr = 2;
-      //r->e.msg_usr = radiobutton_sample_msg;
-      //gui.sample_sample_mode[2] = r;
       r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bilinear",NULL);
       r->e.usr = 1;
       r->e.msg_usr = radiobutton_sample_msg;
@@ -546,6 +553,29 @@ void gui_construct(void)
       gui.slider_gamma = slider;
 
       HLH_gui_label_create(&gui_groups_left[3]->e,0,"                                ");
+      HLH_gui_separator_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
+      HLH_gui_label_create(&gui_groups_left[3]->e,0,"                                ");
+
+      HLH_gui_label_create(&gui_groups_left[3]->e,0,"Tint red");
+      slider = HLH_gui_slider_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
+      HLH_gui_slider_set(slider,1,256,0,0);
+      slider->e.msg_usr = slider_msg;
+      slider->e.usr = SLIDER_TINT_RED;
+      gui.slider_tint_red = slider;
+
+      HLH_gui_label_create(&gui_groups_left[3]->e,0,"Tint green");
+      slider = HLH_gui_slider_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
+      HLH_gui_slider_set(slider,1,256,0,0);
+      slider->e.msg_usr = slider_msg;
+      slider->e.usr = SLIDER_TINT_GREEN;
+      gui.slider_tint_green = slider;
+
+      HLH_gui_label_create(&gui_groups_left[3]->e,0,"Tint blue");
+      slider = HLH_gui_slider_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
+      HLH_gui_slider_set(slider,1,256,0,0);
+      slider->e.msg_usr = slider_msg;
+      slider->e.usr = SLIDER_TINT_BLUE;
+      gui.slider_tint_blue = slider;
    }
    //-------------------------------------
 
@@ -684,7 +714,10 @@ static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          const char *palette = palette_load_select();
          SLK_palette_load(palette,dither_config.palette,&dither_config.palette_colors);
+         block_process = 1;
          HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-1,255,1,1);
+         block_process = 0;
+         gui_process();
       }
    }
 
@@ -700,6 +733,9 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Image
       if(m->index==0)
       {
+         if(gui_output==NULL)
+            return 0;
+
          const char *image = image_save_select();
          HLH_gui_image_save(image,gui_output->data,gui_output->w,gui_output->h);
       }
@@ -734,6 +770,9 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          HLH_json_object_add_boolean(&root->root,"dither_use_kmeans",dither_config.use_kmeans);
          HLH_json_object_add_integer(&root->root,"dither_dither_mode",dither_config.dither_mode);
          HLH_json_object_add_integer(&root->root,"dither_color_dist",dither_config.color_dist);
+         HLH_json_object_add_integer(&root->root,"tint_red",tint_red);
+         HLH_json_object_add_integer(&root->root,"tint_green",tint_green);
+         HLH_json_object_add_integer(&root->root,"tint_blue",tint_blue);
          HLH_json_object_add_integer(&root->root,"dither_palette_colors",dither_config.palette_colors);
          HLH_json5 array = HLH_json_create_array();
          for(int i = 0;i<256;i++)
@@ -872,6 +911,21 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          uint32_t c = dither_config.palette[color_selected];
          dither_config.palette[color_selected] = (SLK_color32_r(c))|(SLK_color32_g(c)<<8)|((uint32_t)s->value<<16)|(SLK_color32_a(c)<<24);
          HLH_gui_element_redraw(&gui.group_palette->e);
+         gui_process();
+      }
+      else if(s->e.usr==SLIDER_TINT_RED)
+      {
+         tint_red = s->value;
+         gui_process();
+      }
+      else if(s->e.usr==SLIDER_TINT_GREEN)
+      {
+         tint_green = s->value;
+         gui_process();
+      }
+      else if(s->e.usr==SLIDER_TINT_BLUE)
+      {
+         tint_blue = s->value;
          gui_process();
       }
    }
@@ -1026,7 +1080,7 @@ static int button_palette_gen_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {
-      SLK_image32_kmeans(gui_input,dither_config.palette,dither_config.palette_colors,0);
+      SLK_image32_kmeans(gui_input,dither_config.palette,dither_config.palette_colors,time(NULL));
       HLH_gui_element_redraw(&gui.group_palette->e);
       gui_process();
    }
@@ -1046,7 +1100,6 @@ static void gui_process()
 
    SLK_image64 *img = SLK_image64_dup32(gui_input);
    SLK_image64_blur(img,blur_amount/16.f);
-   SLK_image64_sharpen(img,sharp_amount);
 
    int width = 0;
    int height = 0;
@@ -1061,15 +1114,16 @@ static void gui_process()
       height = size_absolute_y;
    }
    SLK_image64 *sampled = SLK_image64_sample(img,width,height,sample_mode,x_offset,y_offset);
+   SLK_image64_sharpen(sampled,sharp_amount);
 
    SLK_image64_hscb(sampled,hue,saturation,contrast,brightness);
    SLK_image64_gamma(sampled,gamma);
+   SLK_image64_tint(sampled,tint_red,tint_green,tint_blue);
    gui_output = SLK_image64_dither(sampled,&dither_config);
    free(img);
    free(sampled);
 
    HLH_gui_imgcmp_update1(gui_imgcmp,gui_output->data,gui_output->w,gui_output->h,1);
-   //free(dithered);
 }
 
 void gui_load_preset(const char *path)
@@ -1100,6 +1154,9 @@ void gui_load_preset(const char *path)
       hue = HLH_json_get_object_real(&root->root,"hue",0.f);
       gamma = HLH_json_get_object_real(&root->root,"gamma",1.f);
       kmeanspp = HLH_json_get_object_boolean(&root->root,"kmeanspp",1);
+      tint_red = HLH_json_get_object_integer(&root->root,"tint_red",255);
+      tint_green = HLH_json_get_object_integer(&root->root,"tint_green",255);
+      tint_blue = HLH_json_get_object_integer(&root->root,"tint_blue",255);
       dither_config.alpha_threshold = HLH_json_get_object_integer(&root->root,"dither_alpha_threshold",128);
       dither_config.dither_amount = HLH_json_get_object_real(&root->root,"dither_dither_amount",0.2f);
       dither_config.palette_weight = HLH_json_get_object_integer(&root->root,"dither_palette_weight",2);
@@ -1135,6 +1192,9 @@ void gui_load_preset(const char *path)
       gamma = 1.f;
       color_selected = 0;
       kmeanspp = 1;
+      tint_red = 255;
+      tint_green = 255;
+      tint_blue = 255;
       dither_config.alpha_threshold = 128;
       dither_config.dither_amount = 0.2f;
       dither_config.palette_weight = 2;
@@ -1183,8 +1243,8 @@ void gui_load_preset(const char *path)
    HLH_gui_slider_set(gui.slider_y_off,(int)(y_offset*500.f),500,1,1);
    HLH_gui_slider_set(gui.slider_width,size_absolute_x,512,1,1);
    HLH_gui_slider_set(gui.slider_height,size_absolute_y,512,1,1);
-   HLH_gui_slider_set(gui.slider_scale_x,size_relative_x-1,15,1,1);
-   HLH_gui_slider_set(gui.slider_scale_y,size_relative_y-1,15,1,1);
+   HLH_gui_slider_set(gui.slider_scale_x,size_relative_x-1,31,1,1);
+   HLH_gui_slider_set(gui.slider_scale_y,size_relative_y-1,31,1,1);
    HLH_gui_slider_set(gui.slider_sharp,(int)(sharp_amount*500.f),500,1,1);
    HLH_gui_slider_set(gui.slider_brightness,(int)(brightness*250.f+250.f),500,1,1);
    HLH_gui_slider_set(gui.slider_contrast,(int)(contrast*100.f),500,1,1);
@@ -1195,6 +1255,9 @@ void gui_load_preset(const char *path)
    HLH_gui_slider_set(gui.slider_dither_amount,(int)(dither_config.dither_amount*500.f),250,1,1);
    HLH_gui_slider_set(gui.slider_palette_weight,dither_config.palette_weight,16,1,1);
    HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-1,255,1,1);
+   HLH_gui_slider_set(gui.slider_tint_red,tint_red,255,1,1);
+   HLH_gui_slider_set(gui.slider_tint_green,tint_green,255,1,1);
+   HLH_gui_slider_set(gui.slider_tint_blue,tint_blue,255,1,1);
 
    HLH_gui_radiobutton_set(gui.sample_sample_mode[sample_mode],1,1);
    HLH_gui_radiobutton_set(gui.sample_scale_mode[scale_relative],1,1);

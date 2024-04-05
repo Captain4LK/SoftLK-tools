@@ -1,7 +1,7 @@
 /*
 SLK_img2pixel - a tool for converting images to pixelart
 
-Written in 2021,2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2021,2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -11,6 +11,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //External includes
 #include <stdlib.h>
 #include <stdint.h>
+
+#include "HLH.h"
 //-------------------------------------
 
 //Internal includes
@@ -43,17 +45,19 @@ void SLK_image64_sharpen(SLK_image64 *img, float amount)
 
    for(int i = 0;i<img->w*img->h;i++)
    {
-      int32_t r = img->data[i]&0xffff;
-      int32_t rb = blur->data[i]&0xffff;
-      int32_t g = (img->data[i]>>16)&0xffff;
-      int32_t gb = (blur->data[i]>>16)&0xffff;
-      int32_t b = (img->data[i]>>32)&0xffff;
-      int32_t bb = (blur->data[i]>>32)&0xffff;
+      int32_t r = SLK_color64_r(img->data[i]);
+      int32_t rb = SLK_color64_r(blur->data[i]);
+      int32_t g = SLK_color64_g(img->data[i]);
+      int32_t gb = SLK_color64_g(blur->data[i]);
+      int32_t b = SLK_color64_b(img->data[i]);
+      int32_t bb = SLK_color64_b(blur->data[i]);
 
-      img->data[i]&=UINT64_C(0xffff000000000000);
-      img->data[i]|=r+((r-rb)*amount_fixed)/256;
-      img->data[i]|=(g+((g-gb)*amount_fixed)/256)>>16;
-      img->data[i]|=(b+((b-bb)*amount_fixed)/256)>>16;
+      uint64_t cr = HLH_max(0,HLH_min(0x7fff,r+((r-rb)*amount_fixed)/256));
+      uint64_t cg = HLH_max(0,HLH_min(0x7fff,g+((g-gb)*amount_fixed)/256));
+      uint64_t cb = HLH_max(0,HLH_min(0x7fff,b+((b-bb)*amount_fixed)/256));
+      uint64_t ca = SLK_color64_a(img->data[i]);
+
+      img->data[i] = cr|(cg<<16)|(cb<<32)|(ca<<48);
    }
 
    free(blur);

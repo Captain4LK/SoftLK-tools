@@ -169,7 +169,7 @@ static SLK_image32 *slk_dither_closest(SLK_image64 *img, const SLK_dither_config
       for(int x = 0;x<img->w;x++)
       {
          uint64_t p = img->data[y*img->w+x];
-         if(SLK_color64_a(p)/128<config->alpha_threshold)
+         if((int)(SLK_color64_a(p)/128)<config->alpha_threshold)
          {
             out->data[y*img->w+x] = 0;
             continue;
@@ -269,7 +269,7 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
          double sum_c2 = 0.;
 
          double length = (double)HLH_array_length(clusters[j]);
-         for(int c = 0;c<HLH_array_length(clusters[j]);c++)
+         for(int c = 0;c<(int)HLH_array_length(clusters[j]);c++)
          {
             sum_c0+=clusters[j][c].c0;
             sum_c1+=clusters[j][c].c1;
@@ -322,7 +322,7 @@ static SLK_image32 *slk_dither_none(SLK_image64 *img, const SLK_dither_config *c
       for(int x = 0;x<img->w;x++)
       {
          uint64_t p = img->data[y*img->w+x];
-         if(SLK_color64_a(p)/128<config->alpha_threshold)
+         if((int)(SLK_color64_a(p)/128)<config->alpha_threshold)
          {
             out->data[y*img->w+x] = 0;
             continue;
@@ -362,7 +362,7 @@ static SLK_image32 *slk_dither_floyd(SLK_image64 *img, const SLK_dither_config *
       for(int x = 0;x<img->w;x++)
       {
          uint64_t p = img->data[y*img->w+x];
-         if(SLK_color64_a(p)/128<config->alpha_threshold)
+         if((int)(SLK_color64_a(p)/128)<config->alpha_threshold)
          {
             out->data[y*img->w+x] = 0;
             continue;
@@ -393,7 +393,7 @@ static SLK_image32 *slk_dither_floyd2(SLK_image64 *img, const SLK_dither_config 
       for(int x = 0;x<img->w;x++)
       {
          uint64_t p = img->data[y*img->w+x];
-         if(SLK_color64_a(p)/128<config->alpha_threshold)
+         if((int)(SLK_color64_a(p)/128)<config->alpha_threshold)
          {
             out->data[y*img->w+x] = 0;
             continue;

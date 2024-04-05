@@ -87,6 +87,7 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
 uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed);
 void SLK_image64_hscb(SLK_image64 *img, float hue, float saturation, float contrast, float brightness);
 void SLK_image64_gamma(SLK_image64 *img, float gamma);
+void SLK_image64_tint(SLK_image64 *img, uint8_t tint_r, uint8_t tint_g, uint8_t tint_b);
 SLK_image32 *SLK_image32_postprocess(SLK_image32 *img, uint32_t *color_inline, uint32_t *color_outline);
 SLK_image64 *SLK_image64_sample(const SLK_image64 *img, int width, int height, int sample_mode, float x_off, float y_off);
 //modifies input image!

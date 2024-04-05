@@ -32,8 +32,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function prototypes
 static SLK_image64 *slk_sample_nearest(const SLK_image64 *img, int width, int height, float x_off, float y_off);
-//static SLK_image64 *slk_sample_floor(const SLK_image64 *img, int width, int height, float x_off, float y_off);
-//static SLK_image64 *slk_sample_ceil(const SLK_image64 *img, int width, int height, float x_off, float y_off);
 static SLK_image64 *slk_sample_linear(const SLK_image64 *img, int width, int height, float x_off, float y_off);
 static SLK_image64 *slk_sample_bicubic(const SLK_image64 *img, int width, int height, float x_off, float y_off);
 static SLK_image64 *slk_sample_lanczos(const SLK_image64 *img, int width, int height, float x_off, float y_off);
@@ -53,8 +51,6 @@ SLK_image64 *SLK_image64_sample(const SLK_image64 *img, int width, int height, i
    switch(sample_mode)
    {
    case 0: return slk_sample_nearest(img,width,height,x_off,y_off);
-   //case 1: return slk_sample_floor(img,width,height,x_off,y_off);
-   //case 2: return slk_sample_ceil(img,width,height,x_off,y_off);
    case 1: return slk_sample_linear(img,width,height,x_off,y_off);
    case 2: return slk_sample_bicubic(img,width,height,x_off,y_off);
    case 3: return slk_sample_lanczos(img,width,height,x_off,y_off);
@@ -77,56 +73,10 @@ static SLK_image64 *slk_sample_nearest(const SLK_image64 *img, int width, int he
    {
       for(int x = 0;x<width;x++)
       {
-         float dx = x+x_off;
-         float dy = y+y_off;
+         float dx = x+x_off+0.5f;
+         float dy = y+y_off+0.5f;
 
-         out->data[y*width+x] = img->data[(int)ceilf(dy*h)*img->w+(int)ceilf(dx*w)];
-      }
-   }
-
-   return out;
-}
-
-static SLK_image64 *slk_sample_floor(const SLK_image64 *img, int width, int height, float x_off, float y_off)
-{
-   SLK_image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
-   out->w = width;
-   out->h = height;
-
-   float w = (img->w-1)/(float)width;
-   float h = (img->h-1)/(float)height;
-
-   for(int y = 0;y<height;y++)
-   {
-      for(int x = 0;x<width;x++)
-      {
-         float dx = x+x_off;
-         float dy = y+y_off;
-
-         out->data[y*width+x] = img->data[(int)floorf(dy*h)*img->w+(int)floorf(dx*w)];
-      }
-   }
-
-   return out;
-}
-
-static SLK_image64 *slk_sample_ceil(const SLK_image64 *img, int width, int height, float x_off, float y_off)
-{
-   SLK_image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
-   out->w = width;
-   out->h = height;
-
-   float w = (img->w-1)/(float)width;
-   float h = (img->h-1)/(float)height;
-
-   for(int y = 0;y<height;y++)
-   {
-      for(int x = 0;x<width;x++)
-      {
-         float dx = x+x_off;
-         float dy = y+y_off;
-
-         out->data[y*width+x] = img->data[(int)ceilf(dy*h)*img->w+(int)ceilf(dx*w)];
+         out->data[y*width+x] = img->data[(int)roundf(dy*h)*img->w+(int)roundf(dx*w)];
       }
    }
 
@@ -176,43 +126,6 @@ static SLK_image64 *slk_sample_linear(const SLK_image64 *img, int width, int hei
          uint64_t a = HLH_max(0,HLH_min(0x7fff,(int)c3));
 
          out->data[y*out->w+x] = (r)|(g<<16)|(b<<32)|(a<<48);
-
-#if 0
-   //color = ((color&0xff000000)<<24) 
-         //float c0 = (float)(
-
-         SLK_Color c;
-         SLK_Color c1,c2,c3,c4;
-         c1 = SLK_rgb_sprite_get_pixel(in,ix,iy);
-         c2 = SLK_rgb_sprite_get_pixel(in,ix+1,iy);
-         c3 = SLK_rgb_sprite_get_pixel(in,ix,iy+1);
-         c4 = SLK_rgb_sprite_get_pixel(in,ix+1,iy+1);
-
-         //r value
-         float c1t = ((1.0f-six)*(float)c1.rgb.r+six*(float)c2.rgb.r);
-         float c2t = ((1.0f-six)*(float)c3.rgb.r+six*(float)c4.rgb.r);
-         c.rgb.r = (int)((1.0f-siy)*c1t+siy*c2t);
-
-         //g value
-         c1t = ((1.0f-six)*(float)c1.rgb.g+six*(float)c2.rgb.g);
-         c2t = ((1.0f-six)*(float)c3.rgb.g+six*(float)c4.rgb.g);
-         c.rgb.g = (int)((1.0f-siy)*c1t+siy*c2t);
-
-         //b value
-         c1t = ((1.0f-six)*(float)c1.rgb.b+six*(float)c2.rgb.b);
-         c2t = ((1.0f-six)*(float)c3.rgb.b+six*(float)c4.rgb.b);
-         c.rgb.b = (int)((1.0f-siy)*c1t+siy*c2t);
-
-         //a value
-         c1t = ((1.0f-six)*(float)c1.rgb.a+six*(float)c2.rgb.a);
-         c2t = ((1.0f-six)*(float)c3.rgb.a+six*(float)c4.rgb.a);
-         c.rgb.a = (int)((1.0f-siy)*c1t+siy*c2t);
-
-         out[y*width+x].rgb.r = c.rgb.r;
-         out[y*width+x].rgb.b = c.rgb.b;
-         out[y*width+x].rgb.g = c.rgb.g;
-         out[y*width+x].rgb.a = c.rgb.a;
-#endif
       }
    }
 
@@ -322,69 +235,6 @@ static SLK_image64 *slk_sample_bicubic(const SLK_image64 *img, int width, int he
          uint64_t a = HLH_max(0,HLH_min(0x7fff,(int)slk_blend_bicubic(c0,c1,c2,c3,siy)));
 
          out->data[y*out->w+x] = (r)|(g<<16)|(b<<32)|(a<<48);
-#if 0
-         int ix = (int)(((float)x+foffx)*fw);
-         int iy = (int)(((float)y+foffy)*fh);
-         float six = (((float)x+foffx)*fw)-(float)ix;
-         float siy = (((float)y+foffy)*fh)-(float)iy;
-
-         SLK_Color c00,c10,c20,c30;
-         SLK_Color c01,c11,c21,c31;
-         SLK_Color c02,c12,c22,c32;
-         SLK_Color c03,c13,c23,c33;
-
-         c00 = SLK_rgb_sprite_get_pixel(in,ix-1,iy-1);
-         c10 = SLK_rgb_sprite_get_pixel(in,ix,iy-1);
-         c20 = SLK_rgb_sprite_get_pixel(in,ix+1,iy-1);
-         c30 = SLK_rgb_sprite_get_pixel(in,ix+2,iy-1);
-
-         c01 = SLK_rgb_sprite_get_pixel(in,ix-1,iy);
-         c11 = SLK_rgb_sprite_get_pixel(in,ix,iy);
-         c21 = SLK_rgb_sprite_get_pixel(in,ix+1,iy);
-         c31 = SLK_rgb_sprite_get_pixel(in,ix+2,iy);
-
-         c02 = SLK_rgb_sprite_get_pixel(in,ix-1,iy+1);
-         c12 = SLK_rgb_sprite_get_pixel(in,ix,iy+1);
-         c22 = SLK_rgb_sprite_get_pixel(in,ix+1,iy+1);
-         c32 = SLK_rgb_sprite_get_pixel(in,ix+2,iy+1);
-
-         c03 = SLK_rgb_sprite_get_pixel(in,ix-1,iy+2);
-         c13 = SLK_rgb_sprite_get_pixel(in,ix,iy+2);
-         c23 = SLK_rgb_sprite_get_pixel(in,ix+1,iy+2);
-         c33 = SLK_rgb_sprite_get_pixel(in,ix+2,iy+2);
-
-         //r value
-         float c0 = cubic_hermite((float)c00.rgb.r,(float)c10.rgb.r,(float)c20.rgb.r,(float)c30.rgb.r,six);
-         float c1 = cubic_hermite((float)c01.rgb.r,(float)c11.rgb.r,(float)c21.rgb.r,(float)c31.rgb.r,six);
-         float c2 = cubic_hermite((float)c02.rgb.r,(float)c12.rgb.r,(float)c22.rgb.r,(float)c32.rgb.r,six);
-         float c3 = cubic_hermite((float)c03.rgb.r,(float)c13.rgb.r,(float)c23.rgb.r,(float)c33.rgb.r,six);
-         float val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].rgb.r = HLH_max(0x0,HLH_min(0xff,(int)val));
-
-         //g value
-         c0 = cubic_hermite((float)c00.rgb.g,(float)c10.rgb.g,(float)c20.rgb.g,(float)c30.rgb.g,six);
-         c1 = cubic_hermite((float)c01.rgb.g,(float)c11.rgb.g,(float)c21.rgb.g,(float)c31.rgb.g,six);
-         c2 = cubic_hermite((float)c02.rgb.g,(float)c12.rgb.g,(float)c22.rgb.g,(float)c32.rgb.g,six);
-         c3 = cubic_hermite((float)c03.rgb.g,(float)c13.rgb.g,(float)c23.rgb.g,(float)c33.rgb.g,six);
-         val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].rgb.g = HLH_max(0x0,HLH_min(0xff,(int)val));
-
-         //b value
-         c0 = cubic_hermite((float)c00.rgb.b,(float)c10.rgb.b,(float)c20.rgb.b,(float)c30.rgb.b,six);
-         c1 = cubic_hermite((float)c01.rgb.b,(float)c11.rgb.b,(float)c21.rgb.b,(float)c31.rgb.b,six);
-         c2 = cubic_hermite((float)c02.rgb.b,(float)c12.rgb.b,(float)c22.rgb.b,(float)c32.rgb.b,six);
-         c3 = cubic_hermite((float)c03.rgb.b,(float)c13.rgb.b,(float)c23.rgb.b,(float)c33.rgb.b,six);
-         val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].rgb.b = HLH_max(0x0,HLH_min(0xff,(int)val));
-
-         //a value
-         c0 = cubic_hermite((float)c00.rgb.a,(float)c10.rgb.a,(float)c20.rgb.a,(float)c30.rgb.a,six);
-         c1 = cubic_hermite((float)c01.rgb.a,(float)c11.rgb.a,(float)c21.rgb.a,(float)c31.rgb.a,six);
-         c2 = cubic_hermite((float)c02.rgb.a,(float)c12.rgb.a,(float)c22.rgb.a,(float)c32.rgb.a,six);
-         c3 = cubic_hermite((float)c03.rgb.a,(float)c13.rgb.a,(float)c23.rgb.a,(float)c33.rgb.a,six);
-         val = cubic_hermite(c0,c1,c2,c3,siy);
-         out[y*width+x].rgb.a = HLH_max(0x0,HLH_min(0xff,(int)val));
-#endif
       }
    }
 
