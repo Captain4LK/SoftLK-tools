@@ -138,7 +138,7 @@ static void slk_hue(uint64_t *color, float hue)
       while(h<0.f) h+=360.f;
       while(h>360.f) h-=360.f;
 
-      float c = v-s;
+      float c = v*s;
       float x = c*(1.f-fabsf(fmodf(h/60.f,2.f)-1.f));
       float m = v-c;
 

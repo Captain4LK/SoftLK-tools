@@ -264,6 +264,25 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
       //Recalculate centers
       for(int j = 0;j<config->palette_colors;j++)
       {
+         if(HLH_array_length(clusters[j])==0)
+         {
+            slk_color3f c = {0};
+            switch(config->color_dist)
+            {
+            case SLK_RGB_EUCLIDIAN:
+            case SLK_RGB_WEIGHTED:
+            case SLK_RGB_REDMEAN:
+               slk_color32_to_rgb(config->palette[j],&c.c0,&c.c1,&c.c2);
+               break;
+            case SLK_LAB_CIE76:
+            case SLK_LAB_CIE94:
+            case SLK_LAB_CIEDE2000:
+               slk_color32_to_lab(config->palette[j],&c.c0,&c.c1,&c.c2);
+               break;
+            }
+            centers[j] = c;
+            continue;
+         }
          double sum_c0 = 0.;
          double sum_c1 = 0.;
          double sum_c2 = 0.;
