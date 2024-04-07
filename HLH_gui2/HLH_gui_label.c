@@ -58,7 +58,7 @@ static int label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    {}
    else if(msg==HLH_GUI_MSG_DRAW)
    {
-      HLH_gui_draw_string(e, e->bounds, label->text, label->text_len, 0x000000, 1);
+      HLH_gui_draw_string(e, e->bounds, label->text, label->text_len, 0x1f1f1f, 1);
    }
    else if(msg==HLH_GUI_MSG_DESTROY)
    {

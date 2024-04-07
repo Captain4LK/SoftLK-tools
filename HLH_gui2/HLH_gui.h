@@ -40,6 +40,9 @@ typedef enum
    HLH_GUI_MSG_BUTTON_REPEAT = 11,
    HLH_GUI_MSG_BUTTON_UP = 12,
    HLH_GUI_MSG_TIMER = 13,
+   HLH_GUI_MSG_TEXTINPUT = 14,
+   HLH_GUI_MSG_TEXTINPUT_END = 15,
+   HLH_GUI_MSG_USER_START = 16,
 }HLH_gui_msg;
 
 typedef struct
@@ -283,6 +286,23 @@ typedef struct
    SDL_Texture *img1;
 }HLH_gui_imgcmp;
 
+typedef struct
+{
+   HLH_gui_element e;
+
+   char *entry;
+   int len;
+   int max_len;
+   int state;
+}HLH_gui_entry;
+
+typedef struct
+{
+   int type; //0 --> char; 1 --> keycode
+   char ch;
+   SDL_Keycode keycode;
+}HLH_gui_textinput;
+
 void HLH_gui_init(void);
 HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height, const char *path_icon);
 int HLH_gui_message_loop(void);
@@ -292,6 +312,8 @@ void HLH_gui_handle_mouse(HLH_gui_element *e, HLH_gui_mouse m);
 void HLH_gui_window_close(HLH_gui_window *win);
 void HLH_gui_overlay_clear(HLH_gui_element *e);
 void HLH_gui_window_block(HLH_gui_window *root, HLH_gui_window *blocking);
+void HLH_gui_textinput_start(HLH_gui_element *e);
+void HLH_gui_textinput_stop(HLH_gui_window *w);
 
 //Element
 HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, uint64_t flags, HLH_gui_msg_handler msg_handler);
@@ -360,6 +382,10 @@ void HLH_gui_img_update(HLH_gui_image *img, uint32_t *pix, int width, int height
 HLH_gui_imgcmp *HLH_gui_imgcmp_create(HLH_gui_element *parent, uint64_t flags, uint32_t *pix0, int width0, int height0, uint32_t *pix1, int width1, int height1);
 void HLH_gui_imgcmp_update0(HLH_gui_imgcmp *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), repack needed!!!
 void HLH_gui_imgcmp_update1(HLH_gui_imgcmp *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), repack needed!!!
+
+//Entry
+HLH_gui_entry *HLH_gui_entry_create(HLH_gui_element *parent, uint64_t flags, int max_len);
+void HLH_gui_entry_set(HLH_gui_entry *entry, char *text);
 
 //Utils
 uint32_t *HLH_gui_image_load(const char *path, int *width, int *height);

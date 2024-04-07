@@ -16,6 +16,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //#defines
+#define hlh_gui_max(a, b) ((a)>(b)?(a):(b))
+#define hlh_gui_min(a, b) ((a)<(b)?(a):(b))
 //-------------------------------------
 
 //Typedefs
@@ -45,7 +47,7 @@ void HLH_gui_slider_set(HLH_gui_slider *slider, int value, int range, int trigge
 {
    if(slider->value!=value||slider->range!=range)
    {
-      slider->value = value;
+      slider->value = hlh_gui_max(0,hlh_gui_min(range,value));
       slider->range = range;
 
       if(trigger_msg)
@@ -153,4 +155,7 @@ static void slider_draw(HLH_gui_slider *s)
       HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.minx + 3 * scale, bounds.maxy - 3 * scale - height, bounds.maxx - 3 * scale, bounds.maxy - 3 * scale), 0xff323232);
    }
 }
+
+#undef hlh_gui_min
+#undef hlh_gui_max
 //-------------------------------------

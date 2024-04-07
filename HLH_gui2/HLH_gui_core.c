@@ -39,6 +39,7 @@ static HLH_gui_window **core_windows;
 static int core_scale = 1;
 static SDL_Surface *core_font_surface;
 uint32_t HLH_gui_timer_event = 0;
+static int textinput_count = 0;
 
 static const uint64_t core_font[] =
 {
@@ -324,6 +325,15 @@ int HLH_gui_message_loop(void)
             if(win==NULL)
                continue;
 
+            if(win->keyboard!=NULL)
+            {
+               HLH_gui_textinput in = {0};
+               in.type = 1;
+               in.keycode = event.key.keysym.sym;
+               HLH_gui_element_msg(win->keyboard,HLH_GUI_MSG_TEXTINPUT,0,&in);
+               continue;
+            }
+
             if(event.key.repeat)
                HLH_gui_element_msg_all(&win->e, HLH_GUI_MSG_BUTTON_REPEAT, event.key.keysym.scancode, NULL);
             else
@@ -372,6 +382,26 @@ int HLH_gui_message_loop(void)
          case SDL_BUTTON_MIDDLE: mouse.button &= ~HLH_GUI_MOUSE_MIDDLE; break;
          }
          HLH_gui_handle_mouse(&win->e, mouse);
+
+         break;
+      case SDL_TEXTINPUT:
+         win = core_find_window(SDL_GetWindowFromID(event.text.windowID));
+         if(win==NULL||win->keyboard==NULL)
+            continue;
+
+         for(int i = 0;i<strlen(event.text.text);i++)
+         {
+            HLH_gui_textinput in = {0};
+            in.type = 0;
+            in.ch = event.text.text[i];
+            HLH_gui_element_msg(win->keyboard,HLH_GUI_MSG_TEXTINPUT,0,&in);
+         }
+
+         break;
+      case SDL_TEXTEDITING:
+         win = core_find_window(SDL_GetWindowFromID(event.edit.windowID));
+         if(win==NULL||win->keyboard==NULL)
+            continue;
 
          break;
       }
@@ -458,6 +488,41 @@ void HLH_gui_overlay_clear(HLH_gui_element *e)
 void HLH_gui_window_block(HLH_gui_window *root, HLH_gui_window *blocking)
 {
    root->blocking = blocking;
+}
+
+void HLH_gui_textinput_start(HLH_gui_element *e)
+{
+   if(e==NULL)
+      return;
+
+   HLH_gui_textinput_stop(e->window);
+
+   e->window->keyboard = e;
+   if(textinput_count<=0)
+   {
+      textinput_count = 0;
+      SDL_StartTextInput();
+   }
+
+   textinput_count++;
+}
+
+void HLH_gui_textinput_stop(HLH_gui_window *w)
+{
+   if(w==NULL)
+      return;
+
+   if(w->keyboard!=NULL)
+   {
+      HLH_gui_element_msg(w->keyboard,HLH_GUI_MSG_TEXTINPUT_END,0,NULL);
+      w->keyboard = NULL;
+      textinput_count--;
+      if(textinput_count<=0)
+      {
+         textinput_count = 0;
+         SDL_StopTextInput();
+      }
+   }
 }
 
 uint32_t *HLH_gui_image_load(const char *path, int *width, int *height)

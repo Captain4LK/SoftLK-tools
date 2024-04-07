@@ -27,6 +27,23 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //#defines
+#define SLIDER(root_group,type,type_enum) \
+   group = HLH_gui_group_create(root_group,HLH_GUI_FILL_X); \
+   slider = HLH_gui_slider_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_FIXED_X,0); \
+   slider->e.fixed_size.x = 196; \
+   HLH_gui_slider_set(slider,-1,1,0,0); \
+   slider->e.msg_usr = slider_msg; \
+   slider->e.usr = SLIDER_##type_enum; \
+   gui.slider_##type = slider; \
+   b = HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST,"<",NULL); \
+   b->e.msg_usr = button_sub_msg; \
+   b->e.usr = BUTTON_##type_enum; \
+   b = HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST,">",NULL); \
+   b->e.msg_usr = button_add_msg; \
+   b->e.usr = BUTTON_##type_enum; \
+   gui.entry_##type = HLH_gui_entry_create(&group->e,HLH_GUI_PACK_WEST,5); \
+   gui.entry_##type->e.msg_usr = entry_msg; \
+   gui.entry_##type->e.usr = ENTRY_##type_enum;
 //-------------------------------------
 
 //Typedefs
@@ -56,6 +73,60 @@ typedef enum
    SLIDER_TINT_GREEN,
    SLIDER_TINT_BLUE,
 }Slider_id;
+
+typedef enum
+{
+   BUTTON_BLUR,
+   BUTTON_X_OFF,
+   BUTTON_Y_OFF,
+   BUTTON_WIDTH,
+   BUTTON_HEIGHT,
+   BUTTON_SCALE_X,
+   BUTTON_SCALE_Y,
+   BUTTON_SHARP,
+   BUTTON_ALPHA_THRESHOLD,
+   BUTTON_DITHER_AMOUNT,
+   BUTTON_PALETTE_WEIGHT,
+   BUTTON_COLOR_COUNT,
+   BUTTON_COLOR_RED,
+   BUTTON_COLOR_GREEN,
+   BUTTON_COLOR_BLUE,
+   BUTTON_TINT_RED,
+   BUTTON_TINT_GREEN,
+   BUTTON_TINT_BLUE,
+   BUTTON_BRIGHTNESS,
+   BUTTON_CONTRAST,
+   BUTTON_SATURATION,
+   BUTTON_HUE,
+   BUTTON_GAMMA,
+}Button_id;
+
+typedef enum
+{
+   ENTRY_BLUR,
+   ENTRY_X_OFF,
+   ENTRY_Y_OFF,
+   ENTRY_WIDTH,
+   ENTRY_HEIGHT,
+   ENTRY_SCALE_X,
+   ENTRY_SCALE_Y,
+   ENTRY_SHARP,
+   ENTRY_ALPHA_THRESHOLD,
+   ENTRY_DITHER_AMOUNT,
+   ENTRY_PALETTE_WEIGHT,
+   ENTRY_COLOR_COUNT,
+   ENTRY_COLOR_RED,
+   ENTRY_COLOR_GREEN,
+   ENTRY_COLOR_BLUE,
+   ENTRY_TINT_RED,
+   ENTRY_TINT_GREEN,
+   ENTRY_TINT_BLUE,
+   ENTRY_BRIGHTNESS,
+   ENTRY_CONTRAST,
+   ENTRY_SATURATION,
+   ENTRY_HUE,
+   ENTRY_GAMMA,
+}Entry_id;
 
 typedef enum
 {
@@ -104,6 +175,30 @@ static struct
    HLH_gui_slider *slider_tint_green;
    HLH_gui_slider *slider_tint_blue;
 
+   HLH_gui_entry *entry_blur;
+   HLH_gui_entry *entry_x_off;
+   HLH_gui_entry *entry_y_off;
+   HLH_gui_entry *entry_width;
+   HLH_gui_entry *entry_height;
+   HLH_gui_entry *entry_scale_x;
+   HLH_gui_entry *entry_scale_y;
+   HLH_gui_entry *entry_sharp;
+   HLH_gui_entry *entry_alpha_threshold;
+   HLH_gui_entry *entry_dither_amount;
+   HLH_gui_entry *entry_palette_weight;
+   HLH_gui_entry *entry_color_count;
+   HLH_gui_entry *entry_color_red;
+   HLH_gui_entry *entry_color_green;
+   HLH_gui_entry *entry_color_blue;
+   HLH_gui_entry *entry_tint_red;
+   HLH_gui_entry *entry_tint_green;
+   HLH_gui_entry *entry_tint_blue;
+   HLH_gui_entry *entry_brightness;
+   HLH_gui_entry *entry_contrast;
+   HLH_gui_entry *entry_saturation;
+   HLH_gui_entry *entry_hue;
+   HLH_gui_entry *entry_gamma;
+
    HLH_gui_group *group_palette;
 
    HLH_gui_radiobutton *sample_sample_mode[5];
@@ -119,7 +214,7 @@ static struct
 //img2pixel
 static int block_process = 0;
 static int color_selected = 0;
-static int blur_amount = 0;
+static float blur_amount = 0;
 static int sample_mode = 0;
 static float x_offset = 0.f;
 static float y_offset = 0.f;
@@ -152,6 +247,9 @@ static int radiobutton_sample_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
 static int radiobutton_scale_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
@@ -216,45 +314,31 @@ void gui_construct(void)
    //Sample
    //-------------------------------------
    {
+      HLH_gui_button *b = NULL;
+      HLH_gui_slider *slider = NULL;
+      HLH_gui_group *group = NULL;
+
       gui_groups_left[0] = HLH_gui_group_create(&group_left->e,HLH_GUI_EXPAND);
-      HLH_gui_group *group = HLH_gui_group_create(&gui_groups_left[0]->e,0);
+      HLH_gui_group *group_relative = HLH_gui_group_create(&gui_groups_left[0]->e,0);
 
       gui_groups_sample[0] = HLH_gui_group_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X);
       HLH_gui_label_create(&gui_groups_sample[0]->e,0,"Width");
-      HLH_gui_slider *slider = HLH_gui_slider_create(&gui_groups_sample[0]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,512,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_WIDTH;
-      gui.slider_width = slider;
+      SLIDER(&gui_groups_sample[0]->e,width,WIDTH)
       HLH_gui_label_create(&gui_groups_sample[0]->e,0,"Height");
-      slider = HLH_gui_slider_create(&gui_groups_sample[0]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,512,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_HEIGHT;
-      gui.slider_height = slider;
+      SLIDER(&gui_groups_sample[0]->e,height,HEIGHT)
 
       gui_groups_sample[1] = HLH_gui_group_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X);
       HLH_gui_label_create(&gui_groups_sample[1]->e,0,"Scale X");
-      slider = HLH_gui_slider_create(&gui_groups_sample[1]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,32,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_SCALE_X;
-      gui.slider_scale_x = slider;
+      SLIDER(&gui_groups_sample[1]->e,scale_x,SCALE_X);
       HLH_gui_label_create(&gui_groups_sample[1]->e,0,"Scale Y");
-      slider = HLH_gui_slider_create(&gui_groups_sample[1]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,32,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_SCALE_Y;
-      gui.slider_scale_y = slider;
-      HLH_gui_element_ignore(&gui_groups_sample[0]->e,1);
-      HLH_gui_element_ignore(&gui_groups_sample[1]->e,1);
+      SLIDER(&gui_groups_sample[1]->e,scale_y,SCALE_Y);
 
-      HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_WEST,"Absolute",NULL);
+      HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_relative->e,HLH_GUI_PACK_WEST,"Absolute",NULL);
       r->e.usr = 0;
       r->e.msg_usr = radiobutton_scale_msg;
       gui.sample_scale_mode[0] = r;
       HLH_gui_radiobutton *r_first = r;
-      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_PACK_WEST,"Relative",NULL);
+      r = HLH_gui_radiobutton_create(&group_relative->e,HLH_GUI_PACK_WEST,"Relative",NULL);
       r->e.usr = 1;
       r->e.msg_usr = radiobutton_scale_msg;
       gui.sample_scale_mode[1] = r;
@@ -293,60 +377,36 @@ void gui_construct(void)
       gui_bar_sample = HLH_gui_menubar_create(&gui_groups_left[0]->e,0,HLH_GUI_PACK_WEST,bar_sample,(HLH_gui_element **)&group_sample,1,NULL);
 
       HLH_gui_label_create(&gui_groups_left[0]->e,0,"Sample x offset");
-      slider = HLH_gui_slider_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,500,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_X_OFF;
-      gui.slider_x_off = slider;
+      SLIDER(&gui_groups_left[0]->e,x_off,X_OFF)
       HLH_gui_label_create(&gui_groups_left[0]->e,0,"Sample y offset");
-      slider = HLH_gui_slider_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,500,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_Y_OFF;
-      gui.slider_y_off = slider;
+      SLIDER(&gui_groups_left[0]->e,y_off,Y_OFF)
 
       HLH_gui_label_create(&gui_groups_left[0]->e,0,"                                ");
       HLH_gui_separator_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X,0);
       HLH_gui_label_create(&gui_groups_left[0]->e,0,"                                ");
 
       HLH_gui_label_create(&gui_groups_left[0]->e,0,"Blur amount");
-      group = HLH_gui_group_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X);
-      slider = HLH_gui_slider_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_FIXED_X,0);
-      slider->e.fixed_size.x = 196;
-      HLH_gui_slider_set(slider,0,500,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_BLUR;
-      gui.slider_blur = slider;
-      HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST,"<",NULL);
-      HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST,">",NULL);
-      HLH_gui_label_create(&group->e,HLH_GUI_PACK_WEST,"01.00");
+      SLIDER(&gui_groups_left[0]->e,blur,BLUR)
 
       HLH_gui_label_create(&gui_groups_left[0]->e,0,"                                ");
       HLH_gui_separator_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X,0);
       HLH_gui_label_create(&gui_groups_left[0]->e,0,"                                ");
 
       HLH_gui_label_create(&gui_groups_left[0]->e,0,"Sharpen amount");
-      group = HLH_gui_group_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X);
-      slider = HLH_gui_slider_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_FIXED_X,0);
-      slider->e.fixed_size.x = 196;
-      HLH_gui_slider_set(slider,1,500,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_SHARP;
-      gui.slider_sharp = slider;
+      SLIDER(&gui_groups_left[0]->e,sharp,SHARP)
    }
    //-------------------------------------
 
    //Dither
    //-------------------------------------
    {
+      HLH_gui_button *b = NULL;
+      HLH_gui_slider *slider = NULL;
+      HLH_gui_group *group = NULL;
       gui_groups_left[1] = HLH_gui_group_create(&group_left->e,HLH_GUI_EXPAND);
 
       HLH_gui_label_create(&gui_groups_left[1]->e,0,"Alpha threshold");
-      HLH_gui_slider *slider = HLH_gui_slider_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,128,255,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_ALPHA_THRESHOLD;
-      gui.slider_alpha_threshold = slider;
+      SLIDER(&gui_groups_left[1]->e,alpha_threshold,ALPHA_THRESHOLD)
 
       HLH_gui_label_create(&gui_groups_left[1]->e,0,"                                ");
       HLH_gui_separator_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X,0);
@@ -393,11 +453,7 @@ void gui_construct(void)
       gui_bar_dither = HLH_gui_menubar_create(&gui_groups_left[1]->e,0,HLH_GUI_PACK_WEST,bar_dither,(HLH_gui_element **)&group_dither,1,NULL);
 
       HLH_gui_label_create(&gui_groups_left[1]->e,0,"Dither amount");
-      slider = HLH_gui_slider_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,250,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_DITHER_AMOUNT;
-      gui.slider_dither_amount = slider;
+      SLIDER(&gui_groups_left[1]->e,dither_amount,DITHER_AMOUNT)
 
       HLH_gui_label_create(&gui_groups_left[1]->e,0,"Distance metric");
 
@@ -437,11 +493,7 @@ void gui_construct(void)
       gui.dither_kmeans = c;
       gui_group_kmeans = HLH_gui_group_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X);
       HLH_gui_label_create(&gui_group_kmeans->e,0,"Palette weight");
-      slider = HLH_gui_slider_create(&gui_group_kmeans->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,16,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_PALETTE_WEIGHT;
-      gui.slider_palette_weight = slider;
+      SLIDER(&gui_group_kmeans->e,palette_weight,PALETTE_WEIGHT)
       HLH_gui_element_ignore(&gui_group_kmeans->e,1);
    }
    //-------------------------------------
@@ -449,6 +501,9 @@ void gui_construct(void)
    //Palette
    //-------------------------------------
    {
+      HLH_gui_button *b = NULL;
+      HLH_gui_slider *slider = NULL;
+      HLH_gui_group *group = NULL;
       gui_groups_left[2] = HLH_gui_group_create(&group_left->e,HLH_GUI_EXPAND);
 
       //Palette buttons
@@ -474,36 +529,20 @@ void gui_construct(void)
       }
 
       HLH_gui_label_create(&gui_groups_left[2]->e,0,"Red");
-      HLH_gui_slider *slider = HLH_gui_slider_create(&gui_groups_left[2]->e,HLH_GUI_FILL_X,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_COLOR_RED;
-      HLH_gui_slider_set(slider,1,256,0,0);
-      gui.slider_color_red = slider;
+      SLIDER(&gui_groups_left[2]->e,color_red,COLOR_RED);
       HLH_gui_label_create(&gui_groups_left[2]->e,0,"Green");
-      slider = HLH_gui_slider_create(&gui_groups_left[2]->e,HLH_GUI_FILL_X,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_COLOR_GREEN;
-      HLH_gui_slider_set(slider,1,256,0,0);
-      gui.slider_color_green = slider;
+      SLIDER(&gui_groups_left[2]->e,color_green,COLOR_GREEN);
       HLH_gui_label_create(&gui_groups_left[2]->e,0,"Blue");
-      slider = HLH_gui_slider_create(&gui_groups_left[2]->e,HLH_GUI_FILL_X,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_COLOR_BLUE;
-      HLH_gui_slider_set(slider,1,256,0,0);
-      gui.slider_color_blue = slider;
+      SLIDER(&gui_groups_left[2]->e,color_blue,COLOR_BLUE);
 
       HLH_gui_label_create(&gui_groups_left[2]->e,0,"Color count");
-      slider = HLH_gui_slider_create(&gui_groups_left[2]->e,HLH_GUI_FILL_X,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_COLOR_COUNT;
-      HLH_gui_slider_set(slider,1,255,0,0);
-      gui.slider_color_count = slider;
+      SLIDER(&gui_groups_left[2]->e,color_count,COLOR_COUNT);
 
       HLH_gui_label_create(&gui_groups_left[2]->e,0,"                                ");
       HLH_gui_separator_create(&gui_groups_left[2]->e,HLH_GUI_FILL_X,0);
       HLH_gui_label_create(&gui_groups_left[2]->e,0,"                                ");
 
-      HLH_gui_button *b = HLH_gui_button_create(&gui_groups_left[2]->e,0,"Generate palette",NULL);
+      b = HLH_gui_button_create(&gui_groups_left[2]->e,0,"Generate palette",NULL);
       b->e.msg_usr = button_palette_gen_msg;
       HLH_gui_checkbutton *c = HLH_gui_checkbutton_create(&gui_groups_left[2]->e,0,"k-means++",NULL);
       c->e.usr = CHECKBUTTON_KMEANSPP;
@@ -515,67 +554,38 @@ void gui_construct(void)
    //Colors
    //-------------------------------------
    {
+      HLH_gui_button *b = NULL;
+      HLH_gui_slider *slider = NULL;
+      HLH_gui_group *group = NULL;
       gui_groups_left[3] = HLH_gui_group_create(&group_left->e,HLH_GUI_EXPAND);
 
       HLH_gui_label_create(&gui_groups_left[3]->e,0,"Brightness");
-      HLH_gui_slider *slider = HLH_gui_slider_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,250,500,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_BRIGHTNESS;
-      gui.slider_brightness = slider;
+      SLIDER(&gui_groups_left[3]->e,brightness,BRIGHTNESS)
 
       HLH_gui_label_create(&gui_groups_left[3]->e,0,"Contrast");
-      slider = HLH_gui_slider_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,100,500,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_CONTRAST;
-      gui.slider_contrast = slider;
+      SLIDER(&gui_groups_left[3]->e,contrast,CONTRAST)
 
       HLH_gui_label_create(&gui_groups_left[3]->e,0,"Saturation");
-      slider = HLH_gui_slider_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,100,500,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_SATURATION;
-      gui.slider_saturation = slider;
+      SLIDER(&gui_groups_left[3]->e,saturation,SATURATION)
 
       HLH_gui_label_create(&gui_groups_left[3]->e,0,"Hue");
-      slider = HLH_gui_slider_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,180,180*2,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_HUE;
-      gui.slider_hue = slider;
+      SLIDER(&gui_groups_left[3]->e,hue,HUE)
 
       HLH_gui_label_create(&gui_groups_left[3]->e,0,"Gamma");
-      slider = HLH_gui_slider_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,100,500,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_GAMMA;
-      gui.slider_gamma = slider;
+      SLIDER(&gui_groups_left[3]->e,gamma,GAMMA)
 
       HLH_gui_label_create(&gui_groups_left[3]->e,0,"                                ");
       HLH_gui_separator_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
       HLH_gui_label_create(&gui_groups_left[3]->e,0,"                                ");
 
       HLH_gui_label_create(&gui_groups_left[3]->e,0,"Tint red");
-      slider = HLH_gui_slider_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,256,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_TINT_RED;
-      gui.slider_tint_red = slider;
+      SLIDER(&gui_groups_left[3]->e,tint_red,TINT_RED)
 
       HLH_gui_label_create(&gui_groups_left[3]->e,0,"Tint green");
-      slider = HLH_gui_slider_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,256,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_TINT_GREEN;
-      gui.slider_tint_green = slider;
+      SLIDER(&gui_groups_left[3]->e,tint_green,TINT_GREEN)
 
       HLH_gui_label_create(&gui_groups_left[3]->e,0,"Tint blue");
-      slider = HLH_gui_slider_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_slider_set(slider,1,256,0,0);
-      slider->e.msg_usr = slider_msg;
-      slider->e.usr = SLIDER_TINT_BLUE;
-      gui.slider_tint_blue = slider;
+      SLIDER(&gui_groups_left[3]->e,tint_blue,TINT_BLUE)
    }
    //-------------------------------------
 
@@ -748,7 +758,7 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
             return 0;
 
          HLH_json5_root *root = HLH_json_create_root();
-         HLH_json_object_add_integer(&root->root,"blur_amount",blur_amount);
+         HLH_json_object_add_real(&root->root,"blur_amount",blur_amount);
          HLH_json_object_add_integer(&root->root,"sample_mode",sample_mode);
          HLH_json_object_add_real(&root->root,"x_offset",x_offset);
          HLH_json_object_add_real(&root->root,"y_offset",y_offset);
@@ -806,89 +816,124 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    HLH_gui_slider *s = (HLH_gui_slider *)e;
    if(msg==HLH_GUI_MSG_SLIDER_VALUE_CHANGED)
    {
+      char buffer[512];
       if(s->e.usr==SLIDER_BLUR)
       {
-         blur_amount = s->value;
+         blur_amount = s->value/16.f;
+         snprintf(buffer,512,"%.2f",blur_amount);
+         HLH_gui_entry_set(gui.entry_blur,buffer);
          gui_process(0);
       }
       else if(s->e.usr==SLIDER_X_OFF)
       {
-         x_offset = (float)s->value/512.f;
+         x_offset = (float)s->value/500.f;
+         snprintf(buffer,512,"%.2f",x_offset);
+         HLH_gui_entry_set(gui.entry_x_off,buffer);
          gui_process(0);
       }
       else if(s->e.usr==SLIDER_Y_OFF)
       {
-         y_offset = (float)s->value/512.f;
+         y_offset = (float)s->value/500.f;
+         snprintf(buffer,512,"%.2f",y_offset);
+         HLH_gui_entry_set(gui.entry_y_off,buffer);
          gui_process(0);
       }
       else if(s->e.usr==SLIDER_WIDTH)
       {
          size_absolute_x = s->value;
+         snprintf(buffer,512,"%d",size_absolute_x);
+         HLH_gui_entry_set(gui.entry_width,buffer);
          gui_process(0);
       }
       else if(s->e.usr==SLIDER_HEIGHT)
       {
          size_absolute_y = s->value;
+         snprintf(buffer,512,"%d",size_absolute_y);
+         HLH_gui_entry_set(gui.entry_height,buffer);
          gui_process(0);
       }
       else if(s->e.usr==SLIDER_SCALE_X)
       {
          size_relative_x = s->value+1;
+         snprintf(buffer,512,"%d",size_relative_x);
+         HLH_gui_entry_set(gui.entry_scale_x,buffer);
          gui_process(0);
       }
       else if(s->e.usr==SLIDER_SCALE_Y)
       {
          size_relative_y = s->value+1;
+         snprintf(buffer,512,"%d",size_relative_y);
+         HLH_gui_entry_set(gui.entry_scale_y,buffer);
          gui_process(0);
       }
       else if(s->e.usr==SLIDER_ALPHA_THRESHOLD)
       {
          dither_config.alpha_threshold = s->value;
+         snprintf(buffer,512,"%d",dither_config.alpha_threshold);
+         HLH_gui_entry_set(gui.entry_alpha_threshold,buffer);
          gui_process(3);
       }
       else if(s->e.usr==SLIDER_DITHER_AMOUNT)
       {
          dither_config.dither_amount = s->value/500.f;
+         snprintf(buffer,512,"%.2f",dither_config.dither_amount);
+         HLH_gui_entry_set(gui.entry_dither_amount,buffer);
          gui_process(3);
       }
       else if(s->e.usr==SLIDER_PALETTE_WEIGHT)
       {
          dither_config.palette_weight = s->value;
+         snprintf(buffer,512,"%d",dither_config.palette_weight);
+         HLH_gui_entry_set(gui.entry_palette_weight,buffer);
          gui_process(3);
       }
       else if(s->e.usr==SLIDER_SHARP)
       {
          sharp_amount = (float)s->value/500.f;
+         snprintf(buffer,512,"%.2f",sharp_amount);
+         HLH_gui_entry_set(gui.entry_sharp,buffer);
          gui_process(1);
       }
       else if(s->e.usr==SLIDER_BRIGHTNESS)
       {
          brightness = (float)(s->value-250)/250.f;
+         snprintf(buffer,512,"%.2f",brightness);
+         HLH_gui_entry_set(gui.entry_brightness,buffer);
          gui_process(2);
       }
       else if(s->e.usr==SLIDER_CONTRAST)
       {
          contrast = (float)s->value/100.f;
+         snprintf(buffer,512,"%.2f",contrast);
+         HLH_gui_entry_set(gui.entry_contrast,buffer);
          gui_process(2);
       }
       else if(s->e.usr==SLIDER_SATURATION)
       {
          saturation = (float)s->value/100.f;
+         snprintf(buffer,512,"%.2f",saturation);
+         HLH_gui_entry_set(gui.entry_saturation,buffer);
          gui_process(2);
       }
       else if(s->e.usr==SLIDER_HUE)
       {
          hue = (float)s->value-180.f;
+         snprintf(buffer,512,"%.0f",hue);
+         HLH_gui_entry_set(gui.entry_hue,buffer);
          gui_process(2);
       }
       else if(s->e.usr==SLIDER_GAMMA)
       {
          gamma = (float)s->value/100.f;
+         snprintf(buffer,512,"%.2f",gamma);
+         HLH_gui_entry_set(gui.entry_gamma,buffer);
          gui_process(2);
       }
       else if(s->e.usr==SLIDER_COLOR_COUNT)
       {
          dither_config.palette_colors = s->value+1;
+         snprintf(buffer,512,"%d",dither_config.palette_colors);
+         HLH_gui_entry_set(gui.entry_color_count,buffer);
          HLH_gui_element_redraw(&gui.group_palette->e);
          gui_process(3);
       }
@@ -896,6 +941,8 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          uint32_t c = dither_config.palette[color_selected];
          dither_config.palette[color_selected] = ((uint32_t)s->value)|(SLK_color32_g(c)<<8)|(SLK_color32_b(c)<<16)|(SLK_color32_a(c)<<24);
+         snprintf(buffer,512,"%d",s->value);
+         HLH_gui_entry_set(gui.entry_color_red,buffer);
          HLH_gui_element_redraw(&gui.group_palette->e);
          gui_process(3);
       }
@@ -903,6 +950,8 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          uint32_t c = dither_config.palette[color_selected];
          dither_config.palette[color_selected] = (SLK_color32_r(c))|((uint32_t)s->value<<8)|(SLK_color32_b(c)<<16)|(SLK_color32_a(c)<<24);
+         snprintf(buffer,512,"%d",s->value);
+         HLH_gui_entry_set(gui.entry_color_green,buffer);
          HLH_gui_element_redraw(&gui.group_palette->e);
          gui_process(3);
       }
@@ -910,24 +959,269 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          uint32_t c = dither_config.palette[color_selected];
          dither_config.palette[color_selected] = (SLK_color32_r(c))|(SLK_color32_g(c)<<8)|((uint32_t)s->value<<16)|(SLK_color32_a(c)<<24);
+         snprintf(buffer,512,"%d",s->value);
+         HLH_gui_entry_set(gui.entry_color_blue,buffer);
          HLH_gui_element_redraw(&gui.group_palette->e);
          gui_process(3);
       }
       else if(s->e.usr==SLIDER_TINT_RED)
       {
          tint_red = s->value;
+         snprintf(buffer,512,"%d",s->value);
+         HLH_gui_entry_set(gui.entry_tint_red,buffer);
          gui_process(2);
       }
       else if(s->e.usr==SLIDER_TINT_GREEN)
       {
          tint_green = s->value;
+         snprintf(buffer,512,"%d",s->value);
+         HLH_gui_entry_set(gui.entry_tint_green,buffer);
          gui_process(2);
       }
       else if(s->e.usr==SLIDER_TINT_BLUE)
       {
          tint_blue = s->value;
+         snprintf(buffer,512,"%d",s->value);
+         HLH_gui_entry_set(gui.entry_tint_blue,buffer);
          gui_process(2);
       }
+   }
+
+   return 0;
+}
+
+static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_entry *entry = (HLH_gui_entry *)e;
+   if(msg==HLH_GUI_MSG_TEXTINPUT_END)
+   {
+      if(entry->e.usr==ENTRY_BLUR)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui.slider_blur,(int)(value*16.f),512,1,1);
+      }
+      else if(entry->e.usr==ENTRY_X_OFF)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui.slider_x_off,(int)(value*500.f),500,1,1);
+      }
+      else if(entry->e.usr==ENTRY_Y_OFF)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui.slider_y_off,(int)(value*500.f),500,1,1);
+      }
+      else if(entry->e.usr==ENTRY_WIDTH)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_width,value,512,1,1);
+      }
+      else if(entry->e.usr==ENTRY_HEIGHT)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_height,value,512,1,1);
+      }
+      else if(entry->e.usr==ENTRY_SCALE_X)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_scale_x,value-1,31,1,1);
+      }
+      else if(entry->e.usr==ENTRY_SCALE_Y)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_scale_y,value-1,31,1,1);
+      }
+      else if(entry->e.usr==ENTRY_SHARP)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui.slider_sharp,(int)(value*500.f),500,1,1);
+      }
+      else if(entry->e.usr==ENTRY_ALPHA_THRESHOLD)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_alpha_threshold,value,255,1,1);
+      }
+      else if(entry->e.usr==ENTRY_DITHER_AMOUNT)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui.slider_dither_amount,(int)(value*500.f),500,1,1);
+      }
+      else if(entry->e.usr==ENTRY_PALETTE_WEIGHT)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_palette_weight,value,16,1,1);
+      }
+      else if(entry->e.usr==ENTRY_COLOR_COUNT)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_color_count,value-1,255,1,1);
+      }
+      else if(entry->e.usr==ENTRY_COLOR_RED)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_color_red,value,255,1,1);
+      }
+      else if(entry->e.usr==ENTRY_COLOR_GREEN)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_color_green,value,255,1,1);
+      }
+      else if(entry->e.usr==ENTRY_COLOR_BLUE)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_color_blue,value,255,1,1);
+      }
+      else if(entry->e.usr==ENTRY_TINT_RED)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_tint_red,value,255,1,1);
+      }
+      else if(entry->e.usr==ENTRY_TINT_GREEN)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_tint_green,value,255,1,1);
+      }
+      else if(entry->e.usr==ENTRY_TINT_BLUE)
+      {
+         int value = strtol(entry->entry,NULL,10);
+         HLH_gui_slider_set(gui.slider_tint_blue,value,255,1,1);
+      }
+      else if(entry->e.usr==ENTRY_BRIGHTNESS)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui.slider_brightness,(int)(value*250.f+250.f),500,1,1);
+      }
+      else if(entry->e.usr==ENTRY_CONTRAST)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui.slider_contrast,(int)(value*100.f),500,1,1);
+      }
+      else if(entry->e.usr==ENTRY_SATURATION)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui.slider_saturation,(int)(value*100.f),500,1,1);
+      }
+      else if(entry->e.usr==ENTRY_HUE)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui.slider_hue,(int)(value+180.f),360,1,1);
+      }
+      else if(entry->e.usr==ENTRY_GAMMA)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui.slider_gamma,(int)(value*100.f),500,1,1);
+      }
+   }
+
+   return 0;
+}
+
+static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_button *button = (HLH_gui_button *)e;
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      if(button->e.usr==BUTTON_BLUR)
+         HLH_gui_slider_set(gui.slider_blur,(int)((blur_amount+0.25f)*16.f),512,1,1);
+      else if(button->e.usr==BUTTON_X_OFF)
+         HLH_gui_slider_set(gui.slider_x_off,(int)((x_offset+0.1f)*500.f),500,1,1);
+      else if(button->e.usr==BUTTON_Y_OFF)
+         HLH_gui_slider_set(gui.slider_y_off,(int)((y_offset+0.1f)*500.f),500,1,1);
+      else if(button->e.usr==BUTTON_WIDTH)
+         HLH_gui_slider_set(gui.slider_width,size_absolute_x+8,512,1,1);
+      else if(button->e.usr==BUTTON_HEIGHT)
+         HLH_gui_slider_set(gui.slider_height,size_absolute_y+8,512,1,1);
+      else if(button->e.usr==BUTTON_SCALE_X)
+         HLH_gui_slider_set(gui.slider_scale_x,size_relative_x+1-1,31,1,1);
+      else if(button->e.usr==BUTTON_SCALE_Y)
+         HLH_gui_slider_set(gui.slider_scale_y,size_relative_y+1-1,31,1,1);
+      else if(button->e.usr==BUTTON_SHARP)
+         HLH_gui_slider_set(gui.slider_sharp,(int)((sharp_amount+0.1f)*500.f),500,1,1);
+      else if(button->e.usr==BUTTON_ALPHA_THRESHOLD)
+         HLH_gui_slider_set(gui.slider_alpha_threshold,dither_config.alpha_threshold+8,255,1,1);
+      else if(button->e.usr==BUTTON_DITHER_AMOUNT)
+         HLH_gui_slider_set(gui.slider_dither_amount,(int)((dither_config.dither_amount+0.1f)*500.f),500,1,1);
+      else if(button->e.usr==BUTTON_PALETTE_WEIGHT)
+         HLH_gui_slider_set(gui.slider_palette_weight,dither_config.palette_weight+1,16,1,1);
+      else if(button->e.usr==BUTTON_COLOR_COUNT)
+         HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors+4-1,255,1,1);
+      else if(button->e.usr==BUTTON_COLOR_RED)
+         HLH_gui_slider_set(gui.slider_color_red,SLK_color32_r(dither_config.palette[color_selected])+4,255,1,1);
+      else if(button->e.usr==BUTTON_COLOR_GREEN)
+         HLH_gui_slider_set(gui.slider_color_green,SLK_color32_g(dither_config.palette[color_selected])+4,255,1,1);
+      else if(button->e.usr==BUTTON_COLOR_BLUE)
+         HLH_gui_slider_set(gui.slider_color_blue,SLK_color32_b(dither_config.palette[color_selected])+4,255,1,1);
+      else if(button->e.usr==BUTTON_TINT_RED)
+         HLH_gui_slider_set(gui.slider_tint_red,tint_red+4,255,1,1);
+      else if(button->e.usr==BUTTON_TINT_GREEN)
+         HLH_gui_slider_set(gui.slider_tint_green,tint_green+4,255,1,1);
+      else if(button->e.usr==BUTTON_TINT_BLUE)
+         HLH_gui_slider_set(gui.slider_tint_blue,tint_blue+4,255,1,1);
+      else if(button->e.usr==BUTTON_BRIGHTNESS)
+         HLH_gui_slider_set(gui.slider_brightness,(int)((brightness+0.1f)*250.f+250.f),500,1,1);
+      else if(button->e.usr==BUTTON_CONTRAST)
+         HLH_gui_slider_set(gui.slider_contrast,(int)((contrast+0.1f)*100.f),500,1,1);
+      else if(button->e.usr==BUTTON_SATURATION)
+         HLH_gui_slider_set(gui.slider_saturation,(int)((saturation+0.1f)*100.f),500,1,1);
+      else if(button->e.usr==BUTTON_HUE)
+         HLH_gui_slider_set(gui.slider_hue,(int)((hue+10.f)+180.f),360,1,1);
+      else if(button->e.usr==BUTTON_GAMMA)
+         HLH_gui_slider_set(gui.slider_gamma,(int)((gamma+0.1f)*100.f),500,1,1);
+   }
+
+   return 0;
+}
+
+static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_button *button = (HLH_gui_button *)e;
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      if(button->e.usr==BUTTON_BLUR)
+         HLH_gui_slider_set(gui.slider_blur,(int)((blur_amount-0.25f)*16.f),512,1,1);
+      else if(button->e.usr==BUTTON_X_OFF)
+         HLH_gui_slider_set(gui.slider_x_off,(int)((x_offset-0.1f)*500.f),500,1,1);
+      else if(button->e.usr==BUTTON_Y_OFF)
+         HLH_gui_slider_set(gui.slider_y_off,(int)((y_offset-0.1f)*500.f),500,1,1);
+      else if(button->e.usr==BUTTON_WIDTH)
+         HLH_gui_slider_set(gui.slider_width,size_absolute_x-8,512,1,1);
+      else if(button->e.usr==BUTTON_HEIGHT)
+         HLH_gui_slider_set(gui.slider_height,size_absolute_y-8,512,1,1);
+      else if(button->e.usr==BUTTON_SCALE_X)
+         HLH_gui_slider_set(gui.slider_scale_x,size_relative_x-1-1,31,1,1);
+      else if(button->e.usr==BUTTON_SCALE_Y)
+         HLH_gui_slider_set(gui.slider_scale_y,size_relative_y-1-1,31,1,1);
+      else if(button->e.usr==BUTTON_SHARP)
+         HLH_gui_slider_set(gui.slider_sharp,(int)((sharp_amount-0.1f)*500.f),500,1,1);
+      else if(button->e.usr==BUTTON_ALPHA_THRESHOLD)
+         HLH_gui_slider_set(gui.slider_alpha_threshold,dither_config.alpha_threshold-8,255,1,1);
+      else if(button->e.usr==BUTTON_DITHER_AMOUNT)
+         HLH_gui_slider_set(gui.slider_dither_amount,(int)((dither_config.dither_amount-0.1f)*500.f),500,1,1);
+      else if(button->e.usr==BUTTON_PALETTE_WEIGHT)
+         HLH_gui_slider_set(gui.slider_palette_weight,dither_config.palette_weight-1,16,1,1);
+      else if(button->e.usr==BUTTON_COLOR_COUNT)
+         HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-4-1,255,1,1);
+      else if(button->e.usr==BUTTON_COLOR_RED)
+         HLH_gui_slider_set(gui.slider_color_red,SLK_color32_r(dither_config.palette[color_selected])-4,255,1,1);
+      else if(button->e.usr==BUTTON_COLOR_GREEN)
+         HLH_gui_slider_set(gui.slider_color_green,SLK_color32_g(dither_config.palette[color_selected])-4,255,1,1);
+      else if(button->e.usr==BUTTON_COLOR_BLUE)
+         HLH_gui_slider_set(gui.slider_color_blue,SLK_color32_b(dither_config.palette[color_selected])-4,255,1,1);
+      else if(button->e.usr==BUTTON_TINT_RED)
+         HLH_gui_slider_set(gui.slider_tint_red,tint_red-4,255,1,1);
+      else if(button->e.usr==BUTTON_TINT_GREEN)
+         HLH_gui_slider_set(gui.slider_tint_green,tint_green-4,255,1,1);
+      else if(button->e.usr==BUTTON_TINT_BLUE)
+         HLH_gui_slider_set(gui.slider_tint_blue,tint_blue-4,255,1,1);
+      else if(button->e.usr==BUTTON_BRIGHTNESS)
+         HLH_gui_slider_set(gui.slider_brightness,(int)((brightness-0.1f)*250.f+250.f),500,1,1);
+      else if(button->e.usr==BUTTON_CONTRAST)
+         HLH_gui_slider_set(gui.slider_contrast,(int)((contrast-0.1f)*100.f),500,1,1);
+      else if(button->e.usr==BUTTON_SATURATION)
+         HLH_gui_slider_set(gui.slider_saturation,(int)((saturation-0.1f)*100.f),500,1,1);
+      else if(button->e.usr==BUTTON_HUE)
+         HLH_gui_slider_set(gui.slider_hue,(int)((hue-10.f)+180.f),360,1,1);
+      else if(button->e.usr==BUTTON_GAMMA)
+         HLH_gui_slider_set(gui.slider_gamma,(int)((gamma-0.1f)*100.f),500,1,1);
    }
 
    return 0;
@@ -1107,7 +1401,7 @@ static void gui_process(int from)
       }
 
       SLK_image64 *img = SLK_image64_dup32(gui_input);
-      SLK_image64_blur(img,blur_amount/16.f);
+      SLK_image64_blur(img,blur_amount);
 
       int width = 0;
       int height = 0;
@@ -1170,7 +1464,7 @@ void gui_load_preset(const char *path)
       HLH_json5 fallback = {0};
       HLH_json5_root *root = HLH_json_parse_file_stream(f);
 
-      blur_amount = HLH_json_get_object_integer(&root->root,"blur_amount",0);
+      blur_amount = HLH_json_get_object_real(&root->root,"blur_amount",0.);
       sample_mode = HLH_json_get_object_integer(&root->root,"sample_mode",0);
       x_offset = HLH_json_get_object_real(&root->root,"x_offset",0.f);
       y_offset = HLH_json_get_object_real(&root->root,"y_offset",0.f);
@@ -1207,7 +1501,7 @@ void gui_load_preset(const char *path)
    }
    else
    {
-      blur_amount = 0;
+      blur_amount = 0.;
       sample_mode = 0;
       x_offset = 0.f;
       y_offset = 0.f;
@@ -1270,7 +1564,7 @@ void gui_load_preset(const char *path)
       dither_config.palette[31] = 0xff306f8a;
    }
 
-   HLH_gui_slider_set(gui.slider_blur,blur_amount,500,1,1);
+   HLH_gui_slider_set(gui.slider_blur,(int)(blur_amount*16.f),512,1,1);
    HLH_gui_slider_set(gui.slider_x_off,(int)(x_offset*500.f),500,1,1);
    HLH_gui_slider_set(gui.slider_y_off,(int)(y_offset*500.f),500,1,1);
    HLH_gui_slider_set(gui.slider_width,size_absolute_x,512,1,1);
@@ -1284,7 +1578,7 @@ void gui_load_preset(const char *path)
    HLH_gui_slider_set(gui.slider_hue,(int)(hue+180.f),360,1,1);
    HLH_gui_slider_set(gui.slider_gamma,(int)(gamma*100.f),500,1,1);
    HLH_gui_slider_set(gui.slider_alpha_threshold,dither_config.alpha_threshold,255,1,1);
-   HLH_gui_slider_set(gui.slider_dither_amount,(int)(dither_config.dither_amount*500.f),250,1,1);
+   HLH_gui_slider_set(gui.slider_dither_amount,(int)(dither_config.dither_amount*500.f),500,1,1);
    HLH_gui_slider_set(gui.slider_palette_weight,dither_config.palette_weight,16,1,1);
    HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-1,255,1,1);
    HLH_gui_slider_set(gui.slider_tint_red,tint_red,255,1,1);
