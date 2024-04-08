@@ -87,7 +87,6 @@ static int slk_palette_size = 0;
 static SLK_image32 *slk_dither_closest(SLK_image64 *img, const SLK_dither_config *config);
 static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config *config);
 static void slk_dither_threshold_apply(SLK_image64 *img, int dim, const float *threshold, const SLK_dither_config *config);
-static SLK_image32 *slk_dither_none(SLK_image64 *img, const SLK_dither_config *config);
 static SLK_image32 *slk_dither_floyd(SLK_image64 *img, const SLK_dither_config *config);
 static SLK_image32 *slk_dither_floyd2(SLK_image64 *img, const SLK_dither_config *config);
 static void slk_floyd_apply_error(SLK_image64 *img, float er, float eg, float eb, int x, int y);
@@ -164,6 +163,7 @@ static SLK_image32 *slk_dither_closest(SLK_image64 *img, const SLK_dither_config
 {
    SLK_image32 *out = SLK_image32_dup64(img);
 
+#pragma omp parallel for
    for(int y = 0;y<img->h;y++)
    {
       for(int x = 0;x<img->w;x++)
@@ -197,6 +197,7 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
 
       HLH_array_length_set(asign,0);
 
+      //TODO(Captain4LK): this needs some work to be run in parallel
       for(int j = 0;j<img->w*img->h;j++)
       {
          uint64_t p = img->data[j];
@@ -332,30 +333,9 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
    return out;
 }
 
-static SLK_image32 *slk_dither_none(SLK_image64 *img, const SLK_dither_config *config)
-{
-   SLK_image32 *out = SLK_image32_dup64(img);
-
-   for(int y = 0;y<img->h;y++)
-   {
-      for(int x = 0;x<img->w;x++)
-      {
-         uint64_t p = img->data[y*img->w+x];
-         if((int)(SLK_color64_a(p)/128)<config->alpha_threshold)
-         {
-            out->data[y*img->w+x] = 0;
-            continue;
-         }
-
-         out->data[y*img->w+x] = slk_color_closest(p,config);
-      }
-   }
-
-   return out;
-}
-
 static void slk_dither_threshold_apply(SLK_image64 *img, int dim, const float *threshold, const SLK_dither_config *config)
 {
+#pragma omp parallel for
    for(int y = 0;y<img->h;y++)
    {
       for(int x = 0;x<img->w;x++)
@@ -363,9 +343,9 @@ static void slk_dither_threshold_apply(SLK_image64 *img, int dim, const float *t
          uint64_t p = img->data[y*img->w+x];
          uint8_t mod = (1<<dim)-1;
          uint8_t threshold_id = ((y&mod)<<dim)+(x&mod);
-         uint64_t r = HLH_max(0,HLH_min(0x7fff,SLK_color64_r(p)+0x7fff*config->dither_amount*(threshold[threshold_id]-0.5f)));
-         uint64_t g = HLH_max(0,HLH_min(0x7fff,SLK_color64_g(p)+0x7fff*config->dither_amount*(threshold[threshold_id]-0.5f)));
-         uint64_t b = HLH_max(0,HLH_min(0x7fff,SLK_color64_b(p)+0x7fff*config->dither_amount*(threshold[threshold_id]-0.5f)));
+         uint64_t r = HLH_max(0,HLH_min(0x7fff,SLK_color64_r(p)+0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f)));
+         uint64_t g = HLH_max(0,HLH_min(0x7fff,SLK_color64_g(p)+0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f)));
+         uint64_t b = HLH_max(0,HLH_min(0x7fff,SLK_color64_b(p)+0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f)));
          uint64_t a = SLK_color64_a(p);
          img->data[y*img->w+x] = (r)|(g<<16)|(b<<32)|(a<<48);
       }

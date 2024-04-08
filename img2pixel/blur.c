@@ -48,33 +48,42 @@ void SLK_image64_blur(SLK_image64 *img, float sz)
       return;
 
    //Horizontal
-   uint64_t *buffer0 = malloc(sizeof(*buffer0)*img->w);
-   uint64_t *buffer1 = malloc(sizeof(*buffer1)*img->w);
-   for(int y = 0;y<img->h;y++)
+#pragma omp parallel
    {
-      boxblur_line((uint16_t *)(img->data+y*img->w),(uint16_t *)buffer0,img->w,sz);
-      boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->w,sz);
-      boxblur_line((uint16_t *)buffer1,(uint16_t *)(img->data+y*img->w),img->w,sz);
+      uint64_t *buffer0 = malloc(sizeof(*buffer0)*img->w);
+      uint64_t *buffer1 = malloc(sizeof(*buffer1)*img->w);
+#pragma omp for
+      for(int y = 0;y<img->h;y++)
+      {
+         boxblur_line((uint16_t *)(img->data+y*img->w),(uint16_t *)buffer0,img->w,sz);
+         boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->w,sz);
+         boxblur_line((uint16_t *)buffer1,(uint16_t *)(img->data+y*img->w),img->w,sz);
+      }
+      free(buffer0);
+      free(buffer1);
    }
 
    //Vertical
-   buffer0 = realloc(buffer0,sizeof(*buffer0)*img->h);
-   buffer1 = realloc(buffer1,sizeof(*buffer1)*img->h);
-   for(int x = 0;x<img->w;x++)
+#pragma omp parallel
    {
-      for(int y = 0;y<img->h;y++)
-         buffer0[y] = img->data[y*img->w+x];
+      uint64_t *buffer0 = malloc(sizeof(*buffer0)*img->h);
+      uint64_t *buffer1 = malloc(sizeof(*buffer1)*img->h);
+#pragma omp for
+      for(int x = 0;x<img->w;x++)
+      {
+         for(int y = 0;y<img->h;y++)
+            buffer0[y] = img->data[y*img->w+x];
 
-      boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->h,sz);
-      boxblur_line((uint16_t *)buffer1,(uint16_t *)buffer0,img->h,sz);
-      boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->h,sz);
+         boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->h,sz);
+         boxblur_line((uint16_t *)buffer1,(uint16_t *)buffer0,img->h,sz);
+         boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->h,sz);
 
-      for(int y = 0;y<img->h;y++)
-         img->data[y*img->w+x] = buffer0[y];
+         for(int y = 0;y<img->h;y++)
+            img->data[y*img->w+x] = buffer0[y];
+      }
+      free(buffer0);
+      free(buffer1);
    }
-
-   free(buffer0);
-   free(buffer1);
 }
 
 static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst, int width, float rad)

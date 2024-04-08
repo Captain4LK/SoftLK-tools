@@ -36,10 +36,14 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 void SLK_image64_tint(SLK_image64 *img, uint8_t tint_r, uint8_t tint_g, uint8_t tint_b)
 {
+   if(tint_r==255&&tint_g==255&&tint_b==255)
+      return;
+
    uint64_t tr = tint_r;
    uint64_t tg = tint_g;
    uint64_t tb = tint_b;
 
+#pragma omp parallel for
    for(int y = 0;y<img->h;y++)
    {
       for(int x = 0;x<img->w;x++)

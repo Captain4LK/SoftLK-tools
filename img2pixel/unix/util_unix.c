@@ -58,7 +58,7 @@ SLK_image32 *image_select()
 
    int width,height;
    uint32_t *data = HLH_gui_image_load(file_path,&width,&height);
-   if(data==NULL)
+   if(data==NULL||width<=0||height<=0)
       return NULL;
 
    SLK_image32 *img32 = malloc(sizeof(*img32)+sizeof(*img32->data)*width*height);

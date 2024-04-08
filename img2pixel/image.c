@@ -1,7 +1,7 @@
 /*
 SLK_img2pixel - a tool for converting images to pixelart
 
-Written in 2021,2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -34,7 +34,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 SLK_image32 *SLK_image32_dup(const SLK_image32 *src)
 {
-   if(src==NULL)
+   if(src==NULL||src->w<=0||src->h<=0)
       return NULL;
 
    SLK_image32 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->w*src->h);
@@ -47,7 +47,7 @@ SLK_image32 *SLK_image32_dup(const SLK_image32 *src)
 
 SLK_image32 *SLK_image32_dup64(const SLK_image64 *src)
 {
-   if(src==NULL)
+   if(src==NULL||src->w<=0||src->h<=0)
       return NULL;
 
    SLK_image32 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->w*src->h);
@@ -61,7 +61,7 @@ SLK_image32 *SLK_image32_dup64(const SLK_image64 *src)
 
 SLK_image64 *SLK_image64_dup(const SLK_image64 *src)
 {
-   if(src==NULL)
+   if(src==NULL||src->w<=0||src->h<=0)
       return NULL;
 
    SLK_image64 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->w*src->h);
@@ -74,7 +74,7 @@ SLK_image64 *SLK_image64_dup(const SLK_image64 *src)
 
 SLK_image64 *SLK_image64_dup32(const SLK_image32 *src)
 {
-   if(src==NULL)
+   if(src==NULL||src->w<=0||src->h<=0)
       return NULL;
 
    SLK_image64 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->w*src->h);

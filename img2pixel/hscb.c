@@ -59,6 +59,7 @@ void SLK_image64_hscb(SLK_image64 *img, float hue, float saturation, float contr
    float wg = (t+brightness)*(float)0x7fff;
    float wb = (t+brightness)*(float)0x7fff;
 
+#pragma omp parallel for
    for(int y = 0;y<img->h;y++)
    {
       for(int x = 0;x<img->w;x++)

@@ -69,6 +69,7 @@ static SLK_image64 *slk_sample_nearest(const SLK_image64 *img, int width, int he
    float w = (img->w-1)/(float)width;
    float h = (img->h-1)/(float)height;
 
+#pragma omp parallel for
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -92,6 +93,7 @@ static SLK_image64 *slk_sample_linear(const SLK_image64 *img, int width, int hei
    float fw = (float)(img->w-1)/(float)width;
    float fh = (float)(img->h-1)/(float)height;
 
+#pragma omp parallel for
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -148,6 +150,7 @@ static SLK_image64 *slk_sample_bicubic(const SLK_image64 *img, int width, int he
    float fw = (float)(img->w-1)/(float)width;
    float fh = (float)(img->h-1)/(float)height;
 
+#pragma omp parallel for
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -260,6 +263,7 @@ static SLK_image64 *slk_sample_lanczos(const SLK_image64 *img, int width, int he
    float fw = (float)(img->w-1)/(float)width;
    float fh = (float)(img->h-1)/(float)height;
 
+#pragma omp parallel for
    for(int y = 0;y<height;y++)
    {
       for(int x = 0;x<width;x++)
@@ -349,29 +353,34 @@ static SLK_image64 *slk_sample_cluster(const SLK_image64 *img, int width, int he
    float grid_y = ((float)img->h/(float)(height));
    int igrid_x = grid_x;
    int igrid_y = grid_y;
-   SLK_image32 *cluster = malloc(sizeof(*cluster)+sizeof(*cluster->data)*igrid_x*igrid_y);
-   cluster->w = igrid_x;
-   cluster->h = igrid_y;
-   uint32_t colors[4];
 
-   for(int y = 0;y<height;y++)
+#pragma omp parallel
    {
-      for(int x = 0;x<width;x++)
-      {
-         for(int iy = 0;iy<igrid_y;iy++)
-         {
-            for(int ix = 0;ix<igrid_x;ix++)
-            {
-               cluster->data[iy*igrid_x+ix] = 0xff000000;
-               if(x*grid_x+ix>=0&&x*grid_x+ix<img->w&&y*grid_y+iy>=0&&y*grid_y+iy<img->h)
-                  cluster->data[iy*igrid_x+ix] = SLK_color64_to_32(img->data[((int)(y*grid_y)+iy)*img->w+(int)(x*grid_x)+ix]);
-            }
-         }
-         out->data[y*width+x] = SLK_color32_to_64(SLK_image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
-      }
-   }
+      SLK_image32 *cluster = malloc(sizeof(*cluster)+sizeof(*cluster->data)*igrid_x*igrid_y);
+      cluster->w = igrid_x;
+      cluster->h = igrid_y;
+      uint32_t colors[16];
 
-   free(cluster);
+#pragma omp for
+      for(int y = 0;y<height;y++)
+      {
+         for(int x = 0;x<width;x++)
+         {
+            for(int iy = 0;iy<igrid_y;iy++)
+            {
+               for(int ix = 0;ix<igrid_x;ix++)
+               {
+                  cluster->data[iy*igrid_x+ix] = 0xff000000;
+                  if(x*grid_x+ix>=0&&x*grid_x+ix<img->w&&y*grid_y+iy>=0&&y*grid_y+iy<img->h)
+                     cluster->data[iy*igrid_x+ix] = SLK_color64_to_32(img->data[((int)(y*grid_y)+iy)*img->w+(int)(x*grid_x)+ix]);
+               }
+            }
+            out->data[y*width+x] = SLK_color32_to_64(SLK_image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
+         }
+      }
+
+      free(cluster);
+   }
 
    return out;
 }

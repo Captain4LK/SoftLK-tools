@@ -39,6 +39,7 @@ void SLK_image64_gamma(SLK_image64 *img, float gamma)
    if(gamma==0.f)
       return;
 
+#pragma omp parallel for
    for(int y = 0;y<img->h;y++)
    {
       for(int x = 0;x<img->w;x++)

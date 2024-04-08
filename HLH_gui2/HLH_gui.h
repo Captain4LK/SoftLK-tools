@@ -140,6 +140,8 @@ struct HLH_gui_element
 
    HLH_gui_window *window;
 
+   int needs_redraw;
+
    HLH_gui_point size;
    HLH_gui_rect bounds;
    HLH_gui_point size_required;
@@ -169,6 +171,8 @@ struct HLH_gui_window
 
    HLH_gui_element *keyboard;
    HLH_gui_window *blocking;
+
+   HLH_gui_element **redraw;
 
    SDL_Window *window;
    SDL_Renderer *renderer;
@@ -320,6 +324,8 @@ HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, u
 int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 int HLH_gui_element_msg_all(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 void HLH_gui_element_redraw(HLH_gui_element *e);
+void HLH_gui_element_redraw_now(HLH_gui_element *e);
+void HLH_gui_element_redraw_msg(HLH_gui_element *e);
 void HLH_gui_element_pack(HLH_gui_element *e, HLH_gui_rect space);
 HLH_gui_point HLH_gui_element_size(HLH_gui_element *e, HLH_gui_point children);
 void HLH_gui_element_child_space(HLH_gui_element *e, HLH_gui_rect *space);

@@ -206,6 +206,7 @@ static struct
    HLH_gui_radiobutton *dither_dither_mode[8];
    HLH_gui_radiobutton *dither_color_dist[6];
    HLH_gui_radiobutton *palette_colors[256];
+   HLH_gui_radiobutton *postprocess_colors[256];
 
    HLH_gui_checkbutton *dither_kmeans;
    HLH_gui_checkbutton *palette_kmeanspp;
@@ -943,8 +944,12 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          dither_config.palette[color_selected] = ((uint32_t)s->value)|(SLK_color32_g(c)<<8)|(SLK_color32_b(c)<<16)|(SLK_color32_a(c)<<24);
          snprintf(buffer,512,"%d",s->value);
          HLH_gui_entry_set(gui.entry_color_red,buffer);
-         HLH_gui_element_redraw(&gui.group_palette->e);
-         gui_process(3);
+
+         if(c!=dither_config.palette[color_selected])
+         {
+            HLH_gui_element_redraw(&gui.group_palette->e);
+            gui_process(3);
+         }
       }
       else if(s->e.usr==SLIDER_COLOR_GREEN)
       {
@@ -952,8 +957,12 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          dither_config.palette[color_selected] = (SLK_color32_r(c))|((uint32_t)s->value<<8)|(SLK_color32_b(c)<<16)|(SLK_color32_a(c)<<24);
          snprintf(buffer,512,"%d",s->value);
          HLH_gui_entry_set(gui.entry_color_green,buffer);
-         HLH_gui_element_redraw(&gui.group_palette->e);
-         gui_process(3);
+
+         if(c!=dither_config.palette[color_selected])
+         {
+            HLH_gui_element_redraw(&gui.group_palette->e);
+            gui_process(3);
+         }
       }
       else if(s->e.usr==SLIDER_COLOR_BLUE)
       {
@@ -961,8 +970,12 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          dither_config.palette[color_selected] = (SLK_color32_r(c))|(SLK_color32_g(c)<<8)|((uint32_t)s->value<<16)|(SLK_color32_a(c)<<24);
          snprintf(buffer,512,"%d",s->value);
          HLH_gui_entry_set(gui.entry_color_blue,buffer);
-         HLH_gui_element_redraw(&gui.group_palette->e);
-         gui_process(3);
+
+         if(c!=dither_config.palette[color_selected])
+         {
+            HLH_gui_element_redraw(&gui.group_palette->e);
+            gui_process(3);
+         }
       }
       else if(s->e.usr==SLIDER_TINT_RED)
       {
@@ -1374,7 +1387,7 @@ static int button_palette_gen_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {
-      SLK_image32_kmeans(gui_input,dither_config.palette,dither_config.palette_colors,time(NULL));
+      SLK_image32_kmeans(gui_input,dither_config.palette,dither_config.palette_colors,time(NULL),kmeanspp);
       HLH_gui_element_redraw(&gui.group_palette->e);
       gui_process(3);
    }

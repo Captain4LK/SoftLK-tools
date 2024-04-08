@@ -83,7 +83,7 @@ SLK_image64 *SLK_image64_dup32(const SLK_image32 *src);
 
 void SLK_image64_blur(SLK_image64 *img, float sz);
 void SLK_image64_sharpen(SLK_image64 *img, float amount);
-void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed);
+void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed, int kmeanspp);
 uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed);
 void SLK_image64_hscb(SLK_image64 *img, float hue, float saturation, float contrast, float brightness);
 void SLK_image64_gamma(SLK_image64 *img, float gamma);

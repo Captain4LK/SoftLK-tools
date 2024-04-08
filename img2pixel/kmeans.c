@@ -32,7 +32,7 @@ typedef uint64_t rand_xor[2];
 //-------------------------------------
 
 //Function prototypes
-static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed);
+static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmeanspp);
 
 static uint64_t rand_murmur3_avalanche64(uint64_t h);
 static void rand_xor_seed(rand_xor *xor, uint64_t seed);
@@ -41,14 +41,14 @@ static uint64_t rand_xor_next(rand_xor *xor);
 
 //Function implementations
 
-void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed)
+void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed, int kmeanspp)
 {
    if(img==NULL)
       return;
    if(palette==NULL)
       return;
 
-   uint32_t *centers = choose_centers(img,colors,seed);
+   uint32_t *centers = choose_centers(img,colors,seed,kmeanspp);
    uint32_t **clusters = malloc(sizeof(*clusters)*colors);
    memset(clusters,0,sizeof(*clusters)*colors);
 
@@ -78,10 +78,6 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
             uint64_t dist = (cr-r)*(cr-r);
             dist+=(cg-g)*(cg-g);
             dist+=(cb-b)*(cb-b);
-
-            //uint64_t dist = (cur.r-centers[c].r)*(cur.r-centers[c].r);
-            //dist+=(cur.g-centers[c].g)*(cur.g-centers[c].g);
-            //dist+=(cur.b-centers[c].b)*(cur.b-centers[c].b);
 
             if(dist<dist_min)
             {
@@ -138,7 +134,7 @@ uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int col
    if(palette==NULL)
       return 0xff000000;
 
-   uint32_t *centers = choose_centers(img,colors,seed);
+   uint32_t *centers = choose_centers(img,colors,seed,1);
    uint32_t **clusters = malloc(sizeof(*clusters)*colors);
    memset(clusters,0,sizeof(*clusters)*colors);
 
@@ -234,12 +230,22 @@ uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int col
    return largest;
 }
 
-static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed)
+static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmeanspp)
 {
    rand_xor rng;
    rand_xor_seed(&rng,seed);
-
    uint32_t *centers = NULL;
+
+   if(!kmeanspp)
+   {
+      for(int i = 0;i<k;i++)
+      {
+         int index = rand_xor_next(&rng)%(img->w*img->h);
+         HLH_array_push(centers,img->data[index]);
+      }
+
+      return centers;
+   }
 
    //Choose initial center
    int index = rand_xor_next(&rng)%(img->w*img->h);
@@ -283,6 +289,7 @@ static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed)
       uint64_t random = 0;
       if(dist_sum!=0)
          rand_xor_next(&rng)%dist_sum;
+      int found = 0;
       uint64_t dist_cur = 0;
       for(int j = 0;j<img->w*img->h;j++)
       {
@@ -290,9 +297,13 @@ static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed)
          if(random<dist_cur)
          {
             HLH_array_push(centers,img->data[j]);
+            found = 1;
             break;
          }
       }
+
+      if(!found)
+         HLH_array_push(centers,img->data[rand_xor_next(&rng)%(img->w*img->h)]);
    }
 
    HLH_array_free(distance);

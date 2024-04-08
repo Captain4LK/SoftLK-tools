@@ -13,6 +13,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "HLH_gui.h"
+#include "HLH.h"
 //-------------------------------------
 
 //#defines
@@ -121,16 +122,23 @@ int HLH_gui_element_msg_all(HLH_gui_element *e, HLH_gui_msg msg, int di, void *d
 
 void HLH_gui_element_redraw(HLH_gui_element *e)
 {
+   //TODO(Captain4LK): Separate lists for overlay, normal --> get rid of redraw_now
+   if(e->flags & HLH_GUI_OVERLAY||e->flags&HLH_GUI_NO_PARENT)
+   {
+      HLH_gui_element_redraw_now(e);
+      return;
+   }
+
+   e->needs_redraw = 1;
+   HLH_array_push(e->window->redraw,e);
+}
+
+void HLH_gui_element_redraw_now(HLH_gui_element *e)
+{
    if(e->flags & HLH_GUI_OVERLAY)
    {
       if(SDL_SetRenderTarget(e->window->renderer, e->window->overlay)<0)
          fprintf(stderr, "SDL_SetRenderTarget(): %s\n", SDL_GetError());
-      //if(SDL_SetRenderDrawColor(e->window->renderer,0,0,0,0)<0)
-      //fprintf(stderr,"SDL_SetRenderDrawColor(): %s\n",SDL_GetError());
-      //if(SDL_RenderClear(e->window->renderer)<0)
-      //fprintf(stderr,"SDL_RenderClear(): %s\n",SDL_GetError());
-      //if(SDL_SetRenderDrawColor(e->window->renderer,0,0,0,255)<0)
-      //fprintf(stderr,"SDL_SetRenderDrawColor(): %s\n",SDL_GetError());
    }
    else
    {
@@ -149,6 +157,10 @@ void HLH_gui_element_redraw(HLH_gui_element *e)
    if(SDL_RenderCopy(e->window->renderer, e->window->overlay, NULL, NULL)<0)
       fprintf(stderr, "SDL_RenderCopy(): %s\n", SDL_GetError());
    SDL_RenderPresent(e->window->renderer);
+}
+void HLH_gui_element_redraw_msg(HLH_gui_element *e)
+{
+   element_redraw(e);
 }
 
 void HLH_gui_element_pack(HLH_gui_element *e, HLH_gui_rect space)
@@ -518,6 +530,7 @@ static void element_redraw(HLH_gui_element *e)
       return;
 
    HLH_gui_element_msg(e, HLH_GUI_MSG_DRAW, 0, NULL);
+   e->needs_redraw = 0;
 
    for(int i = 0; i<e->child_count; i++)
       element_redraw(e->children[i]);

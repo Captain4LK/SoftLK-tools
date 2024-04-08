@@ -20,6 +20,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
 #include "stb_image_write.h"
+
+#include "HLH.h"
 //-------------------------------------
 
 //Internal includes
@@ -302,11 +304,12 @@ int HLH_gui_message_loop(void)
             continue;
 
          //Hack to prevent flooding the event queue
-         SDL_GetMouseState(&win->mouse_x, &win->mouse_y);
+         //SDL_GetMouseState(&win->mouse_x, &win->mouse_y);
+         SDL_GetMouseState(&mouse.pos.x, &mouse.pos.y);
          SDL_FlushEvent(SDL_MOUSEMOTION);
 
-         mouse.pos.x = event.motion.x;
-         mouse.pos.y = event.motion.y;
+         //mouse.pos.x = event.motion.x;
+         //mouse.pos.y = event.motion.y;
          mouse.wheel = 0;
          HLH_gui_handle_mouse(&win->e, mouse);
 
@@ -410,6 +413,32 @@ int HLH_gui_message_loop(void)
       {
          //TODO(Captain4LK): what do we do if this takes longer than timer_interval?
          HLH_gui_element_msg(event.user.data1, HLH_GUI_MSG_TIMER, 0, NULL);
+      }
+
+      if(win!=NULL)
+      {
+         if(HLH_array_length(win->redraw)>0)
+         {
+            if(SDL_SetRenderTarget(win->renderer, win->target)<0)
+               fprintf(stderr, "SDL_SetRenderTarget(): %s\n", SDL_GetError());
+
+            for(int i = 0;i<HLH_array_length(win->redraw);i++)
+            {
+               if(win->redraw[i]->needs_redraw)
+                  HLH_gui_element_redraw_msg(win->redraw[i]);
+            }
+            HLH_array_length_set(win->redraw,0);
+
+            if(SDL_SetRenderTarget(win->renderer, NULL)<0)
+               fprintf(stderr, "SDL_SetRenderTarget(): %s\n", SDL_GetError());
+            if(SDL_RenderClear(win->renderer)<0)
+               fprintf(stderr, "SDL_RenderClear(): %s\n", SDL_GetError());
+            if(SDL_RenderCopy(win->renderer, win->target, NULL, NULL)<0)
+               fprintf(stderr, "SDL_RenderCopy(): %s\n", SDL_GetError());
+            if(SDL_RenderCopy(win->renderer, win->overlay, NULL, NULL)<0)
+               fprintf(stderr, "SDL_RenderCopy(): %s\n", SDL_GetError());
+            SDL_RenderPresent(win->renderer);
+         }
       }
    }
 }
