@@ -14,6 +14,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stddef.h>
 #include <string.h>
 #include <limits.h>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 //-------------------------------------
 
 //Internal includes
@@ -52,12 +56,19 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
    uint32_t **clusters = malloc(sizeof(*clusters)*colors);
    memset(clusters,0,sizeof(*clusters)*colors);
 
+#ifdef _OPENMP
+   omp_lock_t locks[256];
+   for(int i = 0;i<colors;i++)
+      omp_init_lock(&locks[i]);
+#endif
+
    for(int i = 0;i<16;i++)
    {
       //Reset clusters
       for(int j = 0;j<colors;j++)
          HLH_array_length_set(clusters[j],0);
 
+#pragma omp parallel for
       for(int j = 0;j<img->w*img->h;j++)
       {
          uint32_t cur = img->data[j];
@@ -86,10 +97,19 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
             }
          }
 
+#ifdef _OPENMP
+         omp_set_lock(&locks[min_i]);
+#endif
+
          HLH_array_push(clusters[min_i],cur);
+
+#ifdef _OPENMP
+         omp_unset_lock(&locks[min_i]);
+#endif
       }
 
       //Recalculate centers
+#pragma omp parallel for
       for(int j = 0;j<colors;j++)
       {
          uint64_t sum_r = 0;
@@ -120,6 +140,11 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
          palette[j] = centers[j];
       }
    }
+
+#ifdef _OPENMP
+   for(int i = 0;i<colors;i++)
+      omp_destroy_lock(&locks[i]);
+#endif
 
    HLH_array_free(centers);
    for(int i = 0;i<colors;i++)
@@ -276,9 +301,6 @@ static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmea
          uint64_t dist = (cr-r)*(cr-r);
          dist+=(cg-g)*(cg-g);
          dist+=(cb-b)*(cb-b);
-         //uint64_t dist = (centers[center_index].r-cur.r)*(centers[center_index].r-cur.r);
-         //dist+=(centers[center_index].g-cur.g)*(centers[center_index].g-cur.g);
-         //dist+=(centers[center_index].b-cur.b)*(centers[center_index].b-cur.b);
 
          if(dist<distance[j])
             distance[j] = dist;

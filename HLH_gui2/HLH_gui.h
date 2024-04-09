@@ -298,6 +298,7 @@ typedef struct
    int len;
    int max_len;
    int state;
+   int active;
 }HLH_gui_entry;
 
 typedef struct

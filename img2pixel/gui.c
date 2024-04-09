@@ -35,10 +35,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
    slider->e.msg_usr = slider_msg; \
    slider->e.usr = SLIDER_##type_enum; \
    gui.slider_##type = slider; \
-   b = HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST,"<",NULL); \
+   b = HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST,"\x11",NULL); \
    b->e.msg_usr = button_sub_msg; \
    b->e.usr = BUTTON_##type_enum; \
-   b = HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST,">",NULL); \
+   b = HLH_gui_button_create(&group->e,HLH_GUI_PACK_WEST,"\x10",NULL); \
    b->e.msg_usr = button_add_msg; \
    b->e.usr = BUTTON_##type_enum; \
    gui.entry_##type = HLH_gui_entry_create(&group->e,HLH_GUI_PACK_WEST,5); \
@@ -138,7 +138,7 @@ typedef enum
 //Variables
 static HLH_gui_imgcmp *gui_imgcmp;
 
-static HLH_gui_group *gui_groups_left[5];
+static HLH_gui_group *gui_groups_left[4];
 
 static SLK_image32 *gui_input = NULL;
 static SLK_image32 *gui_output = NULL;
@@ -258,6 +258,7 @@ static int checkbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
 static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_distance_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_palette_gen_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static void radiobutton_palette_draw(HLH_gui_radiobutton *r);
 
 static void gui_process(int from);
 //-------------------------------------
@@ -282,26 +283,18 @@ void gui_construct(void)
       "Preset",
       "Palette",
    };
-   const char *menu2[] = 
-   {
-      "About",
-      "Test 8",
-      "Test 9",
-   };
-   HLH_gui_element *menus[3];
+   HLH_gui_element *menus[2];
    menus[0] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu0,3,menu_load_msg);
    menus[1] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu1,3,menu_save_msg);
-   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,3,menu_help_msg);
 
    const char *menubar[] = 
    {
       "Load",
       "Save",
-      "Help",
    };
 
    HLH_gui_group *root_group = HLH_gui_group_create(&win->e,HLH_GUI_EXPAND);
-   HLH_gui_menubar_create(&root_group->e,HLH_GUI_FILL_X,HLH_GUI_PACK_WEST|HLH_GUI_STYLE_01,menubar,menus,3,NULL);
+   HLH_gui_menubar_create(&root_group->e,HLH_GUI_FILL_X,HLH_GUI_PACK_WEST|HLH_GUI_STYLE_01,menubar,menus,2,NULL);
    HLH_gui_separator_create(&root_group->e,HLH_GUI_FILL_X,0);
    //-------------------------------------
 
@@ -374,7 +367,7 @@ void gui_construct(void)
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[4] = r;
       HLH_gui_radiobutton_set(first,1,1);
-      const char *bar_sample[1] = {"Nearest  >"};
+      const char *bar_sample[1] = {"Nearest  \x1f"};
       gui_bar_sample = HLH_gui_menubar_create(&gui_groups_left[0]->e,0,HLH_GUI_PACK_WEST,bar_sample,(HLH_gui_element **)&group_sample,1,NULL);
 
       HLH_gui_label_create(&gui_groups_left[0]->e,0,"Sample x offset");
@@ -450,7 +443,7 @@ void gui_construct(void)
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[7] = r;
       HLH_gui_radiobutton_set(first,1,1);
-      const char *bar_dither[1] = {"Bayer 4x4         >"};
+      const char *bar_dither[1] = {"Bayer 4x4         \x1f"};
       gui_bar_dither = HLH_gui_menubar_create(&gui_groups_left[1]->e,0,HLH_GUI_PACK_WEST,bar_dither,(HLH_gui_element **)&group_dither,1,NULL);
 
       HLH_gui_label_create(&gui_groups_left[1]->e,0,"Dither amount");
@@ -485,7 +478,7 @@ void gui_construct(void)
       r->e.msg_usr = radiobutton_distance_msg;
       gui.dither_color_dist[5] = r;
       HLH_gui_radiobutton_set(first,1,1);
-      const char *bar_distance[1] = {"RGB Euclidian >"};
+      const char *bar_distance[1] = {"RGB Euclidian \x1f"};
       gui_bar_distance = HLH_gui_menubar_create(&gui_groups_left[1]->e,0,HLH_GUI_PACK_WEST,bar_distance,(HLH_gui_element **)&group_distance,1,NULL);
 
       HLH_gui_checkbutton *c = HLH_gui_checkbutton_create(&gui_groups_left[1]->e,0,"k-means",NULL);
@@ -593,8 +586,8 @@ void gui_construct(void)
    //Post process
    //-------------------------------------
    {
-      gui_groups_left[4] = HLH_gui_group_create(&group_left->e,HLH_GUI_EXPAND);
-      HLH_gui_label_create(&gui_groups_left[4]->e,0,"                                ");
+      //gui_groups_left[4] = HLH_gui_group_create(&group_left->e,HLH_GUI_EXPAND);
+      //HLH_gui_label_create(&gui_groups_left[4]->e,0,"                                ");
    }
    //-------------------------------------
 
@@ -602,7 +595,7 @@ void gui_construct(void)
    HLH_gui_element_ignore(&gui_groups_left[1]->e,1);
    HLH_gui_element_ignore(&gui_groups_left[2]->e,1);
    HLH_gui_element_ignore(&gui_groups_left[3]->e,1);
-   HLH_gui_element_ignore(&gui_groups_left[4]->e,1);
+   //HLH_gui_element_ignore(&gui_groups_left[4]->e,1);
 
    //Right bar: settings tabs
    HLH_gui_radiobutton *rb = NULL;
@@ -619,9 +612,9 @@ void gui_construct(void)
    rb = HLH_gui_radiobutton_create(&group_right->e,HLH_GUI_PACK_NORTH|HLH_GUI_STYLE_02|HLH_GUI_MAX_X,"Colors",NULL);
    rb->e.usr = 3;
    rb->e.msg_usr = rb_radiobutton_msg;
-   rb = HLH_gui_radiobutton_create(&group_right->e,HLH_GUI_PACK_NORTH|HLH_GUI_STYLE_02|HLH_GUI_MAX_X,"Post process",NULL);
-   rb->e.usr = 4;
-   rb->e.msg_usr = rb_radiobutton_msg;
+   //rb = HLH_gui_radiobutton_create(&group_right->e,HLH_GUI_PACK_NORTH|HLH_GUI_STYLE_02|HLH_GUI_MAX_X,"Post process",NULL);
+   //rb->e.usr = 4;
+   //rb->e.msg_usr = rb_radiobutton_msg;
 
    HLH_gui_radiobutton_set(sample,1,0);
 
@@ -661,7 +654,7 @@ static int radiobutton_sample_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
       {
          sample_mode = r->e.usr;
          char tmp[256];
-         snprintf(tmp,256,"%s >",r->text);
+         snprintf(tmp,256,"%s \x1f",r->text);
          HLH_gui_menubar_label_set(gui_bar_sample,tmp,0);
 
          gui_process(0);
@@ -1280,7 +1273,7 @@ static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
       {
          dither_config.dither_mode = r->e.usr;
          char tmp[256];
-         snprintf(tmp,256,"%s >",r->text);
+         snprintf(tmp,256,"%s \x1f",r->text);
          HLH_gui_menubar_label_set(gui_bar_dither,tmp,0);
 
          gui_process(3);
@@ -1299,7 +1292,7 @@ static int radiobutton_distance_msg(HLH_gui_element *e, HLH_gui_msg msg, int di,
       {
          dither_config.color_dist = r->e.usr;
          char tmp[256];
-         snprintf(tmp,256,"%s >",r->text);
+         snprintf(tmp,256,"%s \x1f",r->text);
          HLH_gui_menubar_label_set(gui_bar_distance,tmp,0);
 
          gui_process(3);

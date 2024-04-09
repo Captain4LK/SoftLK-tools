@@ -952,6 +952,9 @@ static void json5_free(HLH_json5 *root)
 
 static void json5_write(FILE *f, const HLH_json5 *o,int indent)
 {
+   if(f==NULL)
+      return;
+
    static const char *tabs = 
    "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
    "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";

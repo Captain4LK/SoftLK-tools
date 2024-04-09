@@ -11,7 +11,7 @@ fi
 if [ $1 = "gui" ]; then
    sources="$sources main.c gui.c ../HLH_gui2/HLH_gui_all.c"
 
-   gcc -o ../bin/SLK_img2pix $sources $flags -lm -lSDL2 -Og -g -Wstrict-aliasing=3 -fopenmp -I../HLH_gui2 -fsanitize=undefined,address
+   gcc -o ../bin/SLK_img2pix $sources $flags -lm -lSDL2 -Og -g -fopenmp -I../HLH_gui2 -fsanitize=undefined,address
 
 
 elif [ $1 = "cmd" ]; then

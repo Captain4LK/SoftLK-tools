@@ -39,6 +39,7 @@ HLH_gui_entry *HLH_gui_entry_create(HLH_gui_element *parent, uint64_t flags, int
    entry->max_len = max_len;
    entry->entry = calloc(1,entry->max_len+1);
    entry->state = 0;
+   entry->active = 0;
 
    return entry;
 }
@@ -96,6 +97,8 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          HLH_gui_textinput_start(&entry->e);
          entry->state = 0;
+         entry->active = 1;
+         HLH_gui_element_redraw(&entry->e);
       }
    }
    else if(msg==HLH_GUI_MSG_TEXTINPUT)
@@ -134,6 +137,11 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       if(changed)
          HLH_gui_element_redraw(&entry->e);
    }
+   else if(msg==HLH_GUI_MSG_TEXTINPUT_END)
+   {
+      entry->active = 0;
+      HLH_gui_element_redraw(&entry->e);
+   }
 
    return 0;
 }
@@ -154,6 +162,14 @@ static void entry_draw(HLH_gui_entry *e)
    HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), 0xff323232);
    HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), 0xff323232);
 
-   HLH_gui_draw_string(&e->e, bounds, e->entry, e->len, 0xff000000, 1);
+   HLH_gui_rect text = e->e.bounds;
+   text.minx+=scale*3;
+   HLH_gui_draw_string(&e->e, text, e->entry, e->len, 0xff000000, 0);
+
+   if(e->active)
+   {
+      text.minx+=HLH_GUI_GLYPH_WIDTH*scale*e->len;
+      HLH_gui_draw_string(&e->e, text, "\x16", 1, 0x1f1f1f, 0);
+   }
 }
 //-------------------------------------

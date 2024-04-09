@@ -14,6 +14,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <math.h>
 #include <string.h>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include "HLH.h"
 //-------------------------------------
 
@@ -188,6 +192,13 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
    slk_color3f *centers = choose_centers(config);
    slk_color3f **clusters = malloc(sizeof(*clusters)*config->palette_colors);
    memset(clusters,0,sizeof(*clusters)*config->palette_colors);
+   HLH_array_length_set(asign,img->w*img->h);
+
+#ifdef _OPENMP
+   omp_lock_t locks[256];
+   for(int i = 0;i<config->palette_colors;i++)
+      omp_init_lock(&locks[i]);
+#endif
 
    for(int iter = 0;iter<16;iter++)
    {
@@ -195,9 +206,7 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
       for(int j = 0;j<config->palette_colors;j++)
          HLH_array_length_set(clusters[j],0);
 
-      HLH_array_length_set(asign,0);
-
-      //TODO(Captain4LK): this needs some work to be run in parallel
+#pragma omp parallel for
       for(int j = 0;j<img->w*img->h;j++)
       {
          uint64_t p = img->data[j];
@@ -258,11 +267,21 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
          color.c0 = c0;
          color.c1 = c1;
          color.c2 = c2;
+         asign[j] = min_index;
+
+#ifdef _OPENMP
+         omp_set_lock(&locks[min_index]);
+#endif
+
          HLH_array_push(clusters[min_index],color);
-         HLH_array_push(asign,min_index);
+
+#ifdef _OPENMP
+         omp_unset_lock(&locks[min_index]);
+#endif
       }
 
       //Recalculate centers
+#pragma omp parallel for
       for(int j = 0;j<config->palette_colors;j++)
       {
          if(HLH_array_length(clusters[j])==0)
@@ -318,6 +337,11 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
          centers[j] = color;
       }
    }
+
+#ifdef _OPENMP
+   for(int i = 0;i<config->palette_colors;i++)
+      omp_destroy_lock(&locks[i]);
+#endif
 
    HLH_array_free(centers);
    for(int i = 0;i<config->palette_colors;i++)
