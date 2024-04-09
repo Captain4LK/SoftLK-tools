@@ -834,14 +834,14 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       }
       else if(s->e.usr==SLIDER_WIDTH)
       {
-         size_absolute_x = s->value;
+         size_absolute_x = s->value+1;
          snprintf(buffer,512,"%d",size_absolute_x);
          HLH_gui_entry_set(gui.entry_width,buffer);
          gui_process(0);
       }
       else if(s->e.usr==SLIDER_HEIGHT)
       {
-         size_absolute_y = s->value;
+         size_absolute_y = s->value+1;
          snprintf(buffer,512,"%d",size_absolute_y);
          HLH_gui_entry_set(gui.entry_height,buffer);
          gui_process(0);
@@ -1019,12 +1019,12 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(entry->e.usr==ENTRY_WIDTH)
       {
          int value = strtol(entry->entry,NULL,10);
-         HLH_gui_slider_set(gui.slider_width,value,512,1,1);
+         HLH_gui_slider_set(gui.slider_width,value-1,511,1,1);
       }
       else if(entry->e.usr==ENTRY_HEIGHT)
       {
          int value = strtol(entry->entry,NULL,10);
-         HLH_gui_slider_set(gui.slider_height,value,512,1,1);
+         HLH_gui_slider_set(gui.slider_height,value-1,511,1,1);
       }
       else if(entry->e.usr==ENTRY_SCALE_X)
       {
@@ -1133,9 +1133,9 @@ static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(button->e.usr==BUTTON_Y_OFF)
          HLH_gui_slider_set(gui.slider_y_off,(int)((y_offset+0.1f)*500.f),500,1,1);
       else if(button->e.usr==BUTTON_WIDTH)
-         HLH_gui_slider_set(gui.slider_width,size_absolute_x+8,512,1,1);
+         HLH_gui_slider_set(gui.slider_width,size_absolute_x+8-1,511,1,1);
       else if(button->e.usr==BUTTON_HEIGHT)
-         HLH_gui_slider_set(gui.slider_height,size_absolute_y+8,512,1,1);
+         HLH_gui_slider_set(gui.slider_height,size_absolute_y+8-1,511,1,1);
       else if(button->e.usr==BUTTON_SCALE_X)
          HLH_gui_slider_set(gui.slider_scale_x,size_relative_x+1-1,31,1,1);
       else if(button->e.usr==BUTTON_SCALE_Y)
@@ -1189,9 +1189,9 @@ static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(button->e.usr==BUTTON_Y_OFF)
          HLH_gui_slider_set(gui.slider_y_off,(int)((y_offset-0.1f)*500.f),500,1,1);
       else if(button->e.usr==BUTTON_WIDTH)
-         HLH_gui_slider_set(gui.slider_width,size_absolute_x-8,512,1,1);
+         HLH_gui_slider_set(gui.slider_width,size_absolute_x-8-1,511,1,1);
       else if(button->e.usr==BUTTON_HEIGHT)
-         HLH_gui_slider_set(gui.slider_height,size_absolute_y-8,512,1,1);
+         HLH_gui_slider_set(gui.slider_height,size_absolute_y-8-1,511,1,1);
       else if(button->e.usr==BUTTON_SCALE_X)
          HLH_gui_slider_set(gui.slider_scale_x,size_relative_x-1-1,31,1,1);
       else if(button->e.usr==BUTTON_SCALE_Y)
@@ -1573,8 +1573,8 @@ void gui_load_preset(const char *path)
    HLH_gui_slider_set(gui.slider_blur,(int)(blur_amount*16.f),512,1,1);
    HLH_gui_slider_set(gui.slider_x_off,(int)(x_offset*500.f),500,1,1);
    HLH_gui_slider_set(gui.slider_y_off,(int)(y_offset*500.f),500,1,1);
-   HLH_gui_slider_set(gui.slider_width,size_absolute_x,512,1,1);
-   HLH_gui_slider_set(gui.slider_height,size_absolute_y,512,1,1);
+   HLH_gui_slider_set(gui.slider_width,size_absolute_x-1,511,1,1);
+   HLH_gui_slider_set(gui.slider_height,size_absolute_y-1,511,1,1);
    HLH_gui_slider_set(gui.slider_scale_x,size_relative_x-1,31,1,1);
    HLH_gui_slider_set(gui.slider_scale_y,size_relative_y-1,31,1,1);
    HLH_gui_slider_set(gui.slider_sharp,(int)(sharp_amount*500.f),500,1,1);
