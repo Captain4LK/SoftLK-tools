@@ -14,9 +14,11 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <string.h>
 #include <stdint.h>
 
+#define STBI_WINDOWS_UTF8
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include "stb_image.h"
+#define STBIW_WINDOWS_UTF8
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
 #include "stb_image_write.h"
@@ -83,6 +85,8 @@ static const uint64_t core_font[] =
 //Function prototypes
 HLH_gui_window *core_find_window(SDL_Window *win);
 static int core_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+
+static void image_write_func(void *context, void *data, int size);
 //-------------------------------------
 
 //Function implementations
@@ -554,13 +558,13 @@ void HLH_gui_textinput_stop(HLH_gui_window *w)
    }
 }
 
-uint32_t *HLH_gui_image_load(const char *path, int *width, int *height)
+uint32_t *HLH_gui_image_load(FILE *fp, int *width, int *height)
 {
-   if(path==NULL)
+   if(fp==NULL)
       return NULL;
 
    int n;
-   return (uint32_t *)stbi_load(path, width, height, &n, 4);
+   return (uint32_t *)stbi_load_from_file(fp, width, height, &n, 4);
 }
 
 void HLH_gui_image_free(uint32_t *pix)
@@ -571,13 +575,12 @@ void HLH_gui_image_free(uint32_t *pix)
    stbi_image_free(pix);
 }
 
-void HLH_gui_image_save(const char *path, uint32_t *data, int width, int height)
+void HLH_gui_image_save(FILE *fp, uint32_t *data, int width, int height, const char *ext)
 {
-   if(path==NULL||data==NULL||width<=0||height<=0)
+   if(fp==NULL||data==NULL||width<=0||height<=0)
       return;
 
-
-   //Get extension
+   /*//Get extension
    char ext[32] = {0};
 
    char *last_dot = strrchr(path,'.');
@@ -601,17 +604,17 @@ void HLH_gui_image_save(const char *path, uint32_t *data, int width, int height)
       strncpy(ext,last_dot+1,31);
       ext[31] = '\0';
    }
-
+*/
    if(strcmp(ext,"bmp")==0)
-      stbi_write_bmp(path,width,height,4,data);
+      stbi_write_bmp_to_func(image_write_func,fp,width,height,4,data);
    else if(strcmp(ext,"tga")==0)
-      stbi_write_tga(path,width,height,4,data);
+      stbi_write_tga_to_func(image_write_func,fp,width,height,4,data);
    else if(strcmp(ext,"jpg")==0||strcmp(ext,"JPG")==0)
-      stbi_write_jpg(path,width,height,4,data,96);
+      stbi_write_jpg_to_func(image_write_func,fp,width,height,4,data,96);
    //Save as png if unknown
    //Could error out here, but better to save something
    else
-      stbi_write_png(path,width,height,4,data,width*4);
+      stbi_write_png_to_func(image_write_func,fp,width,height,4,data,width*4);
 }
 
 SDL_Texture *HLH_gui_texture_load(HLH_gui_window *win, const char *path, int *width, int *height)
@@ -690,5 +693,10 @@ HLH_gui_window *core_find_window(SDL_Window *win)
          return core_windows[i];
 
    return NULL;
+}
+
+static void image_write_func(void *context, void *data, int size)
+{
+   fwrite(data,size,1,(FILE *)context);
 }
 //-------------------------------------

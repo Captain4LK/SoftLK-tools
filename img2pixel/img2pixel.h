@@ -12,6 +12,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _SLK_IMG2PIXEL_H_
 
+#include <stdio.h>
+
 typedef struct
 {
    int w;
@@ -73,8 +75,8 @@ uint32_t SLK_color32_b(uint32_t c);
 uint32_t SLK_color32_a(uint32_t c);
 
 //Max 256
-void SLK_palette_load(const char *path, uint32_t *colors, int *color_count);
-void SLK_palette_save(const char *path, uint32_t *colors, int color_count);
+void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *ext);
+void SLK_palette_save(FILE *f, uint32_t *colors, int color_count, const char *ext);
 
 SLK_image32 *SLK_image32_dup(const SLK_image32 *src);
 SLK_image32 *SLK_image32_dup64(const SLK_image64 *src);

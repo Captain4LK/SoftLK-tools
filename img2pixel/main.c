@@ -1,7 +1,7 @@
 /*
 SLK_img2pixel - a tool for converting images to pixelart
 
-Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -24,6 +24,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "img2pixel.h"
+#include "util.h"
 #include "gui.h"
 //-------------------------------------
 
@@ -44,6 +45,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 int main(int argc, char **argv)
 {
    HLH_gui_init();
+
+   settings_load("settings.json");
+   atexit(settings_save);
 
    gui_construct();
    gui_load_preset(NULL);

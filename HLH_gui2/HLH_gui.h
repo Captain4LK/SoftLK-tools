@@ -395,8 +395,8 @@ HLH_gui_entry *HLH_gui_entry_create(HLH_gui_element *parent, uint64_t flags, int
 void HLH_gui_entry_set(HLH_gui_entry *entry, char *text);
 
 //Utils
-uint32_t *HLH_gui_image_load(const char *path, int *width, int *height);
+uint32_t *HLH_gui_image_load(FILE *fp, int *width, int *height);
 void HLH_gui_image_free(uint32_t *pix);
-void HLH_gui_image_save(const char *path, uint32_t *data, int width, int height);
+void HLH_gui_image_save(FILE *fp, uint32_t *data, int width, int height, const char *ext);
 
 #endif

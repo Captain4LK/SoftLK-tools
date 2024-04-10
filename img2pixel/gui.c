@@ -30,7 +30,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define SLIDER(root_group,type,type_enum) \
    group = HLH_gui_group_create(root_group,HLH_GUI_FILL_X); \
    slider = HLH_gui_slider_create(&group->e,HLH_GUI_PACK_WEST|HLH_GUI_FIXED_X,0); \
-   slider->e.fixed_size.x = 196; \
+   slider->e.fixed_size.x = 196*HLH_gui_get_scale(); \
    HLH_gui_slider_set(slider,-1,1,0,0); \
    slider->e.msg_usr = slider_msg; \
    slider->e.usr = SLIDER_##type_enum; \
@@ -695,12 +695,31 @@ static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Image
       if(m->index==0)
       {
-         SLK_image32 *img = image_select();
+         SLK_image32 *img = NULL;
+         FILE *f = image_load_select();
+         if(f!=NULL)
+         {
+            int width,height;
+            uint32_t *data = HLH_gui_image_load(f,&width,&height);
+            if(data!=NULL&&width>0&&height>0)
+            {
+               img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
+               img->w = width;
+               img->h = height;
+               memcpy(img->data,data,sizeof(*img->data)*width*height);
+            }
+            HLH_gui_image_free(data);
+            fclose(f);
+         }
+
          if(img!=NULL)
          {
             HLH_gui_imgcmp_update0(gui_imgcmp,img->data,img->w,img->h,1);
             if(gui_input!=NULL)
+            {
                free(gui_input);
+               gui_input = NULL;
+            }
             gui_input = SLK_image32_dup(img);
             free(img);
 
@@ -710,18 +729,27 @@ static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Preset
       else if(m->index==1)
       {
-         const char *preset = preset_load_select();
-         gui_load_preset(preset);
+         FILE *f = preset_load_select();
+         if(f!=NULL)
+         {
+            gui_load_preset(f);
+            fclose(f);
+         }
       }
       //Palette
       else if(m->index==2)
       {
-         const char *palette = palette_load_select();
-         SLK_palette_load(palette,dither_config.palette,&dither_config.palette_colors);
-         block_process = 1;
-         HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-1,255,1,1);
-         block_process = 0;
-         gui_process(3);
+         char ext[512];
+         FILE *f = palette_load_select(ext);
+         if(f!=NULL)
+         {
+            SLK_palette_load(f,dither_config.palette,&dither_config.palette_colors,ext);
+            fclose(f);
+            block_process = 1;
+            HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-1,255,1,1);
+            block_process = 0;
+            gui_process(3);
+         }
       }
    }
 
@@ -740,16 +768,23 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          if(gui_output==NULL)
             return 0;
 
-         const char *image = image_save_select();
-         HLH_gui_image_save(image,gui_output->data,gui_output->w,gui_output->h);
+         char ext[512];
+         FILE *f = image_save_select(ext);
+         HLH_gui_image_save(f,gui_output->data,gui_output->w,gui_output->h,ext);
+         if(f!=NULL)
+            fclose(f);
+
+         //const char *image = image_save_select();
+         //HLH_gui_image_save(image,gui_output->data,gui_output->w,gui_output->h);
       }
       //Preset
       else if(m->index==1)
       {
-         const char *preset = preset_save_select();
-         FILE *f = fopen(preset,"w");
-         if(f==NULL)
-            return 0;
+         FILE *f = preset_save_select();
+         //const char *preset = preset_save_select();
+         //FILE *f = fopen(preset,"w");
+         //if(f==NULL)
+            //return 0;
 
          HLH_json5_root *root = HLH_json_create_root();
          HLH_json_object_add_real(&root->root,"blur_amount",blur_amount);
@@ -786,14 +821,19 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          HLH_json_write_file(f,&root->root);
          HLH_json_free(root);
 
-         fclose(f);
+         if(f!=NULL)
+            fclose(f);
       }
       //Palette
       else if(m->index==2)
       {
-         const char *palette = palette_save_select();
+         char ext[512];
+         FILE *f = palette_save_select(ext);
+         //const char *palette = palette_save_select();
 
-         SLK_palette_save(palette,dither_config.palette,dither_config.palette_colors);
+         SLK_palette_save(f,dither_config.palette,dither_config.palette_colors,ext);
+         if(f!=NULL)
+            fclose(f);
       }
    }
 
@@ -1458,15 +1498,11 @@ static void gui_process(int from)
    HLH_gui_imgcmp_update1(gui_imgcmp,gui_output->data,gui_output->w,gui_output->h,1);
 }
 
-void gui_load_preset(const char *path)
+void gui_load_preset(FILE *f)
 {
    block_process = 1;
-   if(path!=NULL)
+   if(f!=NULL)
    {
-      FILE *f = fopen(path,"r");
-      if(f==NULL)
-         return;
-
       HLH_json5 fallback = {0};
       HLH_json5_root *root = HLH_json_parse_file_stream(f);
 
@@ -1501,7 +1537,6 @@ void gui_load_preset(const char *path)
          dither_config.palette[i] = HLH_json_get_array_integer(array,i,0);
 
       HLH_json_free(root);
-      fclose(f);
 
       color_selected = 0;
    }
