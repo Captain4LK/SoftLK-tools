@@ -34,6 +34,7 @@ static void separator_draw(HLH_gui_separator *s);
 HLH_gui_separator *HLH_gui_separator_create(HLH_gui_element *parent, uint64_t flags, int direction)
 {
    HLH_gui_separator *separator = (HLH_gui_separator *) HLH_gui_element_create(sizeof(*separator), parent, flags, separator_msg);
+   separator->e.type = HLH_GUI_SEPARATOR;
    separator->direction = direction;
 
    return separator;

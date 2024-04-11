@@ -35,7 +35,7 @@ static void radiobutton_draw(HLH_gui_radiobutton *r);
 HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds)
 {
    HLH_gui_radiobutton *button = (HLH_gui_radiobutton *) HLH_gui_element_create(sizeof(*button), parent, flags, radiobutton_msg);
-   button->e.type = radiobutton_type;
+   button->e.type = HLH_GUI_RADIOBUTTON;
 
    if(text!=NULL)
    {
@@ -66,13 +66,12 @@ void HLH_gui_radiobutton_set(HLH_gui_radiobutton *r, int trigger_msg, int redraw
       {
          HLH_gui_element *c = r->e.parent->children[i];
 
-         //Valid pointer comparison
-         if(c->type==radiobutton_type)
+         if(c->type==HLH_GUI_RADIOBUTTON)
          {
             HLH_gui_radiobutton *b = (HLH_gui_radiobutton *)c;
 
             //Send message to previous button
-            if(b->checked&&trigger_msg&&b!=r)
+            if(b->checked&&trigger_msg&&b->e.id!=r->e.id)
                HLH_gui_element_msg(&b->e, HLH_GUI_MSG_CLICK, 0, NULL);
             b->checked = 0;
          }

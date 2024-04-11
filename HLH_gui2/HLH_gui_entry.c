@@ -35,6 +35,7 @@ HLH_gui_entry *HLH_gui_entry_create(HLH_gui_element *parent, uint64_t flags, int
 {
    HLH_gui_entry *entry = (HLH_gui_entry *) HLH_gui_element_create(sizeof(*entry), parent, flags, entry_msg);
 
+   entry->e.type = HLH_GUI_ENTRY;
    entry->len = 0;
    entry->max_len = max_len;
    entry->entry = calloc(1,entry->max_len+1);

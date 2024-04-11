@@ -127,6 +127,7 @@ HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height, 
 {
    HLH_gui_window *window = (HLH_gui_window *)HLH_gui_element_create(sizeof(*window), NULL, 0, core_window_msg);
    window->e.window = window;
+   window->e.type = HLH_GUI_WINDOW;
    //window->hover = &window->e;
    window->width = width;
    window->height = height;

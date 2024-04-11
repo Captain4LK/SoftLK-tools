@@ -51,7 +51,7 @@ HLH_gui_group *HLH_gui_menubar_create(HLH_gui_element *parent, uint64_t flags, u
    for(int i = 0; i<child_count; i++)
    {
       HLH_gui_pulldown *pull = (HLH_gui_pulldown *) HLH_gui_element_create(sizeof(*pull), &group->e, cflags, pulldown_msg);
-      pull->e.type = "pulldown";
+      pull->e.type = HLH_GUI_PULLDOWN;
 
       pull->text_len = (int)strlen(labels[i]);
       pull->text = malloc(pull->text_len + 1);

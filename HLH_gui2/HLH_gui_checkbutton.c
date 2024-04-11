@@ -34,7 +34,7 @@ static void checkbutton_draw(HLH_gui_checkbutton *c);
 HLH_gui_checkbutton *HLH_gui_checkbutton_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds)
 {
    HLH_gui_checkbutton *button = (HLH_gui_checkbutton *) HLH_gui_element_create(sizeof(*button), parent, flags, checkbutton_msg);
-   button->e.type = "checkbutton";
+   button->e.type = HLH_GUI_CHECKBUTTON;
 
    if(text!=NULL)
    {

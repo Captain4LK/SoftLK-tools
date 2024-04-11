@@ -36,6 +36,7 @@ static void slider_draw(HLH_gui_slider *s);
 HLH_gui_slider *HLH_gui_slider_create(HLH_gui_element *parent, uint64_t flags, int direction)
 {
    HLH_gui_slider *slider = (HLH_gui_slider *) HLH_gui_element_create(sizeof(*slider), parent, flags, slider_msg);
+   slider->e.type = HLH_GUI_SLIDER;
    slider->direction = direction;
    slider->value = 100;
    slider->range = 100;

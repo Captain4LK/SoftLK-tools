@@ -38,7 +38,7 @@ HLH_gui_group *HLH_gui_menu_create(HLH_gui_element *parent, uint64_t flags, uint
    for(int i = 0; i<label_count; i++)
    {
       HLH_gui_menubutton *button = (HLH_gui_menubutton *) HLH_gui_element_create(sizeof(*button), &group->e, cflags, menubutton_msg);
-      button->e.type = "menubutton";
+      button->e.type = HLH_GUI_MENUBUTTON;
 
       button->index = i;
       button->text_len = (int)strlen(labels[i]);

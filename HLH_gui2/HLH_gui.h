@@ -64,6 +64,25 @@ typedef struct
    HLH_gui_point pos;
 }HLH_gui_mouse;
 
+typedef enum
+{
+   HLH_GUI_UNKNOWN = 0,
+   HLH_GUI_GROUP,
+   HLH_GUI_LABEL,
+   HLH_GUI_BUTTON,
+   HLH_GUI_CHECKBUTTON,
+   HLH_GUI_RADIOBUTTON,
+   HLH_GUI_SEPARATOR,
+   HLH_GUI_SLIDER,
+   HLH_GUI_IMAGE,
+   HLH_GUI_IMGCMP,
+   HLH_GUI_ENTRY,
+   HLH_GUI_WINDOW,
+   HLH_GUI_PULLDOWN,
+   HLH_GUI_MENUBUTTON,
+   HLH_GUI_USER, //choose user type relative to this enum: type = HLH_GUI_USER+X
+}HLH_gui_type;
+
 #define HLH_GUI_MOUSE_LEFT      (UINT8_C(0x1))
 #define HLH_GUI_MOUSE_RIGHT     (UINT8_C(0x2))
 #define HLH_GUI_MOUSE_MIDDLE    (UINT8_C(0x4))
@@ -137,6 +156,7 @@ struct HLH_gui_element
 
    //Private -- do not modify
    uint64_t flags;
+   uint64_t id;
 
    HLH_gui_window *window;
 
@@ -149,7 +169,7 @@ struct HLH_gui_element
    SDL_TimerID timer;
    int timer_interval;
 
-   const char *type;
+   HLH_gui_type type;
 
    HLH_gui_element *last_mouse;
    HLH_gui_element *parent;

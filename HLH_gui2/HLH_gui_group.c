@@ -34,7 +34,7 @@ static void group_draw(HLH_gui_group *g);
 HLH_gui_group *HLH_gui_group_create(HLH_gui_element *parent, uint64_t flags)
 {
    HLH_gui_group *group = (HLH_gui_group *) HLH_gui_element_create(sizeof(*group), parent, flags, group_msg);
-   group->e.type = "group";
+   group->e.type = HLH_GUI_GROUP;
 
    return group;
 }

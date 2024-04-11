@@ -321,6 +321,7 @@ void gui_construct(void)
       HLH_gui_label_create(&gui_groups_sample[0]->e,0,"Height");
       SLIDER(&gui_groups_sample[0]->e,height,HEIGHT)
 
+
       gui_groups_sample[1] = HLH_gui_group_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X);
       HLH_gui_label_create(&gui_groups_sample[1]->e,0,"Scale X");
       SLIDER(&gui_groups_sample[1]->e,scale_x,SCALE_X);
@@ -616,7 +617,7 @@ void gui_construct(void)
    //rb->e.usr = 4;
    //rb->e.msg_usr = rb_radiobutton_msg;
 
-   HLH_gui_radiobutton_set(sample,1,0);
+   HLH_gui_radiobutton_set(sample,1,1);
 
    //Middle: preview
    uint32_t pix = 0;
@@ -739,7 +740,7 @@ static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Palette
       else if(m->index==2)
       {
-         char ext[512];
+         char ext[512] = {0};
          FILE *f = palette_load_select(ext);
          if(f!=NULL)
          {
@@ -768,7 +769,7 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          if(gui_output==NULL)
             return 0;
 
-         char ext[512];
+         char ext[512] = {0};
          FILE *f = image_save_select(ext);
          HLH_gui_image_save(f,gui_output->data,gui_output->w,gui_output->h,ext);
          if(f!=NULL)
@@ -827,7 +828,7 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Palette
       else if(m->index==2)
       {
-         char ext[512];
+         char ext[512] = {0};
          FILE *f = palette_save_select(ext);
          //const char *palette = palette_save_select();
 

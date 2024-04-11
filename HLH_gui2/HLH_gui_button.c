@@ -34,7 +34,7 @@ static void button_draw(HLH_gui_button *t);
 HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds)
 {
    HLH_gui_button *button = (HLH_gui_button *) HLH_gui_element_create(sizeof(*button), parent, flags, button_msg);
-   button->e.type = "button";
+   button->e.type = HLH_GUI_BUTTON;
 
    if(text!=NULL)
    {

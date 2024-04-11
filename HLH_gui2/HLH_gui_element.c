@@ -24,6 +24,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Variables
+static uint64_t next_id = 0;
 //-------------------------------------
 
 //Function prototypes
@@ -43,6 +44,8 @@ HLH_gui_element *HLH_gui_element_create(size_t bytes, HLH_gui_element *parent, u
    e->flags = flags;
    e->msg_base = msg_handler;
    e->timer = 0;
+   e->type = HLH_GUI_UNKNOWN;
+   e->id = next_id++;
 
    if(parent!=NULL)
    {

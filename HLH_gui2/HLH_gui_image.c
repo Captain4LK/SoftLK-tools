@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -35,7 +35,7 @@ static void image_draw(HLH_gui_image *img);
 HLH_gui_image *HLH_gui_img_create_path(HLH_gui_element *parent, uint64_t flags, const char *path)
 {
    HLH_gui_image *img = (HLH_gui_image *) HLH_gui_element_create(sizeof(*img), parent, flags, image_msg);
-   img->e.type = "image";
+   img->e.type = HLH_GUI_IMAGE;
 
    img->img = HLH_gui_texture_load(img->e.window, path, &img->width, &img->height);
 
@@ -45,7 +45,7 @@ HLH_gui_image *HLH_gui_img_create_path(HLH_gui_element *parent, uint64_t flags, 
 HLH_gui_image *HLH_gui_img_create_data(HLH_gui_element *parent, uint64_t flags, uint32_t *pix, int width, int height)
 {
    HLH_gui_image *img = (HLH_gui_image *) HLH_gui_element_create(sizeof(*img), parent, flags, image_msg);
-   img->e.type = "image";
+   img->e.type = HLH_GUI_IMAGE;
 
    img->width = width;
    img->height = height;

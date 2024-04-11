@@ -35,7 +35,7 @@ static void imgcmp_draw(HLH_gui_imgcmp *img);
 HLH_gui_imgcmp *HLH_gui_imgcmp_create(HLH_gui_element *parent, uint64_t flags, uint32_t *pix0, int width0, int height0, uint32_t *pix1, int width1, int height1)
 {
    HLH_gui_imgcmp *img = (HLH_gui_imgcmp *) HLH_gui_element_create(sizeof(*img), parent, flags, imgcmp_msg);
-   img->e.type = "imgcmp";
+   img->e.type = HLH_GUI_IMGCMP;
 
    img->slider = 1024;
    img->width0 = width0;

@@ -33,7 +33,7 @@ static int label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint64_t flags, const char *text)
 {
    HLH_gui_label *label = (HLH_gui_label *) HLH_gui_element_create(sizeof(*label), parent, flags, label_msg);
-   label->e.type = "label";
+   label->e.type = HLH_GUI_LABEL;
 
    label->text_len = (int)strlen(text);
    label->text = malloc(label->text_len + 1);
