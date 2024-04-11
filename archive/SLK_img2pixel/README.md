@@ -25,9 +25,11 @@ In general, I try to keep the amount of external dependencies as low as possible
 ## Building
 
 * cd into SLK_img2pixels directory: ``cd SLK_img2pixel``
-* run the shell script associated with your platform and supply it with the desired target, e.g: ``sh linux.sh gui``, possible targets are:
+* run the shell script associated with your platform and supply it with the desired target, e.g: ``sh linux.sh gui_hlh``, possible targets are:
+  * ``gui_hlh`` - the new gui, seen since version 1.4
   * ``gui`` - the old gui, seen on all versions prior to 1.4
-  * ``cmd`` - command line version (currently unavailible)
+  * ``cmd`` - command line version
+  * ``video`` - experimental video processing version
 * The binary can be found at the top level of the repo in the ``bin/`` directory
 
 # Gallery
@@ -44,13 +46,7 @@ Version:                SLK_img2pixel 1.5 (tba)
 
 CHANGES:
 
-* added new sampling mode --> cluster
-* added tinting
 * optimized and corrected gaussian blur: about 5x faster and more correct for large blurring radius
-* sharpening is now unsharp-masking
-* k-means dithering now supports all color distance metrics
-* new gui
-* multithreading
 
 ----------------------------------------
 Version:                SLK_img2pixel 1.4 (17.09.2022)

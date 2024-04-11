@@ -1,11 +1,11 @@
 /*
 HLH_gui - gui framework
 
-Written in 2022 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
-You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
+You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
 //External includes
@@ -13,6 +13,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "HLH_gui.h"
+#include "HLH_gui_internal.h"
 //-------------------------------------
 
 //#defines
@@ -25,109 +26,109 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static int img_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int image_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static void image_draw(HLH_gui_image *img);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_image *HLH_gui_image_create(HLH_gui_element *parent, uint32_t flags, int width, int height, uint32_t *data)
+HLH_gui_image *HLH_gui_img_create_path(HLH_gui_element *parent, uint64_t flags, const char *path)
 {
-   HLH_gui_image *img = (HLH_gui_image *) HLH_gui_element_create(sizeof(*img),parent,flags,img_msg);
-   img->width = width;
-   img->height = height;
-   img->texture = SDL_CreateTexture(parent->window->renderer,SDL_PIXELFORMAT_RGBA32,SDL_TEXTUREACCESS_STREAMING,width,height);
-   SDL_SetTextureBlendMode(img->texture,SDL_BLENDMODE_BLEND);
-   void *pixels;
-   int pitch;
-   SDL_LockTexture(img->texture,NULL,&pixels,&pitch);
-   memcpy(pixels,data,sizeof(*data)*width*height);
-   SDL_UnlockTexture(img->texture);
+   HLH_gui_image *img = (HLH_gui_image *) HLH_gui_element_create(sizeof(*img), parent, flags, image_msg);
+   img->e.type = HLH_GUI_IMAGE;
+
+   img->img = HLH_gui_texture_load(img->e.window, path, &img->width, &img->height);
 
    return img;
 }
 
-void HLH_gui_image_update(HLH_gui_image *img, int width, int height, uint32_t *data)
+HLH_gui_image *HLH_gui_img_create_data(HLH_gui_element *parent, uint64_t flags, uint32_t *pix, int width, int height)
 {
-   if(img->width!=width||img->height!=height)
-   {
-      img->width = width;
-      img->height = height;
-      SDL_DestroyTexture(img->texture);
-      img->texture = SDL_CreateTexture(img->e.parent->window->renderer,SDL_PIXELFORMAT_RGBA32,SDL_TEXTUREACCESS_STREAMING,width,height);
-      SDL_SetTextureBlendMode(img->texture,SDL_BLENDMODE_BLEND);
-   }
+   HLH_gui_image *img = (HLH_gui_image *) HLH_gui_element_create(sizeof(*img), parent, flags, image_msg);
+   img->e.type = HLH_GUI_IMAGE;
 
-   void *pixels;
-   int pitch;
-   SDL_LockTexture(img->texture,NULL,&pixels,&pitch);
-   memcpy(pixels,data,sizeof(*data)*width*height);
-   SDL_UnlockTexture(img->texture);
+   img->width = width;
+   img->height = height;
+   img->img = HLH_gui_texture_from_data(img->e.window, pix, width, height);
 
-   HLH_gui_element_msg(&img->e,HLH_GUI_MSG_LAYOUT,0,NULL);
-   HLH_gui_element_repaint(&img->e,NULL);
+   return img;
 }
 
-static int img_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+void HLH_gui_img_update(HLH_gui_image *img, uint32_t *pix, int width, int height, int redraw)
 {
-   HLH_gui_image *img = (HLH_gui_image *) e;
-   HLH_gui_painter *p = dp;
-   float aspect = (float)img->width/(float)img->height;
+   if(img->img!=NULL)
+      SDL_DestroyTexture(img->img);
 
-   if(msg==HLH_GUI_MSG_DESTROY)
+   img->width = width;
+   img->height = height;
+   img->img = HLH_gui_texture_from_data(img->e.window, pix, width, height);
+
+   if(redraw)
+      HLH_gui_element_redraw(&img->e);
+}
+
+static int image_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_image *img = (HLH_gui_image *)e;
+
+   if(msg==HLH_GUI_MSG_GET_WIDTH)
    {
-      SDL_DestroyTexture(img->texture);
-      //free(img->data);
-   }
-   else if(msg==HLH_GUI_MSG_PAINT)
-   {
-      int view_x,view_y;
-      int view_width,view_height;
-      int width = e->bounds.r-e->bounds.l;
-      int height = e->bounds.b-e->bounds.t;
-
-      if(width*img->height>img->width*height)
-      {
-         view_height = height;
-         view_width = (img->width*height)/img->height;
-      }
-      else
-      {
-         view_width = width;
-         view_height = (img->height*width)/img->width;
-      }
-
-      view_x = (width-view_width)/2+e->bounds.l;
-      view_y = (height-view_height)/2+e->bounds.t;
-
-      SDL_Rect clip;
-      clip.x = p->clip.l;
-      clip.y = p->clip.t;
-      clip.w = p->clip.r-p->clip.l;
-      clip.h = p->clip.b-p->clip.t;
-      SDL_RenderSetClipRect(p->win->renderer,&clip);
-
-      SDL_Rect dst;
-      dst.x = view_x;
-      dst.y = view_y;
-      dst.w = view_width;
-      dst.h = view_height;
-      SDL_RenderCopy(p->win->renderer,img->texture,NULL,&dst);
-
-      SDL_RenderSetClipRect(p->win->renderer,NULL);
-   }
-   else if(msg==HLH_GUI_MSG_GET_WIDTH)
-   {
-      if(di)
-         return (int)((float)di/aspect);
-      return img->width;
+      return img->width + 6 * HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {
-      if(di)
-         return (int)((float)di*aspect);
-      return img->height;
+      return img->height + 6 * HLH_gui_get_scale();
+   }
+   else if(msg==HLH_GUI_MSG_DRAW)
+   {
+      image_draw(img);
+   }
+   else if(msg==HLH_GUI_MSG_DESTROY)
+   {
+      if(img->img!=NULL)
+         SDL_DestroyTexture(img->img);
    }
 
    return 0;
+}
+
+static void image_draw(HLH_gui_image *img)
+{
+   HLH_gui_rect bounds = img->e.bounds;
+   int scale = HLH_gui_get_scale();
+
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), 0xff323232);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), 0xff323232);
+
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), 0xffc8c8c8);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), 0xffc8c8c8);
+
+   int view_x;
+   int view_y;
+   int view_width;
+   int view_height;
+   int width = bounds.maxx - bounds.minx - scale * 6;
+   int height = bounds.maxy - bounds.miny - scale * 6;
+
+   if(width * img->height>img->width * height)
+   {
+      view_height = height;
+      view_width = (img->width * height) / img->height;
+   }
+   else
+   {
+      view_width = width;
+      view_height = (img->height * width) / img->width;
+   }
+
+   view_x = (width - view_width) / 2 + bounds.minx + 3 * scale;
+   view_y = (height - view_height) / 2 + bounds.miny + 3 * scale;
+
+   SDL_Rect dst = {0};
+   dst.x = view_x;
+   dst.y = view_y;
+   dst.w = view_width;
+   dst.h = view_height;
+   SDL_RenderCopy(img->e.window->renderer, img->img, NULL, &dst);
 }
 //-------------------------------------

@@ -1,34 +1,24 @@
 #!/bin/sh
 
-sources="utility.c assets.c image2pixel.c ../external/tinyfiledialogs.c"
+flags="-I../external/ -Wall -Wextra -Wno-unused -Wshadow -std=c99"
+sources="color.c tint.c blur.c kmeans.c image.c sharp.c sample.c hscb.c gamma.c postprocess.c dither.c palette.c unix/util_unix.c ../external/tinyfiledialogs.c"
 
 if [ $# -lt 1 ]; then
-   echo "unspecified target, need either gui, gui_hlh, cmd or video"
+   echo "unspecified target, need either gui or cmd"
    exit 0 
 fi
 
 if [ $1 = "gui" ]; then
-   sources="$sources main.c gui.c"
+   sources="$sources main.c gui.c ../HLH_gui/HLH_gui_all.c"
 
-   gcc -o ../bin/SLK_img2pix $sources -Wall -Wextra -lm -lSDL2 -Og -g -Wstrict-aliasing=3 -fopenmp
+   gcc -o ../bin/SLK_img2pix $sources $flags -lm -lSDL2 -O3 -g -fopenmp -I../HLH_gui
 
-elif [ $1 = "gui_hlh" ]; then
-   sources="$sources main_hlh.c ../HLH_gui/HLH_gui_all.c"
-   echo $sources
-
-   gcc -o ../bin/SLK_img2pix $sources -Wall -Wextra -lm -lSDL2 -O3 -flto -s -Wstrict-aliasing=3 -fopenmp -Wno-unused -Wno-sign-compare
 
 elif [ $1 = "cmd" ]; then
    sources="$sources main_cmd.c gui.c"
    echo $sources
 
    gcc -o ../bin/SLK_img2pix_cmd $sources -Wall -Wextra -lm -O3 -s -flto=auto -Wstrict-aliasing=3 
-
-elif [ $1 = "video" ]; then
-   sources="$sources main_video.c gui.c"
-   echo "${sources}"
-
-   gcc -o ../bin/SLK_img2pix_video $sources -Wall -Wextra -lm -lSDL2 -Og -g -Wstrict-aliasing=3 -fopenmp
 
 else
 
