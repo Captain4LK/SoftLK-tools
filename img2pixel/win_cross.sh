@@ -14,9 +14,11 @@ if [ $1 = "gui" ]; then
    sources="$sources main.c gui.c ../HLH_gui2/HLH_gui_all.c"
    object_files="$object_files main.o gui.o HLH_gui_all.o"
 
-   x86_64-w64-mingw32-g++ -c ../external/nfd_win.cpp -luuid -lcomdlg32 -lole32 -lmingw32 -mwindows -Wall -Wno-sign-compare -Wno-unused-parameter -static-libgcc -static-libstdc++ -fopenmp $options $flags
-   x86_64-w64-mingw32-gcc -c $sources $flags -lSDL2 -I../HLH_gui2 -static-libgcc -static-libstdc++ $options
-   x86_64-w64-mingw32-g++ -o ../bin/SLK_img2pix $object_files -luuid -lcomdlg32 -lole32 -lmingw32 -lSDL2main -lSDL2 -lgomp -mwindows -Wall -Wno-sign-compare -Wno-unused-parameter -static-libgcc -static-libstdc++ $options $flags
+   rm *.a
+   ln -s `x86_64-w64-mingw32-g++ --print-file-name=libgomp.a`
+   x86_64-w64-mingw32-g++ -c ../external/nfd_win.cpp -luuid -lcomdlg32 -lole32 -lmingw32 -mwindows -Wall -Wno-sign-compare -Wno-unused-parameter -static-libgcc -static-libstdc++ -L. $options $flags
+   x86_64-w64-mingw32-gcc -c $sources $flags -lSDL2 -I../HLH_gui2 -static-libgcc -static-libstdc++ -L. $options
+   x86_64-w64-mingw32-g++ -o ../bin/SLK_img2pix $object_files -static-libgcc -static-libstdc++ -L. -luuid -lcomdlg32 -lole32 -lmingw32 -lSDL2main -lSDL2 -mwindows -Wall -Wno-sign-compare -Wno-unused-parameter $options $flags
 
 
 elif [ $1 = "cmd" ]; then
