@@ -85,6 +85,7 @@ int HLH_gui_element_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       case HLH_GUI_MSG_GET_PRIORITY:
          return 0;
       default:
+         break;
       }
    }
 
