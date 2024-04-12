@@ -22,10 +22,9 @@ if [ $1 = "gui" ]; then
 
 
 elif [ $1 = "cmd" ]; then
-   sources="$sources main_cmd.c gui.c"
-   echo $sources
+   sources="$sources main_cmd.c ../HLH_gui/HLH_gui_all.c"
 
-   gcc -o ../bin/SLK_img2pix_cmd $sources -Wall -Wextra -lm -O3 -s -flto=auto -Wstrict-aliasing=3 
+   x86_64-w64-mingw32-gcc -o ../bin/SLK_img2pix_cmd $sources $flags -I../HLH_gui -static-libgcc -static-libstdc++ -L. $options
 
 else
 
