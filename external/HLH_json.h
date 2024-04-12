@@ -199,6 +199,9 @@ HLH_json5_root *HLH_json_parse_char_buffer(const char *buffer, size_t size)
 
 void HLH_json_write_file(FILE *f, HLH_json5 *j)
 {
+   if(f==NULL)
+      return;
+
    json5_write(f,j,0);
 }
 

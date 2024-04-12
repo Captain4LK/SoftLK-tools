@@ -15,13 +15,12 @@ if [ $1 = "gui" ]; then
 
 
 elif [ $1 = "cmd" ]; then
-   sources="$sources main_cmd.c gui.c"
-   echo $sources
+   sources="$sources main_cmd.c ../HLH_gui/HLH_gui_all.c"
 
-   gcc -o ../bin/SLK_img2pix_cmd $sources -Wall -Wextra -lm -O3 -s -flto=auto -Wstrict-aliasing=3 
+   gcc -o ../bin/SLK_img2pix_cmd $sources $flags -Wall -Wextra -lm -O3 -s -flto=auto -fopenmp -I../HLH_gui
 
 else
 
-   echo "unknown target, need either gui, cmd or video"
+   echo "unknown target, need either gui or cmd"
 
 fi

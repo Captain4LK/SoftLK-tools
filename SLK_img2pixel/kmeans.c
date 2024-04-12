@@ -62,7 +62,10 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
       omp_init_lock(&locks[i]);
 #endif
 
-   for(int i = 0;i<16;i++)
+   for(int i = 0;i<colors;i++)
+      palette[i] = centers[i];
+
+   for(int i = 0;i<0;i++)
    {
       //Reset clusters
       for(int j = 0;j<colors;j++)
@@ -72,19 +75,27 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
       for(int j = 0;j<img->w*img->h;j++)
       {
          uint32_t cur = img->data[j];
-         int32_t cr = cur&255;
-         int32_t cg = (cur>>8)&255;
-         int32_t cb = (cur>>16)&255;
-         int32_t ca = (cur>>24)&255;
+         int32_t cr = SLK_color32_r(cur);
+         int32_t cg = SLK_color32_g(cur);
+         int32_t cb = SLK_color32_b(cur);
+         int32_t ca = SLK_color32_a(cur);
+         //int32_t cr = cur&255;
+         //int32_t cg = (cur>>8)&255;
+         //int32_t cb = (cur>>16)&255;
+         //int32_t ca = (cur>>24)&255;
 
          uint64_t dist_min = UINT64_MAX;
          int min_i = 0;
          for(int c = 0;c<(int)HLH_array_length(centers);c++)
          {
-            int32_t r = centers[c]&255;
-            int32_t g = (centers[c]>>8)&255;
-            int32_t b = (centers[c]>>16)&255;
-            int32_t a = (centers[c]>>24)&255;
+            int32_t r = SLK_color32_r(centers[c]);
+            int32_t g = SLK_color32_g(centers[c]);
+            int32_t b = SLK_color32_b(centers[c]);
+            int32_t a = SLK_color32_a(centers[c]);
+            //int32_t r = centers[c]&255;
+            //int32_t g = (centers[c]>>8)&255;
+            //int32_t b = (centers[c]>>16)&255;
+            //int32_t a = (centers[c]>>24)&255;
 
             uint64_t dist = (cr-r)*(cr-r);
             dist+=(cg-g)*(cg-g);
@@ -117,17 +128,25 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
          uint64_t sum_b = 0;
          for(int c = 0;c<(int)HLH_array_length(clusters[j]);c++)
          {
-            sum_r+=clusters[j][c]&255;
-            sum_g+=(clusters[j][c]>>8)&255;
-            sum_b+=(clusters[j][c]>>16)&255;
+            sum_r+=SLK_color32_r(clusters[j][c]);
+            sum_g+=SLK_color32_g(clusters[j][c]);
+            sum_b+=SLK_color32_b(clusters[j][c]);
+            //sum_r+=clusters[j][c]&255;
+            //sum_g+=(clusters[j][c]>>8)&255;
+            //sum_b+=(clusters[j][c]>>16)&255;
          }
 
          if(HLH_array_length(clusters[j])>0)
          {
-            centers[j]&=0xff000000;
-            centers[j]|= (sum_r/HLH_array_length(clusters[j]));
-            centers[j]|= (sum_g/HLH_array_length(clusters[j]))<<8;
-            centers[j]|= (sum_b/HLH_array_length(clusters[j]))<<16;
+            uint32_t r = sum_r/HLH_array_length(clusters[j]);
+            uint32_t g = sum_r/HLH_array_length(clusters[j]);
+            uint32_t b = sum_r/HLH_array_length(clusters[j]);
+            uint32_t a = 255;
+            centers[j] = (r)|(g<<8)|(b<<16)|(a<<24);
+            //centers[j]&=0xff000000;
+            //centers[j]|= (sum_r/HLH_array_length(clusters[j]));
+            //centers[j]|= (sum_g/HLH_array_length(clusters[j]))<<8;
+            //centers[j]|= (sum_b/HLH_array_length(clusters[j]))<<16;
          }
          //Choose random data point in that case
          //Not the best solution but better than not filling these colors
@@ -287,16 +306,16 @@ static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmea
       for(int j = 0;j<img->w*img->h;j++)
       {
          uint32_t cur = img->data[j];
-         int32_t cr = cur&255;
-         int32_t cg = (cur>>8)&255;
-         int32_t cb = (cur>>16)&255;
-         int32_t ca = (cur>>24)&255;
+         int32_t cr = SLK_color32_r(cur);
+         int32_t cg = SLK_color32_g(cur);
+         int32_t cb = SLK_color32_b(cur);
+         int32_t ca = SLK_color32_a(cur);
 
          int center_index = HLH_array_length(centers)-1;
-         int32_t r = centers[center_index]&255;
-         int32_t g = (centers[center_index]>>8)&255;
-         int32_t b = (centers[center_index]>>16)&255;
-         int32_t a = (centers[center_index]>>24)&255;
+         int32_t r = SLK_color32_r(centers[center_index]);
+         int32_t g = SLK_color32_g(centers[center_index]);
+         int32_t b = SLK_color32_b(centers[center_index]);
+         int32_t a = SLK_color32_a(centers[center_index]);
 
          uint64_t dist = (cr-r)*(cr-r);
          dist+=(cg-g)*(cg-g);
@@ -310,7 +329,7 @@ static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmea
       //Weighted random to choose next centeroid
       uint64_t random = 0;
       if(dist_sum!=0)
-         rand_xor_next(&rng)%dist_sum;
+         random = rand_xor_next(&rng)%dist_sum;
       int found = 0;
       uint64_t dist_cur = 0;
       for(int j = 0;j<img->w*img->h;j++)
