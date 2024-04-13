@@ -748,6 +748,9 @@ static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
             fclose(f);
             block_process = 1;
             HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-1,255,1,1);
+            HLH_gui_slider_set(gui.slider_color_red,SLK_color32_r(dither_config.palette[color_selected]),255,1,1);
+            HLH_gui_slider_set(gui.slider_color_green,SLK_color32_g(dither_config.palette[color_selected]),255,1,1);
+            HLH_gui_slider_set(gui.slider_color_blue,SLK_color32_b(dither_config.palette[color_selected]),255,1,1);
             block_process = 0;
             gui_process(3);
          }
