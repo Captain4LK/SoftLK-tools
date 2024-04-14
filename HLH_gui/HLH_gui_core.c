@@ -260,7 +260,7 @@ int HLH_gui_message_loop(void)
 
                win->e.bounds = HLH_gui_rect_make(0, 0, win->width, win->height);
 
-               HLH_gui_element_pack(&win->e, win->e.bounds);
+               HLH_gui_element_layout(&win->e, win->e.bounds);
                HLH_gui_element_redraw(&win->e);
             }
          }
@@ -462,30 +462,21 @@ void HLH_gui_handle_mouse(HLH_gui_element *e, HLH_gui_mouse m)
 {
    HLH_gui_element *click = NULL;
 
-   if(e->flags & HLH_GUI_REMOUSE)
+   if(e->flags & HLH_GUI_CAPTURE_MOUSE)
    {
       click = e->last_mouse;
    }
    else
    {
       click = HLH_gui_element_by_point(e, m.pos);
-      HLH_gui_element *last = e->last_mouse;
-
-      if(last!=NULL&&last!=click)
-      {
-         m.button |= HLH_GUI_MOUSE_OUT;
-         HLH_gui_element_msg(last, HLH_GUI_MSG_HIT, 0, &m);
-         m.button &= ~HLH_GUI_MOUSE_OUT;
-      }
+      if(e->last_mouse!=NULL&&e->last_mouse!=click)
+         HLH_gui_element_msg(e->last_mouse, HLH_GUI_MSG_MOUSE_LEAVE, 0,NULL);
    }
 
    if(click!=NULL)
    {
-      int remouse = HLH_gui_element_msg(click, HLH_GUI_MSG_HIT, 0, &m);
-      if(remouse)
-         e->flags |= HLH_GUI_REMOUSE;
-      else
-         e->flags &= ~HLH_GUI_REMOUSE;
+      int capture = HLH_gui_element_msg(click, HLH_GUI_MSG_MOUSE, 0, &m);
+      HLH_gui_flag_set(e->flags,HLH_GUI_CAPTURE_MOUSE,capture);
       e->last_mouse = click;
    }
 }
@@ -580,32 +571,6 @@ void HLH_gui_image_save(FILE *fp, uint32_t *data, int width, int height, const c
 {
    if(fp==NULL||data==NULL||width<=0||height<=0)
       return;
-
-   /*//Get extension
-   char ext[32] = {0};
-
-   char *last_dot = strrchr(path,'.');
-
-   //No dot, or string is '.' or '..' --> no extension --> assume png
-   if(last_dot==NULL||!strcmp(path,".")||!strcmp(path,".."))
-   {
-      ext[0] = 'p';
-      ext[1] = 'n';
-      ext[2] = 'g';
-   }
-   //slash after dot --> no extension --> assume png
-   else if(last_dot[1]=='/'||last_dot[1]=='\\')
-   {
-      ext[0] = 'p';
-      ext[1] = 'n';
-      ext[2] = 'g';
-   }
-   else
-   {
-      strncpy(ext,last_dot+1,31);
-      ext[31] = '\0';
-   }
-*/
    if(strcmp(ext,"bmp")==0)
       stbi_write_bmp_to_func(image_write_func,fp,width,height,4,data);
    else if(strcmp(ext,"tga")==0)

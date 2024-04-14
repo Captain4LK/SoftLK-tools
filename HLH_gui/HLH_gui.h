@@ -30,11 +30,10 @@ typedef enum
    HLH_GUI_MSG_GET_WIDTH = 2,
    HLH_GUI_MSG_GET_HEIGHT = 3,
    HLH_GUI_MSG_GET_CHILD_SPACE = 4,
-   HLH_GUI_MSG_GET_PRIORITY = 5,
    HLH_GUI_MSG_NO_BLOCK_END = 5,
    HLH_GUI_MSG_CLICK = 6,
    HLH_GUI_MSG_CLICK_MENU = 7,
-   HLH_GUI_MSG_HIT = 8,
+   HLH_GUI_MSG_MOUSE = 8,
    HLH_GUI_MSG_SLIDER_VALUE_CHANGED = 9,
    HLH_GUI_MSG_BUTTON_DOWN = 10,
    HLH_GUI_MSG_BUTTON_REPEAT = 11,
@@ -42,7 +41,8 @@ typedef enum
    HLH_GUI_MSG_TIMER = 13,
    HLH_GUI_MSG_TEXTINPUT = 14,
    HLH_GUI_MSG_TEXTINPUT_END = 15,
-   HLH_GUI_MSG_USER_START = 16,
+   HLH_GUI_MSG_MOUSE_LEAVE = 16,
+   HLH_GUI_MSG_USER_START = 17,
 }HLH_gui_msg;
 
 typedef struct
@@ -78,7 +78,7 @@ typedef enum
    HLH_GUI_IMGCMP,
    HLH_GUI_ENTRY,
    HLH_GUI_WINDOW,
-   HLH_GUI_PULLDOWN,
+   HLH_GUI_DROPDOWN,
    HLH_GUI_MENUBUTTON,
    HLH_GUI_USER, //choose user type relative to this enum: type = HLH_GUI_USER+X
 }HLH_gui_type;
@@ -87,38 +87,25 @@ typedef enum
 #define HLH_GUI_MOUSE_RIGHT     (UINT8_C(0x2))
 #define HLH_GUI_MOUSE_MIDDLE    (UINT8_C(0x4))
 #define HLH_GUI_MOUSE_DBLE      (UINT8_C(0x8))
-#define HLH_GUI_MOUSE_OUT       (UINT8_C(0x10))
 
 //Flags (not enum because enums are int, we need u64)
 //-------------------------------------
-#define HLH_GUI_PACK            (UINT64_C(0x3))
-#define    HLH_GUI_PACK_NORTH   (UINT64_C(0x0))
-#define    HLH_GUI_PACK_EAST    (UINT64_C(0x1))
-#define    HLH_GUI_PACK_SOUTH   (UINT64_C(0x2))
-#define    HLH_GUI_PACK_WEST    (UINT64_C(0x3))
+#define HLH_GUI_LAYOUT               (UINT64_C(0x1))
+#define    HLH_GUI_LAYOUT_VERTICAL   (UINT64_C(0x0))
+#define    HLH_GUI_LAYOUT_HORIZONTAL (UINT64_C(0x1))
 
-#define HLH_GUI_PLACE           (UINT64_C(0x78))
-#define    HLH_GUI_PLACE_CENTER (UINT64_C(0x0))
-#define    HLH_GUI_PLACE_NORTH  (UINT64_C(0x8))
-#define    HLH_GUI_PLACE_EAST   (UINT64_C(0x10))
-#define    HLH_GUI_PLACE_SOUTH  (UINT64_C(0x18))
-#define    HLH_GUI_PLACE_WEST   (UINT64_C(0x20))
-#define    HLH_GUI_PLACE_NE     (UINT64_C(0x28))
-#define    HLH_GUI_PLACE_SE     (UINT64_C(0x30))
-#define    HLH_GUI_PLACE_NW     (UINT64_C(0x38))
-#define    HLH_GUI_PLACE_SW     (UINT64_C(0x40))
+#define HLH_GUI_NO_CENTER_X     (UINT64_C(0x2))
+#define HLH_GUI_NO_CENTER_Y     (UINT64_C(0x4))
 
-#define HLH_GUI_INVISIBLE       (UINT64_C(0x80))
-#define HLH_GUI_IGNORE          (UINT64_C(0x100))
-#define HLH_GUI_DESTROY         (UINT64_C(0x200))
-#define HLH_GUI_MAX_X           (UINT64_C(0x400))
-#define HLH_GUI_MAX_Y           (UINT64_C(0x800))
-#define HLH_GUI_FIXED_X         (UINT64_C(0x1000))
-#define HLH_GUI_FIXED_Y         (UINT64_C(0x2000))
-#define HLH_GUI_FILL_X          (UINT64_C(0x4000))
-#define HLH_GUI_FILL_Y          (UINT64_C(0x8000))
-#define HLH_GUI_EXPAND          (UINT64_C(0x10000))
-#define HLH_GUI_REMOUSE         (UINT64_C(0x20000))
+#define HLH_GUI_INVISIBLE       (UINT64_C(0x8))
+#define HLH_GUI_IGNORE          (UINT64_C(0x10))
+#define HLH_GUI_DESTROY         (UINT64_C(0x20))
+#define HLH_GUI_FIXED_X         (UINT64_C(0x40))
+#define HLH_GUI_FIXED_Y         (UINT64_C(0x80))
+#define HLH_GUI_FILL_X          (UINT64_C(0x100))
+#define HLH_GUI_FILL_Y          (UINT64_C(0x200))
+#define HLH_GUI_FILL            (HLH_GUI_FILL_X|HLH_GUI_FILL_Y)
+#define HLH_GUI_CAPTURE_MOUSE   (UINT64_C(0x400))
 
 #define HLH_GUI_STYLE           (UINT64_C(0x3c0000))
 #define    HLH_GUI_STYLE_00     (UINT64_C(0x00000))
@@ -141,6 +128,8 @@ typedef enum
 #define HLH_GUI_NO_PARENT       (UINT64_C(0x400000))
 #define HLH_GUI_OVERLAY         (UINT64_C(0x800000))
 //-------------------------------------
+
+#define HLH_gui_flag_set(var,flag,value) do { uint64_t val = (!!value)*flag; var&=~(uint64_t)flag; var|=val; } while(0)
 
 typedef int (*HLH_gui_msg_handler)(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 
@@ -267,9 +256,9 @@ typedef struct
    int text_len;
    char *text;
    int state;
-   HLH_gui_element *pull;
+   HLH_gui_element *drop;
    uint64_t side;
-}HLH_gui_pulldown;
+}HLH_gui_dropdown;
 
 typedef struct
 {
@@ -347,11 +336,10 @@ int HLH_gui_element_msg_all(HLH_gui_element *e, HLH_gui_msg msg, int di, void *d
 void HLH_gui_element_redraw(HLH_gui_element *e);
 void HLH_gui_element_redraw_now(HLH_gui_element *e);
 void HLH_gui_element_redraw_msg(HLH_gui_element *e);
-void HLH_gui_element_pack(HLH_gui_element *e, HLH_gui_rect space);
+void HLH_gui_element_layout(HLH_gui_element *e, HLH_gui_rect space);
 HLH_gui_point HLH_gui_element_size(HLH_gui_element *e, HLH_gui_point children);
 void HLH_gui_element_child_space(HLH_gui_element *e, HLH_gui_rect *space);
 HLH_gui_element *HLH_gui_element_by_point(HLH_gui_element *e, HLH_gui_point pt);
-int HLH_gui_element_priority(HLH_gui_element *e, HLH_gui_point pt);
 void HLH_gui_element_invisible(HLH_gui_element *e, int invisible);
 void HLH_gui_element_ignore(HLH_gui_element *e, int ignore);
 int HLH_gui_element_ignored(HLH_gui_element *e);
@@ -403,12 +391,12 @@ void HLH_gui_slider_set(HLH_gui_slider *slider, int value, int range, int trigge
 //Image
 HLH_gui_image *HLH_gui_img_create_path(HLH_gui_element *parent, uint64_t flags, const char *path);
 HLH_gui_image *HLH_gui_img_create_data(HLH_gui_element *parent, uint64_t flags, uint32_t *pix, int width, int height);
-void HLH_gui_img_update(HLH_gui_image *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), repack needed!!!
+void HLH_gui_img_update(HLH_gui_image *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), relayouting needed!!!
 
 //Imgcmp
 HLH_gui_imgcmp *HLH_gui_imgcmp_create(HLH_gui_element *parent, uint64_t flags, uint32_t *pix0, int width0, int height0, uint32_t *pix1, int width1, int height1);
-void HLH_gui_imgcmp_update0(HLH_gui_imgcmp *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), repack needed!!!
-void HLH_gui_imgcmp_update1(HLH_gui_imgcmp *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), repack needed!!!
+void HLH_gui_imgcmp_update0(HLH_gui_imgcmp *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), relayouting needed!!!
+void HLH_gui_imgcmp_update1(HLH_gui_imgcmp *img, uint32_t *pix, int width, int height, int redraw); //If dimensions changed (and no EXPAND flag), relayouting needed!!!
 
 //Entry
 HLH_gui_entry *HLH_gui_entry_create(HLH_gui_element *parent, uint64_t flags, int max_len);

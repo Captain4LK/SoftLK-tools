@@ -82,15 +82,15 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    {
       entry_draw(entry);
    }
-   else if(msg==HLH_GUI_MSG_HIT)
+   else if(msg==HLH_GUI_MSG_MOUSE_LEAVE)
+   {
+      entry->state = 0;
+   }
+   else if(msg==HLH_GUI_MSG_MOUSE)
    {
       HLH_gui_mouse *m = dp;
 
-      if(m->button & HLH_GUI_MOUSE_OUT)
-      {
-         entry->state = 0;
-      }
-      else if(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE))
+      if(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE))
       {
          entry->state = 1;
       }

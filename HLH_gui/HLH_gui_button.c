@@ -75,17 +75,20 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    }
    else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
    {}
-   else if(msg==HLH_GUI_MSG_HIT)
+   else if(msg==HLH_GUI_MSG_MOUSE_LEAVE)
+   {
+      int state_old = button->state;
+      button->state = 0;
+      if(state_old!=button->state)
+         HLH_gui_element_redraw(e);
+   }
+   else if(msg==HLH_GUI_MSG_MOUSE)
    {
       HLH_gui_mouse *m = dp;
 
       int click = 0;
       int state_old = button->state;
-      if(m->button & HLH_GUI_MOUSE_OUT)
-      {
-         button->state = 0;
-      }
-      else if(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE))
+      if(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE))
       {
          button->state = 1;
       }

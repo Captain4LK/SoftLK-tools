@@ -25,8 +25,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static int pulldown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static void pulldown_draw(HLH_gui_pulldown *p);
+static int dropdown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static void dropdown_draw(HLH_gui_dropdown *p);
 //-------------------------------------
 
 //Function implementations
@@ -36,29 +36,23 @@ HLH_gui_group *HLH_gui_menubar_create(HLH_gui_element *parent, uint64_t flags, u
    HLH_gui_group *group = HLH_gui_group_create(parent, flags);
 
    uint64_t side = 0;
-   switch(cflags & HLH_GUI_PACK)
-   {
-   case HLH_GUI_PACK_EAST:
-   case HLH_GUI_PACK_WEST:
-      side = HLH_GUI_PACK_SOUTH;
-      break;
-   case HLH_GUI_PACK_NORTH:
-   case HLH_GUI_PACK_SOUTH:
-      side = HLH_GUI_PACK_EAST;
-      break;
-   }
+   uint64_t layout = cflags&HLH_GUI_LAYOUT;
+   if(layout==HLH_GUI_LAYOUT_VERTICAL)
+      side = HLH_GUI_LAYOUT_HORIZONTAL;
+   else if(layout==HLH_GUI_LAYOUT_HORIZONTAL)
+      side = HLH_GUI_LAYOUT_VERTICAL;
 
    for(int i = 0; i<child_count; i++)
    {
-      HLH_gui_pulldown *pull = (HLH_gui_pulldown *) HLH_gui_element_create(sizeof(*pull), &group->e, cflags, pulldown_msg);
-      pull->e.type = HLH_GUI_PULLDOWN;
+      HLH_gui_dropdown *drop = (HLH_gui_dropdown *) HLH_gui_element_create(sizeof(*drop), &group->e, cflags, dropdown_msg);
+      drop->e.type = HLH_GUI_DROPDOWN;
 
-      pull->text_len = (int)strlen(labels[i]);
-      pull->text = malloc(pull->text_len + 1);
-      pull->pull = panels[i];
-      pull->pull->window = pull->e.window;
-      pull->side = side;
-      strcpy(pull->text, labels[i]);
+      drop->text_len = (int)strlen(labels[i]);
+      drop->text = malloc(drop->text_len + 1);
+      drop->drop = panels[i];
+      drop->drop->window = drop->e.window;
+      drop->side = side;
+      strcpy(drop->text, labels[i]);
    }
 
    return group;
@@ -72,23 +66,23 @@ void HLH_gui_menubar_label_set(HLH_gui_group *bar, const char *label, int which)
    if(which<0||which>=bar->e.child_count)
       return;
 
-   HLH_gui_pulldown *pull = (HLH_gui_pulldown *)bar->e.children[which];
-   free(pull->text);
-   pull->text_len = strlen(label);
-   pull->text = malloc(pull->text_len+1);
-   strcpy(pull->text,label);
+   HLH_gui_dropdown *drop = (HLH_gui_dropdown *)bar->e.children[which];
+   free(drop->text);
+   drop->text_len = strlen(label);
+   drop->text = malloc(drop->text_len+1);
+   strcpy(drop->text,label);
 
-   HLH_gui_element_pack(&pull->e.window->e, pull->e.window->e.bounds);
-   HLH_gui_element_redraw(&pull->e.window->e);
+   HLH_gui_element_layout(&drop->e.window->e, drop->e.window->e.bounds);
+   HLH_gui_element_redraw(&drop->e.window->e);
 }
 
-static int pulldown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int dropdown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
-   HLH_gui_pulldown *pull = (HLH_gui_pulldown *)e;
+   HLH_gui_dropdown *drop = (HLH_gui_dropdown *)e;
 
    if(msg==HLH_GUI_MSG_GET_WIDTH)
    {
-      return pull->text_len * HLH_GUI_GLYPH_WIDTH * HLH_gui_get_scale() + 10 * HLH_gui_get_scale();
+      return drop->text_len * HLH_GUI_GLYPH_WIDTH * HLH_gui_get_scale() + 10 * HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {
@@ -96,102 +90,102 @@ static int pulldown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    }
    else if(msg==HLH_GUI_MSG_DRAW)
    {
-      pulldown_draw(pull);
+      dropdown_draw(drop);
    }
    else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
    {}
-   else if(msg==HLH_GUI_MSG_HIT)
+   else if(msg==HLH_GUI_MSG_MOUSE)
    {
       HLH_gui_mouse *m = dp;
-      int state_old = pull->state;
+      int state_old = drop->state;
       HLH_gui_element *hit = NULL;
 
-      if(!pull->state)
+      if(!drop->state)
       {
-         if(HLH_gui_rect_inside(pull->e.bounds, m->pos)&&m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE))
+         if(HLH_gui_rect_inside(drop->e.bounds, m->pos)&&m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE))
          {
-            HLH_gui_rect bounds = pull->e.window->e.bounds;
+            HLH_gui_rect bounds = drop->e.window->e.bounds;
 
-            pull->pull->flags &= ~HLH_GUI_PLACE;
+            drop->drop->flags &= ~(HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y);
 
-            if(pull->side==HLH_GUI_PACK_SOUTH)
+            if(drop->side==HLH_GUI_LAYOUT_VERTICAL)
             {
-               bounds.minx = pull->e.bounds.minx;
-               bounds.miny = pull->e.bounds.maxy;
-               pull->pull->flags |= HLH_GUI_PLACE_NW;
+               bounds.minx = drop->e.bounds.minx;
+               bounds.miny = drop->e.bounds.maxy;
+               drop->drop->flags |= HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y;
             }
-            else if(pull->side==HLH_GUI_PACK_EAST)
+            else if(drop->side==HLH_GUI_LAYOUT_HORIZONTAL)
             {
-               bounds.minx = pull->e.bounds.maxx;
-               bounds.miny = pull->e.bounds.miny;
-               pull->pull->flags |= HLH_GUI_PLACE_NW;
+               bounds.minx = drop->e.bounds.maxx;
+               bounds.miny = drop->e.bounds.miny;
+               drop->drop->flags |= HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y;
             }
 
-            HLH_gui_element_invisible(pull->pull, 0);
-            HLH_gui_element_pack(pull->pull, bounds);
-            HLH_gui_element_redraw(pull->pull);
+            HLH_gui_element_invisible(drop->drop, 0);
+            HLH_gui_element_layout(drop->drop, bounds);
+            HLH_gui_element_redraw(drop->drop);
 
-            pull->state = 1;
+            drop->state = 1;
          }
       }
       else
       {
-         if(!HLH_gui_rect_inside(pull->e.bounds, m->pos))
+         if(!HLH_gui_rect_inside(drop->e.bounds, m->pos))
          {
             int pass = 0;
-            if(pull->side==HLH_GUI_PACK_SOUTH) pass = m->pos.y>=pull->e.bounds.maxy;
-            else if(pull->side==HLH_GUI_PACK_EAST) pass = m->pos.x>=pull->e.bounds.maxx;
+            if(drop->side==HLH_GUI_LAYOUT_VERTICAL) pass = m->pos.y>=drop->e.bounds.maxy;
+            else if(drop->side==HLH_GUI_LAYOUT_HORIZONTAL) pass = m->pos.x>=drop->e.bounds.maxx;
 
             if(pass)
             {
-               hit = pull->pull;
+               hit = drop->drop;
                if(!(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE)))
-                  pull->state = 0;
+                  drop->state = 0;
             }
             else
             {
-               pull->state = 0;
+               drop->state = 0;
             }
          }
          else if(!(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE)))
          {
-            pull->state = 0;
+            drop->state = 0;
          }
          else
          {
-            hit = pull->pull;
+            hit = drop->drop;
          }
 
-         if(!pull->state)
+         if(!drop->state)
          {
-            HLH_gui_element_invisible(pull->pull, 1);
-            hit = pull->pull;
+            HLH_gui_element_invisible(drop->drop, 1);
+            hit = drop->drop;
 
-            HLH_gui_element_redraw(&pull->e.window->e);
-            HLH_gui_overlay_clear(&pull->e);
+            HLH_gui_element_redraw(&drop->e.window->e);
+            HLH_gui_overlay_clear(&drop->e);
          }
       }
 
-      if(pull->state!=state_old)
-         HLH_gui_element_redraw(&pull->e);
+      if(drop->state!=state_old)
+         HLH_gui_element_redraw(&drop->e);
       if(hit!=NULL)
          HLH_gui_handle_mouse(hit, *m);
 
-      return !!pull->state;
+      return !!drop->state;
    }
    else if(msg==HLH_GUI_MSG_DESTROY)
    {
-      free(pull->text);
+      free(drop->text);
 
-      if(pull->pull!=NULL)
-         HLH_gui_element_destroy(pull->pull);
-      //TODO(Captain4LK): free pulldown menus
+      if(drop->drop!=NULL)
+         HLH_gui_element_destroy(drop->drop);
+      //TODO(Captain4LK): free dropdown menus
    }
 
    return 0;
 }
 
-static void pulldown_draw(HLH_gui_pulldown *p)
+static void dropdown_draw(HLH_gui_dropdown *p)
 {
    uint64_t style = p->e.flags & HLH_GUI_STYLE;
    if(style==HLH_GUI_STYLE_00)

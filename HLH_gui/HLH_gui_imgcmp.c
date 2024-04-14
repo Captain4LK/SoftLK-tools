@@ -85,7 +85,7 @@ static int imgcmp_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    {
       return img->height0 + 6 * HLH_gui_get_scale();
    }
-   else if(msg==HLH_GUI_MSG_HIT)
+   else if(msg==HLH_GUI_MSG_MOUSE)
    {
       HLH_gui_mouse *m = dp;
 
