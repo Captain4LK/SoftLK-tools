@@ -1,7 +1,7 @@
 /*
 Misc helper macros/functions/data structures etc.
 
-Written in 2022,2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2022,2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -67,6 +67,16 @@ typedef struct
 #define HLH_array_maygrow(a,n) (((a)==NULL||HLH_array_header(a)->length+n>HLH_array_header(a)->size)?(HLH_array_grow(a,n,0),0):0)
 #define HLH_array_grow(a,n,min) ((a) = _HLH_array_grow(a,sizeof(*a),n,min))
 void *_HLH_array_grow(void *old, size_t size, size_t grow, size_t min);
+//--------------------------------
+
+//Bitmaps
+//--------------------------------
+uint32_t *HLH_bitmap_create(intptr_t bits);
+void HLH_bitmap_free(uint32_t *bitmap);
+void HLH_bitmap_set(uint32_t *bitmap, intptr_t bit);
+void HLH_bitmap_unset(uint32_t *bitmap, intptr_t bit);
+int HLH_bitmap_check(uint32_t *bitmap, intptr_t bit);
+intptr_t HLH_bitmap_first_set(uint32_t *bitmap);
 //--------------------------------
 
 //Internal
@@ -138,6 +148,85 @@ void *_HLH_array_grow(void *old, size_t size, size_t grow, size_t min)
    h = _HLH_realloc(h,header_off*size+h->size*size);
 
    return ((char *)h)+header_off*size;
+}
+
+uint32_t *HLH_bitmap_create(intptr_t bits)
+{
+   uint32_t *bitmap = NULL;
+   HLH_array_length_set(bitmap,(bits+31)/32);
+   //printf("pre %d\n",HLH_array_length(bitmap));
+   memset(bitmap,0,sizeof(*bitmap)*HLH_array_length(bitmap));
+   //printf("%d\n",HLH_array_length(bitmap));
+
+   return bitmap;
+}
+
+void HLH_bitmap_free(uint32_t *bitmap)
+{
+   HLH_array_free(bitmap);
+}
+
+void HLH_bitmap_set(uint32_t *bitmap, intptr_t bit)
+{
+   if(bitmap==NULL)
+      return;
+
+   intptr_t pos = bit/32;
+   uint32_t value = (uint32_t)1<<(bit-pos*32);
+   bitmap[pos]|=value;
+}
+
+void HLH_bitmap_unset(uint32_t *bitmap, intptr_t bit)
+{
+   if(bitmap==NULL)
+      return;
+
+   intptr_t pos = bit/32;
+   uint32_t old = bitmap[pos];
+   uint32_t value = (uint32_t)1<<(bit-pos*32);
+   bitmap[pos]&=~value;
+}
+
+int HLH_bitmap_check(uint32_t *bitmap, intptr_t bit)
+{
+   if(bitmap==NULL)
+      return 0;
+
+   intptr_t pos = bit/32;
+   uint32_t value = 1<<(pos*32-bit);
+   return !!(bitmap[pos]&value);
+}
+
+intptr_t HLH_bitmap_first_set(uint32_t *bitmap)
+{
+   if(bitmap==NULL)
+      return -1;
+
+   for(int i = 0;i<HLH_array_length(bitmap);i++)
+   {
+      if(bitmap[i]==0)
+         continue;
+
+      uint32_t val = bitmap[i];
+      //uint32_t pos = (intptr_t)i*32;
+      intptr_t pos = 1;
+
+      if((val&0x0000ffff)==0) { pos+=16; val>>=16; }
+      if((val&0x000000ff)==0) { pos+=8; val>>=8; }
+      if((val&0x0000000f)==0) { pos+=4; val>>=4; }
+      if((val&0x00000003)==0) { pos+=2; val>>=2; }
+      pos = pos-(val&1);
+      pos+=(intptr_t)i*32;
+      //if(val<=0x0000ffff) { pos+=16; val<<=16; }
+      //if(val<=0x00ffffff) { pos+=8; val<<=8; }
+      //if(val<=0x0fffffff) { pos+=4; val<<=4; }
+      //if(val<=0x3fffffff) { pos+=2; val<<=2; }
+      //if(val<=0x7fffffff) { pos+=1; val<<=1; }
+
+      return pos;
+   }
+
+   return -1;
 }
 
 #endif

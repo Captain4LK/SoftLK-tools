@@ -37,6 +37,9 @@ static void slk_hue(uint64_t *color, float hue);
 
 void SLK_image64_hscb(SLK_image64 *img, float hue, float saturation, float contrast, float brightness)
 {
+   if(img==NULL)
+      return;
+
    float t = (1.0f-contrast)/2.0f;
 
    float sr = (1.0f-saturation)*0.3086f;

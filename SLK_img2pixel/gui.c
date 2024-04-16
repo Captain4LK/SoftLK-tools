@@ -58,7 +58,7 @@ typedef enum
    SLIDER_SCALE_Y,
    SLIDER_ALPHA_THRESHOLD,
    SLIDER_DITHER_AMOUNT,
-   SLIDER_PALETTE_WEIGHT,
+   SLIDER_TARGET_COLORS,
    SLIDER_SHARP,
    SLIDER_BRIGHTNESS,
    SLIDER_CONTRAST,
@@ -86,7 +86,7 @@ typedef enum
    BUTTON_SHARP,
    BUTTON_ALPHA_THRESHOLD,
    BUTTON_DITHER_AMOUNT,
-   BUTTON_PALETTE_WEIGHT,
+   BUTTON_TARGET_COLORS,
    BUTTON_COLOR_COUNT,
    BUTTON_COLOR_RED,
    BUTTON_COLOR_GREEN,
@@ -113,7 +113,7 @@ typedef enum
    ENTRY_SHARP,
    ENTRY_ALPHA_THRESHOLD,
    ENTRY_DITHER_AMOUNT,
-   ENTRY_PALETTE_WEIGHT,
+   ENTRY_TARGET_COLORS,
    ENTRY_COLOR_COUNT,
    ENTRY_COLOR_RED,
    ENTRY_COLOR_GREEN,
@@ -166,7 +166,7 @@ static struct
    HLH_gui_slider *slider_gamma;
    HLH_gui_slider *slider_alpha_threshold;
    HLH_gui_slider *slider_dither_amount;
-   HLH_gui_slider *slider_palette_weight;
+   HLH_gui_slider *slider_target_colors;
    HLH_gui_slider *slider_color_count;
    HLH_gui_slider *slider_color_red;
    HLH_gui_slider *slider_color_green;
@@ -185,7 +185,7 @@ static struct
    HLH_gui_entry *entry_sharp;
    HLH_gui_entry *entry_alpha_threshold;
    HLH_gui_entry *entry_dither_amount;
-   HLH_gui_entry *entry_palette_weight;
+   HLH_gui_entry *entry_target_colors;
    HLH_gui_entry *entry_color_count;
    HLH_gui_entry *entry_color_red;
    HLH_gui_entry *entry_color_green;
@@ -206,7 +206,6 @@ static struct
    HLH_gui_radiobutton *dither_dither_mode[8];
    HLH_gui_radiobutton *dither_color_dist[6];
    HLH_gui_radiobutton *palette_colors[256];
-   HLH_gui_radiobutton *postprocess_colors[256];
 
    HLH_gui_checkbutton *dither_kmeans;
    HLH_gui_checkbutton *palette_kmeanspp;
@@ -487,8 +486,8 @@ void gui_construct(void)
       c->e.msg_usr = checkbutton_msg;
       gui.dither_kmeans = c;
       gui_group_kmeans = HLH_gui_group_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X);
-      HLH_gui_label_create(&gui_group_kmeans->e,0,"Palette weight");
-      SLIDER(&gui_group_kmeans->e,palette_weight,PALETTE_WEIGHT)
+      HLH_gui_label_create(&gui_group_kmeans->e,0,"Target colors");
+      SLIDER(&gui_group_kmeans->e,target_colors,TARGET_COLORS)
       HLH_gui_element_ignore(&gui_group_kmeans->e,1);
    }
    //-------------------------------------
@@ -806,7 +805,7 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          HLH_json_object_add_boolean(&root->root,"kmeanspp",kmeanspp);
          HLH_json_object_add_integer(&root->root,"dither_alpha_threshold",dither_config.alpha_threshold);
          HLH_json_object_add_real(&root->root,"dither_dither_amount",dither_config.dither_amount);
-         HLH_json_object_add_integer(&root->root,"dither_palette_weight",dither_config.palette_weight);
+         HLH_json_object_add_integer(&root->root,"dither_target_colors",dither_config.target_colors);
          HLH_json_object_add_boolean(&root->root,"dither_use_kmeans",dither_config.use_kmeans);
          HLH_json_object_add_integer(&root->root,"dither_dither_mode",dither_config.dither_mode);
          HLH_json_object_add_integer(&root->root,"dither_color_dist",dither_config.color_dist);
@@ -915,11 +914,11 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          HLH_gui_entry_set(gui.entry_dither_amount,buffer);
          gui_process(3);
       }
-      else if(s->e.usr==SLIDER_PALETTE_WEIGHT)
+      else if(s->e.usr==SLIDER_TARGET_COLORS)
       {
-         dither_config.palette_weight = s->value;
-         snprintf(buffer,512,"%d",dither_config.palette_weight);
-         HLH_gui_entry_set(gui.entry_palette_weight,buffer);
+         dither_config.target_colors = s->value+1;
+         snprintf(buffer,512,"%d",dither_config.target_colors);
+         HLH_gui_entry_set(gui.entry_target_colors,buffer);
          gui_process(3);
       }
       else if(s->e.usr==SLIDER_SHARP)
@@ -1092,10 +1091,10 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          float value = strtof(entry->entry,NULL);
          HLH_gui_slider_set(gui.slider_dither_amount,(int)(value*500.f),500,1,1);
       }
-      else if(entry->e.usr==ENTRY_PALETTE_WEIGHT)
+      else if(entry->e.usr==ENTRY_TARGET_COLORS)
       {
          int value = strtol(entry->entry,NULL,10);
-         HLH_gui_slider_set(gui.slider_palette_weight,value,16,1,1);
+         HLH_gui_slider_set(gui.slider_target_colors,value-1,255,1,1);
       }
       else if(entry->e.usr==ENTRY_COLOR_COUNT)
       {
@@ -1187,8 +1186,8 @@ static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          HLH_gui_slider_set(gui.slider_alpha_threshold,dither_config.alpha_threshold+8,255,1,1);
       else if(button->e.usr==BUTTON_DITHER_AMOUNT)
          HLH_gui_slider_set(gui.slider_dither_amount,(int)((dither_config.dither_amount+0.1f)*500.f),500,1,1);
-      else if(button->e.usr==BUTTON_PALETTE_WEIGHT)
-         HLH_gui_slider_set(gui.slider_palette_weight,dither_config.palette_weight+1,16,1,1);
+      else if(button->e.usr==BUTTON_TARGET_COLORS)
+         HLH_gui_slider_set(gui.slider_target_colors,dither_config.target_colors+1-1,255,1,1);
       else if(button->e.usr==BUTTON_COLOR_COUNT)
          HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors+4-1,255,1,1);
       else if(button->e.usr==BUTTON_COLOR_RED)
@@ -1243,8 +1242,8 @@ static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          HLH_gui_slider_set(gui.slider_alpha_threshold,dither_config.alpha_threshold-8,255,1,1);
       else if(button->e.usr==BUTTON_DITHER_AMOUNT)
          HLH_gui_slider_set(gui.slider_dither_amount,(int)((dither_config.dither_amount-0.1f)*500.f),500,1,1);
-      else if(button->e.usr==BUTTON_PALETTE_WEIGHT)
-         HLH_gui_slider_set(gui.slider_palette_weight,dither_config.palette_weight-1,16,1,1);
+      else if(button->e.usr==BUTTON_TARGET_COLORS)
+         HLH_gui_slider_set(gui.slider_target_colors,dither_config.target_colors-1-1,255,1,1);
       else if(button->e.usr==BUTTON_COLOR_COUNT)
          HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-4-1,255,1,1);
       else if(button->e.usr==BUTTON_COLOR_RED)
@@ -1528,7 +1527,7 @@ void gui_load_preset(FILE *f)
       tint_blue = HLH_json_get_object_integer(&root->root,"tint_blue",255);
       dither_config.alpha_threshold = HLH_json_get_object_integer(&root->root,"dither_alpha_threshold",128);
       dither_config.dither_amount = HLH_json_get_object_real(&root->root,"dither_dither_amount",0.2f);
-      dither_config.palette_weight = HLH_json_get_object_integer(&root->root,"dither_palette_weight",2);
+      dither_config.target_colors = HLH_json_get_object_integer(&root->root,"dither_target_colors",8);
       dither_config.use_kmeans = HLH_json_get_object_boolean(&root->root,"dither_use_kmeans",0);
       dither_config.dither_mode = HLH_json_get_object_integer(&root->root,"dither_dither_mode",2);
       dither_config.color_dist = HLH_json_get_object_integer(&root->root,"dither_color_dist",2);
@@ -1565,10 +1564,10 @@ void gui_load_preset(FILE *f)
       tint_blue = 255;
       dither_config.alpha_threshold = 128;
       dither_config.dither_amount = 0.2f;
-      dither_config.palette_weight = 2;
       dither_config.use_kmeans = 0;
       dither_config.dither_mode = SLK_DITHER_BAYER4X4;
       dither_config.color_dist = SLK_RGB_REDMEAN;
+      dither_config.target_colors = 8;
 
       //Dawnbringer-32 palette
       dither_config.palette_colors = 32;
@@ -1621,7 +1620,7 @@ void gui_load_preset(FILE *f)
    HLH_gui_slider_set(gui.slider_gamma,(int)(gamma*100.f),500,1,1);
    HLH_gui_slider_set(gui.slider_alpha_threshold,dither_config.alpha_threshold,255,1,1);
    HLH_gui_slider_set(gui.slider_dither_amount,(int)(dither_config.dither_amount*500.f),500,1,1);
-   HLH_gui_slider_set(gui.slider_palette_weight,dither_config.palette_weight,16,1,1);
+   HLH_gui_slider_set(gui.slider_target_colors,dither_config.target_colors-1,255,1,1);
    HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-1,255,1,1);
    HLH_gui_slider_set(gui.slider_tint_red,tint_red,255,1,1);
    HLH_gui_slider_set(gui.slider_tint_green,tint_green,255,1,1);

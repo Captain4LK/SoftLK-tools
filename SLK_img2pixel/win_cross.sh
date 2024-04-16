@@ -3,7 +3,7 @@
 flags="-I../external/ -Wall -Wextra -Wno-unused -Wshadow -std=c99"
 sources="color.c tint.c blur.c kmeans.c image.c sharp.c sample.c hscb.c gamma.c postprocess.c dither.c palette.c win/util_win.c"
 object_files="color.o tint.o blur.o kmeans.o image.o sharp.o sample.o hscb.o gamma.o postprocess.o dither.o palette.o util_win.o nfd_win.o"
-options="-O3 -s -flto -fopenmp"
+options="-O3 -flto -fopenmp"
 
 if [ $# -lt 1 ]; then
    echo "unspecified target, need either gui, gui_hlh, cmd or video"

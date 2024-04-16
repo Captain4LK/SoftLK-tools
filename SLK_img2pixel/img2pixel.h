@@ -60,7 +60,7 @@ typedef struct
    float dither_amount;
 
    int use_kmeans;
-   int palette_weight;
+   int target_colors;
 }SLK_dither_config;
 
 uint64_t SLK_color32_to_64(uint32_t c);
