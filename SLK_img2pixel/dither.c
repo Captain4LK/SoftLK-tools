@@ -219,7 +219,7 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
 #endif
 
 
-   for(int i = 0;i<8;i++)
+   for(int i = 0;i<16;i++)
    {
       //Reset clusters
       for(int j = 0;j<target;j++)
@@ -340,10 +340,10 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
       if(HLH_array_length(clusters[i])<=0)
          continue;
 
-      for(int j = 0;j<HLH_array_length(clusters[i]);j++)
-      {
+      //for(int j = 0;j<HLH_array_length(clusters[i]);j++)
+      //{
          float c0,c1,c2;
-         uint32_t c = clusters[i][j];
+         uint32_t c = centers[i];
          switch(config->color_dist)
          {
          case SLK_RGB_EUCLIDIAN:
@@ -385,7 +385,7 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
 
             errors[i*config->palette_colors+p]+=dist;
          }
-      }
+      //}
    }
 
    //Find best asignment
@@ -580,7 +580,7 @@ static uint32_t *choose_centers(SLK_image64 *img, int k, uint64_t seed)
 
       if(!found)
       {
-         HLH_array_push(centers,img->data[rand_xor_next(&rng)%(img->w*img->h)]);
+         HLH_array_push(centers,SLK_color64_to_32(img->data[rand_xor_next(&rng)%(img->w*img->h)]));
       }
    }
 
@@ -610,23 +610,23 @@ static void slk_color32_to_lab(uint32_t c, float *l0, float *l1, float *l2)
    float z = 0.f;
 
    if(r>0.04045)
-      r = powf((r+0.055)/1.055,2.4)*100.0;
+      r = powf((r+0.055)/1.055,2.4);
    else
-      r = (r/12.92)*100.0;
+      r = (r/12.92);
   
    if(g>0.04045)
-      g = powf((g+0.055)/1.055,2.4)*100.0;
+      g = powf((g+0.055)/1.055,2.4);
    else
-      g = (g/12.92)*100.0;
+      g = (g/12.92);
   
    if(b>0.04045)
-      b = powf((b+0.055)/1.055,2.4)*100.0;
+      b = powf((b+0.055)/1.055,2.4);
    else
-      b = (b/12.92)*100.0;
+      b = (b/12.92);
 
-   x = (r*0.4124+g*0.3576+b*0.1805)/95.05;
-   y = (r*0.2126+g*0.7152+b*0.0722)/100.0;
-   z = (r*0.0193+g*0.1192+b*0.9504)/108.89;
+   x = (r*0.4124+g*0.3576+b*0.1805);
+   y = (r*0.2126+g*0.7152+b*0.0722);
+   z = (r*0.0193+g*0.1192+b*0.9504);
    //-------------------------------------
 
    //Convert to lab
@@ -741,8 +741,6 @@ static float slk_dist_cie94(float a0, float a1, float a2, float b0, float b1, fl
    float C = C1-C2;
    float H = sqrtf((a1-b1)*(a1-b1)+(a2-b2)*(a2-b2)-C*C);
    float r1 = L;
-   if(C1==0.f)
-      C1 = 0.000001f;
    float r2 = C/(1.0f+0.045f*C1);
    float r3 = H/(1.0f+0.015f*C1);
 
