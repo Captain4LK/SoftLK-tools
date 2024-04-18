@@ -59,7 +59,7 @@ typedef struct
    int palette_colors;
    float dither_amount;
 
-   int use_kmeans;
+   int use_median;
    int target_colors;
 }SLK_dither_config;
 

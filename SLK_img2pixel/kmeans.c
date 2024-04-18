@@ -159,7 +159,7 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
 
 uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed)
 {
-   if(img==NULL)
+   if(img==NULL||img->w<=0||img->h<=0)
       return 0xff000000;
    if(palette==NULL)
       return 0xff000000;
@@ -257,6 +257,9 @@ uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int col
 
 static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmeanspp)
 {
+   if(img==NULL||img->w<=0||img->h<=0)
+      return NULL;
+
    rand_xor rng;
    rand_xor_seed(&rng,seed);
    uint32_t *centers = NULL;

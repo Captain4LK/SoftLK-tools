@@ -342,9 +342,6 @@ static float slk_lanczos(float v)
 
 static SLK_image64 *slk_sample_cluster(const SLK_image64 *img, int width, int height, float x_off, float y_off)
 {
-   SLK_image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
-   out->w = width;
-   out->h = height;
 
    float w = (img->w)/(float)width;
    float h = (img->h)/(float)height;
@@ -353,6 +350,14 @@ static SLK_image64 *slk_sample_cluster(const SLK_image64 *img, int width, int he
    float grid_y = ((float)img->h/(float)(height));
    int igrid_x = grid_x;
    int igrid_y = grid_y;
+   if(igrid_x<=0||igrid_y<=0)
+   {
+      return slk_sample_nearest(img,width,height,x_off,y_off);
+   }
+
+   SLK_image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
+   out->w = width;
+   out->h = height;
 
 #pragma omp parallel
    {

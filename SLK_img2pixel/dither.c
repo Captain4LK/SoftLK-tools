@@ -39,6 +39,16 @@ typedef struct
    float c2;
 }slk_color3f;
 
+typedef struct
+{
+   int start;
+   int count;
+   int range_red;
+   int range_green;
+   int range_blue;
+   int range_max;
+}slk_median_box;
+
 typedef uint64_t rand_xor[2];
 //-------------------------------------
 
@@ -91,14 +101,11 @@ static int slk_palette_size = 0;
 
 //Function prototypes
 static SLK_image32 *slk_dither_closest(SLK_image64 *img, const SLK_dither_config *config);
-static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config *config);
+static SLK_image32 *slk_assign_median(SLK_image64 *img, const SLK_dither_config *config);
 static void slk_dither_threshold_apply(SLK_image64 *img, int dim, const float *threshold, const SLK_dither_config *config);
 static SLK_image32 *slk_dither_floyd(SLK_image64 *img, const SLK_dither_config *config);
 static SLK_image32 *slk_dither_floyd2(SLK_image64 *img, const SLK_dither_config *config);
 static void slk_floyd_apply_error(SLK_image64 *img, float er, float eg, float eb, int x, int y);
-
-//static slk_color3f *choose_centers(const SLK_dither_config *config);
-static uint32_t *choose_centers(SLK_image64 *img, int k, uint64_t seed);
 
 static void slk_color32_to_lab(uint32_t c, float *l0, float *l1, float *l2);
 static void slk_color32_to_rgb(uint32_t c, float *l0, float *l1, float *l2);
@@ -123,6 +130,10 @@ static int kuhn_find_prime(int n, int m, double *table, uint8_t *marks, uint8_t 
 static void kuhn_add_subtract(int n, int m, double *table, uint8_t *row_covered,uint8_t *col_covered);
 static void kuhn_alt_marks(int n, int m, uint8_t *marks, uint32_t *alt, int *col_marks, int *row_primes, uint32_t *prime);
 static uint8_t *kuhn_assign(int n, int m, uint8_t *marks);
+
+static int color_cmp_r(const void *a, const void *b);
+static int color_cmp_g(const void *a, const void *b);
+static int color_cmp_b(const void *a, const void *b);
 //-------------------------------------
 
 //Function implementations
@@ -148,9 +159,9 @@ SLK_image32 *SLK_image64_dither(SLK_image64 *img, const SLK_dither_config *confi
       break;
    }
 
-   if(config->use_kmeans)
+   if(config->use_median)
    {
-      return slk_dither_kmeans(img,config);
+      return slk_assign_median(img,config);
    }
 
    switch(config->dither_mode)
@@ -202,148 +213,171 @@ static SLK_image32 *slk_dither_closest(SLK_image64 *img, const SLK_dither_config
    return out;
 }
 
-static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config *config)
+static SLK_image32 *slk_assign_median(SLK_image64 *img, const SLK_dither_config *config)
 {
-   int target = HLH_min(config->target_colors,config->palette_colors);
-   //Create clusters
-   uint8_t *asign = NULL;
-   uint32_t *centers = choose_centers(img,target,0xdeadbeef);
-   uint32_t **clusters = malloc(sizeof(*clusters)*target);
-   memset(clusters,0,sizeof(*clusters)*target);
-   HLH_array_length_set(asign,img->w*img->h);
+   int target = HLH_max(1,HLH_min(config->target_colors,config->palette_colors));
 
-#ifdef _OPENMP
-   omp_lock_t locks[256];
-   for(int i = 0;i<target;i++)
-      omp_init_lock(&locks[i]);
-#endif
-
-
-   for(int i = 0;i<16;i++)
+   uint32_t *colors = calloc(2*img->w*img->h,sizeof(*colors));
+   for(int i = 0;i<img->w*img->h;i++)
    {
-      //Reset clusters
-      for(int j = 0;j<target;j++)
-         HLH_array_length_set(clusters[j],0);
-
-#pragma omp parallel for
-      for(int j = 0;j<img->w*img->h;j++)
-      {
-         uint32_t cur = SLK_color64_to_32(img->data[j]);
-         int32_t cr = SLK_color32_r(cur);
-         int32_t cg = SLK_color32_g(cur);
-         int32_t cb = SLK_color32_b(cur);
-         int32_t ca = SLK_color32_a(cur);
-
-         uint64_t dist_min = UINT64_MAX;
-         int min_i = 0;
-         for(int c = 0;c<(int)HLH_array_length(centers);c++)
-         {
-            int32_t r = SLK_color32_r(centers[c]);
-            int32_t g = SLK_color32_g(centers[c]);
-            int32_t b = SLK_color32_b(centers[c]);
-            int32_t a = SLK_color32_a(centers[c]);
-
-            uint64_t dist = (cr-r)*(cr-r);
-            dist+=(cg-g)*(cg-g);
-            dist+=(cb-b)*(cb-b);
-
-            if(dist<dist_min)
-            {
-               dist_min = dist;
-               min_i = c;
-            }
-         }
-
-         asign[j] = min_i;
-#ifdef _OPENMP
-         omp_set_lock(&locks[min_i]);
-#endif
-
-         HLH_array_push(clusters[min_i],cur);
-
-#ifdef _OPENMP
-         omp_unset_lock(&locks[min_i]);
-#endif
-      }
-
-      //Recalculate centers
-#pragma omp parallel for
-      for(int j = 0;j<target;j++)
-      {
-         uint64_t sum_r = 0;
-         uint64_t sum_g = 0;
-         uint64_t sum_b = 0;
-         for(int c = 0;c<(int)HLH_array_length(clusters[j]);c++)
-         {
-            sum_r+=SLK_color32_r(clusters[j][c]);
-            sum_g+=SLK_color32_g(clusters[j][c]);
-            sum_b+=SLK_color32_b(clusters[j][c]);
-         }
-
-         if(HLH_array_length(clusters[j])>0)
-         {
-            uint32_t r = sum_r/HLH_array_length(clusters[j]);
-            uint32_t g = sum_g/HLH_array_length(clusters[j]);
-            uint32_t b = sum_b/HLH_array_length(clusters[j]);
-            uint32_t a = 255;
-            centers[j] = (r)|(g<<8)|(b<<16)|(a<<24);
-         }
-         //Choose random data point in that case
-         //Not the best solution but better than not filling these colors
-         //This path doesn't really seem to get hit though
-         else
-         {
-            centers[j] = SLK_color64_to_32(img->data[rand()%(img->w*img->h)]);
-         }
-
-      }
+      colors[i*2+0] = SLK_color64_to_32(img->data[i]);
+      colors[i*2+1] = i;
    }
+   slk_median_box *boxes = calloc(target,sizeof(*boxes));
 
-
-#ifdef _OPENMP
-   for(int i = 0;i<target;i++)
-      omp_destroy_lock(&locks[i]);
-#endif
-
+   //Put all above alpha threshold at start
    int slow = 0;
-   uint8_t *assign_map = malloc(sizeof(*assign_map)*target);
-
-   //Compact clusters
-   for(int i = 0;i<target;i++)
+   for(int i = 0;i<img->w*img->h;i++)
    {
-      if(HLH_array_length(clusters[i])>0)
+      if(SLK_color32_a(colors[i*2+0])>=config->alpha_threshold)
       {
-         if(i!=slow)
-            HLH_array_free(clusters[slow]);
-
-         assign_map[i] = slow;
-         clusters[slow] = clusters[i];
-         if(i!=slow)
-            clusters[i] = NULL;
+         uint32_t tmp = colors[2*i+0];
+         colors[2*i+0] = colors[2*slow+0];
+         colors[2*slow+0] = tmp;
+         tmp = colors[2*i+1];
+         colors[2*i+1] = colors[2*slow+1];
+         colors[2*slow+1] = tmp;
          slow++;
       }
    }
 
-   //Count non-zero
-   int num_non_zero = 0;
-   for(int i = 0;i<target;i++)
+   //Initial box
+   boxes[0].start = 0;
+   boxes[0].count = slow;
+   int min_r = 255;
+   int max_r = 0;
+   int min_g = 255;
+   int max_g = 0;
+   int min_b = 255;
+   int max_b = 0;
+   for(int i = 0;i<boxes[0].count;i++)
    {
-      if(HLH_array_length(clusters[i])>0)
-         num_non_zero++;
+      uint32_t c = colors[2*(boxes[0].start+i)];
+      min_r = HLH_min(min_r,(int)SLK_color32_r(c));
+      max_r = HLH_max(max_r,(int)SLK_color32_r(c));
+      min_g = HLH_min(min_g,(int)SLK_color32_g(c));
+      max_g = HLH_max(max_g,(int)SLK_color32_g(c));
+      min_b = HLH_min(min_b,(int)SLK_color32_b(c));
+      max_b = HLH_max(max_b,(int)SLK_color32_b(c));
+   }
+   boxes[0].range_red = max_r-min_r;
+   boxes[0].range_green = max_g-min_g;
+   boxes[0].range_blue = max_b-min_b;
+   boxes[0].range_max = HLH_max(HLH_max(max_r-min_r,max_g-min_g),max_b-min_b);
+
+   int box_count;
+   for(box_count = 1;box_count<target;box_count++)
+   {
+      //Choose box with largest range to subdivide
+      int max = 0;
+      int max_box = 0;
+      for(int i = 0;i<box_count;i++)
+      {
+         if(boxes[i].range_max>max)
+         {
+            max = boxes[i].range_max;
+            max_box = i;
+         }
+      }
+
+      if(boxes[max_box].range_max==0)
+         break;
+
+      //Sort by largest range
+      int largest = HLH_max(HLH_max(boxes[max_box].range_red,boxes[max_box].range_green),boxes[max_box].range_blue);
+      if(largest==boxes[max_box].range_red)
+         qsort(colors+2*(boxes[max_box].start),boxes[max_box].count,2*sizeof(*colors),color_cmp_r);
+      else if(largest==boxes[max_box].range_green)
+         qsort(colors+2*(boxes[max_box].start),boxes[max_box].count,2*sizeof(*colors),color_cmp_g);
+      else if(largest==boxes[max_box].range_blue)
+         qsort(colors+2*(boxes[max_box].start),boxes[max_box].count,2*sizeof(*colors),color_cmp_b);
+
+      //Divide
+      int len = 0;
+      if(largest==boxes[max_box].range_red)
+      {
+         uint32_t cut = (SLK_color32_r(colors[2*boxes[max_box].start])+SLK_color32_r(colors[2*(boxes[max_box].start+boxes[max_box].count-1)]))/2;
+         for(len = 0;;len++)
+         {
+            if(SLK_color32_r(colors[2*(boxes[max_box].start+len)])>cut)
+               break;
+         }
+      }
+      else if(largest==boxes[max_box].range_green)
+      {
+         uint32_t cut = (SLK_color32_g(colors[2*boxes[max_box].start])+SLK_color32_g(colors[2*(boxes[max_box].start+boxes[max_box].count-1)]))/2;
+         for(len = 0;;len++)
+         {
+            if(SLK_color32_g(colors[2*(boxes[max_box].start+len)])>cut)
+               break;
+         }
+      }
+      else if(largest==boxes[max_box].range_blue)
+      {
+         uint32_t cut = (SLK_color32_b(colors[2*boxes[max_box].start])+SLK_color32_b(colors[2*(boxes[max_box].start+boxes[max_box].count-1)]))/2;
+         for(len = 0;;len++)
+         {
+            if(SLK_color32_b(colors[2*(boxes[max_box].start+len)])>cut)
+               break;
+         }
+      }
+      int old_count = boxes[max_box].count;
+      boxes[max_box].count = len;
+      boxes[box_count].start = boxes[max_box].start+boxes[max_box].count;
+      boxes[box_count].count = old_count-len;
+      //printf("Divide box %d: box %d: %d; box %d: %d\n",max_box,max_box,boxes[max_box].count,box_count,boxes[box_count].count);
+
+      //Recalculate ranges
+      min_r = 255;
+      max_r = 0;
+      min_g = 255;
+      max_g = 0;
+      min_b = 255;
+      max_b = 0;
+      for(int i = 0;i<boxes[max_box].count;i++)
+      {
+         uint32_t c = colors[2*(boxes[max_box].start+i)];
+         min_r = HLH_min(min_r,(int)SLK_color32_r(c));
+         max_r = HLH_max(max_r,(int)SLK_color32_r(c));
+         min_g = HLH_min(min_g,(int)SLK_color32_g(c));
+         max_g = HLH_max(max_g,(int)SLK_color32_g(c));
+         min_b = HLH_min(min_b,(int)SLK_color32_b(c));
+         max_b = HLH_max(max_b,(int)SLK_color32_b(c));
+      }
+      boxes[max_box].range_red = max_r-min_r;
+      boxes[max_box].range_green = max_g-min_g;
+      boxes[max_box].range_blue = max_b-min_b;
+      boxes[max_box].range_max = HLH_max(HLH_max(max_r-min_r,max_g-min_g),max_b-min_b);
+      min_r = 255;
+      max_r = 0;
+      min_g = 255;
+      max_g = 0;
+      min_b = 255;
+      max_b = 0;
+      for(int i = 0;i<boxes[box_count].count;i++)
+      {
+         uint32_t c = colors[2*(boxes[box_count].start+i)];
+         min_r = HLH_min(min_r,(int)SLK_color32_r(c));
+         max_r = HLH_max(max_r,(int)SLK_color32_r(c));
+         min_g = HLH_min(min_g,(int)SLK_color32_g(c));
+         max_g = HLH_max(max_g,(int)SLK_color32_g(c));
+         min_b = HLH_min(min_b,(int)SLK_color32_b(c));
+         max_b = HLH_max(max_b,(int)SLK_color32_b(c));
+      }
+      boxes[box_count].range_red = max_r-min_r;
+      boxes[box_count].range_green = max_g-min_g;
+      boxes[box_count].range_blue = max_b-min_b;
+      boxes[box_count].range_max = HLH_max(HLH_max(max_r-min_r,max_g-min_g),max_b-min_b);
    }
 
    //Calculate errors
-   double *errors = calloc(config->palette_colors*num_non_zero,sizeof(*errors));
-   int cluster_current = 0;
-   for(int i = 0;i<target;i++)
+   double *errors = calloc(config->palette_colors*box_count,sizeof(*errors));
+   for(int i = 0;i<box_count;i++)
    {
-      if(HLH_array_length(clusters[i])<=0)
-         continue;
-
-      //for(int j = 0;j<HLH_array_length(clusters[i]);j++)
-      //{
+      for(int j = 0;j<boxes[i].count;j++)
+      {
+         uint32_t c = colors[2*(boxes[i].start+j)];
          float c0,c1,c2;
-         uint32_t c = centers[i];
          switch(config->color_dist)
          {
          case SLK_RGB_EUCLIDIAN:
@@ -385,23 +419,29 @@ static SLK_image32 *slk_dither_kmeans(SLK_image64 *img, const SLK_dither_config 
 
             errors[i*config->palette_colors+p]+=dist;
          }
-      //}
+      }
    }
 
    //Find best asignment
-   uint8_t *asign_lowest = kuhn_match(num_non_zero,config->palette_colors,errors);
+   uint8_t *assign_lowest = kuhn_match(box_count,config->palette_colors,errors);
    free(errors);
    SLK_image32 *out = SLK_image32_dup64(img);
-   for(int i = 0;i<img->w*img->h;i++)
-      out->data[i] = config->palette[asign_lowest[assign_map[asign[i]]]];
+   for(int i = 0;i<box_count;i++)
+   {
+      for(int j = 0;j<boxes[i].count;j++)
+      {
+         uint32_t index = colors[2*(boxes[i].start+j)+1];
+         uint32_t color = colors[2*(boxes[i].start+j)];
+         if(SLK_color32_a(color)<config->alpha_threshold)
+            out->data[index] = 0;
+         else
+            out->data[index] = config->palette[assign_lowest[i]];
+      }
+   }
 
-   HLH_array_free(centers);
-   for(int i = 0;i<target;i++)
-      HLH_array_free(clusters[i]);
-   free(clusters);
-   free(assign_map);
-   free(asign_lowest);
-   HLH_array_free(asign);
+   free(colors);
+   free(boxes);
+   free(assign_lowest);
 
    return out;
 }
@@ -500,93 +540,6 @@ static void slk_floyd_apply_error(SLK_image64 *img, float er, float eg, float eb
    uint64_t a = SLK_color64_a(p);
 
    img->data[y*img->w+x] = (r)|(g<<16)|(b<<32)|(a<<48);
-}
-
-#if 0
-static slk_color3f *choose_centers(const SLK_dither_config *config)
-{
-   slk_color3f *centers = NULL;
-
-   for(int i = 0;i<config->palette_colors;i++)
-   {
-      slk_color3f c = {0};
-      c.c0 = slk_palette[i][0];
-      c.c1 = slk_palette[i][1];
-      c.c2 = slk_palette[i][2];
-      HLH_array_push(centers,c);
-   }
-
-   return centers;
-}
-#endif
-
-static uint32_t *choose_centers(SLK_image64 *img, int k, uint64_t seed)
-{
-   rand_xor rng;
-   rand_xor_seed(&rng,seed);
-   uint32_t *centers = NULL;
-
-   //Choose initial center
-   int index = rand_xor_next(&rng)%(img->w*img->h);
-   HLH_array_push(centers,SLK_color64_to_32(img->data[index]));
-
-   uint64_t *distance = NULL;
-   HLH_array_length_set(distance,img->w*img->h);
-   for(int i = 0;i<img->w*img->h;i++)
-      distance[i] = UINT64_MAX;
-   
-   for(int i = 1;i<k;i++)
-   {
-      uint64_t dist_sum = 0;
-      for(int j = 0;j<img->w*img->h;j++)
-      {
-         uint64_t cur = img->data[j];
-         int32_t cr = SLK_color32_r(SLK_color64_to_32(cur));
-         int32_t cg = SLK_color32_g(SLK_color64_to_32(cur));
-         int32_t cb = SLK_color32_b(SLK_color64_to_32(cur));
-         int32_t ca = SLK_color32_a(SLK_color64_to_32(cur));
-
-         int center_index = HLH_array_length(centers)-1;
-         int32_t r = SLK_color32_r(centers[center_index]);
-         int32_t g = SLK_color32_g(centers[center_index]);
-         int32_t b = SLK_color32_b(centers[center_index]);
-         int32_t a = SLK_color32_a(centers[center_index]);
-
-         uint64_t dist = (cr-r)*(cr-r);
-         dist+=(cg-g)*(cg-g);
-         dist+=(cb-b)*(cb-b);
-
-         if(dist<distance[j])
-            distance[j] = dist;
-         dist_sum+=distance[j];
-      }
-
-      //Weighted random to choose next centeroid
-      uint64_t random = 0;
-      if(dist_sum!=0)
-         random = rand_xor_next(&rng)%dist_sum;
-      int found = 0;
-      uint64_t dist_cur = 0;
-      for(int j = 0;j<img->w*img->h;j++)
-      {
-         dist_cur+=distance[j];
-         if(random<dist_cur)
-         {
-            HLH_array_push(centers,SLK_color64_to_32(img->data[j]));
-            found = 1;
-            break;
-         }
-      }
-
-      if(!found)
-      {
-         HLH_array_push(centers,SLK_color64_to_32(img->data[rand_xor_next(&rng)%(img->w*img->h)]));
-      }
-   }
-
-   HLH_array_free(distance);
-
-   return centers;
 }
 
 static void slk_color32_to_rgb(uint32_t c, float *l0, float *l1, float *l2)
@@ -874,24 +827,13 @@ static uint8_t *kuhn_match(int n, int m, double *table)
    uint8_t *marks = kuhn_mark(n,m,table);
    uint32_t prime = 0;
 
-   //int i = 0;
    while(!kuhn_is_done(n,m,marks,col_covered))
    {
       while(!kuhn_find_prime(n,m,table,marks,row_covered,col_covered,&prime))
          kuhn_add_subtract(n,m,table,row_covered,col_covered);
-      //puts("TAB");
-      //for(int i = 0;i<m*n;i++)
-         //printf("%f\n",table[i]);
-      //puts("--");
       kuhn_alt_marks(n,m,marks,alt,col_marks,row_primes,&prime);
       memset(row_covered,0,sizeof(*row_covered)*n);
       memset(col_covered,0,sizeof(*col_covered)*m);
-      //puts("MARK");
-      //for(int i = 0;i<m*n;i++)
-         //printf("%d\n",marks[i]);
-      //puts("--");
-      //if(i++>3)
-      //break;
    }
    
    free(row_covered);
@@ -957,8 +899,6 @@ static int kuhn_find_prime(int n, int m, double *table, uint8_t *marks, uint8_t 
          continue;
       for(int j = 0;j<m;j++)
       {
-         //if(col_covered[j]||table[i*m+j]!=0.)
-            //continue;
          if(!col_covered[j]&&table[i*m+j]==0.)
             HLH_bitmap_set(zeroes,i*m+j);
       }
@@ -972,7 +912,6 @@ static int kuhn_find_prime(int n, int m, double *table, uint8_t *marks, uint8_t 
          HLH_bitmap_free(zeroes);
          return 0;
       }
-      //printf("Bit %d\n",p);
       
       intptr_t row = p/m;
       intptr_t col = p%m;
@@ -1077,8 +1016,6 @@ static int kuhn_is_done(int n, int m, uint8_t *marks, uint8_t *covered)
       }
    }
 
-   //printf("%d %d\n",num_done,n);
-
    return num_done==n;
 }
 
@@ -1115,7 +1052,6 @@ static void kuhn_alt_marks(int n, int m, uint8_t *marks, uint32_t *alt, int *col
    for(int i = 0;i<=index;i++)
    {
       uint8_t *markx = &marks[alt[i]];
-      //printf("Set %d\n",alt[i]);
       *markx = *markx==1?0:1;
    }
 
@@ -1144,5 +1080,26 @@ static uint8_t *kuhn_assign(int n, int m, uint8_t *marks)
    }
 
    return assign;
+}
+
+static int color_cmp_r(const void *a, const void *b)
+{
+   uint32_t ca = *((uint32_t *)a);
+   uint32_t cb = *((uint32_t *)b);
+   return (int)SLK_color32_r(ca)-(int)SLK_color32_r(cb);
+}
+
+static int color_cmp_g(const void *a, const void *b)
+{
+   uint32_t ca = *((uint32_t *)a);
+   uint32_t cb = *((uint32_t *)b);
+   return (int)SLK_color32_g(ca)-(int)SLK_color32_g(cb);
+}
+
+static int color_cmp_b(const void *a, const void *b)
+{
+   uint32_t ca = *((uint32_t *)a);
+   uint32_t cb = *((uint32_t *)b);
+   return (int)SLK_color32_b(ca)-(int)SLK_color32_b(cb);
 }
 //-------------------------------------
