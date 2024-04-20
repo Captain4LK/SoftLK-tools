@@ -148,6 +148,7 @@ static HLH_gui_group *gui_groups_sample[2];
 static HLH_gui_group *gui_bar_dither;
 static HLH_gui_group *gui_bar_distance;
 static HLH_gui_group *gui_group_median;
+static HLH_gui_group *gui_groups_dither[3];
 
 static struct
 {
@@ -203,7 +204,7 @@ static struct
 
    HLH_gui_radiobutton *sample_sample_mode[5];
    HLH_gui_radiobutton *sample_scale_mode[2];
-   HLH_gui_radiobutton *dither_dither_mode[8];
+   HLH_gui_radiobutton *dither_dither_mode[9];
    HLH_gui_radiobutton *dither_color_dist[6];
    HLH_gui_radiobutton *palette_colors[256];
 
@@ -406,13 +407,45 @@ void gui_construct(void)
       HLH_gui_separator_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X,0);
       HLH_gui_label_create(&gui_groups_left[1]->e,0,"                                ");
 
-      HLH_gui_label_create(&gui_groups_left[1]->e,0,"Dither mode");
+      HLH_gui_label_create(&gui_groups_left[1]->e,0,"Distance metric");
+
+      HLH_gui_group *group_distance = HLH_gui_group_create(&gui_groups_left[1]->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
+      HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"RGB euclidian",NULL);
+      r->e.usr = 0;
+      r->e.msg_usr = radiobutton_distance_msg;
+      HLH_gui_radiobutton *first = r;
+      gui.dither_color_dist[0] = r;
+      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"RGB weighted ",NULL);
+      r->e.usr = 1;
+      r->e.msg_usr = radiobutton_distance_msg;
+      gui.dither_color_dist[1] = r;
+      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"RGB redmean  ",NULL);
+      r->e.usr = 2;
+      r->e.msg_usr = radiobutton_distance_msg;
+      gui.dither_color_dist[2] = r;
+      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"CIE76        ",NULL);
+      r->e.usr = 3;
+      r->e.msg_usr = radiobutton_distance_msg;
+      gui.dither_color_dist[3] = r;
+      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"CIE94        ",NULL);
+      r->e.usr = 4;
+      r->e.msg_usr = radiobutton_distance_msg;
+      gui.dither_color_dist[4] = r;
+      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"CIEDE2000    ",NULL);
+      r->e.usr = 5;
+      r->e.msg_usr = radiobutton_distance_msg;
+      gui.dither_color_dist[5] = r;
+      HLH_gui_radiobutton_set(first,1,1);
+      const char *bar_distance[1] = {"RGB Euclidian \x1f"};
+      gui_bar_distance = HLH_gui_menubar_create(&gui_groups_left[1]->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_distance,(HLH_gui_element **)&group_distance,1,NULL);
+
+      HLH_gui_label_create(&gui_groups_left[1]->e,0,"Dither/Assignment mode");
 
       HLH_gui_group *group_dither = HLH_gui_group_create(&gui_groups_left[1]->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
-      HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"None             ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"None             ",NULL);
       r->e.usr = 0;
       r->e.msg_usr = radiobutton_dither_msg;
-      HLH_gui_radiobutton *first = r;
+      first = r;
       gui.dither_dither_mode[0] = r;
       r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bayer 8x8        ",NULL);
       r->e.usr = 1;
@@ -442,53 +475,27 @@ void gui_construct(void)
       r->e.usr = 7;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[7] = r;
+      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Median-Cut       ",NULL);
+      r->e.usr = 8;
+      r->e.msg_usr = radiobutton_dither_msg;
+      gui.dither_dither_mode[8] = r;
       HLH_gui_radiobutton_set(first,1,1);
       const char *bar_dither[1] = {"Bayer 4x4         \x1f"};
       gui_bar_dither = HLH_gui_menubar_create(&gui_groups_left[1]->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_dither,(HLH_gui_element **)&group_dither,1,NULL);
+      
+      gui_groups_dither[0] = HLH_gui_group_create(&gui_groups_left[1]->e,0);
+      gui_groups_dither[1] = HLH_gui_group_create(&gui_groups_left[1]->e,0);
+      gui_groups_dither[2] = HLH_gui_group_create(&gui_groups_left[1]->e,0);
 
-      HLH_gui_label_create(&gui_groups_left[1]->e,0,"Dither amount");
-      SLIDER(&gui_groups_left[1]->e,dither_amount,DITHER_AMOUNT)
+      HLH_gui_label_create(&gui_groups_dither[1]->e,0,"Dither amount");
+      SLIDER(&gui_groups_dither[1]->e,dither_amount,DITHER_AMOUNT)
 
-      HLH_gui_label_create(&gui_groups_left[1]->e,0,"Distance metric");
+      HLH_gui_label_create(&gui_groups_dither[2]->e,0,"Target colors");
+      SLIDER(&gui_groups_dither[2]->e,target_colors,TARGET_COLORS)
 
-      HLH_gui_group *group_distance = HLH_gui_group_create(&gui_groups_left[1]->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
-      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"RGB euclidian",NULL);
-      r->e.usr = 0;
-      r->e.msg_usr = radiobutton_distance_msg;
-      first = r;
-      gui.dither_color_dist[0] = r;
-      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"RGB weighted ",NULL);
-      r->e.usr = 1;
-      r->e.msg_usr = radiobutton_distance_msg;
-      gui.dither_color_dist[1] = r;
-      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"RGB redmean  ",NULL);
-      r->e.usr = 2;
-      r->e.msg_usr = radiobutton_distance_msg;
-      gui.dither_color_dist[2] = r;
-      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"CIE76        ",NULL);
-      r->e.usr = 3;
-      r->e.msg_usr = radiobutton_distance_msg;
-      gui.dither_color_dist[3] = r;
-      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"CIE94        ",NULL);
-      r->e.usr = 4;
-      r->e.msg_usr = radiobutton_distance_msg;
-      gui.dither_color_dist[4] = r;
-      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"CIEDE2000    ",NULL);
-      r->e.usr = 5;
-      r->e.msg_usr = radiobutton_distance_msg;
-      gui.dither_color_dist[5] = r;
-      HLH_gui_radiobutton_set(first,1,1);
-      const char *bar_distance[1] = {"RGB Euclidian \x1f"};
-      gui_bar_distance = HLH_gui_menubar_create(&gui_groups_left[1]->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_distance,(HLH_gui_element **)&group_distance,1,NULL);
-
-      HLH_gui_checkbutton *c = HLH_gui_checkbutton_create(&gui_groups_left[1]->e,0,"median-cut",NULL);
-      c->e.usr = CHECKBUTTON_KMEANS;
-      c->e.msg_usr = checkbutton_msg;
-      gui.dither_median = c;
-      gui_group_median = HLH_gui_group_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X);
-      HLH_gui_label_create(&gui_group_median->e,0,"Target colors");
-      SLIDER(&gui_group_median->e,target_colors,TARGET_COLORS)
-      HLH_gui_element_ignore(&gui_group_median->e,1);
+      HLH_gui_element_ignore(&gui_groups_dither[0]->e,1);
+      HLH_gui_element_ignore(&gui_groups_dither[1]->e,1);
+      HLH_gui_element_ignore(&gui_groups_dither[2]->e,1);
    }
    //-------------------------------------
 
@@ -806,7 +813,6 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          HLH_json_object_add_integer(&root->root,"dither_alpha_threshold",dither_config.alpha_threshold);
          HLH_json_object_add_real(&root->root,"dither_dither_amount",dither_config.dither_amount);
          HLH_json_object_add_integer(&root->root,"dither_target_colors",dither_config.target_colors);
-         HLH_json_object_add_boolean(&root->root,"dither_use_median",dither_config.use_median);
          HLH_json_object_add_integer(&root->root,"dither_dither_mode",dither_config.dither_mode);
          HLH_json_object_add_integer(&root->root,"dither_color_dist",dither_config.color_dist);
          HLH_json_object_add_integer(&root->root,"tint_red",tint_red);
@@ -1277,25 +1283,7 @@ static int checkbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {
-      if(e->usr==CHECKBUTTON_KMEANS)
-      {
-         if(di)
-         {
-            HLH_gui_element_ignore(&gui_group_median->e,0);
-            dither_config.use_median = 1;
-            gui_process(3);
-         }
-         else
-         {
-            HLH_gui_element_ignore(&gui_group_median->e,1);
-            dither_config.use_median = 0;
-            gui_process(3);
-         }
-
-         HLH_gui_element_layout(&e->window->e, e->window->e.bounds);
-         HLH_gui_element_redraw(&e->window->e);
-      }
-      else if(e->usr==CHECKBUTTON_KMEANSPP)
+      if(e->usr==CHECKBUTTON_KMEANSPP)
       {
          kmeanspp = di;
       }
@@ -1315,6 +1303,32 @@ static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
          char tmp[256];
          snprintf(tmp,256,"%s \x1f",r->text);
          HLH_gui_menubar_label_set(gui_bar_dither,tmp,0);
+
+         HLH_gui_element_ignore(&gui_groups_dither[0]->e,1);
+         HLH_gui_element_ignore(&gui_groups_dither[1]->e,1);
+         HLH_gui_element_ignore(&gui_groups_dither[2]->e,1);
+         
+         switch(dither_config.dither_mode)
+         {
+         case SLK_DITHER_BAYER8X8:
+         case SLK_DITHER_BAYER4X4:
+         case SLK_DITHER_BAYER2X2:
+         case SLK_DITHER_CLUSTER8X8:
+         case SLK_DITHER_CLUSTER4X4:
+            HLH_gui_element_ignore(&gui_groups_dither[1]->e,0);
+            break;
+         case SLK_DITHER_NONE:
+         case SLK_DITHER_FLOYD:
+         case SLK_DITHER_FLOYD2:
+            HLH_gui_element_ignore(&gui_groups_dither[0]->e,0);
+            break;
+         case SLK_DITHER_MEDIAN_CUT:
+            HLH_gui_element_ignore(&gui_groups_dither[2]->e,0);
+            break;
+         }
+
+         HLH_gui_element_layout(&gui_groups_left[1]->e,gui_groups_left[1]->e.bounds);
+         HLH_gui_element_redraw(&gui_groups_left[1]->e);
 
          gui_process(3);
       }
@@ -1358,9 +1372,6 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
 
       //Infill
       HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx, bounds.miny, bounds.maxx, bounds.maxy),color);
-
-      //Outline
-      //HLH_gui_draw_rectangle(&r->e, bounds, 0xff000000);
 
       //Border
       if(r->state||r->checked)
@@ -1420,7 +1431,9 @@ static int button_palette_gen_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {
-      SLK_image32_kmeans(gui_input,dither_config.palette,dither_config.palette_colors,time(NULL),kmeanspp);
+      SLK_image32 *img_kmeans = SLK_image32_dup64(cache_tint);
+      SLK_image32_kmeans(img_kmeans,dither_config.palette,dither_config.palette_colors,time(NULL),kmeanspp);
+      free(img_kmeans);
       HLH_gui_element_redraw(&gui.group_palette->e);
       gui_process(3);
    }
@@ -1528,7 +1541,7 @@ void gui_load_preset(FILE *f)
       dither_config.alpha_threshold = HLH_json_get_object_integer(&root->root,"dither_alpha_threshold",128);
       dither_config.dither_amount = HLH_json_get_object_real(&root->root,"dither_dither_amount",0.2f);
       dither_config.target_colors = HLH_json_get_object_integer(&root->root,"dither_target_colors",8);
-      dither_config.use_median = HLH_json_get_object_boolean(&root->root,"dither_use_median",0);
+      //dither_config.use_median = HLH_json_get_object_boolean(&root->root,"dither_use_median",0);
       dither_config.dither_mode = HLH_json_get_object_integer(&root->root,"dither_dither_mode",2);
       dither_config.color_dist = HLH_json_get_object_integer(&root->root,"dither_color_dist",2);
       dither_config.palette_colors = HLH_json_get_object_integer(&root->root,"dither_palette_colors",2);
@@ -1564,7 +1577,7 @@ void gui_load_preset(FILE *f)
       tint_blue = 255;
       dither_config.alpha_threshold = 128;
       dither_config.dither_amount = 0.2f;
-      dither_config.use_median = 0;
+      //dither_config.use_median = 0;
       dither_config.dither_mode = SLK_DITHER_BAYER4X4;
       dither_config.color_dist = SLK_RGB_REDMEAN;
       dither_config.target_colors = 8;
@@ -1632,7 +1645,7 @@ void gui_load_preset(FILE *f)
    HLH_gui_radiobutton_set(gui.dither_color_dist[dither_config.color_dist],1,1);
    HLH_gui_radiobutton_set(gui.palette_colors[color_selected],1,1);
 
-   HLH_gui_checkbutton_set(gui.dither_median,dither_config.use_median,1,1);
+   //HLH_gui_checkbutton_set(gui.dither_median,dither_config.use_median,1,1);
    HLH_gui_checkbutton_set(gui.palette_kmeanspp,kmeanspp,1,1);
 
    block_process = 0;

@@ -94,7 +94,7 @@ static int imgcmp_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          HLH_gui_rect bounds = img->e.bounds;
          int scale = HLH_gui_get_scale();
 
-         int view_x;
+         /*int view_x;
          int view_width;
          int width = bounds.maxx - bounds.minx - scale * 6;
          int height = bounds.maxy - bounds.miny - scale * 6;
@@ -104,10 +104,10 @@ static int imgcmp_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          else
             view_width = width;
 
-         view_x = (width - view_width) / 2 + bounds.minx + 3 * scale;
+         view_x = (width - view_width) / 2 + bounds.minx + 3 * scale;*/
 
-         int mx = m->pos.x - view_x;
-         int value = (mx * 2048) / view_width;
+         int mx = m->pos.x - (bounds.minx+3*scale);
+         int value = (mx * 2048) / (bounds.maxx-bounds.minx-6*scale);
          if(value<0) value = 0;
          if(value>2048) value = 2048;
 
@@ -147,6 +147,7 @@ static void imgcmp_draw(HLH_gui_imgcmp *img)
    HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), 0xffc8c8c8);
    HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), 0xffc8c8c8);
 
+   int clip_width = ((bounds.maxx-bounds.minx)*img->slider)/2048;
    int view_x;
    int view_y;
    int view_width;
@@ -154,6 +155,37 @@ static void imgcmp_draw(HLH_gui_imgcmp *img)
    int width = bounds.maxx - bounds.minx - scale * 6;
    int height = bounds.maxy - bounds.miny - scale * 6;
 
+   //Img1
+   if(width * img->height0>img->width0 * height)
+   {
+      view_height = height;
+      view_width = (img->width0 * height) / img->height0;
+   }
+   else
+   {
+      view_width = width;
+      view_height = (img->height0 * width) / img->width0;
+   }
+
+   int middle = ((bounds.maxx-bounds.minx-6*scale)* img->slider) / 2048 + bounds.minx+3*scale;
+   SDL_Rect clip = {0};
+   SDL_Rect dst = {0};
+   view_x = (width - view_width) / 2 + bounds.minx + 3 * scale;
+   view_y = (height - view_height) / 2 + bounds.miny + 3 * scale;
+   dst.x = view_x;
+   dst.y = view_y;
+   dst.w = view_width;
+   dst.h = view_height;
+   clip.x = view_x;
+   clip.y = view_y;
+   clip.w = middle-view_x;
+   if(clip.w<=0) clip.w = 1;
+   clip.h = view_height;
+   SDL_RenderSetClipRect(img->e.window->renderer, &clip);
+   SDL_RenderCopy(img->e.window->renderer, img->img0, NULL, &dst);
+   SDL_RenderSetClipRect(img->e.window->renderer, NULL);
+
+   //Img0
    if(width * img->height1>img->width1 * height)
    {
       view_height = height;
@@ -168,16 +200,12 @@ static void imgcmp_draw(HLH_gui_imgcmp *img)
    view_x = (width - view_width) / 2 + bounds.minx + 3 * scale;
    view_y = (height - view_height) / 2 + bounds.miny + 3 * scale;
 
-   //Img0
-   SDL_Rect clip = {0};
-   int clip_width = (view_width*img->slider)/2048;
-   clip.x = view_x+clip_width;
+   clip.x = middle;
    clip.y = view_y;
-   clip.w = view_width-clip_width;
+   clip.w = bounds.maxx-bounds.minx;
    if(clip.w<=0)
       clip.w = 1;
    clip.h = view_height;
-   SDL_Rect dst = {0};
    dst.x = view_x;
    dst.y = view_y;
    dst.w = view_width;
@@ -186,34 +214,6 @@ static void imgcmp_draw(HLH_gui_imgcmp *img)
    SDL_RenderCopy(img->e.window->renderer, img->img1, NULL, &dst);
    SDL_RenderSetClipRect(img->e.window->renderer, NULL);
 
-   //Img1
-   if(width * img->height0>img->width0 * height)
-   {
-      view_height = height;
-      view_width = (img->width0 * height) / img->height0;
-   }
-   else
-   {
-      view_width = width;
-      view_height = (img->height0 * width) / img->width0;
-   }
-
-   view_x = (width - view_width) / 2 + bounds.minx + 3 * scale;
-   view_y = (height - view_height) / 2 + bounds.miny + 3 * scale;
-   dst.x = view_x;
-   dst.y = view_y;
-   dst.w = view_width;
-   dst.h = view_height;
-   clip.x = view_x;
-   clip.y = view_y;
-   clip.w = (view_width * img->slider) / 2048;
-   if(clip.w<=0) clip.w = 1;
-   clip.h = view_height;
-   SDL_RenderSetClipRect(img->e.window->renderer, &clip);
-   SDL_RenderCopy(img->e.window->renderer, img->img0, NULL, &dst);
-   SDL_RenderSetClipRect(img->e.window->renderer, NULL);
-
-   int middle = (view_width * img->slider) / 2048 + view_x;
    HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(middle - scale, view_y, middle + scale, view_y + view_height), 0xff5a5a5a);
    HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(middle - 2 * scale, view_y, middle - scale, view_y + view_height), 0xff323232);
    HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(middle + scale, view_y, middle + 2 * scale, view_y + view_height), 0xffc8c8c8);

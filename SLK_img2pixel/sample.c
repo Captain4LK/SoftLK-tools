@@ -77,7 +77,9 @@ static SLK_image64 *slk_sample_nearest(const SLK_image64 *img, int width, int he
          float dx = x+x_off+0.5f;
          float dy = y+y_off+0.5f;
 
-         out->data[y*width+x] = img->data[(int)roundf(dy*h)*img->w+(int)roundf(dx*w)];
+         int ix = HLH_max(0,HLH_min(img->w-1,(int)roundf(dx*w)));
+         int iy = HLH_max(0,HLH_min(img->h-1,(int)roundf(dy*h)));
+         out->data[y*width+x] = img->data[iy*img->w+ix];
       }
    }
 

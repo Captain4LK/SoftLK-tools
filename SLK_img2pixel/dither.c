@@ -159,11 +159,6 @@ SLK_image32 *SLK_image64_dither(SLK_image64 *img, const SLK_dither_config *confi
       break;
    }
 
-   if(config->use_median)
-   {
-      return slk_assign_median(img,config);
-   }
-
    switch(config->dither_mode)
    {
    case SLK_DITHER_BAYER8X8: slk_dither_threshold_apply(img,3,slk_dither_threshold_bayer8x8,config); break;
@@ -185,6 +180,8 @@ SLK_image32 *SLK_image64_dither(SLK_image64 *img, const SLK_dither_config *confi
       return slk_dither_closest(img,config);
    case SLK_DITHER_FLOYD: return slk_dither_floyd(img,config);
    case SLK_DITHER_FLOYD2: return slk_dither_floyd2(img,config);
+   case SLK_DITHER_MEDIAN_CUT:
+      return slk_assign_median(img,config);
    }
    
    return slk_dither_closest(img,config);

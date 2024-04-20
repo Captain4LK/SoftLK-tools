@@ -48,6 +48,7 @@ typedef enum
    SLK_DITHER_CLUSTER4X4,
    SLK_DITHER_FLOYD,
    SLK_DITHER_FLOYD2,
+   SLK_DITHER_MEDIAN_CUT,
 }SLK_dither;
 
 typedef struct
@@ -59,7 +60,7 @@ typedef struct
    int palette_colors;
    float dither_amount;
 
-   int use_median;
+   //int use_median;
    int target_colors;
 }SLK_dither_config;
 
