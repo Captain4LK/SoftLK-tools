@@ -84,6 +84,8 @@ SLK_image32 *SLK_image32_dup64(const SLK_image64 *src);
 SLK_image64 *SLK_image64_dup(const SLK_image64 *src);
 SLK_image64 *SLK_image64_dup32(const SLK_image32 *src);
 
+void SLK_image32_write_pcx(FILE *f, const SLK_image32 *img, uint32_t *colors, int color_count);
+
 void SLK_image64_blur(SLK_image64 *img, float sz);
 void SLK_image64_sharpen(SLK_image64 *img, float amount);
 void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed, int kmeanspp);

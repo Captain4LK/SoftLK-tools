@@ -777,7 +777,12 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
          char ext[512] = {0};
          FILE *f = image_save_select(ext);
-         HLH_gui_image_save(f,gui_output->data,gui_output->w,gui_output->h,ext);
+
+         if(strcmp(ext,"pcx")==0)
+            SLK_image32_write_pcx(f,gui_output,dither_config.palette,dither_config.palette_colors);
+         else
+            HLH_gui_image_save(f,gui_output->data,gui_output->w,gui_output->h,ext);
+
          if(f!=NULL)
             fclose(f);
 

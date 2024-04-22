@@ -46,15 +46,8 @@ void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *e
    if(f==NULL)
       return;
 
-   //char ext[PATH_EXT];
-   //slk_path_pop_ext(path,NULL,ext);
-
    if(strcmp(ext,"pal")==0)
    {
-      //FILE *f = fopen(path,"r");
-      //if(f==NULL)
-         //return;
-
       int color = 0;
       char buffer[512];
       for(int i = 0;fgets(buffer,512,f)&&color<256;i++)
@@ -72,14 +65,9 @@ void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *e
       }
 
       *color_count = color;
-      //fclose(f);
    }
    else if(strcmp(ext,"hex")==0)
    {
-      //FILE *f = fopen(path,"r");
-      //if(f==NULL)
-         //return;
-
       char buffer[512];
       int color = 0;
       while(fgets(buffer,512,f)&&color<256)
@@ -93,14 +81,9 @@ void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *e
       }
 
       *color_count = color;
-      //fclose(f);
    }
    else if(strcmp(ext,"gpl")==0)
    {
-      //FILE *f = fopen(path,"r");
-      //if(f==NULL)
-         //return;
-
       char buffer[512];
       int color = 0;
       while(fgets(buffer,512,f)&&color<256)
@@ -118,7 +101,6 @@ void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *e
       }
 
       *color_count = color;
-      //fclose(f);
    }
    else
    {
@@ -136,13 +118,6 @@ void SLK_palette_save(FILE *f, uint32_t *colors, int color_count, const char *ex
 {
    if(f==NULL)
       return;
-
-   //FILE *f = fopen(path,"w");
-   //if(f==NULL)
-      //return;
-
-   //char ext[PATH_EXT];
-   //slk_path_pop_ext(path,NULL,ext);
 
    if(strcmp(ext,"gpl")==0)
    {
@@ -178,8 +153,6 @@ void SLK_palette_save(FILE *f, uint32_t *colors, int color_count, const char *ex
          fprintf(f,"%d %d %d\n",r,g,b);
       }
    }
-
-   //fclose(f);
 }
 
 static int slk_path_pop_ext(const char *path, char *out, char *ext)

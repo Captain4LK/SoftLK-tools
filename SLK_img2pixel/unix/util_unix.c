@@ -127,14 +127,15 @@ FILE *preset_load_select()
 //const char *image_save_select()
 FILE *image_save_select(char ext[512])
 {
-   const char *filter_patterns[3] = {"*.png","*.bmp","*.tga"};
-   const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,3,filter_patterns,NULL);
+   const char *filter_patterns[4] = {"*.png","*.bmp","*.tga","pcx"};
+   const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,4,filter_patterns,NULL);
 
    memset(path_image,0,sizeof(path_image));
    if(file_path!=NULL)
    {
       strncpy(path_image_save,file_path,511);
       path_image_save[511] = '\0';
+      slk_path_pop_ext(file_path, NULL, ext);
       return fopen(file_path,"wb");
       //strncpy(path_image,file_path,511);
    }
@@ -154,6 +155,7 @@ FILE *palette_save_select(char ext[512])
    {
       strncpy(path_palette_save,file_path,511);
       path_palette_save[511] = '\0';
+      slk_path_pop_ext(file_path, NULL, ext);
       return fopen(file_path,"w");
       //strncpy(path_palette,file_path,511);
    }

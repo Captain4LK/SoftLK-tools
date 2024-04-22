@@ -158,9 +158,9 @@ FILE *image_save_select(char ext[512])
 {
    NFD_Init();
    
-   nfdu8filteritem_t filter_item[] = {{"PNG", "png"}, {"BMP", "bmp"},{"TGA","tga"}};
+   nfdu8filteritem_t filter_item[] = {{"PNG", "png"}, {"BMP", "bmp"},{"TGA","tga"},{"PCX","pcx"}};
    nfdu8char_t *file_path = NULL;
-   nfdresult_t result = NFD_SaveDialogU8(&file_path,filter_item,3,path_image_save,"untitled.png");
+   nfdresult_t result = NFD_SaveDialogU8(&file_path,filter_item,4,path_image_save,"untitled.png");
    //const char *filter_patterns[3] = {"*.png","*.bmp","*.tga"};
    //const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,3,filter_patterns,NULL);
 
