@@ -195,7 +195,7 @@ nfdresult_t SetDefaultExtension(::IFileDialog* fileOpenDialog,
     // set the first item as the default file extension
     const nfdnchar_t* p_spec = filterList[0].spec;
     for (; *p_spec; ++p_spec) {
-        if (*p_spec == ';') {
+        if (*p_spec == ',') {
             break;
         }
     }
@@ -334,11 +334,11 @@ nfdresult_t NFD_OpenDialogN(nfdnchar_t** outPath,
                             const nfdnfilteritem_t* filterList,
                             nfdfiltersize_t filterCount,
                             const nfdnchar_t* defaultPath) {
-    ::IFileOpenDialog *fileOpenDialog;
+    ::IFileOpenDialog* fileOpenDialog;
 
     // Create dialog
     HRESULT result = ::CoCreateInstance(::CLSID_FileOpenDialog,
-                                        NULL,
+                                        nullptr,
                                         CLSCTX_ALL,
                                         ::IID_IFileOpenDialog,
                                         reinterpret_cast<void**>(&fileOpenDialog));
@@ -716,8 +716,8 @@ nfdresult_t CopyCharToWChar(const nfdu8char_t* inStr, nfdnchar_t*& outStr) {
     }
 
     int ret = MultiByteToWideChar(CP_UTF8, 0, inStr, -1, tmp_outStr, charsNeeded);
-
     assert(ret && ret == charsNeeded);
+    (void)ret;  // prevent warning in release build
     outStr = tmp_outStr;
     return NFD_OKAY;
 }
@@ -734,6 +734,7 @@ nfdresult_t CopyWCharToNFDChar(const nfdnchar_t* inStr, nfdu8char_t*& outStr) {
 
     int ret = WideCharToMultiByte(CP_UTF8, 0, inStr, -1, tmp_outStr, bytesNeeded, nullptr, nullptr);
     assert(ret && ret == bytesNeeded);
+    (void)ret;  // prevent warning in release build
     outStr = tmp_outStr;
     return NFD_OKAY;
 }

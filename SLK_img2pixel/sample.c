@@ -373,8 +373,16 @@ static SLK_image64 *slk_sample_cluster(const SLK_image64 *img, int width, int he
       {
          for(int x = 0;x<width;x++)
          {
+            float dx = x+x_off+0.5f;
+            float dy = y+y_off+0.5f;
+
+            int ix = HLH_max(0,HLH_min(img->w-1,(int)roundf(dx*w)));
+            int iy = HLH_max(0,HLH_min(img->h-1,(int)roundf(dy*h)));
+            uint64_t a = SLK_color64_a(img->data[iy*img->w+ix]);
+
             for(int iy = 0;iy<igrid_y;iy++)
             {
+               //out->data[y*width+x] = img->data[iy*img->w+ix];
                for(int ix = 0;ix<igrid_x;ix++)
                {
                   cluster->data[iy*igrid_x+ix] = 0xff000000;
@@ -382,7 +390,12 @@ static SLK_image64 *slk_sample_cluster(const SLK_image64 *img, int width, int he
                      cluster->data[iy*igrid_x+ix] = SLK_color64_to_32(img->data[((int)(y*grid_y)+iy)*img->w+(int)(x*grid_x)+ix]);
                }
             }
-            out->data[y*width+x] = SLK_color32_to_64(SLK_image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
+            uint64_t c = SLK_color32_to_64(SLK_image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
+            uint64_t r = SLK_color64_r(c);
+            uint64_t g = SLK_color64_g(c);
+            uint64_t b = SLK_color64_b(c);
+            out->data[y*width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
+            //out->data[y*width+x] = SLK_color32_to_64(SLK_image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
          }
       }
 

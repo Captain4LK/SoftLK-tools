@@ -223,6 +223,9 @@ int HLH_gui_message_loop(void)
 
          switch(event.window.event)
          {
+         case SDL_WINDOWEVENT_FOCUS_GAINED:
+         case SDL_WINDOWEVENT_FOCUS_LOST:
+         case SDL_WINDOWEVENT_SHOWN:
          case SDL_WINDOWEVENT_EXPOSED:
             if(SDL_SetRenderTarget(win->renderer, NULL)<0)
                fprintf(stderr, "SDL_SetRenderTarget(): %s\n", SDL_GetError());
