@@ -39,18 +39,21 @@ In general, I try to keep the amount of external dependencies as low as possible
 Current development version: SLK_img2pixel 1.5-dev
 
 ----------------------------------------
-Version:                SLK_img2pixel 1.5 (tba)
+Version:                SLK_img2pixel 1.5 (26.04.2024)
 ----------------------------------------
 
 CHANGES:
 
-* added new sampling mode --> cluster
+* added new sampling mode --> "cluster"
+* combined "ceil", "floor" and "round" sampling options into "nearest"
 * added tinting
 * optimized and corrected gaussian blur: about 5x faster and more correct for large blurring radius
 * sharpening is now unsharp-masking
-* k-means dithering now supports all color distance metrics
 * new gui
 * multithreading
+* new color assignment mode: "median-cut"
+* new color distance metrics: "weighted rgb" and "redmean"
+* removed "yuv", "ycc", "yiq", "hsv" and "xyz" distance metrics
 
 ----------------------------------------
 Version:                SLK_img2pixel 1.4 (17.09.2022)

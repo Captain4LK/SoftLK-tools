@@ -8,7 +8,7 @@ More information, compilation instructions and download links can be found in th
 
 |Program|Info|Version|
 |---|---|---|
-|[SLK_img2pixel](SLK_img2pixel/README.md)|A tool for transforming images into pixel art|1.5-rc1|
+|[SLK_img2pixel](SLK_img2pixel/README.md)|A tool for transforming images into pixel art|1.5|
 |[SLK_make](SLK_make/README.md)|A build system based on the one used by golgotha|on hold|
 
 # Gallery
