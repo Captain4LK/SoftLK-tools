@@ -28,8 +28,7 @@ static uint64_t next_id = 0;
 
 //Function prototypes
 static void element_compute_required(HLH_gui_element *e);
-static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_point availible);
-static HLH_gui_point element_get_share(HLH_gui_element *e);
+static void element_set_bounds(HLH_gui_element *e, HLH_gui_rect availible);
 static void element_redraw(HLH_gui_element *e);
 static Uint32 sdl_callback(Uint32 interval, void *param);
 //-------------------------------------
@@ -169,7 +168,7 @@ void HLH_gui_element_redraw_msg(HLH_gui_element *e)
 void HLH_gui_element_layout(HLH_gui_element *e, HLH_gui_rect space)
 {
    element_compute_required(e);
-   element_set_rect(e, HLH_gui_point_make(space.minx, space.miny), HLH_gui_point_make(space.maxx - space.minx, space.maxy - space.miny));
+   element_set_bounds(e, space);
 }
 
 HLH_gui_point HLH_gui_element_size(HLH_gui_element *e, HLH_gui_point children)
@@ -178,11 +177,6 @@ HLH_gui_point HLH_gui_element_size(HLH_gui_element *e, HLH_gui_point children)
    int height = HLH_gui_element_msg(e, HLH_GUI_MSG_GET_HEIGHT, 0, (void *)&children);
 
    return HLH_gui_point_make(width, height);
-}
-
-void HLH_gui_element_child_space(HLH_gui_element *e, HLH_gui_rect *space)
-{
-   HLH_gui_element_msg(e, HLH_GUI_MSG_GET_CHILD_SPACE, 0, (void *)space);
 }
 
 HLH_gui_element *HLH_gui_element_by_point(HLH_gui_element *e, HLH_gui_point pt)
@@ -278,18 +272,12 @@ void HLH_gui_element_timer(HLH_gui_element *e, int interval)
 
 static void element_compute_required(HLH_gui_element *e)
 {
-   for(int i = 0; i<e->child_count; i++)
-   {
-      HLH_gui_element *child = e->children[i];
-
-      element_compute_required(child);
-   }
-
    e->child_size_required = HLH_gui_point_make(0, 0);
    int local_x = 0;
    for(int i = 0;i<e->child_count;i++)
    {
       HLH_gui_element *child = e->children[i];
+      element_compute_required(child);
 
       uint64_t layout = child->flags & HLH_GUI_LAYOUT;
       if(layout==HLH_GUI_LAYOUT_VERTICAL)
@@ -307,42 +295,53 @@ static void element_compute_required(HLH_gui_element *e)
 
    e->child_size_required.x = HLH_max(local_x,e->child_size_required.x);
    e->size_required = HLH_gui_point_add(HLH_gui_element_size(e, e->child_size_required), HLH_gui_point_add(e->pad_in, e->pad_out));
-
-   if(e->flags & HLH_GUI_FIXED_X)
-      e->size_required.x = e->fixed_size.x;
-   if(e->flags & HLH_GUI_FIXED_Y)
-      e->size_required.y = e->fixed_size.y;
 }
 
-static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_point availible)
+static void element_set_bounds(HLH_gui_element *e, HLH_gui_rect availible)
 {
-   e->size = HLH_gui_point_sub(e->size_required, e->pad_out);
-   origin = HLH_gui_point_add(origin, HLH_gui_point_make(e->pad_out.x / 2, e->pad_out.y / 2));
-   availible = HLH_gui_point_sub(availible, e->pad_out);
+   availible.minx+=e->pad_out.x;
+   availible.miny+=e->pad_out.y;
+   availible.maxx-=e->pad_out.x;
+   availible.maxy-=e->pad_out.y;
 
-   e->size.x = HLH_min(e->size.x,availible.x);
-   e->size.y = HLH_min(e->size.y,availible.y);
-   if(e->flags & HLH_GUI_FILL_X)
-      e->size.x = availible.x;
-   if(e->flags & HLH_GUI_FILL_Y)
-      e->size.y = availible.y;
+   e->bounds = availible;
+   if(!(e->flags&HLH_GUI_FILL_X)&&
+      availible.maxx-availible.minx>e->size_required.x)
+   {
+      if(!(e->flags&HLH_GUI_NO_CENTER_X))
+         e->bounds.minx+= (e->bounds.maxx-e->bounds.minx-e->size_required.x+e->pad_out.x)/2;
+      e->bounds.maxx = e->bounds.minx+e->size_required.x-e->pad_out.x;
+   }
+   if(!(e->flags&HLH_GUI_FILL_Y)&&
+      availible.maxy-availible.miny>e->size_required.y)
+   {
+      if(!(e->flags&HLH_GUI_NO_CENTER_Y))
+         e->bounds.miny+= (e->bounds.maxy-e->bounds.miny-e->size_required.y+e->pad_out.y)/2;
+      e->bounds.maxy = e->bounds.miny+e->size_required.y-e->pad_out.y;
+   }
+   
+   if(e->child_count<=0)
+      return;
 
-   if(!(e->flags&HLH_GUI_NO_CENTER_X))
-      origin.x += (availible.x - e->size.x) / 2;
-   if(!(e->flags&HLH_GUI_NO_CENTER_Y))
-      origin.y += (availible.y - e->size.y) / 2;
+   //TODO(Captain4LK): this won't work properly when mixing fill_x and layout_vertical
+   HLH_gui_point share = HLH_gui_point_make(0, 0);
+   for(int i = 0; i<e->child_count; i++)
+   {
+      HLH_gui_element *child = e->children[i];
 
-   e->bounds = HLH_gui_rect_make(origin.x, origin.y, origin.x + e->size.x, origin.y + e->size.y);
+      uint64_t layout = child->flags & HLH_GUI_LAYOUT;
+      if(layout==HLH_GUI_LAYOUT_VERTICAL&&(child->flags&HLH_GUI_FILL_Y))
+         share.y++;
+      else if(layout==HLH_GUI_LAYOUT_HORIZONTAL&&(child->flags&HLH_GUI_FILL_X))
+         share.x++;
+   }
+   share.x = HLH_max(share.x,1);
+   share.y = HLH_max(share.y,1);
 
-   //Fake rect, actually collection of two points
-   HLH_gui_rect child_space = {.minx = origin.x, .miny = origin.y, .maxx = e->size.x, .maxy = e->size.y};
-   HLH_gui_element_child_space(e, &child_space);
-   origin = HLH_gui_point_make(child_space.minx, child_space.miny);
-   HLH_gui_point space = HLH_gui_point_make(child_space.maxx, child_space.maxy);
-   HLH_gui_point space_fill = HLH_gui_point_make(space.x - e->child_size_required.x, space.y - e->child_size_required.y);
-   HLH_gui_point share = element_get_share(e);
-   HLH_gui_point origin_org = origin;
-   HLH_gui_point space_org = space;
+   HLH_gui_rect child_space = e->bounds;
+   HLH_gui_element_msg(e,HLH_GUI_MSG_GET_CHILD_SPACE,0,&child_space);
+   HLH_gui_point space_fill = HLH_gui_point_make(child_space.maxx -child_space.minx - e->child_size_required.x, child_space.maxy-child_space.miny - e->child_size_required.y);
+   HLH_gui_rect child_space_org = child_space;
    for(int i = 0; i<e->child_count; i++)
    {
       HLH_gui_element *c = e->children[i];
@@ -350,75 +349,30 @@ static void element_set_rect(HLH_gui_element *e, HLH_gui_point origin, HLH_gui_p
       if(HLH_gui_element_ignored(c))
          continue;
 
-      HLH_gui_point origin_new = origin;
-      HLH_gui_point space_new = space;
-
       uint64_t layout = c->flags & HLH_GUI_LAYOUT;
       if(layout==HLH_GUI_LAYOUT_VERTICAL)
       {
          if(c->flags&HLH_GUI_FILL_X)
             c->size_required.x += space_fill.x;
          if(c->flags&HLH_GUI_FILL_Y)
-         {
-            int l = space_fill.y / HLH_non_zero(share.y);
-            c->size_required.y += l;
-            space_fill.y -= l;
-            share.y--;
-         }
+            c->size_required.y += space_fill.y / HLH_non_zero(share.y);
 
-         origin_new.y += c->size_required.y;
-         space_new.y -= c->size_required.y;
-         origin_new.x = origin_org.x;
-         space_new.x = space_org.x;
-         element_set_rect(c, HLH_gui_point_make(origin.x,origin.y), HLH_gui_point_make(space.x, c->size_required.y));
+         element_set_bounds(c, HLH_gui_rect_make(child_space.minx,child_space.miny,child_space.maxx,child_space.miny+c->size_required.y));
+         child_space.miny+=c->size_required.y;
+         child_space.minx = child_space_org.minx;
+         child_space.maxx = child_space_org.maxx;
       }
       else if(layout==HLH_GUI_LAYOUT_HORIZONTAL)
       {
          if(c->flags&HLH_GUI_FILL_X)
-         {
-            int l = space_fill.x / HLH_non_zero(share.x);
-            c->size_required.x += l;
-            space_fill.x -= l;
-            share.x--;
-         }
+            c->size_required.x += space_fill.x / HLH_non_zero(share.x);
          if(c->flags&HLH_GUI_FILL_Y)
             c->size_required.y += space_fill.y;
 
-         origin_new.x += c->size_required.x;
-         space_new.x -= c->size_required.x;
-         element_set_rect(c, origin, HLH_gui_point_make(c->size_required.x, space.y));
-      }
-
-      origin = origin_new;
-      space = space_new;
-   }
-}
-
-static HLH_gui_point element_get_share(HLH_gui_element *e)
-{
-   HLH_gui_point share = HLH_gui_point_make(0, 0);
-
-   for(int i = 0; i<e->child_count; i++)
-   {
-      HLH_gui_element *child = e->children[i];
-
-      uint64_t layout = child->flags & HLH_GUI_LAYOUT;
-      if(layout==HLH_GUI_LAYOUT_VERTICAL)
-      {
-         if((child->flags&HLH_GUI_FILL_Y))
-            share.y++;
-      }
-      else if(layout==HLH_GUI_LAYOUT_HORIZONTAL)
-      {
-         if((child->flags&HLH_GUI_FILL_X))
-            share.x++;
+         element_set_bounds(c, HLH_gui_rect_make(child_space.minx,child_space.miny,child_space.minx+c->size_required.x,child_space.maxy));
+         child_space.minx+=c->size_required.x;
       }
    }
-
-   share.x = HLH_max(share.x,1);
-   share.y = HLH_max(share.y,1);
-
-   return share;
 }
 
 static void element_redraw(HLH_gui_element *e)

@@ -72,8 +72,8 @@ static int group_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          space->minx += HLH_gui_get_scale();
          space->miny += HLH_gui_get_scale();
-         space->maxx -= HLH_gui_get_scale() * 2;
-         space->maxy -= HLH_gui_get_scale() * 2;
+         space->maxx -= HLH_gui_get_scale();
+         space->maxy -= HLH_gui_get_scale();
       }
    }
    else if(msg==HLH_GUI_MSG_DRAW)

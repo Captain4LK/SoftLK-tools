@@ -106,19 +106,19 @@ static int dropdown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          {
             HLH_gui_rect bounds = drop->e.window->e.bounds;
 
-            drop->drop->flags &= ~(HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y);
-
             if(drop->side==HLH_GUI_LAYOUT_VERTICAL)
             {
                bounds.minx = drop->e.bounds.minx;
                bounds.miny = drop->e.bounds.maxy;
-               drop->drop->flags |= HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y;
+               HLH_gui_flag_set(drop->drop->flags,HLH_GUI_NO_CENTER_X,1);
+               HLH_gui_flag_set(drop->drop->flags,HLH_GUI_NO_CENTER_Y,1);
             }
             else if(drop->side==HLH_GUI_LAYOUT_HORIZONTAL)
             {
                bounds.minx = drop->e.bounds.maxx;
                bounds.miny = drop->e.bounds.miny;
-               drop->drop->flags |= HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y;
+               HLH_gui_flag_set(drop->drop->flags,HLH_GUI_NO_CENTER_X,1);
+               HLH_gui_flag_set(drop->drop->flags,HLH_GUI_NO_CENTER_Y,1);
             }
 
             HLH_gui_element_invisible(drop->drop, 0);

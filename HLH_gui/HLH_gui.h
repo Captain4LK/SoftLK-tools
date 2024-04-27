@@ -100,8 +100,6 @@ typedef enum
 #define HLH_GUI_INVISIBLE       (UINT64_C(0x8))
 #define HLH_GUI_IGNORE          (UINT64_C(0x10))
 #define HLH_GUI_DESTROY         (UINT64_C(0x20))
-#define HLH_GUI_FIXED_X         (UINT64_C(0x40))
-#define HLH_GUI_FIXED_Y         (UINT64_C(0x80))
 #define HLH_GUI_FILL_X          (UINT64_C(0x100))
 #define HLH_GUI_FILL_Y          (UINT64_C(0x200))
 #define HLH_GUI_FILL            (HLH_GUI_FILL_X|HLH_GUI_FILL_Y)
@@ -138,7 +136,6 @@ struct HLH_gui_element
    //Public
    HLH_gui_point pad_in;
    HLH_gui_point pad_out;
-   HLH_gui_point fixed_size;
    uint32_t usr;
    void *usr_ptr;
    HLH_gui_msg_handler msg_usr;
@@ -151,7 +148,6 @@ struct HLH_gui_element
 
    int needs_redraw;
 
-   HLH_gui_point size;
    HLH_gui_rect bounds;
    HLH_gui_point size_required;
    HLH_gui_point child_size_required;
@@ -338,7 +334,6 @@ void HLH_gui_element_redraw_now(HLH_gui_element *e);
 void HLH_gui_element_redraw_msg(HLH_gui_element *e);
 void HLH_gui_element_layout(HLH_gui_element *e, HLH_gui_rect space);
 HLH_gui_point HLH_gui_element_size(HLH_gui_element *e, HLH_gui_point children);
-void HLH_gui_element_child_space(HLH_gui_element *e, HLH_gui_rect *space);
 HLH_gui_element *HLH_gui_element_by_point(HLH_gui_element *e, HLH_gui_point pt);
 void HLH_gui_element_invisible(HLH_gui_element *e, int invisible);
 void HLH_gui_element_ignore(HLH_gui_element *e, int ignore);

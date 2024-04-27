@@ -29,8 +29,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //#defines
 #define SLIDER(root_group,type,type_enum) \
    group = HLH_gui_group_create(root_group,HLH_GUI_FILL_X); \
-   slider = HLH_gui_slider_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FIXED_X,0); \
-   slider->e.fixed_size.x = 196*HLH_gui_get_scale(); \
+   slider = HLH_gui_slider_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FILL_X,0); \
    HLH_gui_slider_set(slider,-1,1,0,0); \
    slider->e.msg_usr = slider_msg; \
    slider->e.usr = SLIDER_##type_enum; \
@@ -483,9 +482,9 @@ void gui_construct(void)
       const char *bar_dither[1] = {"Bayer 4x4         \x1f"};
       gui_bar_dither = HLH_gui_menubar_create(&gui_groups_left[1]->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_dither,(HLH_gui_element **)&group_dither,1,NULL);
       
-      gui_groups_dither[0] = HLH_gui_group_create(&gui_groups_left[1]->e,0);
-      gui_groups_dither[1] = HLH_gui_group_create(&gui_groups_left[1]->e,0);
-      gui_groups_dither[2] = HLH_gui_group_create(&gui_groups_left[1]->e,0);
+      gui_groups_dither[0] = HLH_gui_group_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X);
+      gui_groups_dither[1] = HLH_gui_group_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X);
+      gui_groups_dither[2] = HLH_gui_group_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X);
 
       HLH_gui_label_create(&gui_groups_dither[1]->e,0,"Dither amount");
       SLIDER(&gui_groups_dither[1]->e,dither_amount,DITHER_AMOUNT)
