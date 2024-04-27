@@ -420,7 +420,9 @@ int HLH_gui_message_loop(void)
       if(event.type==HLH_gui_timer_event)
       {
          //TODO(Captain4LK): what do we do if this takes longer than timer_interval?
-         HLH_gui_element_msg(event.user.data1, HLH_GUI_MSG_TIMER, 0, NULL);
+         win = core_find_window(SDL_GetWindowFromID(event.edit.windowID));
+         if(win!=NULL)
+            HLH_gui_element_msg(event.user.data1, HLH_GUI_MSG_TIMER, 0, NULL);
       }
 
       if(win!=NULL)
