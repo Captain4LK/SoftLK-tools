@@ -176,8 +176,8 @@ int main(int argc, char **argv)
       tint_blue = HLH_json_get_object_integer(&root->root,"tint_blue",255);
       dither_config.alpha_threshold = HLH_json_get_object_integer(&root->root,"dither_alpha_threshold",128);
       dither_config.dither_amount = HLH_json_get_object_real(&root->root,"dither_dither_amount",0.2f);
-      dither_config.palette_weight = HLH_json_get_object_integer(&root->root,"dither_palette_weight",2);
-      dither_config.use_kmeans = HLH_json_get_object_boolean(&root->root,"dither_use_kmeans",0);
+      dither_config.target_colors = HLH_json_get_object_integer(&root->root,"dither_target_colors",8);
+      //dither_config.use_median = HLH_json_get_object_boolean(&root->root,"dither_use_median",0);
       dither_config.dither_mode = HLH_json_get_object_integer(&root->root,"dither_dither_mode",2);
       dither_config.color_dist = HLH_json_get_object_integer(&root->root,"dither_color_dist",2);
       dither_config.palette_colors = HLH_json_get_object_integer(&root->root,"dither_palette_colors",2);
@@ -260,8 +260,7 @@ static void dump_defaults()
    HLH_json_object_add_boolean(&root->root,"kmeanspp",kmeanspp);
    HLH_json_object_add_integer(&root->root,"dither_alpha_threshold",dither_config.alpha_threshold);
    HLH_json_object_add_real(&root->root,"dither_dither_amount",dither_config.dither_amount);
-   HLH_json_object_add_integer(&root->root,"dither_palette_weight",dither_config.palette_weight);
-   HLH_json_object_add_boolean(&root->root,"dither_use_kmeans",dither_config.use_kmeans);
+   HLH_json_object_add_integer(&root->root,"dither_target_colors",dither_config.target_colors);
    HLH_json_object_add_integer(&root->root,"dither_dither_mode",dither_config.dither_mode);
    HLH_json_object_add_integer(&root->root,"dither_color_dist",dither_config.color_dist);
    HLH_json_object_add_integer(&root->root,"tint_red",tint_red);
