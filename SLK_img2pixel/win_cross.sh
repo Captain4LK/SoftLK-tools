@@ -24,8 +24,10 @@ if [ $1 = "gui" ]; then
 elif [ $1 = "cmd" ]; then
    sources="$sources main_cmd.c ../HLH_gui/HLH_gui_all.c"
 
+   rm *.a
+   ln -s `x86_64-w64-mingw32-g++ --print-file-name=libgomp.a`
    #x86_64-w64-mingw32-gcc -o ../bin/SLK_img2pix_cmd $sources $flags -I../HLH_gui -static-libgcc -static-libstdc++ -L. $options
-   x86_64-w64-mingw32-gcc -o ../bin/SLK_img2pix_cmd $sources $flags -Wall -Wextra -lm -O3 -s -static-libgcc -static-libstdc++ -flto=auto -lmingw32 -fopenmp -lSDL2main -lSDL2 -I../HLH_gui
+   x86_64-w64-mingw32-gcc -o ../bin/SLK_img2pix_cmd $sources $flags -Wall -Wextra -lm -O3 -s -static-libgcc -static-libstdc++ -flto=auto -lmingw32 -fopenmp -lSDL2main -lSDL2 -L. -I../HLH_gui
 
 else
 
