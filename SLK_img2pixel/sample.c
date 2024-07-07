@@ -46,7 +46,11 @@ static float slk_lanczos(float v);
 
 SLK_image64 *SLK_image64_sample(const SLK_image64 *img, int width, int height, int sample_mode, float x_off, float y_off)
 {
+   if(img==NULL)
+      return SLK_image64_dup(img);
    //TODO(Captain4LK): integer only math?
+   width = HLH_max(1,width);
+   height = HLH_max(1,height);
 
    switch(sample_mode)
    {

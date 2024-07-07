@@ -13,6 +13,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 
 #define HLH_IMPLEMENTATION
 #include "HLH.h"
@@ -26,7 +27,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "img2pixel.h"
-#include "util.h"
+//#include "util.h"
 //-------------------------------------
 
 //#defines
@@ -74,7 +75,9 @@ int main(int argc, char **argv)
    {
       {"in", 'i', OPTPARSE_REQUIRED},
       {"out", 'o', OPTPARSE_REQUIRED},
+      {"outp", 'P', OPTPARSE_REQUIRED},
       {"preset", 'p', OPTPARSE_REQUIRED},
+      {"gen", 'g', OPTPARSE_REQUIRED},
       {"dump-defaults", 'd', OPTPARSE_NONE},
       {"help", 'h', OPTPARSE_NONE},
       {0},
@@ -83,6 +86,9 @@ int main(int argc, char **argv)
    const char *path_in = NULL;
    const char *path_out = NULL;
    const char *path_preset = NULL;
+   const char *path_palette = NULL;
+   int generate_palette = 0;
+   int generate_colors = 0;
 
    int option;
    struct optparse options;
@@ -99,6 +105,13 @@ int main(int argc, char **argv)
          break;
       case 'p':
          path_preset = options.optarg;
+         break;
+      case 'P':
+         path_palette = options.optarg;
+         break;
+      case 'g':
+         generate_palette = 1;
+         generate_colors = strtol(options.optarg,NULL,10);
          break;
       case 'd':
          dump_defaults();
@@ -209,6 +222,29 @@ int main(int argc, char **argv)
    SLK_image64_hscb(sampled,hue,saturation,contrast,brightness);
    SLK_image64_gamma(sampled,gamma);
    SLK_image64_tint(sampled,tint_red,tint_green,tint_blue);
+
+   if(generate_palette)
+
+   {
+      if(generate_colors>0)
+         dither_config.palette_colors = generate_colors;
+      SLK_image32 *img_kmeans = SLK_image32_dup64(sampled);
+      SLK_image32_kmeans(img_kmeans,dither_config.palette,dither_config.palette_colors,time(NULL),kmeanspp);
+      free(img_kmeans);
+   }
+
+   if(path_palette!=NULL)
+   {
+      FILE *fp = fopen(path_palette,"w");
+      if(fp!=NULL)
+      {
+         char ext[512] = {0};
+         slk_path_pop_ext(path_palette,NULL,ext);
+         SLK_palette_save(fp,dither_config.palette,dither_config.palette_colors,ext);
+         fclose(fp);
+      }
+   }
+
    SLK_image32 *out = SLK_image64_dither(sampled,&dither_config);
 
    f = fopen(path_out,"wb");
@@ -220,7 +256,11 @@ int main(int argc, char **argv)
 
    char ext[512];
    slk_path_pop_ext(path_out,NULL,ext);
-   HLH_gui_image_save(f,out->data,out->w,out->h,ext);
+   //HLH_gui_image_save(f,out->data,out->w,out->h,ext);
+   if(strcmp(ext,"pcx")==0||strcmp(ext,"PCX")==0)
+      SLK_image32_write_pcx(f,out,dither_config.palette,dither_config.palette_colors);
+   else
+      HLH_gui_image_save(f,out->data,out->w,out->h,ext);
 
    fclose(f);
 
@@ -233,7 +273,9 @@ static void print_help(int argc, char **argv)
           "%s --in filename --out filename [--preset preset]\n"
           "   --in\t\t\timage file to process\n"
           "   --out\t\toutput file\n"
+          "   --outp\t\toutput palette\n"
           "   --dump-defaults\twrite default preset to stdout\n"
+          "   --gen COLORS\t\tgenerate color palette\n"
           "   --preset\t\tpreset to use for processing\n"
           "   --help\t\tprint this text\n",
          argv[0],argv[0]);

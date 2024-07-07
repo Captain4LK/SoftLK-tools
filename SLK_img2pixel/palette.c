@@ -46,7 +46,7 @@ void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *e
    if(f==NULL)
       return;
 
-   if(strcmp(ext,"pal")==0)
+   if(strcmp(ext,"pal")==0||strcmp(ext,"PAL")==0)
    {
       int color = 0;
       char buffer[512];
@@ -66,7 +66,7 @@ void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *e
 
       *color_count = color;
    }
-   else if(strcmp(ext,"hex")==0)
+   else if(strcmp(ext,"hex")==0||strcmp(ext,"HEX")==0)
    {
       char buffer[512];
       int color = 0;
@@ -82,7 +82,7 @@ void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *e
 
       *color_count = color;
    }
-   else if(strcmp(ext,"gpl")==0)
+   else if(strcmp(ext,"gpl")==0||strcmp(ext,"GPL")==0)
    {
       char buffer[512];
       int color = 0;
@@ -105,12 +105,18 @@ void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *e
    else
    {
       //png or unknown: asume image
-      int width,height;
+      freopen(NULL,"rb",f);
+      int width = 0;
+      int height = 0;
       uint32_t *data = HLH_gui_image_load(f,&width,&height);
-      *color_count = HLH_min(256,width*height);
-      for(int i = 0;i<*color_count;i++)
-         colors[i] = data[i];
-      HLH_gui_image_free(data);
+      *color_count = HLH_max(1,HLH_min(256,width*height));
+      colors[0] = 0;
+      if(data!=NULL)
+      {
+         for(int i = 0;i<*color_count;i++)
+            colors[i] = data[i];
+         HLH_gui_image_free(data);
+      }
    }
 }
 

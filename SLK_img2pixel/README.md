@@ -36,7 +36,17 @@ In general, I try to keep the amount of external dependencies as low as possible
 
 # Changelog
 
-Current development version: SLK_img2pixel 1.5-dev
+Current development version: SLK_img2pixel 1.5.1-dev
+
+----------------------------------------
+Version:                SLK_img2pixel 1.5.1 (TBA)
+----------------------------------------
+
+CHANGES:
+
+* palette generation for cmd version
+* pcx export for cmd version
+* crash fixes
 
 ----------------------------------------
 Version:                SLK_img2pixel 1.5 (26.04.2024)
