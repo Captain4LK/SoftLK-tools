@@ -20,7 +20,7 @@ typedef struct
 
    float x;
    float y;
-   float zoom;
+   float scale;
    int width;
    int height;
    SDL_Texture *img;

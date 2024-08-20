@@ -14,6 +14,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "gui.h"
+#include "canvas.h"
 //-------------------------------------
 
 //#defines
@@ -93,6 +94,8 @@ void gui_construct(void)
    HLH_gui_menubar_create(&root_group->e,HLH_GUI_FILL_X,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_STYLE_01,menubar,menus,2,NULL);
    HLH_gui_separator_create(&root_group->e,HLH_GUI_FILL_X,0);
    //-------------------------------------
+
+   GUI_canvas *canvas = gui_canvas_create(&root_group->e,HLH_GUI_FILL,64,64);
 }
 
 static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
