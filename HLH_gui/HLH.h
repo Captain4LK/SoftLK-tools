@@ -1,7 +1,7 @@
 /*
 Misc helper macros/functions/data structures etc.
 
-Written in 2022,2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2022,2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -27,11 +27,21 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _HLH_H_
 
+#include <stdint.h>
+#include <stddef.h>
+
 //General purpose macros
 //--------------------------------
 #define HLH_max(a,b) ((a)>(b)?(a):(b))
 #define HLH_min(a,b) ((a)<(b)?(a):(b))
 #define HLH_non_zero(a) ((a)+((a)==0))
+//--------------------------------
+
+//Error checking
+//--------------------------------
+#define HLH_log_line(w, ...) _HLH_logl(w, __FILE__, __LINE__, __VA_ARGS__)
+#define HLH_error_fail(w, ...) do { HLH_log_line(w, __VA_ARGS__); goto HLH_err; } while(0)
+#define HLH_error_check(X, w, ...) do { if(!(X)) HLH_error_fail(w, __VA_ARGS__); } while(0)
 //--------------------------------
 
 //Dynamic array/"stretchy buffer"
@@ -69,6 +79,16 @@ typedef struct
 void *_HLH_array_grow(void *old, size_t size, size_t grow, size_t min);
 //--------------------------------
 
+//Bitmaps
+//--------------------------------
+uint32_t *HLH_bitmap_create(intptr_t bits);
+void HLH_bitmap_free(uint32_t *bitmap);
+void HLH_bitmap_set(uint32_t *bitmap, intptr_t bit);
+void HLH_bitmap_unset(uint32_t *bitmap, intptr_t bit);
+int HLH_bitmap_check(uint32_t *bitmap, intptr_t bit);
+intptr_t HLH_bitmap_first_set(uint32_t *bitmap);
+//--------------------------------
+
 //Internal
 //--------------------------------
 
@@ -78,6 +98,8 @@ void *_HLH_array_grow(void *old, size_t size, size_t grow, size_t min);
 void *_HLH_malloc(size_t size);
 void _HLH_free(void *ptr);
 void *_HLH_realloc(void *ptr, size_t new_size);
+
+void _HLH_logl(const char *fun, const char *file, unsigned line, const char *format, ...);
 //--------------------------------
 
 #endif
@@ -97,6 +119,8 @@ void *_HLH_realloc(void *ptr, size_t new_size);
 #ifndef HLH_REALLOC
 #define HLH_REALLOC realloc
 #endif
+
+#include <stdarg.h>
 
 void *_HLH_malloc(size_t size)
 {
@@ -138,6 +162,95 @@ void *_HLH_array_grow(void *old, size_t size, size_t grow, size_t min)
    h = _HLH_realloc(h,header_off*size+h->size*size);
 
    return ((char *)h)+header_off*size;
+}
+
+uint32_t *HLH_bitmap_create(intptr_t bits)
+{
+   uint32_t *bitmap = NULL;
+   HLH_array_length_set(bitmap,(bits+31)/32);
+   //printf("pre %d\n",HLH_array_length(bitmap));
+   memset(bitmap,0,sizeof(*bitmap)*HLH_array_length(bitmap));
+   //printf("%d\n",HLH_array_length(bitmap));
+
+   return bitmap;
+}
+
+void HLH_bitmap_free(uint32_t *bitmap)
+{
+   HLH_array_free(bitmap);
+}
+
+void HLH_bitmap_set(uint32_t *bitmap, intptr_t bit)
+{
+   if(bitmap==NULL)
+      return;
+
+   intptr_t pos = bit/32;
+   uint32_t value = (uint32_t)1<<(bit-pos*32);
+   bitmap[pos]|=value;
+}
+
+void HLH_bitmap_unset(uint32_t *bitmap, intptr_t bit)
+{
+   if(bitmap==NULL)
+      return;
+
+   intptr_t pos = bit/32;
+   uint32_t old = bitmap[pos];
+   uint32_t value = (uint32_t)1<<(bit-pos*32);
+   bitmap[pos]&=~value;
+}
+
+int HLH_bitmap_check(uint32_t *bitmap, intptr_t bit)
+{
+   if(bitmap==NULL)
+      return 0;
+
+   intptr_t pos = bit/32;
+   uint32_t value = 1<<(pos*32-bit);
+   return !!(bitmap[pos]&value);
+}
+
+intptr_t HLH_bitmap_first_set(uint32_t *bitmap)
+{
+   if(bitmap==NULL)
+      return -1;
+
+   for(int i = 0;i<HLH_array_length(bitmap);i++)
+   {
+      if(bitmap[i]==0)
+         continue;
+
+      uint32_t val = bitmap[i];
+      //uint32_t pos = (intptr_t)i*32;
+      intptr_t pos = 1;
+
+      if((val&0x0000ffff)==0) { pos+=16; val>>=16; }
+      if((val&0x000000ff)==0) { pos+=8; val>>=8; }
+      if((val&0x0000000f)==0) { pos+=4; val>>=4; }
+      if((val&0x00000003)==0) { pos+=2; val>>=2; }
+      pos = pos-(val&1);
+      pos+=(intptr_t)i*32;
+      //if(val<=0x0000ffff) { pos+=16; val<<=16; }
+      //if(val<=0x00ffffff) { pos+=8; val<<=8; }
+      //if(val<=0x0fffffff) { pos+=4; val<<=4; }
+      //if(val<=0x3fffffff) { pos+=2; val<<=2; }
+      //if(val<=0x7fffffff) { pos+=1; val<<=1; }
+
+      return pos;
+   }
+
+   return -1;
+}
+
+void _HLH_logl(const char *fun, const char *file, unsigned line, const char *format, ...)
+{
+   fprintf(stderr, "%s (%s:%u): ", fun, file, line);
+
+   va_list args;
+   va_start(args, format);
+   vfprintf(stderr, format, args);
+   va_end(args);
 }
 
 #endif

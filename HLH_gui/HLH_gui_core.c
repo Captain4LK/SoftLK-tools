@@ -273,6 +273,8 @@ int HLH_gui_message_loop(void)
             mouse.pos.x = -1;
             mouse.pos.y = -1;
             mouse.wheel = 0;
+            mouse.rel.x = 0;
+            mouse.rel.y = 0;
             HLH_gui_handle_mouse(&win->e, mouse);
             break;
          case SDL_WINDOWEVENT_CLOSE:
@@ -313,6 +315,9 @@ int HLH_gui_message_loop(void)
 
          //Hack to prevent flooding the event queue
          //SDL_GetMouseState(&win->mouse_x, &win->mouse_y);
+         //TODO(Captain4LK): similar thing for relative mouse pos?
+         mouse.rel.x = event.motion.xrel;
+         mouse.rel.y = event.motion.yrel;
          SDL_GetMouseState(&mouse.pos.x, &mouse.pos.y);
          SDL_FlushEvent(SDL_MOUSEMOTION);
 
@@ -366,8 +371,8 @@ int HLH_gui_message_loop(void)
          if(win==NULL)
             continue;
 
-         mouse.pos.x = event.motion.x;
-         mouse.pos.y = event.motion.y;
+         mouse.pos.x = event.button.x;
+         mouse.pos.y = event.button.y;
          mouse.wheel = 0;
          switch(event.button.button)
          {
@@ -383,8 +388,8 @@ int HLH_gui_message_loop(void)
          if(win==NULL)
             continue;
 
-         mouse.pos.x = event.motion.x;
-         mouse.pos.y = event.motion.y;
+         mouse.pos.x = event.button.x;
+         mouse.pos.y = event.button.y;
          mouse.wheel = 0;
          switch(event.button.button)
          {

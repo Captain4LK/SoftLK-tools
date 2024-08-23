@@ -8,40 +8,39 @@ To the extent possible under law, the author(s) have dedicated all copyright and
 You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
 */
 
-#ifndef _IMAGE_H_
+#ifndef _PROJECT_H_
 
-#define _IMAGE_H_
+#define _PROJECT_H_
 
 #include <stdint.h>
+#include "layer.h"
+#include "image.h"
+
+typedef struct
+{
+   int32_t last_x;
+   int32_t last_y;
+
+   uint8_t button;
+}Draw_state;
 
 typedef struct
 {
    int32_t width;
    int32_t height;
    uint32_t palette[256];
-   uint8_t data[];
-}Image8;
 
-typedef struct
-{
-   int32_t width;
-   int32_t height;
-   uint32_t data[];
-}Image32;
+   uint32_t *bitmap;
 
-typedef struct
-{
-   int32_t width;
-   int32_t height;
-   uint64_t data[];
-}Image64;
+   int num_layers;
+   Layer **layers;
 
-Image8 *image8_new(int32_t width, int32_t height);
-Image32 *image32_new(int32_t width, int32_t height);
-Image64 *image64_new(int32_t width, int32_t height);
+   //Internal, not saved
+   Draw_state state;
+}Project;
 
-Image8 *Image8_dup(const Image8 *src);
-Image32 *Image32_dup(const Image32 *src);
-Image64 *Image64_dup(const Image64 *src);
+Project *project_new(int32_t width, int32_t height);
+Image32 *project_to_image32(const Project *project);
+void project_free(Project *project);
 
 #endif

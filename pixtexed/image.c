@@ -31,12 +31,48 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function implementations
 
-PTD_image8 *PTD_image8_dup(const PTD_image8 *src)
+Image8 *image8_new(int32_t width, int32_t height)
+{
+   if(width<=0||height<=0)
+      return NULL;
+
+   Image8 *img = calloc(1,sizeof(*img)+sizeof(*img->data)*width*height);
+   img->width = width;
+   img->height = height;
+
+   return img;
+}
+
+Image32 *image32_new(int32_t width, int32_t height)
+{
+   if(width<=0||height<=0)
+      return NULL;
+
+   Image32 *img = calloc(1,sizeof(*img)+sizeof(*img->data)*width*height);
+   img->width = width;
+   img->height = height;
+
+   return img;
+}
+
+Image64 *image64_new(int32_t width, int32_t height)
+{
+   if(width<=0||height<=0)
+      return NULL;
+
+   Image64 *img = calloc(1,sizeof(*img)+sizeof(*img->data)*width*height);
+   img->width = width;
+   img->height = height;
+
+   return img;
+}
+
+Image8 *Image8_dup(const Image8 *src)
 {
    if(src==NULL||src->width<=0||src->height<=0)
       return NULL;
 
-   PTD_image8 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->width*src->height);
+   Image8 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->width*src->height);
    img->width = src->width;
    img->height = src->height;
    memcpy(img->data,src->data,sizeof(*img->data)*img->width*img->height);
@@ -44,12 +80,12 @@ PTD_image8 *PTD_image8_dup(const PTD_image8 *src)
    return img;
 }
 
-PTD_image32 *PTD_image32_dup(const PTD_image32 *src)
+Image32 *Image32_dup(const Image32 *src)
 {
    if(src==NULL||src->width<=0||src->height<=0)
       return NULL;
 
-   PTD_image32 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->width*src->height);
+   Image32 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->width*src->height);
    img->width = src->width;
    img->height = src->height;
    memcpy(img->data,src->data,sizeof(*img->data)*img->width*img->height);
@@ -57,12 +93,12 @@ PTD_image32 *PTD_image32_dup(const PTD_image32 *src)
    return img;
 }
 
-PTD_image64 *PTD_image64_dup(const PTD_image64 *src)
+Image64 *Image64_dup(const Image64 *src)
 {
    if(src==NULL||src->width<=0||src->height<=0)
       return NULL;
 
-   PTD_image64 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->width*src->height);
+   Image64 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->width*src->height);
    img->width = src->width;
    img->height = src->height;
    memcpy(img->data,src->data,sizeof(*img->data)*img->width*img->height);

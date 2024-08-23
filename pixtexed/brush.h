@@ -8,25 +8,12 @@ To the extent possible under law, the author(s) have dedicated all copyright and
 You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
 */
 
-#ifndef _CANVAS_H_
+#ifndef _BRUSH_H_
 
-#define _CANVAS_H_
+#define _BRUSH_H_
 
-#include "HLH_gui.h"
 #include "project.h"
 
-typedef struct
-{
-   HLH_gui_element e;
-
-   float x;
-   float y;
-   float scale;
-   Project *project;
-   SDL_Texture *img;
-}GUI_canvas;
-
-GUI_canvas *gui_canvas_create(HLH_gui_element *parent, uint64_t flags, Project *project);
-void gui_canvas_update_project(GUI_canvas *canvas, Project *project);
+int brush_place(Project *project, int x, int y, int layer);
 
 #endif

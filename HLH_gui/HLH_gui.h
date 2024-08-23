@@ -62,6 +62,7 @@ typedef struct
    uint8_t button;
    int wheel;
    HLH_gui_point pos;
+   HLH_gui_point rel;
 }HLH_gui_mouse;
 
 typedef enum

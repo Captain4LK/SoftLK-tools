@@ -14,6 +14,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "canvas.h"
+#include "draw.h"
 //-------------------------------------
 
 //#defines
@@ -32,17 +33,60 @@ static void canvas_draw(GUI_canvas *canvas);
 
 //Function implementations
 
-GUI_canvas *gui_canvas_create(HLH_gui_element *parent, uint64_t flags, int width, int height)
+GUI_canvas *gui_canvas_create(HLH_gui_element *parent, uint64_t flags, Project *project)
 {
    GUI_canvas *canvas = (GUI_canvas *)HLH_gui_element_create(sizeof(*canvas),parent,flags,gui_canvas_msg);
-   canvas->width = width;
-   canvas->height = height;
+   canvas->project = project;
    canvas->scale = 1.f;
    canvas->x = 0.f;
    canvas->y = 0.f;
-   canvas->img = SDL_CreateTexture(canvas->e.window->renderer,SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_STREAMING,width,height);
+   canvas->img = SDL_CreateTexture(canvas->e.window->renderer,SDL_PIXELFORMAT_ABGR8888,SDL_TEXTUREACCESS_STREAMING,project->width,project->height);
 
    return canvas;
+}
+
+void gui_canvas_update_project(GUI_canvas *canvas, Project *project)
+{
+   if(project==NULL||canvas==NULL)
+      return;
+
+   Image32 *img = project_to_image32(project);
+
+   if(canvas->project->width==project->width&&canvas->project->height==project->height)
+   {
+      if(canvas->project!=project)
+         project_free(canvas->project);
+      canvas->project = project;
+
+      void *data;
+      int stride;
+      SDL_LockTexture(canvas->img, NULL, &data, &stride);
+
+      uint32_t * restrict pix = data;
+      for(int i = 0; i<project->width* project->height; i++)
+         pix[i] = img->data[i];
+
+      SDL_UnlockTexture(canvas->img);
+
+   }
+   else
+   {
+      project_free(canvas->project);
+      canvas->project = project;
+
+      SDL_DestroyTexture(canvas->img);
+      canvas->img = SDL_CreateTexture(canvas->e.window->renderer,SDL_PIXELFORMAT_ABGR8888,SDL_TEXTUREACCESS_STREAMING,project->width,project->height);
+
+      void *data;
+      int stride;
+      SDL_LockTexture(canvas->img, NULL, &data, &stride);
+
+      uint32_t * restrict pix = data;
+      for(int i = 0; i<project->width* project->height; i++)
+         pix[i] = img->data[i];
+
+      SDL_UnlockTexture(canvas->img);
+   }
 }
 
 static int gui_canvas_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -58,7 +102,23 @@ static int gui_canvas_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
       int redraw = 0;
 
-      if(m->wheel>0)
+      if(m->wheel==0)
+      //if(m->button&(HLH_GUI_MOUSE_LEFT|HLH_GUI_MOUSE_RIGHT))
+      {
+         float mx = (float)(m->pos.x-canvas->e.bounds.minx);
+         float my = (float)(m->pos.y-canvas->e.bounds.miny);
+         int32_t x = 0;
+         int32_t y = 0;
+         x = (int32_t)(((mx-canvas->x)/canvas->scale)*256);
+         y = (int32_t)(((my-canvas->y)/canvas->scale)*256);
+         if(draw_event(canvas->project,x,y,m->button))
+         {
+            gui_canvas_update_project(canvas,canvas->project);
+            HLH_gui_element_redraw(&canvas->e);
+         }
+      }
+
+      if(m->wheel>0&&canvas->scale<=64.f)
       {
          float mx = (float)(m->pos.x-canvas->e.bounds.minx);
          float my = (float)(m->pos.y-canvas->e.bounds.miny);
@@ -70,7 +130,7 @@ static int gui_canvas_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          canvas->scale+=canvas->scale*0.15f;
          redraw = 1;
       }
-      else if(m->wheel<0)
+      else if(m->wheel<0&&canvas->scale>=0.1f)
       {
          float mx = (float)(m->pos.x-canvas->e.bounds.minx);
          float my = (float)(m->pos.y-canvas->e.bounds.miny);
@@ -80,6 +140,13 @@ static int gui_canvas_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          canvas->x+=x*scale_change;
          canvas->y+=y*scale_change;
          canvas->scale-=canvas->scale*0.15f;
+         redraw = 1;
+      }
+
+      if(m->button&HLH_GUI_MOUSE_MIDDLE&&(m->rel.x!=0||m->rel.y!=0))
+      {
+         canvas->x+=(float)m->rel.x;
+         canvas->y+=(float)m->rel.y;
          redraw = 1;
       }
 
@@ -103,8 +170,8 @@ static void canvas_draw(GUI_canvas *canvas)
    SDL_Rect dst = {0};
    dst.x = (int)((float)canvas->e.bounds.minx+canvas->x);
    dst.y = (int)((float)canvas->e.bounds.miny+canvas->y);
-   dst.w = (int)((float)canvas->width*canvas->scale);
-   dst.h = (int)((float)canvas->height*canvas->scale);
+   dst.w = (int)((float)canvas->project->width*canvas->scale);
+   dst.h = (int)((float)canvas->project->height*canvas->scale);
    SDL_RenderCopy(canvas->e.window->renderer, canvas->img, NULL, &dst);
    SDL_RenderSetClipRect(canvas->e.window->renderer,NULL);
 }
