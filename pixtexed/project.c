@@ -10,6 +10,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //External includes
 #include <stdlib.h>
+#include "HLH.h"
 //-------------------------------------
 
 //Internal includes
@@ -40,9 +41,11 @@ Project *project_new(int32_t width, int32_t height)
    p->width = width;
    p->height = height;
    p->num_layers = 1;
+   p->combined = image32_new(width,height);
    p->layers = calloc(1,sizeof(*p->layers));
-   p->bitmap = calloc((width*height)/(8*sizeof(*p->bitmap)),sizeof(*p->bitmap));
    p->layers[0] = layer_new(width*height);
+   p->undo_map = HLH_bitmap_create(((width+15)/16)*((height+15)/16));
+   p->old = layer_new(width*height);
    p->palette[0] = 0xff000000;
    p->palette[1] = 0xff342022;
    p->palette[2] = 0xff3c2845;

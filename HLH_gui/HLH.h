@@ -87,6 +87,7 @@ void HLH_bitmap_set(uint32_t *bitmap, intptr_t bit);
 void HLH_bitmap_unset(uint32_t *bitmap, intptr_t bit);
 int HLH_bitmap_check(uint32_t *bitmap, intptr_t bit);
 intptr_t HLH_bitmap_first_set(uint32_t *bitmap);
+void HLH_bitmap_clear(uint32_t *bitmap);
 //--------------------------------
 
 //Internal
@@ -241,6 +242,11 @@ intptr_t HLH_bitmap_first_set(uint32_t *bitmap)
    }
 
    return -1;
+}
+
+void HLH_bitmap_clear(uint32_t *bitmap)
+{
+   memset(bitmap,0,sizeof(*bitmap)*HLH_array_length(bitmap));
 }
 
 void _HLH_logl(const char *fun, const char *file, unsigned line, const char *format, ...)

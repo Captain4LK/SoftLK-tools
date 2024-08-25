@@ -30,10 +30,24 @@ typedef struct
    int32_t height;
    uint32_t palette[256];
 
-   uint32_t *bitmap;
+   Image32 *combined;
 
    int num_layers;
    Layer **layers;
+   Layer *old;
+   uint32_t *undo_map;
+
+   //Undo
+   //--------------------------------
+   uint8_t *undo_buffer;
+   uint8_t *redo_buffer;
+   int32_t undo_len;
+   int32_t undo_pos;
+   int32_t redo_len;
+   int32_t redo_pos;
+   uint32_t undo_entry_len;
+   uint32_t redo_entry_len;
+   //--------------------------------
 
    //Internal, not saved
    Draw_state state;

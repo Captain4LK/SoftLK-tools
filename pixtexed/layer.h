@@ -23,5 +23,6 @@ typedef struct
 
 Layer *layer_new(size_t size);
 void layer_free(Layer *layer);
+void layer_copy(Layer *dst, const Layer *src, size_t size);
 
 #endif

@@ -41,11 +41,15 @@ int brush_place(Project *project, int x, int y, int layer)
       return 0;
 
    uint32_t index = y*project->width+x;
-   if(project->bitmap[index/32]&(1<<(index-(index/32)*32)))
-      return 0;
+   //if(project->bitmap[index/32]&(1<<(index-(index/32)*32)))
+      //return 0;
 
+   if(!HLH_bitmap_check(project->undo_map,(y/16)*((project->width+15)/16)+x/16))
+   {
+      HLH_bitmap_set(project->undo_map,(y/16)*((project->width+15)/16)+x/16);
+   }
    project->layers[layer]->data[index] = 1;
-   project->bitmap[index/32]|=1<<(index-(index/32)*32);
+   //project->bitmap[index/32]|=1<<(index-(index/32)*32);
 
    //TODO(Captain4LK): update composite image
 

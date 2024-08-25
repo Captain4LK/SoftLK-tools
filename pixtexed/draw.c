@@ -9,6 +9,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
+#include "HLH.h"
 #include "HLH_gui.h"
 //-------------------------------------
 
@@ -43,8 +44,11 @@ int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button)
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
    {
+      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
       //Clear bitmap
-      memset(project->bitmap,0,sizeof(*project->bitmap)*((project->width*project->height)/(sizeof(*project->bitmap)*8)));
+      HLH_bitmap_clear(project->undo_map);
+      //memset(project->undo_map,0,sizeof(*project->undo_map)*((((project->width+15)/16)*((project->height+15)/16)+31)/32));
+      //memset(project->bitmap,0,sizeof(*project->bitmap)*((project->width*project->height)/(sizeof(*project->bitmap)*8)));
 
       //TODO(Captain4LK): commit layer to undo system
 
