@@ -20,8 +20,8 @@ void undo_reset(Project *p);
 void undo(Project *p);
 void redo(Project *p);
 
-void undo_begin_layer_chunks(Project *p, int layer);
-void undo_track_layer_chunk(Project *p, int x, int y);
+void undo_begin_layer_chunks(Project *p);
+void undo_track_layer_chunk(Project *p, int x, int y, int32_t layer);
 void undo_end_layer_chunks(Project *p);
 
 #endif

@@ -15,6 +15,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "brush.h"
+#include "undo.h"
 //-------------------------------------
 
 //#defines
@@ -47,6 +48,7 @@ int brush_place(Project *project, int x, int y, int layer)
    if(!HLH_bitmap_check(project->undo_map,(y/16)*((project->width+15)/16)+x/16))
    {
       HLH_bitmap_set(project->undo_map,(y/16)*((project->width+15)/16)+x/16);
+      undo_track_layer_chunk(project,x/16,y/16,0);
    }
    project->layers[layer]->data[index] = 1;
    //project->bitmap[index/32]|=1<<(index-(index/32)*32);

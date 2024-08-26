@@ -24,6 +24,10 @@ typedef struct
    float scale;
    Project *project;
    SDL_Texture *img;
+
+   int shift_down;
+   int ctrl_down;
+   int alt_down;
 }GUI_canvas;
 
 GUI_canvas *gui_canvas_create(HLH_gui_element *parent, uint64_t flags, Project *project);

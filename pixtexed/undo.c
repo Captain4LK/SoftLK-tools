@@ -9,6 +9,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 //-------------------------------------
@@ -267,13 +268,33 @@ static void undo_end(Project *p)
    p->undo_buffer[p->undo_pos] = JUNK_RECORD;
 }
 
-void undo_begin_layer_chunks(Project *p, int layer)
+void undo_begin_layer_chunks(Project *p)
 {
    undo_begin(p,ED_LAYER_CHUNKS);
 }
 
-void undo_track_layer_chunk(Project *p, int x, int y)
+void undo_track_layer_chunk(Project *p, int x, int y, int32_t layer)
 {
+   undo_write32(p,x);
+   undo_write32(p,y);
+   undo_write32(p,layer);
+
+   uint8_t chunk[256] = {0};
+
+   int width = p->width-x*16;
+   if(width>16) width = 16;
+   int height = p->height-y*16;
+   if(height>16) height = 16;
+   for(int py = 0;py<height;py++)
+   {
+      for(int px = 0;px<width;px++)
+      {
+         chunk[py*16+px] = p->layers[layer]->data[(y*16+py)*p->width+x*16+px];
+      }
+   }
+
+   for(int i = 0;i<256;i++)
+      undo_write8(p,chunk[i]);
 }
 
 void undo_end_layer_chunks(Project *p)
@@ -283,9 +304,88 @@ void undo_end_layer_chunks(Project *p)
 
 static void undo_layer_chunk(Project *p, int pos, int endpos)
 {
+   while(pos!=endpos)
+   {
+      uint8_t chunk[256];
+      for(int i = 255;i>=0;i--)
+         undo_read8(p,chunk[i],pos);
+      int32_t x;
+      int32_t y;
+      int32_t layer;
+      undo_read32(p,layer,pos);
+      undo_read32(p,y,pos);
+      undo_read32(p,x,pos);
+
+      redo_write32(p,x);
+      redo_write32(p,y);
+      redo_write32(p,layer);
+
+      int width = p->width-x*16;
+      if(width>16) width = 16;
+      int height = p->height-y*16;
+      if(height>16) height = 16;
+      uint8_t chunk_write[256] = {0};
+      //printf("%d %d %d %d\n",x,y,width,height);
+      for(int py = 0;py<height;py++)
+      {
+         for(int px = 0;px<width;px++)
+         {
+            chunk_write[py*16+px] = p->layers[layer]->data[(y*16+py)*p->width+x*16+px];
+         }
+      }
+      for(int i = 0;i<256;i++)
+         redo_write8(p,chunk_write[i]);
+
+      for(int py = 0;py<height;py++)
+      {
+         for(int px = 0;px<width;px++)
+         {
+            p->layers[layer]->data[(y*16+py)*p->width+x*16+px] = chunk[py*16+px];
+         }
+      }
+   }
 }
 
 static void redo_layer_chunk(Project *p, int pos, int endpos)
 {
+   while(pos!=endpos)
+   {
+      uint8_t chunk[256];
+      for(int i = 255;i>=0;i--)
+         redo_read8(p,chunk[i],pos);
+      int32_t x;
+      int32_t y;
+      int32_t layer;
+      redo_read32(p,layer,pos);
+      redo_read32(p,y,pos);
+      redo_read32(p,x,pos);
+
+      undo_write32(p,x);
+      undo_write32(p,y);
+      undo_write32(p,layer);
+
+      int width = p->width-x*16;
+      if(width>16) width = 16;
+      int height = p->height-y*16;
+      if(height>16) height = 16;
+      uint8_t chunk_write[256] = {0};
+      for(int py = 0;py<height;py++)
+      {
+         for(int px = 0;px<width;px++)
+         {
+            chunk_write[py*16+px] = p->layers[layer]->data[(y*16+py)*p->width+x*16+px];
+         }
+      }
+      for(int i = 0;i<256;i++)
+         undo_write8(p,chunk_write[i]);
+
+      for(int py = 0;py<height;py++)
+      {
+         for(int px = 0;px<width;px++)
+         {
+            p->layers[layer]->data[(y*16+py)*p->width+x*16+px] = chunk[py*16+px];
+         }
+      }
+   }
 }
 //-------------------------------------

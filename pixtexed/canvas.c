@@ -15,6 +15,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Internal includes
 #include "canvas.h"
 #include "draw.h"
+#include "undo.h"
 //-------------------------------------
 
 //#defines
@@ -87,6 +88,8 @@ void gui_canvas_update_project(GUI_canvas *canvas, Project *project)
 
       SDL_UnlockTexture(canvas->img);
    }
+
+   free(img);
 }
 
 static int gui_canvas_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -96,13 +99,42 @@ static int gui_canvas_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    {
       canvas_draw(canvas);
    }
+   else if(msg==HLH_GUI_MSG_BUTTON_DOWN||msg==HLH_GUI_MSG_BUTTON_REPEAT)
+   {
+      int scancode = di;
+      if(scancode==SDL_SCANCODE_LSHIFT||scancode==SDL_SCANCODE_RSHIFT)
+         canvas->shift_down = 1;
+
+      if(scancode==SDL_SCANCODE_U)
+      {
+         if(canvas->shift_down)
+         {
+            redo(canvas->project);
+            gui_canvas_update_project(canvas,canvas->project);
+            HLH_gui_element_redraw(&canvas->e);
+         }
+         else
+         {
+            undo(canvas->project);
+            gui_canvas_update_project(canvas,canvas->project);
+            HLH_gui_element_redraw(&canvas->e);
+         }
+      }
+   }
+   else if(msg==HLH_GUI_MSG_BUTTON_UP)
+   {
+      int scancode = di;
+      if(scancode==SDL_SCANCODE_LSHIFT||scancode==SDL_SCANCODE_RSHIFT)
+         canvas->shift_down = 0;
+   }
    else if(msg==HLH_GUI_MSG_MOUSE)
    {
       HLH_gui_mouse *m = dp;
 
       int redraw = 0;
 
-      if(m->wheel==0)
+      if(1)
+      //if(m->wheel==0)
       //if(m->button&(HLH_GUI_MOUSE_LEFT|HLH_GUI_MOUSE_RIGHT))
       {
          float mx = (float)(m->pos.x-canvas->e.bounds.minx);

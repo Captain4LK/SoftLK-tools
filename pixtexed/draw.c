@@ -16,6 +16,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Internal includes
 #include "draw.h"
 #include "brush.h"
+#include "undo.h"
 //-------------------------------------
 
 //#defines
@@ -44,11 +45,10 @@ int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button)
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
    {
+      undo_begin_layer_chunks(project);
       layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
       //Clear bitmap
       HLH_bitmap_clear(project->undo_map);
-      //memset(project->undo_map,0,sizeof(*project->undo_map)*((((project->width+15)/16)*((project->height+15)/16)+31)/32));
-      //memset(project->bitmap,0,sizeof(*project->bitmap)*((project->width*project->height)/(sizeof(*project->bitmap)*8)));
 
       //TODO(Captain4LK): commit layer to undo system
 
@@ -64,13 +64,19 @@ int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button)
       if(mx/256==project->state.last_x/256&&my/256==project->state.last_y/256)
          return 0;
 
-      draw_line(project,0,project->state.last_x,project->state.last_y,mx,my);
+      //draw_line(project,0,project->state.last_x,project->state.last_y,mx,my);
+      draw_line(project,0,mx,my,project->state.last_x,project->state.last_y);
       brush_place(project,mx/256,my/256,0);
+      brush_place(project,project->state.last_x/256,project->state.last_y/256,0);
       //project->layers[0]->data[(my/256)*project->width+mx/256] = 1;
       project->state.last_x = mx;
       project->state.last_y = my;
 
       return 1;
+   }
+   else if(!(button&HLH_GUI_MOUSE_LEFT)&&(old_state&HLH_GUI_MOUSE_LEFT))
+   {
+      undo_end_layer_chunks(project);
    }
 
    return 0;

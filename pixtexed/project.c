@@ -16,6 +16,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Internal includes
 #include "project.h"
 #include "layer.h"
+#include "undo.h"
 //-------------------------------------
 
 //#defines
@@ -78,6 +79,9 @@ Project *project_new(int32_t width, int32_t height)
    p->palette[29] = 0xffba7bd7;
    p->palette[30] = 0xff4a978f;
    p->palette[31] = 0xff306f8a;
+
+   undo_init(p);
+   undo_reset(p);
 
    return p;
 }

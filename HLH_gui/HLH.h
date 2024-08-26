@@ -208,7 +208,7 @@ int HLH_bitmap_check(uint32_t *bitmap, intptr_t bit)
       return 0;
 
    intptr_t pos = bit/32;
-   uint32_t value = 1<<(pos*32-bit);
+   uint32_t value = 1<<(bit-pos*32);
    return !!(bitmap[pos]&value);
 }
 
