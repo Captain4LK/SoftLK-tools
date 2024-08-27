@@ -16,6 +16,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "gui.h"
 #include "canvas.h"
 #include "project.h"
+#include "color.h"
 //-------------------------------------
 
 //#defines
@@ -59,6 +60,7 @@ static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_img_new_ok(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_img_new_cancel(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
 //Function implementations
@@ -98,9 +100,39 @@ void gui_construct(void)
    HLH_gui_separator_create(&root_group->e,HLH_GUI_FILL_X,0);
    //-------------------------------------
 
-   GUI_canvas *canvas = gui_canvas_create(&root_group->e,HLH_GUI_FILL,project_new(64,64));
+   HLH_gui_group *group_middle = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL|HLH_GUI_LAYOUT_HORIZONTAL);
+   HLH_gui_group *group_right = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_Y|HLH_GUI_LAYOUT_HORIZONTAL);
+
+   //Middle -- Canvas
+   //-------------------------------------
+   GUI_canvas *canvas = gui_canvas_create(&group_middle->e,HLH_GUI_FILL,project_new(64,64));
    gui.canvas = canvas;
    gui_canvas_update_project(gui.canvas,canvas->project);
+   //-------------------------------------
+
+   //Right -- palette, brushes
+   //-------------------------------------
+   HLH_gui_group *group_pal = HLH_gui_group_create(&group_right->e,0);
+   //gui.group_palette = group_pal;
+   int color = 0;
+   for(int i = 0;i<32;i++)
+   {
+      HLH_gui_radiobutton *r = NULL;
+      for(int j = 0;j<7;j++)
+      {
+         r = HLH_gui_radiobutton_create(&group_pal->e,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y,"",NULL);
+         //gui.palette_colors[color] = r;
+         r->e.usr_ptr = &gui.canvas->project->palette[color];
+         r->e.usr = color++;
+         r->e.msg_usr = radiobutton_palette_msg;
+      }
+      r = HLH_gui_radiobutton_create(&group_pal->e,HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y,"",NULL);
+      //gui.palette_colors[color] = r;
+      r->e.usr_ptr = &gui.canvas->project->palette[color];
+      r->e.usr = color++;
+      r->e.msg_usr = radiobutton_palette_msg;
+   }
+   //-------------------------------------
 }
 
 static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -294,6 +326,77 @@ static int button_img_new_cancel(HLH_gui_element *e, HLH_gui_msg msg, int di, vo
    if(msg==HLH_GUI_MSG_CLICK)
    {
       HLH_gui_window_close(e->window);
+   }
+
+   return 0;
+}
+
+static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_radiobutton *r = (HLH_gui_radiobutton *)e;
+
+   if(msg==HLH_GUI_MSG_DRAW)
+   {
+      //if(r->e.usr>=gui.canvas->project->palette_colors)
+         //return 1;
+
+      int scale = HLH_gui_get_scale();
+      HLH_gui_rect bounds = r->e.bounds;
+
+      uint32_t color = *((uint32_t *)r->e.usr_ptr);
+
+      //Infill
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx, bounds.miny, bounds.maxx, bounds.maxy),color);
+
+      //Border
+      if(r->state||r->checked)
+      {
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 0 * scale, bounds.miny + 1 * scale, bounds.minx + 1 * scale, bounds.maxy - 1 * scale), 0xff000000);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 0 * scale, bounds.maxy - 1 * scale, bounds.maxx - 1 * scale, bounds.maxy - 0 * scale), 0xff000000);
+
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.maxx - 1 * scale, bounds.miny + 1 * scale, bounds.maxx - 0 * scale, bounds.maxy - 1 * scale), 0xff323232);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 0 * scale, bounds.maxx - 0 * scale, bounds.miny + 1 * scale), 0xff323232);
+      }
+      else
+      {
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 0 * scale, bounds.miny + 1 * scale, bounds.minx + 1 * scale, bounds.maxy - 0 * scale), 0xff323232);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 0 * scale, bounds.maxy - 1 * scale, bounds.maxx - 1 * scale, bounds.maxy - 0 * scale), 0xff323232);
+
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.maxx - 1 * scale, bounds.miny + 1 * scale, bounds.maxx - 0 * scale, bounds.maxy - 1 * scale), 0xffc8c8c8);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 0 * scale, bounds.maxx - 0 * scale, bounds.miny + 1 * scale), 0xffc8c8c8);
+      }
+
+      int height = (bounds.maxy - bounds.miny);
+      int dim = (HLH_GUI_GLYPH_HEIGHT)*HLH_gui_get_scale();
+      int offset = (height - dim) / 2;
+      if(r->checked)
+      {
+         uint32_t box_color = 0xff000000;
+         if(color32_r(color)<128&&color32_g(color)<128&&color32_b(color)<128)
+            box_color = 0xffffffff;
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + offset + 5 * scale, bounds.miny + offset + 4 * scale, bounds.minx + dim + offset - 4 * scale, bounds.miny + offset - 5 * scale + dim), box_color);
+      }
+
+      return 1;
+   }
+   else if(msg==HLH_GUI_MSG_GET_WIDTH)
+   {
+      return 16*HLH_gui_get_scale();
+   }
+   else if(msg==HLH_GUI_MSG_GET_HEIGHT)
+   {
+      return 16*HLH_gui_get_scale();
+   }
+   else if(msg==HLH_GUI_MSG_CLICK)
+   {
+      /*if(di)
+      {
+         color_selected = r->e.usr;
+         uint32_t c = dither_config.palette[color_selected];
+         HLH_gui_slider_set(gui.slider_color_red,SLK_color32_r(c),255,1,1);
+         HLH_gui_slider_set(gui.slider_color_green,SLK_color32_g(c),255,1,1);
+         HLH_gui_slider_set(gui.slider_color_blue,SLK_color32_b(c),255,1,1);
+      }*/
    }
 
    return 0;

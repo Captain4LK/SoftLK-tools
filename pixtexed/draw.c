@@ -45,15 +45,13 @@ int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button)
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
    {
-      undo_begin_layer_chunks(project);
-      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
-      //Clear bitmap
+      //Prepare undo
       HLH_bitmap_clear(project->undo_map);
+      undo_begin_layer_chunks(project);
 
-      //TODO(Captain4LK): commit layer to undo system
+      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
 
       brush_place(project,mx/256,my/256,0);
-      //project->layers[0]->data[(my/256)*project->width+mx/256] = 1;
       project->state.last_x = mx;
       project->state.last_y = my;
 
@@ -122,7 +120,6 @@ static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32
          if(dist>dy / 2)
          {
             bx+=step_x;
-            //dst += step_x;
             dist -= dy;
          }
 

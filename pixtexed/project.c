@@ -42,11 +42,11 @@ Project *project_new(int32_t width, int32_t height)
    p->width = width;
    p->height = height;
    p->num_layers = 1;
-   p->combined = image32_new(width,height);
    p->layers = calloc(1,sizeof(*p->layers));
    p->layers[0] = layer_new(width*height);
    p->undo_map = HLH_bitmap_create(((width+15)/16)*((height+15)/16));
    p->old = layer_new(width*height);
+   p->palette_colors = 32;
    p->palette[0] = 0xff000000;
    p->palette[1] = 0xff342022;
    p->palette[2] = 0xff3c2845;
@@ -83,6 +83,8 @@ Project *project_new(int32_t width, int32_t height)
    undo_init(p);
    undo_reset(p);
 
+   p->combined = project_to_image32(p);
+
    return p;
 }
 
@@ -104,6 +106,23 @@ Image32 *project_to_image32(const Project *project)
    }
 
    return img;
+}
+
+void project_update(Project *project, int x, int y)
+{
+   for(int i = 0;i<project->num_layers;i++)
+      project->combined->data[y*project->width+x] = project->palette[project->layers[i]->data[y*project->width+x]];
+}
+
+void project_update_full(Project *project)
+{
+   for(int i = 0;i<project->num_layers;i++)
+   {
+      for(int j = 0;j<project->width*project->height;j++)
+      {
+         project->combined->data[j] = project->palette[project->layers[i]->data[j]];
+      }
+   }
 }
 
 void project_free(Project *project)

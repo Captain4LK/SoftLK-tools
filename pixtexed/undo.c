@@ -131,6 +131,8 @@ void undo(Project *p)
    p->redo_buffer[p->redo_pos] = JUNK_RECORD;
    p->undo_pos = WRAP(p->undo_pos-len-7);
    p->undo_buffer[p->undo_pos] = JUNK_RECORD;
+
+   project_update_full(p);
 }
 
 void redo(Project *p)
@@ -176,6 +178,8 @@ void redo(Project *p)
    p->undo_buffer[p->undo_pos] = JUNK_RECORD;
    p->redo_pos = WRAP(p->redo_pos-len-7);
    p->redo_buffer[p->redo_pos] = JUNK_RECORD;
+
+   project_update_full(p);
 }
 
 static void undo_write8(Project *p, uint8_t val)

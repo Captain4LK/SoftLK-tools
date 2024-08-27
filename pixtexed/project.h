@@ -29,6 +29,7 @@ typedef struct
    int32_t width;
    int32_t height;
    uint32_t palette[256];
+   int32_t palette_colors;
 
    Image32 *combined;
 
@@ -55,6 +56,8 @@ typedef struct
 
 Project *project_new(int32_t width, int32_t height);
 Image32 *project_to_image32(const Project *project);
+void project_update(Project *project, int x, int y);
+void project_update_full(Project *project);
 void project_free(Project *project);
 
 #endif

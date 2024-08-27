@@ -51,8 +51,6 @@ void gui_canvas_update_project(GUI_canvas *canvas, Project *project)
    if(project==NULL||canvas==NULL)
       return;
 
-   Image32 *img = project_to_image32(project);
-
    if(canvas->project->width==project->width&&canvas->project->height==project->height)
    {
       if(canvas->project!=project)
@@ -64,8 +62,16 @@ void gui_canvas_update_project(GUI_canvas *canvas, Project *project)
       SDL_LockTexture(canvas->img, NULL, &data, &stride);
 
       uint32_t * restrict pix = data;
-      for(int i = 0; i<project->width* project->height; i++)
-         pix[i] = img->data[i];
+      if(stride==project->width*sizeof(*project->combined->data))
+      {
+         memcpy(pix,project->combined->data,project->width*project->height*sizeof(*project->combined->data));
+      }
+      else
+      {
+         for(int i = 0; i<project->width* project->height; i++)
+            pix[i] = project->combined->data[i];
+         //puts("MISMATCH");
+      }
 
       SDL_UnlockTexture(canvas->img);
 
@@ -84,12 +90,10 @@ void gui_canvas_update_project(GUI_canvas *canvas, Project *project)
 
       uint32_t * restrict pix = data;
       for(int i = 0; i<project->width* project->height; i++)
-         pix[i] = img->data[i];
+         pix[i] = project->combined->data[i];
 
       SDL_UnlockTexture(canvas->img);
    }
-
-   free(img);
 }
 
 static int gui_canvas_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
