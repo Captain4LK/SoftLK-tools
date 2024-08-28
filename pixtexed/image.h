@@ -12,6 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _IMAGE_H_
 
+#include <stdio.h>
 #include <stdint.h>
 
 typedef struct
@@ -43,5 +44,7 @@ Image64 *image64_new(int32_t width, int32_t height);
 Image8 *Image8_dup(const Image8 *src);
 Image32 *Image32_dup(const Image32 *src);
 Image64 *Image64_dup(const Image64 *src);
+
+int image8_save(const Image8 *img, const char *path, const char *ext);
 
 #endif

@@ -108,6 +108,26 @@ Image32 *project_to_image32(const Project *project)
    return img;
 }
 
+Image8 *project_to_image8(const Project *project)
+{
+   if(project==NULL)
+      return NULL;
+
+   Image8 *img = image8_new(project->width,project->height);
+   if(img==NULL)
+      return NULL;
+
+   for(int i = 0;i<project->num_layers;i++)
+   {
+      for(int j = 0;j<project->width*project->height;j++)
+      {
+         img->data[j] = project->layers[i]->data[j];
+      }
+   }
+
+   return img;
+}
+
 void project_update(Project *project, int x, int y)
 {
    for(int i = 0;i<project->num_layers;i++)

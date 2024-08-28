@@ -50,7 +50,7 @@ int brush_place(Project *project, int x, int y, int layer)
       HLH_bitmap_set(project->undo_map,(y/16)*((project->width+15)/16)+x/16);
       undo_track_layer_chunk(project,x/16,y/16,0);
    }
-   project->layers[layer]->data[index] = 1;
+   project->layers[layer]->data[index] = project->palette_selected;
    project_update(project,x,y);
    //project->bitmap[index/32]|=1<<(index-(index/32)*32);
 

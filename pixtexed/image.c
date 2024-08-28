@@ -9,6 +9,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 //External includes
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 //-------------------------------------
@@ -104,5 +105,19 @@ Image64 *Image64_dup(const Image64 *src)
    memcpy(img->data,src->data,sizeof(*img->data)*img->width*img->height);
 
    return img;
+}
+
+int image8_save(const Image8 *img, const char *path, const char *ext)
+{
+   if(ext==NULL||path==NULL)
+      return 1;
+   if(strlen(ext)==0||strlen(path)==0)
+      return 1;
+
+   if(strcmp(ext,"pcx")==0)
+   {
+   }
+
+   return 1;
 }
 //-------------------------------------

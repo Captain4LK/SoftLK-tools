@@ -258,18 +258,19 @@ static void undo_begin(Project *p, Ed_action action)
 
 static void undo_end(Project *p)
 {
-   int pos = WRAP(p->undo_pos - 1);
-   if(p->undo_len==0)
+   int pos = WRAP(p->undo_pos - 3);
+   if(p->undo_entry_len==0)
    {
       //empty
       p->undo_pos = pos;
-      p->undo_len -= 1;
+      p->undo_len -= 3;
+      p->undo_buffer[p->undo_pos] = JUNK_RECORD;
    }
    else
    {
       undo_write32(p,p->undo_entry_len);
+      p->undo_buffer[p->undo_pos] = JUNK_RECORD;
    }
-   p->undo_buffer[p->undo_pos] = JUNK_RECORD;
 }
 
 void undo_begin_layer_chunks(Project *p)

@@ -35,8 +35,16 @@ typedef struct
 
    int num_layers;
    Layer **layers;
+
+   char file[1024];
+   char ext[32];
+
+   //From here:
+   //Internal, not saved
    Layer *old;
    uint32_t *undo_map;
+
+   uint8_t palette_selected;
 
    //Undo
    //--------------------------------
@@ -50,12 +58,12 @@ typedef struct
    uint32_t redo_entry_len;
    //--------------------------------
 
-   //Internal, not saved
    Draw_state state;
 }Project;
 
 Project *project_new(int32_t width, int32_t height);
 Image32 *project_to_image32(const Project *project);
+Image8 *project_to_image8(const Project *project);
 void project_update(Project *project, int x, int y);
 void project_update_full(Project *project);
 void project_free(Project *project);

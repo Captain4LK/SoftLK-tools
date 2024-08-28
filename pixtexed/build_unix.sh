@@ -18,6 +18,9 @@ for src in $(find ./ -name "*.c"); do
    obj="$obj ${src%%.c}.o"
 done
 
+gcc -MM -MT "../external/tinyfiledialogs.o" "../external/tinyfiledialogs.c" $CFLAGS
+obj="$obj ../external/tinyfiledialogs.o"
+
 gcc -MM -MT "../HLH_gui/HLH_gui_all.o" "../HLH_gui/HLH_gui_all.c" $CFLAGS
 obj="$obj ../HLH_gui/HLH_gui_all.o"
 
