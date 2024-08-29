@@ -162,7 +162,7 @@ static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          }
          else
          {
-            image_load_select(gui.canvas->project->file,gui.canvas->project->ext);
+            image_save_select(gui.canvas->project->file,gui.canvas->project->ext);
             Image8 *img = project_to_image8(gui.canvas->project);
             if(!image8_save(img,gui.canvas->project->file,gui.canvas->project->ext))
             {
@@ -174,7 +174,7 @@ static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Save as
       else if(m->index==3)
       {
-         image_load_select(gui.canvas->project->file,gui.canvas->project->ext);
+         image_save_select(gui.canvas->project->file,gui.canvas->project->ext);
          Image8 *img = project_to_image8(gui.canvas->project);
          if(!image8_save(img,gui.canvas->project->file,gui.canvas->project->ext))
          {

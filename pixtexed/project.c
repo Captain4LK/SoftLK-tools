@@ -10,6 +10,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //External includes
 #include <stdlib.h>
+#include <string.h>
 #include "HLH.h"
 //-------------------------------------
 
@@ -117,6 +118,7 @@ Image8 *project_to_image8(const Project *project)
    if(img==NULL)
       return NULL;
 
+   memcpy(img->palette,project->palette,sizeof(project->palette));
    for(int i = 0;i<project->num_layers;i++)
    {
       for(int j = 0;j<project->width*project->height;j++)

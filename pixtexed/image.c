@@ -16,6 +16,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "image.h"
+#include "pcx.h"
 //-------------------------------------
 
 //#defines
@@ -115,8 +116,7 @@ int image8_save(const Image8 *img, const char *path, const char *ext)
       return 1;
 
    if(strcmp(ext,"pcx")==0)
-   {
-   }
+      return pcx_save(img,path);
 
    return 1;
 }

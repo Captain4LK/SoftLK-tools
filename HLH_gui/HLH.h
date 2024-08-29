@@ -259,5 +259,9 @@ void _HLH_logl(const char *fun, const char *file, unsigned line, const char *for
    va_end(args);
 }
 
+#undef HLH_MALLOC
+#undef HLH_FREE
+#undef HLH_REALLOC
+
 #endif
 #endif
