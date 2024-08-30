@@ -24,4 +24,6 @@ uint32_t color32_g(uint32_t c);
 uint32_t color32_b(uint32_t c);
 uint32_t color32_a(uint32_t c);
 
+inline uint32_t color32(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { return (r)|(g<<8)|(b<<16)|(a<<24); }
+
 #endif

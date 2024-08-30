@@ -15,5 +15,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "image.h"
 
 int pcx_save(const Image8 *img, const char *path);
+Image8 *pcx_load(const char *path);
 
 #endif

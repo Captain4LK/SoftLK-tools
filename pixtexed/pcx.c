@@ -10,7 +10,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //External includes
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
+#include <errno.h>
 #include "HLH.h"
 #include "HLH_rw.h"
 //-------------------------------------
@@ -81,39 +84,38 @@ int pcx_save(const Image8 *img, const char *path)
          }
          else
          {
-            if(length>1||current>191)
+            while(length>0)
             {
-               while(length>0)
+               if(length>1||current>191)
                {
                   int part_len = HLH_min(length,63);
                   HLH_rw_write_u8(&rw,(uint8_t)(part_len|0xc0));
                   HLH_rw_write_u8(&rw,current);
                   length-=part_len;
                }
-            }
-            else
-            {
-               HLH_rw_write_u8(&rw,current);
+               else
+               {
+                  HLH_rw_write_u8(&rw,current);
+                  length--;
+               }
             }
             length = 1;
             current = img->data[y*img->width+x];
          }
       }
-      if(length>0)
+      while(length>0)
       {
          if(length>1||current>191)
          {
-            while(length>0)
-            {
-               int part_len = HLH_min(length,63);
-               HLH_rw_write_u8(&rw,(uint8_t)(part_len|0xc0));
-               HLH_rw_write_u8(&rw,current);
-               length-=part_len;
-            }
+            int part_len = HLH_min(length,63);
+            HLH_rw_write_u8(&rw,(uint8_t)(part_len|0xc0));
+            HLH_rw_write_u8(&rw,current);
+            length-=part_len;
          }
          else
          {
             HLH_rw_write_u8(&rw,current);
+            length--;
          }
       }
    }
@@ -131,5 +133,135 @@ int pcx_save(const Image8 *img, const char *path)
    fclose(f);
 
    return 0;
+}
+
+Image8 *pcx_load(const char *path)
+{
+   HLH_rw rw = {0};
+   FILE *f = NULL;
+   Image8 *img = NULL;
+   uint8_t *decoded = NULL;
+
+   HLH_error_check(path!=NULL,"pcx_load","path must be non-NULL\n");
+
+   f = fopen(path,"rb");
+   HLH_error_check(f!=NULL,"pcx_load","failed to open file '%s': '%s'\n",path,strerror(errno));
+   HLH_rw_init_file(&rw,f);
+
+   //Header
+   //--------------------------------
+   uint8_t header = HLH_rw_read_u8(&rw);
+   HLH_error_check(header==0x0a,"pcx_load","invalid header, expected 0x0a, but got 0x%02x\n",header);
+   uint8_t version = HLH_rw_read_u8(&rw);
+   HLH_error_check(version<=5,"pcx_load","invalid version, expected one of {0,1,2,3,5}, but got %d\n",version);
+   uint8_t encoding = HLH_rw_read_u8(&rw);
+   HLH_error_check(encoding==0||encoding==1,"pcx_load","invalid encoding, expected one of {0,1}, but got %d\n",encoding);
+   uint8_t bit_depth = HLH_rw_read_u8(&rw);
+   HLH_error_check(bit_depth==1||bit_depth==2||bit_depth==4||bit_depth==8,"pcx_load","unsupported bit depth, expected one of {1,2,4,8}, but got %d\n",bit_depth);
+
+   uint16_t min_x = HLH_rw_read_u16(&rw);
+   uint16_t min_y = HLH_rw_read_u16(&rw);
+   uint16_t max_x = HLH_rw_read_u16(&rw);
+   uint16_t max_y = HLH_rw_read_u16(&rw);
+   int width = max_x-min_x+1;
+   int height = max_y-min_y+1;
+   HLH_error_check(width>0,"pcx_load","got width %d, but width must be larger than 0\n",width);
+   HLH_error_check(height>0,"pcx_load","got height %d, but height must be larger than 0\n",height);
+   img = image8_new(width,height);
+   HLH_error_check(img!=NULL,"pcx_load","image creation failed, out of memory?\n");
+   HLH_rw_read_u16(&rw);
+   HLH_rw_read_u16(&rw);
+   uint32_t ega_palette[16] = {0};
+   for(int i = 0;i<16;i++)
+   {
+      uint8_t r = HLH_rw_read_u8(&rw);
+      uint8_t g = HLH_rw_read_u8(&rw);
+      uint8_t b = HLH_rw_read_u8(&rw);
+      ega_palette[i] = color32(r,g,b,0xff);
+   }
+   HLH_rw_read_u8(&rw);
+   uint8_t num_planes = HLH_rw_read_u8(&rw);
+   HLH_error_check(num_planes==1||num_planes==3||num_planes==4,"pcx_load","unsupported number of planes, expected one of {1,3,4}, but got %d\n",num_planes);
+   uint16_t stride = HLH_rw_read_u16(&rw);
+   uint16_t palette_mode = HLH_rw_read_u16(&rw);
+   HLH_error_check(palette_mode==1||palette_mode==2,"pcx_load","invalid palette mode, expected one of {1,2}, but got %d\n",palette_mode);
+   HLH_rw_read_u16(&rw);
+   HLH_rw_read_u16(&rw);
+   for(int i = 0;i<54;i++)
+      HLH_rw_read_u8(&rw);
+   //--------------------------------
+
+   //Decode
+   //--------------------------------
+   size_t decoded_len = stride*num_planes*height;
+   decoded = calloc(decoded_len,sizeof(*decoded));
+   if(encoding==0)
+   {
+      for(int i = 0;i<decoded_len;i++)
+         decoded[i] = HLH_rw_read_u8(&rw);
+   }
+   else
+   {
+      size_t cur = 0;
+      uint8_t run_len = 0;
+      while(cur<decoded_len)
+      {
+         uint8_t byte = HLH_rw_read_u8(&rw);
+         if(run_len==0&&(byte&0xc0)==0xc0)
+         {
+            run_len = byte&0x3f;
+         }
+         else
+         {
+            if(run_len==0)
+               run_len = 1;
+
+            for(int i = 0;i<run_len;i++)
+               decoded[cur++] = byte;
+
+            run_len = 0;
+         }
+      }
+   }
+   //--------------------------------
+
+   //Convert to image8
+   //--------------------------------
+   if(bit_depth==8&&num_planes==1)
+   {
+      for(int i = 0;i<256;i++)
+      {
+         uint8_t r = HLH_rw_read_u8(&rw);
+         uint8_t g = HLH_rw_read_u8(&rw);
+         uint8_t b = HLH_rw_read_u8(&rw);
+         img->palette[i] = color32(r,g,b,0xff);
+      }
+      for(int y = 0;y<height;y++)
+      {
+         for(int x = 0;x<width;x++)
+         {
+            img->data[y*img->width+x] = decoded[y*stride+x];
+         }
+      }
+   }
+   free(decoded);
+   //--------------------------------
+
+   HLH_rw_close(&rw);
+   fclose(f);
+
+   return img;
+
+HLH_err:
+   if(img!=NULL)
+      free(img);
+   if(decoded!=NULL)
+      free(decoded);
+   if(HLH_rw_valid(&rw))
+      HLH_rw_close(&rw);
+   if(f!=NULL)
+      fclose(f);
+
+   return NULL;
 }
 //-------------------------------------

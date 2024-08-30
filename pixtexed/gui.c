@@ -54,10 +54,12 @@ static HLH_gui_window *window_root;
 //Function prototypes
 static void ui_construct_ask_new();
 static void ui_construct_image_new();
+static void ui_construct_ask_load();
 
 static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int ask_new_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int ask_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
@@ -148,6 +150,11 @@ static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          ui_construct_ask_new();
       }
+      //Load
+      else if(m->index==1)
+      {
+         ui_construct_ask_load();
+      }
       //Save
       else if(m->index==2)
       {
@@ -211,6 +218,26 @@ static void ui_construct_ask_new()
    button->e.usr = 2;
 }
 
+static void ui_construct_ask_load()
+{
+   HLH_gui_window *win = HLH_gui_window_create("Load image", 300, 100, NULL);
+   HLH_gui_window_block(window_root, win);
+   HLH_gui_group *group = HLH_gui_group_create(&win->e, HLH_GUI_FILL);
+
+   HLH_gui_label_create(&group->e, 0, "Are you sure you want");
+   HLH_gui_label_create(&group->e, 0, "to start load an image?");
+   group = HLH_gui_group_create(&group->e, 0);
+   HLH_gui_button *button = HLH_gui_button_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL | HLH_GUI_FILL_X, "Cancel", NULL);
+   button->e.msg_usr = ask_load_msg;
+   button->e.usr = 0;
+   button = HLH_gui_button_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL | HLH_GUI_FILL_X, "Save", NULL);
+   button->e.msg_usr = ask_load_msg;
+   button->e.usr = 1;
+   button = HLH_gui_button_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL | HLH_GUI_FILL_X, "Confirm", NULL);
+   button->e.msg_usr = ask_load_msg;
+   button->e.usr = 2;
+}
+
 static int ask_new_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    if(msg==HLH_GUI_MSG_CLICK)
@@ -244,6 +271,32 @@ static int ask_new_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          HLH_gui_window_close(e->window);
 
          ui_construct_image_new();
+      }
+   }
+
+   return 0;
+}
+
+static int ask_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      //Cancel
+      if(e->usr==0)
+      {
+         HLH_gui_window_close(e->window);
+      }
+      else if(e->usr==1)
+      {
+         HLH_gui_window_close(e->window);
+
+         //ui_construct_image_new();
+      }
+      else if(e->usr==2)
+      {
+         HLH_gui_window_close(e->window);
+
+         //ui_construct_image_new();
       }
    }
 
