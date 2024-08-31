@@ -62,6 +62,7 @@ typedef struct
 }Project;
 
 Project *project_new(int32_t width, int32_t height);
+Project *project_from_image8(const Image8 *img);
 Image32 *project_to_image32(const Project *project);
 Image8 *project_to_image8(const Project *project);
 void project_update(Project *project, int x, int y);

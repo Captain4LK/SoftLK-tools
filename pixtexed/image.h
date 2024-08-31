@@ -19,6 +19,7 @@ typedef struct
 {
    int32_t width;
    int32_t height;
+   uint32_t color_count;
    uint32_t palette[256];
    uint8_t data[];
 }Image8;
@@ -46,5 +47,6 @@ Image32 *Image32_dup(const Image32 *src);
 Image64 *Image64_dup(const Image64 *src);
 
 int image8_save(const Image8 *img, const char *path, const char *ext);
+Image8 *image8_load(const char *path, const char *ext);
 
 #endif

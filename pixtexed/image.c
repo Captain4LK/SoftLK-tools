@@ -41,6 +41,7 @@ Image8 *image8_new(int32_t width, int32_t height)
    Image8 *img = calloc(1,sizeof(*img)+sizeof(*img->data)*width*height);
    img->width = width;
    img->height = height;
+   img->color_count = 256;
 
    return img;
 }
@@ -77,6 +78,7 @@ Image8 *Image8_dup(const Image8 *src)
    Image8 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->width*src->height);
    img->width = src->width;
    img->height = src->height;
+   img->color_count = src->color_count;
    memcpy(img->data,src->data,sizeof(*img->data)*img->width*img->height);
 
    return img;
@@ -115,9 +117,22 @@ int image8_save(const Image8 *img, const char *path, const char *ext)
    if(strlen(ext)==0||strlen(path)==0)
       return 1;
 
-   if(strcmp(ext,"pcx")==0)
+   if(strcmp(ext,"pcx")==0||strcmp(ext,"PCX")==0)
       return pcx_save(img,path);
 
    return 1;
+}
+
+Image8 *image8_load(const char *path, const char *ext)
+{
+   if(ext==NULL||path==NULL)
+      return NULL;
+   if(strlen(ext)==0||strlen(path)==0)
+      return NULL;
+
+   if(strcmp(ext,"pcx")==0||strcmp(ext,"PCX")==0)
+      return pcx_load(path);
+
+   return NULL;
 }
 //-------------------------------------

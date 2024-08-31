@@ -89,6 +89,24 @@ Project *project_new(int32_t width, int32_t height)
    return p;
 }
 
+Project *project_from_image8(const Image8 *img)
+{
+   if(img==NULL)
+      return NULL;
+
+   Project *p = project_new(img->width,img->height);
+
+   p->palette_colors = img->color_count;
+   for(int i = 0;i<256;i++)
+      p->palette[i] = img->palette[i];
+   for(int i = 0;i<img->width*img->height;i++)
+      p->layers[0]->data[i] = img->data[i];
+
+   project_update_full(p);
+
+   return p;
+}
+
 Image32 *project_to_image32(const Project *project)
 {
    if(project==NULL)

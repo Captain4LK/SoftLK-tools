@@ -52,6 +52,8 @@ static HLH_gui_window *window_root;
 //-------------------------------------
 
 //Function prototypes
+static void gui_project_update(Project *p);
+
 static void ui_construct_ask_new();
 static void ui_construct_image_new();
 static void ui_construct_ask_load();
@@ -105,18 +107,19 @@ void gui_construct(void)
    HLH_gui_separator_create(&root_group->e,HLH_GUI_FILL_X,0);
    //-------------------------------------
 
-   HLH_gui_group *group_middle = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL|HLH_GUI_LAYOUT_HORIZONTAL);
-   HLH_gui_group *group_right = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_Y|HLH_GUI_LAYOUT_HORIZONTAL);
+   HLH_gui_group *group_middle = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL|HLH_GUI_LAYOUT_VERTICAL);
 
    //Middle -- Canvas
    //-------------------------------------
-   GUI_canvas *canvas = gui_canvas_create(&group_middle->e,HLH_GUI_FILL,project_new(64,64));
+   GUI_canvas *canvas = gui_canvas_create(&group_middle->e,HLH_GUI_FILL|HLH_GUI_LAYOUT_HORIZONTAL,project_new(64,64));
    gui.canvas = canvas;
    gui_canvas_update_project(gui.canvas,canvas->project);
    //-------------------------------------
 
    //Right -- palette, brushes
    //-------------------------------------
+   HLH_gui_separator_create(&group_middle->e,HLH_GUI_FILL_Y|HLH_GUI_LAYOUT_HORIZONTAL,1);
+   HLH_gui_group *group_right = HLH_gui_group_create(&group_middle->e,HLH_GUI_FILL_Y|HLH_GUI_LAYOUT_HORIZONTAL);
    HLH_gui_group *group_pal = HLH_gui_group_create(&group_right->e,0);
    //gui.group_palette = group_pal;
    int color = 0;
@@ -138,6 +141,46 @@ void gui_construct(void)
       r->e.msg_usr = radiobutton_palette_msg;
    }
    //-------------------------------------
+
+   //Bottom -- tools
+   //-------------------------------------
+   HLH_gui_group *group_tools = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
+   HLH_gui_separator_create(&group_tools->e,HLH_GUI_FILL_X,0);
+   HLH_gui_radiobutton_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL,"a",NULL);
+   HLH_gui_radiobutton_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL,"b",NULL);
+   HLH_gui_radiobutton_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL,"c",NULL);
+   HLH_gui_radiobutton_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL,"d",NULL);
+   //-------------------------------------
+
+   //-------------------------------------
+   HLH_gui_group *group_status = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
+   HLH_gui_label_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"TEST");
+
+   //Layers
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"1",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"2",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"3",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"4",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"5",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"6",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"7",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"8",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"9",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"10",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"11",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"12",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"13",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"14",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"15",NULL);
+   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"16",NULL);
+   //-------------------------------------
+}
+
+static void gui_project_update(Project *p)
+{
+   gui_canvas_update_project(gui.canvas,p);
+   for(int i = 0;i<256;i++)
+      gui.palette_colors[i]->e.usr_ptr = &gui.canvas->project->palette[i];
 }
 
 static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -296,7 +339,11 @@ static int ask_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          HLH_gui_window_close(e->window);
 
-         //ui_construct_image_new();
+         image_load_select(gui.canvas->project->file,gui.canvas->project->ext);
+         Image8 *img = image8_load(gui.canvas->project->file,gui.canvas->project->ext);
+         Project *p = project_from_image8(img);
+         free(img);
+         gui_project_update(p);
       }
    }
 

@@ -184,7 +184,8 @@ Image8 *pcx_load(const char *path)
    HLH_error_check(num_planes==1||num_planes==3||num_planes==4,"pcx_load","unsupported number of planes, expected one of {1,3,4}, but got %d\n",num_planes);
    uint16_t stride = HLH_rw_read_u16(&rw);
    uint16_t palette_mode = HLH_rw_read_u16(&rw);
-   HLH_error_check(palette_mode==1||palette_mode==2,"pcx_load","invalid palette mode, expected one of {1,2}, but got %d\n",palette_mode);
+   //NOTE(Captain4LK): palette mode is often zero instead of 1 or 2, so we just ignore it
+   //HLH_error_check(palette_mode==1||palette_mode==2,"pcx_load","invalid palette mode, expected one of {1,2}, but got %d\n",palette_mode);
    HLH_rw_read_u16(&rw);
    HLH_rw_read_u16(&rw);
    for(int i = 0;i<54;i++)
@@ -193,6 +194,7 @@ Image8 *pcx_load(const char *path)
 
    //Decode
    //--------------------------------
+   printf("width: %d, stride: %d\n",width,stride);
    size_t decoded_len = stride*num_planes*height;
    decoded = calloc(decoded_len,sizeof(*decoded));
    if(encoding==0)
@@ -227,8 +229,11 @@ Image8 *pcx_load(const char *path)
 
    //Convert to image8
    //--------------------------------
+   printf("version: %d, bit depth: %d, plane count: %d, palette mode: %d\n",version,bit_depth,num_planes,palette_mode);
+   //256 color palette
    if(bit_depth==8&&num_planes==1)
    {
+      HLH_rw_seek(&rw,-768,SEEK_END);
       for(int i = 0;i<256;i++)
       {
          uint8_t r = HLH_rw_read_u8(&rw);
@@ -241,6 +246,68 @@ Image8 *pcx_load(const char *path)
          for(int x = 0;x<width;x++)
          {
             img->data[y*img->width+x] = decoded[y*stride+x];
+         }
+      }
+   }
+   //1 bit
+   else if(bit_depth==1&&num_planes==1)
+   {
+      img->palette[0] = color32(0,0,0,0xff);
+      img->palette[1] = color32(0xff,0xff,0xff,0xff);
+      img->color_count = 2;
+      for(int y = 0;y<height;y++)
+      {
+         for(int x = 0;x<width;x++)
+         {
+            img->data[y*img->width+x] = !!(decoded[y*stride+(x/8)]&(1<<((7-x)&7)));
+         }
+      }
+   }
+   //CGA
+   else if(bit_depth==2&&num_planes==1)
+   {
+      uint32_t cga_palette[16] = {
+         color32(0x00,0x00,0x00,0xff),
+         color32(0x00,0x00,0xaa,0xff),
+         color32(0x00,0xaa,0x00,0xff),
+         color32(0x00,0xaa,0xaa,0xff),
+         color32(0xaa,0x00,0x00,0xff),
+         color32(0xaa,0x00,0xaa,0xff),
+         color32(0xaa,0x55,0x00,0xff),
+         color32(0xaa,0xaa,0xaa,0xff),
+         color32(0x55,0x55,0x55,0xff),
+         color32(0x55,0x55,0xff,0xff),
+         color32(0x55,0xff,0x55,0xff),
+         color32(0x55,0xff,0xff,0xff),
+         color32(0xff,0x55,0x55,0xff),
+         color32(0xff,0x55,0xff,0xff),
+         color32(0xff,0xff,0x55,0xff),
+         color32(0xff,0xff,0xff,0xff),
+      };
+
+      uint8_t status_color_burst = !!(color32_r(ega_palette[1])&128);
+      uint8_t status_palette = !!(color32_r(ega_palette[1])&64);
+      uint8_t status_intensity = !!(color32_r(ega_palette[1])&32);
+      if(palette_mode!=0)
+      {
+         status_palette = color32_g(ega_palette[1])<=color32_b(ega_palette[1]);
+         status_intensity = HLH_max(color32_g(ega_palette[1]),color32_b(ega_palette[1]))>200;
+      }
+      uint32_t cga_map[4][3] = {{2,4,6},{10,12,14},{3,5,7},{11,13,15}};
+      uint8_t index = status_palette*2+status_intensity;
+      uint8_t foreground = (color32_r(ega_palette[0]))/16;
+      img->palette[0] = cga_palette[foreground];
+      img->palette[1] = cga_palette[cga_map[index][0]];
+      img->palette[2] = cga_palette[cga_map[index][1]];
+      img->palette[3] = cga_palette[cga_map[index][2]];
+      img->color_count = 4;
+
+      for(int y = 0;y<height;y++)
+      {
+         for(int x = 0;x<width;x++)
+         {
+            img->data[y*img->width+x] = 2*(!!(decoded[y*stride+(x/4)]&(1<<((7-2*x)&7))));
+            img->data[y*img->width+x]+=!!(decoded[y*stride+(x/4)]&(1<<((7-(2*x+1))&7)));
          }
       }
    }

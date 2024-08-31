@@ -188,6 +188,9 @@ static int gui_canvas_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
       if(redraw)
          HLH_gui_element_redraw(&canvas->e);
+
+      if(m->button)
+         return 1;
    }
 
    return 0;
