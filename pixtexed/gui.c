@@ -68,13 +68,14 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_img_new_ok(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_img_new_cancel(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int radiobutton_toolbox_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
 //Function implementations
 
 void gui_construct(void)
 {
-   HLH_gui_window *win = HLH_gui_window_create("pixtexed",1000,600,NULL);
+   HLH_gui_window *win = HLH_gui_window_create("pixtexed",1000,650,NULL);
    window_root = win;
 
    //Menubar
@@ -142,21 +143,60 @@ void gui_construct(void)
    }
    //-------------------------------------
 
-   //Bottom -- tools
+   //Toolbar
    //-------------------------------------
    HLH_gui_group *group_tools = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
    HLH_gui_separator_create(&group_tools->e,HLH_GUI_FILL_X,0);
-   HLH_gui_radiobutton_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL,"a",NULL);
-   HLH_gui_radiobutton_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL,"b",NULL);
-   HLH_gui_radiobutton_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL,"c",NULL);
-   HLH_gui_radiobutton_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL,"d",NULL);
+   HLH_gui_button_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL," ",NULL);
+   {
+      HLH_gui_group *group = HLH_gui_group_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL);
+      HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_PEN;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_LINE;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_FLOOD;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_RECT_OUTLINE;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_RECT_FILL;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_GRADIENT;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_SPLINE;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_SPRAY;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_POLYLINE;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_POLYFORM;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_CIRCLE_OUTLINE;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_CIRCLE_FILL;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+      r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      r->e.usr = TOOL_SPHERE_GRAD;
+      r->e.msg_usr = radiobutton_toolbox_msg;
+   }
    //-------------------------------------
-
-   //-------------------------------------
-   HLH_gui_group *group_status = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
-   HLH_gui_label_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"TEST");
 
    //Layers
+   //-------------------------------------
+   HLH_gui_group *group_status = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
+   //HLH_gui_label_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"TEST");
+
    HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"1",NULL);
    HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"2",NULL);
    HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"3",NULL);
@@ -173,6 +213,12 @@ void gui_construct(void)
    HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"14",NULL);
    HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"15",NULL);
    HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"16",NULL);
+   //-------------------------------------
+
+   //Animation + Status
+   //-------------------------------------
+   HLH_gui_group *group_anim = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
+   HLH_gui_radiobutton_create(&group_anim->e,HLH_GUI_LAYOUT_HORIZONTAL,"a",NULL);
    //-------------------------------------
 }
 
@@ -536,6 +582,11 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
       }
    }
 
+   return 0;
+}
+
+static int radiobutton_toolbox_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
    return 0;
 }
 //-------------------------------------

@@ -15,6 +15,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdint.h>
 #include "layer.h"
 #include "image.h"
+#include "tool.h"
 
 typedef struct
 {
@@ -45,6 +46,8 @@ typedef struct
    uint32_t *undo_map;
 
    uint8_t palette_selected;
+
+   Toolbox tools;
 
    //Undo
    //--------------------------------
