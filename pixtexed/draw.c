@@ -123,7 +123,7 @@ static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32
             dist -= dy;
          }
 
-         brush_place(project,bx,by,0);
+         brush_place(project,bx,by,layer);
          by+=step_y;
          dist += dx;
       }
@@ -141,7 +141,7 @@ static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32
             dist -= dx;
          }
 
-         brush_place(project,bx,by,0);
+         brush_place(project,bx,by,layer);
          bx+=step_x;
          dist += dy;
       }

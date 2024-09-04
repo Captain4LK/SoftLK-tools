@@ -19,10 +19,31 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 typedef struct
 {
+   int32_t width;
+   int32_t height;
+   uint8_t data[];
+}Brush;
+
+typedef struct
+{
+   uint32_t palette[256];
+   int32_t palette_colors;
+
+   uint8_t palette_selected;
+
+   //0 - 47 default
+   //48 - 59 custom
+   //60 - 63 internal use
+   Brush *brushes[64];
+}Settings;
+
+typedef struct
+{
    int32_t last_x;
    int32_t last_y;
 
    uint8_t button;
+   Toolbox tools;
 }Draw_state;
 
 typedef struct

@@ -12,6 +12,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _TOOL_H_
 
+#include <stdint.h>
+
 typedef enum
 {
    TOOL_PEN,
@@ -38,6 +40,10 @@ typedef struct
    }pen;
    struct
    {
+      int32_t x0;
+      int32_t y0;
+      int32_t x1;
+      int32_t y2;
    }line;
 }Toolbox;
 

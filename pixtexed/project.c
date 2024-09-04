@@ -42,9 +42,10 @@ Project *project_new(int32_t width, int32_t height)
    Project *p = calloc(1,sizeof(*p));
    p->width = width;
    p->height = height;
-   p->num_layers = 1;
+   p->num_layers = 2;
    p->layers = calloc(1,sizeof(*p->layers));
    p->layers[0] = layer_new(width*height);
+   p->layers[1] = layer_new(width*height);
    p->undo_map = HLH_bitmap_create(((width+15)/16)*((height+15)/16));
    p->old = layer_new(width*height);
    p->palette_colors = 32;
@@ -118,9 +119,20 @@ Image32 *project_to_image32(const Project *project)
 
    for(int i = 0;i<project->num_layers;i++)
    {
-      for(int j = 0;j<project->width*project->height;j++)
+      if(i==0)
       {
-         img->data[j] = project->palette[project->layers[i]->data[j]];
+         for(int j = 0;j<project->width*project->height;j++)
+         {
+            img->data[j] = project->palette[project->layers[i]->data[j]];
+         }
+      }
+      else
+      {
+         for(int j = 0;j<project->width*project->height;j++)
+         {
+            if(project->layers[i]->data[j])
+               img->data[j] = project->palette[project->layers[i]->data[j]];
+         }
       }
    }
 
@@ -139,9 +151,20 @@ Image8 *project_to_image8(const Project *project)
    memcpy(img->palette,project->palette,sizeof(project->palette));
    for(int i = 0;i<project->num_layers;i++)
    {
-      for(int j = 0;j<project->width*project->height;j++)
+      if(i==0)
       {
-         img->data[j] = project->layers[i]->data[j];
+         for(int j = 0;j<project->width*project->height;j++)
+         {
+            img->data[j] = project->layers[i]->data[j];
+         }
+      }
+      else
+      {
+         for(int j = 0;j<project->width*project->height;j++)
+         {
+            if(project->layers[i]->data[j])
+               img->data[j] = project->layers[i]->data[j];
+         }
       }
    }
 
@@ -150,17 +173,33 @@ Image8 *project_to_image8(const Project *project)
 
 void project_update(Project *project, int x, int y)
 {
-   for(int i = 0;i<project->num_layers;i++)
-      project->combined->data[y*project->width+x] = project->palette[project->layers[i]->data[y*project->width+x]];
+   project->combined->data[y*project->width+x] = project->palette[project->layers[0]->data[y*project->width+x]];
+
+   for(int i = 1;i<project->num_layers;i++)
+   {
+      if(project->layers[i]->data[y*project->width+x])
+         project->combined->data[y*project->width+x] = project->palette[project->layers[i]->data[y*project->width+x]];
+   }
 }
 
 void project_update_full(Project *project)
 {
    for(int i = 0;i<project->num_layers;i++)
    {
-      for(int j = 0;j<project->width*project->height;j++)
+      if(i==0)
       {
-         project->combined->data[j] = project->palette[project->layers[i]->data[j]];
+         for(int j = 0;j<project->width*project->height;j++)
+         {
+            project->combined->data[j] = project->palette[project->layers[i]->data[j]];
+         }
+      }
+      else
+      {
+         for(int j = 0;j<project->width*project->height;j++)
+         {
+            if(project->layers[i]->data[j])
+               project->combined->data[j] = project->palette[project->layers[i]->data[j]];
+         }
       }
    }
 }

@@ -149,8 +149,10 @@ void gui_construct(void)
    HLH_gui_separator_create(&group_tools->e,HLH_GUI_FILL_X,0);
    HLH_gui_button_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL," ",NULL);
    {
+      HLH_gui_radiobutton *rfirst = NULL;
       HLH_gui_group *group = HLH_gui_group_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL);
       HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
+      rfirst = r;
       r->e.usr = TOOL_PEN;
       r->e.msg_usr = radiobutton_toolbox_msg;
       r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
@@ -189,6 +191,8 @@ void gui_construct(void)
       r = HLH_gui_radiobutton_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"",NULL);
       r->e.usr = TOOL_SPHERE_GRAD;
       r->e.msg_usr = radiobutton_toolbox_msg;
+
+      HLH_gui_radiobutton_set(rfirst,1,1);
    }
    //-------------------------------------
 
@@ -587,6 +591,20 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
 
 static int radiobutton_toolbox_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      //Uncheck
+      if(di==0)
+      {
+         //HLH_gui_element_ignore(&gui_groups_sample[e->usr]->e,1);
+      }
+      //Check
+      else if(di==1)
+      {
+         gui.canvas->project->tools.selected = e->usr;
+      }
+   }
+
    return 0;
 }
 //-------------------------------------
