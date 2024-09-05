@@ -17,8 +17,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 void undo_init(Project *p);
 void undo_free(Project *p);
 void undo_reset(Project *p);
-void undo(Project *p);
-void redo(Project *p);
+void undo(Project *p, const Settings *settings);
+void redo(Project *p, const Settings *settings);
 
 void undo_begin_layer_chunks(Project *p);
 void undo_track_layer_chunk(Project *p, int x, int y, int32_t layer);

@@ -31,7 +31,7 @@ typedef struct
    int alt_down;
 }GUI_canvas;
 
-GUI_canvas *gui_canvas_create(HLH_gui_element *parent, uint64_t flags, Project *project);
+GUI_canvas *gui_canvas_create(HLH_gui_element *parent, uint64_t flags, Project *project, Settings *settings);
 void gui_canvas_update_project(GUI_canvas *canvas, Project *project);
 
 #endif

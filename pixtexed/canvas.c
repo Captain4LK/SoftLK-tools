@@ -34,10 +34,11 @@ static void canvas_draw(GUI_canvas *canvas);
 
 //Function implementations
 
-GUI_canvas *gui_canvas_create(HLH_gui_element *parent, uint64_t flags, Project *project)
+GUI_canvas *gui_canvas_create(HLH_gui_element *parent, uint64_t flags, Project *project, Settings *settings)
 {
    GUI_canvas *canvas = (GUI_canvas *)HLH_gui_element_create(sizeof(*canvas),parent,flags,gui_canvas_msg);
    canvas->project = project;
+   canvas->settings = settings;
    canvas->scale = 1.f;
    canvas->x = 0.f;
    canvas->y = 0.f;
@@ -113,13 +114,13 @@ static int gui_canvas_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          if(canvas->shift_down)
          {
-            redo(canvas->project);
+            redo(canvas->project,canvas->settings);
             gui_canvas_update_project(canvas,canvas->project);
             HLH_gui_element_redraw(&canvas->e);
          }
          else
          {
-            undo(canvas->project);
+            undo(canvas->project,canvas->settings);
             gui_canvas_update_project(canvas,canvas->project);
             HLH_gui_element_redraw(&canvas->e);
          }
@@ -147,7 +148,7 @@ static int gui_canvas_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          int32_t y = 0;
          x = (int32_t)(((mx-canvas->x)/canvas->scale)*256);
          y = (int32_t)(((my-canvas->y)/canvas->scale)*256);
-         if(draw_event(canvas->project,x,y,m->button))
+         if(draw_event(canvas->project,x,y,m->button,canvas->settings))
          {
             gui_canvas_update_project(canvas,canvas->project);
             HLH_gui_element_redraw(&canvas->e);

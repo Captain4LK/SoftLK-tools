@@ -34,7 +34,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function implementations
 
-Project *project_new(int32_t width, int32_t height)
+Project *project_new(int32_t width, int32_t height, const Settings *settings)
 {
    if(width<=0||height<=0)
       return NULL;
@@ -48,67 +48,34 @@ Project *project_new(int32_t width, int32_t height)
    p->layers[1] = layer_new(width*height);
    p->undo_map = HLH_bitmap_create(((width+15)/16)*((height+15)/16));
    p->old = layer_new(width*height);
-   p->palette_colors = 32;
-   p->palette[0] = 0xff000000;
-   p->palette[1] = 0xff342022;
-   p->palette[2] = 0xff3c2845;
-   p->palette[3] = 0xff313966;
-   p->palette[4] = 0xff3b568f;
-   p->palette[5] = 0xff2671e0;
-   p->palette[6] = 0xff66a0d9;
-   p->palette[7] = 0xff9ac3ef;
-   p->palette[8] = 0xff36f2fb;
-   p->palette[9] = 0xff50e599;
-   p->palette[10] = 0xff30be6a;
-   p->palette[11] = 0xff6e9437;
-   p->palette[12] = 0xff2f694b;
-   p->palette[13] = 0xff244b52;
-   p->palette[14] = 0xff393c32;
-   p->palette[15] = 0xff743f3f;
-   p->palette[16] = 0xff826030;
-   p->palette[17] = 0xffe16e5b;
-   p->palette[18] = 0xffff9b63;
-   p->palette[19] = 0xffe4cd5f;
-   p->palette[20] = 0xfffcdbcb;
-   p->palette[21] = 0xffffffff;
-   p->palette[22] = 0xffb7ad9b;
-   p->palette[23] = 0xff877e84;
-   p->palette[24] = 0xff6a6a69;
-   p->palette[25] = 0xff525659;
-   p->palette[26] = 0xff8a4276;
-   p->palette[27] = 0xff3232ac;
-   p->palette[28] = 0xff6357d9;
-   p->palette[29] = 0xffba7bd7;
-   p->palette[30] = 0xff4a978f;
-   p->palette[31] = 0xff306f8a;
 
    undo_init(p);
    undo_reset(p);
 
-   p->combined = project_to_image32(p);
+   p->combined = project_to_image32(p,settings);
 
    return p;
 }
 
-Project *project_from_image8(const Image8 *img)
+Project *project_from_image8(Settings *settings, const Image8 *img)
 {
    if(img==NULL)
       return NULL;
 
-   Project *p = project_new(img->width,img->height);
+   Project *p = project_new(img->width,img->height,settings);
 
-   p->palette_colors = img->color_count;
+   settings->palette_colors = img->color_count;
    for(int i = 0;i<256;i++)
-      p->palette[i] = img->palette[i];
+      settings->palette[i] = img->palette[i];
    for(int i = 0;i<img->width*img->height;i++)
       p->layers[0]->data[i] = img->data[i];
 
-   project_update_full(p);
+   project_update_full(p,settings);
 
    return p;
 }
 
-Image32 *project_to_image32(const Project *project)
+Image32 *project_to_image32(const Project *project, const Settings *settings)
 {
    if(project==NULL)
       return NULL;
@@ -123,7 +90,7 @@ Image32 *project_to_image32(const Project *project)
       {
          for(int j = 0;j<project->width*project->height;j++)
          {
-            img->data[j] = project->palette[project->layers[i]->data[j]];
+            img->data[j] = settings->palette[project->layers[i]->data[j]];
          }
       }
       else
@@ -131,7 +98,7 @@ Image32 *project_to_image32(const Project *project)
          for(int j = 0;j<project->width*project->height;j++)
          {
             if(project->layers[i]->data[j])
-               img->data[j] = project->palette[project->layers[i]->data[j]];
+               img->data[j] = settings->palette[project->layers[i]->data[j]];
          }
       }
    }
@@ -139,7 +106,7 @@ Image32 *project_to_image32(const Project *project)
    return img;
 }
 
-Image8 *project_to_image8(const Project *project)
+Image8 *project_to_image8(const Project *project, const Settings *settings)
 {
    if(project==NULL)
       return NULL;
@@ -148,7 +115,7 @@ Image8 *project_to_image8(const Project *project)
    if(img==NULL)
       return NULL;
 
-   memcpy(img->palette,project->palette,sizeof(project->palette));
+   memcpy(img->palette,settings->palette,sizeof(settings->palette));
    for(int i = 0;i<project->num_layers;i++)
    {
       if(i==0)
@@ -171,18 +138,18 @@ Image8 *project_to_image8(const Project *project)
    return img;
 }
 
-void project_update(Project *project, int x, int y)
+void project_update(Project *project, int x, int y, const Settings *settings)
 {
-   project->combined->data[y*project->width+x] = project->palette[project->layers[0]->data[y*project->width+x]];
+   project->combined->data[y*project->width+x] = settings->palette[project->layers[0]->data[y*project->width+x]];
 
    for(int i = 1;i<project->num_layers;i++)
    {
       if(project->layers[i]->data[y*project->width+x])
-         project->combined->data[y*project->width+x] = project->palette[project->layers[i]->data[y*project->width+x]];
+         project->combined->data[y*project->width+x] = settings->palette[project->layers[i]->data[y*project->width+x]];
    }
 }
 
-void project_update_full(Project *project)
+void project_update_full(Project *project, const Settings *settings)
 {
    for(int i = 0;i<project->num_layers;i++)
    {
@@ -190,7 +157,7 @@ void project_update_full(Project *project)
       {
          for(int j = 0;j<project->width*project->height;j++)
          {
-            project->combined->data[j] = project->palette[project->layers[i]->data[j]];
+            project->combined->data[j] = settings->palette[project->layers[i]->data[j]];
          }
       }
       else
@@ -198,7 +165,7 @@ void project_update_full(Project *project)
          for(int j = 0;j<project->width*project->height;j++)
          {
             if(project->layers[i]->data[j])
-               project->combined->data[j] = project->palette[project->layers[i]->data[j]];
+               project->combined->data[j] = settings->palette[project->layers[i]->data[j]];
          }
       }
    }

@@ -14,6 +14,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #include "project.h"
 
-int brush_place(Project *project, int x, int y, int layer);
+int brush_place(Project *project, int x, int y, int layer, const Settings *settings);
 
 #endif

@@ -29,7 +29,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32_t x1, int32_t y1);
+static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Settings *settings);
 
 static uint8_t draw_clip_outcode(int32_t l, int32_t u, int32_t r, int32_t d, int32_t x, int32_t y);
 static int draw_clip_line(int32_t l, int32_t u, int32_t r, int32_t d, int32_t *x0, int32_t *y0, int32_t *x1, int32_t *y1);
@@ -37,7 +37,7 @@ static int draw_clip_line(int32_t l, int32_t u, int32_t r, int32_t d, int32_t *x
 
 //Function implementations
 
-int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button)
+int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
 {
    uint8_t old_state = project->state.button;
    project->state.button = button;
@@ -51,7 +51,7 @@ int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button)
 
       layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
 
-      brush_place(project,mx/256,my/256,0);
+      brush_place(project,mx/256,my/256,0,settings);
       project->state.last_x = mx;
       project->state.last_y = my;
 
@@ -63,9 +63,9 @@ int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button)
          return 0;
 
       //draw_line(project,0,project->state.last_x,project->state.last_y,mx,my);
-      draw_line(project,0,mx,my,project->state.last_x,project->state.last_y);
-      brush_place(project,mx/256,my/256,0);
-      brush_place(project,project->state.last_x/256,project->state.last_y/256,0);
+      draw_line(project,0,mx,my,project->state.last_x,project->state.last_y,settings);
+      brush_place(project,mx/256,my/256,0,settings);
+      brush_place(project,project->state.last_x/256,project->state.last_y/256,0,settings);
       //project->layers[0]->data[(my/256)*project->width+mx/256] = 1;
       project->state.last_x = mx;
       project->state.last_y = my;
@@ -80,7 +80,7 @@ int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button)
    return 0;
 }
 
-static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Settings *settings)
 {
    if(!draw_clip_line(0, 0, project->width* 256 - 1, project->height* 256 - 1, &x0, &y0, &x1, &y1))
       return;
@@ -123,7 +123,7 @@ static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32
             dist -= dy;
          }
 
-         brush_place(project,bx,by,layer);
+         brush_place(project,bx,by,layer,settings);
          by+=step_y;
          dist += dx;
       }
@@ -141,7 +141,7 @@ static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32
             dist -= dx;
          }
 
-         brush_place(project,bx,by,layer);
+         brush_place(project,bx,by,layer,settings);
          bx+=step_x;
          dist += dy;
       }

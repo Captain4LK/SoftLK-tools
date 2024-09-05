@@ -18,6 +18,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "project.h"
 #include "color.h"
 #include "util.h"
+#include "settings.h"
 //-------------------------------------
 
 //#defines
@@ -52,8 +53,6 @@ static HLH_gui_window *window_root;
 //-------------------------------------
 
 //Function prototypes
-static void gui_project_update(Project *p);
-
 static void ui_construct_ask_new();
 static void ui_construct_image_new();
 static void ui_construct_ask_load();
@@ -112,7 +111,8 @@ void gui_construct(void)
 
    //Middle -- Canvas
    //-------------------------------------
-   GUI_canvas *canvas = gui_canvas_create(&group_middle->e,HLH_GUI_FILL|HLH_GUI_LAYOUT_HORIZONTAL,project_new(64,64));
+   Settings *settings = settings_init();
+   GUI_canvas *canvas = gui_canvas_create(&group_middle->e,HLH_GUI_FILL|HLH_GUI_LAYOUT_HORIZONTAL,project_new(64,64,settings),settings);
    gui.canvas = canvas;
    gui_canvas_update_project(gui.canvas,canvas->project);
    //-------------------------------------
@@ -123,23 +123,30 @@ void gui_construct(void)
    HLH_gui_group *group_right = HLH_gui_group_create(&group_middle->e,HLH_GUI_FILL_Y|HLH_GUI_LAYOUT_HORIZONTAL);
    HLH_gui_group *group_pal = HLH_gui_group_create(&group_right->e,0);
    //gui.group_palette = group_pal;
-   int color = 0;
-   for(int i = 0;i<32;i++)
    {
-      HLH_gui_radiobutton *r = NULL;
-      for(int j = 0;j<7;j++)
+      int color = 0;
+      HLH_gui_radiobutton *rfirst;
+      for(int i = 0;i<32;i++)
       {
-         r = HLH_gui_radiobutton_create(&group_pal->e,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y,"",NULL);
+         HLH_gui_radiobutton *r = NULL;
+         for(int j = 0;j<7;j++)
+         {
+            r = HLH_gui_radiobutton_create(&group_pal->e,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y,"",NULL);
+            if(i==0&&j==0)
+               rfirst = r;
+            gui.palette_colors[color] = r;
+            r->e.usr_ptr = &gui.canvas->settings->palette[color];
+            r->e.usr = color++;
+            r->e.msg_usr = radiobutton_palette_msg;
+         }
+         r = HLH_gui_radiobutton_create(&group_pal->e,HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y,"",NULL);
          gui.palette_colors[color] = r;
-         r->e.usr_ptr = &gui.canvas->project->palette[color];
+         r->e.usr_ptr = &gui.canvas->settings->palette[color];
          r->e.usr = color++;
          r->e.msg_usr = radiobutton_palette_msg;
       }
-      r = HLH_gui_radiobutton_create(&group_pal->e,HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y,"",NULL);
-      gui.palette_colors[color] = r;
-      r->e.usr_ptr = &gui.canvas->project->palette[color];
-      r->e.usr = color++;
-      r->e.msg_usr = radiobutton_palette_msg;
+
+      HLH_gui_radiobutton_set(rfirst,1,1);
    }
    //-------------------------------------
 
@@ -226,13 +233,6 @@ void gui_construct(void)
    //-------------------------------------
 }
 
-static void gui_project_update(Project *p)
-{
-   gui_canvas_update_project(gui.canvas,p);
-   for(int i = 0;i<256;i++)
-      gui.palette_colors[i]->e.usr_ptr = &gui.canvas->project->palette[i];
-}
-
 static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    HLH_gui_menubutton *m = (HLH_gui_menubutton *)e;
@@ -253,7 +253,7 @@ static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          if(strlen(gui.canvas->project->file)>0)
          {
-            Image8 *img = project_to_image8(gui.canvas->project);
+            Image8 *img = project_to_image8(gui.canvas->project,gui.canvas->settings);
             if(!image8_save(img,gui.canvas->project->file,gui.canvas->project->ext))
             {
                gui.canvas->project->file[0] = '\0';
@@ -263,7 +263,7 @@ static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          else
          {
             image_save_select(gui.canvas->project->file,gui.canvas->project->ext);
-            Image8 *img = project_to_image8(gui.canvas->project);
+            Image8 *img = project_to_image8(gui.canvas->project,gui.canvas->settings);
             if(!image8_save(img,gui.canvas->project->file,gui.canvas->project->ext))
             {
                gui.canvas->project->file[0] = '\0';
@@ -275,7 +275,7 @@ static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(m->index==3)
       {
          image_save_select(gui.canvas->project->file,gui.canvas->project->ext);
-         Image8 *img = project_to_image8(gui.canvas->project);
+         Image8 *img = project_to_image8(gui.canvas->project,gui.canvas->settings);
          if(!image8_save(img,gui.canvas->project->file,gui.canvas->project->ext))
          {
             gui.canvas->project->file[0] = '\0';
@@ -391,9 +391,9 @@ static int ask_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
          image_load_select(gui.canvas->project->file,gui.canvas->project->ext);
          Image8 *img = image8_load(gui.canvas->project->file,gui.canvas->project->ext);
-         Project *p = project_from_image8(img);
+         Project *p = project_from_image8(gui.canvas->settings,img);
          free(img);
-         gui_project_update(p);
+         gui_canvas_update_project(gui.canvas,p);
       }
    }
 
@@ -578,7 +578,7 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
    {
       if(di)
       {
-         gui.canvas->project->palette_selected = (uint8_t)r->e.usr;
+         gui.canvas->settings->palette_selected = (uint8_t)r->e.usr;
          //uint32_t c = dither_config.palette[color_selected];
          //HLH_gui_slider_set(gui.slider_color_red,SLK_color32_r(c),255,1,1);
          //HLH_gui_slider_set(gui.slider_color_green,SLK_color32_g(c),255,1,1);

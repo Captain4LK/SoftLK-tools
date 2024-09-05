@@ -96,7 +96,7 @@ void undo_reset(Project *p)
    p->redo_pos = 0;
 }
 
-void undo(Project *p)
+void undo(Project *p, const Settings *settings)
 {
    int pos = p->undo_pos;
    uint32_t len = 0;
@@ -132,10 +132,10 @@ void undo(Project *p)
    p->undo_pos = WRAP(p->undo_pos-len-7);
    p->undo_buffer[p->undo_pos] = JUNK_RECORD;
 
-   project_update_full(p);
+   project_update_full(p,settings);
 }
 
-void redo(Project *p)
+void redo(Project *p, const Settings *settings)
 {
    int pos = p->redo_pos;
    uint32_t len = 0;
@@ -179,7 +179,7 @@ void redo(Project *p)
    p->redo_pos = WRAP(p->redo_pos-len-7);
    p->redo_buffer[p->redo_pos] = JUNK_RECORD;
 
-   project_update_full(p);
+   project_update_full(p,settings);
 }
 
 static void undo_write8(Project *p, uint8_t val)
