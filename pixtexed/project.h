@@ -39,11 +39,12 @@ typedef struct
 
 typedef struct
 {
-   int32_t last_x;
-   int32_t last_y;
+   int32_t x0;
+   int32_t y0;
+   int32_t x1;
+   int32_t y1;
 
    uint8_t button;
-   Toolbox tools;
 }Draw_state;
 
 typedef struct
@@ -65,6 +66,8 @@ typedef struct
    //Internal, not saved
    Layer *old;
    uint32_t *undo_map;
+
+   uint32_t *bitmap;
 
    //uint8_t palette_selected;
 

@@ -29,58 +29,34 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Settings *settings);
+static void draw_line(Project *project, const Settings *settings, const Brush *brush, int32_t x0, int32_t y0, int32_t x1, int32_t y1, int layer, uint8_t color);
+//int brush_place(Project *project, const Settings *settings, const Brush *brush, int x, int y, int layer,uint8_t color);
 
 static uint8_t draw_clip_outcode(int32_t l, int32_t u, int32_t r, int32_t d, int32_t x, int32_t y);
 static int draw_clip_line(int32_t l, int32_t u, int32_t r, int32_t d, int32_t *x0, int32_t *y0, int32_t *x1, int32_t *y1);
+
+static int draw_event_pen(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
+static int draw_event_line(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
+static int draw_event_flood(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
+static int draw_event_rect_outline(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
 //-------------------------------------
 
 //Function implementations
 
 int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
 {
-   uint8_t old_state = project->state.button;
-   project->state.button = button;
-
-   //Start new drawing operation
-   if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
+   switch(project->tools.selected)
    {
-      //Prepare undo
-      HLH_bitmap_clear(project->undo_map);
-      undo_begin_layer_chunks(project);
-
-      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
-
-      brush_place(project,mx/256,my/256,0,settings);
-      project->state.last_x = mx;
-      project->state.last_y = my;
-
-      return 1;
-   }
-   else if(button&HLH_GUI_MOUSE_LEFT)
-   {
-      if(mx/256==project->state.last_x/256&&my/256==project->state.last_y/256)
-         return 0;
-
-      //draw_line(project,0,project->state.last_x,project->state.last_y,mx,my);
-      draw_line(project,0,mx,my,project->state.last_x,project->state.last_y,settings);
-      brush_place(project,mx/256,my/256,0,settings);
-      brush_place(project,project->state.last_x/256,project->state.last_y/256,0,settings);
-      //project->layers[0]->data[(my/256)*project->width+mx/256] = 1;
-      project->state.last_x = mx;
-      project->state.last_y = my;
-
-      return 1;
-   }
-   else if(!(button&HLH_GUI_MOUSE_LEFT)&&(old_state&HLH_GUI_MOUSE_LEFT))
-   {
-      undo_end_layer_chunks(project);
+   case TOOL_PEN: return draw_event_pen(project,mx,my,button,settings);
+   case TOOL_LINE: return draw_event_line(project,mx,my,button,settings);
+   case TOOL_FLOOD: return draw_event_flood(project,mx,my,button,settings);
+   case TOOL_RECT_OUTLINE: return draw_event_rect_outline(project,mx,my,button,settings);
    }
 
    return 0;
 }
 
-static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Settings *settings)
+static void draw_line(Project *project, const Settings *settings, const Brush *brush, int32_t x0, int32_t y0, int32_t x1, int32_t y1, int layer, uint8_t color)
 {
    if(!draw_clip_line(0, 0, project->width* 256 - 1, project->height* 256 - 1, &x0, &y0, &x1, &y1))
       return;
@@ -113,7 +89,7 @@ static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32
    if(dx<dy)
    {
       int32_t dist = (int32_t)(((int64_t)(frac_x - 128) * dy - (int64_t)(frac_y - 128) * dx) / 256);
-      int32_t left = abs(y1/256-y0/256);
+      int32_t left = abs(y1/256-y0/256)+1;
 
       while(left--)
       {
@@ -123,7 +99,7 @@ static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32
             dist -= dy;
          }
 
-         brush_place(project,bx,by,layer,settings);
+         brush_place(project,settings,brush,bx,by,layer,color);
          by+=step_y;
          dist += dx;
       }
@@ -131,7 +107,7 @@ static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32
    else
    {
       int32_t dist = (int32_t)(((int64_t)(frac_y - 128) * dx - (int64_t)(frac_x - 128) * dy) / 256);
-      int32_t left = abs(x1/256-x0/256);
+      int32_t left = abs(x1/256-x0/256)+1;
 
       while(left--)
       {
@@ -141,7 +117,7 @@ static void draw_line(Project *project, int layer, int32_t x0, int32_t y0, int32
             dist -= dx;
          }
 
-         brush_place(project,bx,by,layer,settings);
+         brush_place(project,settings,brush,bx,by,layer,color);
          bx+=step_x;
          dist += dy;
       }
@@ -219,6 +195,172 @@ static int draw_clip_line(int32_t l, int32_t u, int32_t r, int32_t d, int32_t *x
       }
    }
 
+   return 0;
+}
+
+static int draw_event_pen(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+{
+   uint8_t old_state = project->state.button;
+   project->state.button = button;
+
+   //Start new drawing operation
+   if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
+   {
+      //Prepare undo
+      HLH_bitmap_clear(project->undo_map);
+      undo_begin_layer_chunks(project);
+
+      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
+
+      brush_place(project,settings,settings->brushes[0],mx/256,my/256,0,settings->palette_selected);
+      project->state.x0 = mx;
+      project->state.y0 = my;
+
+      return 1;
+   }
+   else if(button&HLH_GUI_MOUSE_LEFT)
+   {
+      if(mx/256==project->state.x0/256&&my/256==project->state.y0/256)
+         return 0;
+
+      draw_line(project,settings,settings->brushes[0],mx,my,project->state.x0,project->state.y0,0,settings->palette_selected);
+      brush_place(project,settings,settings->brushes[0],mx/256,my/256,0,settings->palette_selected);
+      brush_place(project,settings,settings->brushes[1],project->state.x0/256,project->state.y0/256,0,settings->palette_selected);
+      project->state.x0 = mx;
+      project->state.y0 = my;
+
+      return 1;
+   }
+   else if(!(button&HLH_GUI_MOUSE_LEFT)&&(old_state&HLH_GUI_MOUSE_LEFT))
+   {
+      undo_end_layer_chunks(project);
+   }
+
+   return 0;
+}
+
+static int draw_event_line(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+{
+   uint8_t old_state = project->state.button;
+   project->state.button = button;
+
+   //Start new drawing operation
+   if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
+   {
+      //Prepare undo
+      HLH_bitmap_clear(project->undo_map);
+      undo_begin_layer_chunks(project);
+
+      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
+
+      project->state.x0 = mx;
+      project->state.y0 = my;
+      project->state.x1 = mx;
+      project->state.y1 = my;
+
+      return 1;
+   }
+   else if(button&HLH_GUI_MOUSE_LEFT)
+   {
+      if(mx==project->state.x0&&my==project->state.y0)
+         return 0;
+
+      //Erease old
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
+
+      project->state.x1 = mx;
+      project->state.y1 = my;
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,settings->palette_selected);
+
+
+      return 1;
+   }
+   else if(!(button&HLH_GUI_MOUSE_LEFT)&&(old_state&HLH_GUI_MOUSE_LEFT))
+   {
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,0,settings->palette_selected);
+      undo_end_layer_chunks(project);
+
+      return 1;
+   }
+
+   return 0;
+}
+
+static int draw_event_flood(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+{
+   uint8_t old_state = project->state.button;
+   project->state.button = button;
+
+   //Start new drawing operation
+   if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
+   {
+      if(mx<0||my<0)
+         return 0;
+      if(mx/256>=project->width||my/256>=project->height)
+         return 0;
+
+      //Prepare undo
+      HLH_bitmap_clear(project->undo_map);
+      HLH_bitmap_clear(project->bitmap);
+      undo_begin_layer_chunks(project);
+
+      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
+
+      uint8_t flood = project->layers[0]->data[(my/256)*project->width+mx/256];
+      int32_t *todo = NULL;
+      HLH_array_push(todo,mx/256);
+      HLH_array_push(todo,my/256);
+      HLH_bitmap_set(project->bitmap,(my/256)*project->width+mx/256);
+      while(HLH_array_length(todo))
+      {
+         int32_t x,y;
+         y = todo[HLH_array_length(todo)-1];
+         x = todo[HLH_array_length(todo)-2];
+         HLH_array_length_set(todo,HLH_array_length(todo)-2);
+         brush_place(project,settings,settings->brushes[0],x,y,0,settings->palette_selected);
+
+         if(x>0&&project->layers[0]->data[y*project->width+x-1]==flood&&
+            !HLH_bitmap_check(project->bitmap,y*project->width+x-1))
+         {
+            HLH_array_push(todo,x-1);
+            HLH_array_push(todo,y);
+            HLH_bitmap_set(project->bitmap,y*project->width+x-1);
+         }
+         if(y>0&&project->layers[0]->data[(y-1)*project->width+x]==flood&&
+            !HLH_bitmap_check(project->bitmap,(y-1)*project->width+x))
+         {
+            HLH_array_push(todo,x);
+            HLH_array_push(todo,y-1);
+            HLH_bitmap_set(project->bitmap,(y-1)*project->width+x);
+         }
+         if(x<project->width-1&&project->layers[0]->data[y*project->width+x+1]==flood&&
+            !HLH_bitmap_check(project->bitmap,y*project->width+x+1))
+         {
+            HLH_array_push(todo,x+1);
+            HLH_array_push(todo,y);
+            HLH_bitmap_set(project->bitmap,y*project->width+x+1);
+         }
+         if(y<project->height-1&&project->layers[0]->data[(y+1)*project->width+x]==flood&&
+            !HLH_bitmap_check(project->bitmap,(y+1)*project->width+x))
+         {
+            HLH_array_push(todo,x);
+            HLH_array_push(todo,y+1);
+            HLH_bitmap_set(project->bitmap,(y+1)*project->width+x);
+         }
+      }
+      HLH_array_free(todo);
+
+      undo_end_layer_chunks(project);
+
+      return 1;
+   }
+
+   return 0;
+}
+
+static int draw_event_rect_outline(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+{
    return 0;
 }
 //-------------------------------------

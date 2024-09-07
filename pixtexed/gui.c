@@ -19,6 +19,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "color.h"
 #include "util.h"
 #include "settings.h"
+#include "brush.h"
 //-------------------------------------
 
 //#defines
@@ -56,6 +57,7 @@ static HLH_gui_window *window_root;
 static void ui_construct_ask_new();
 static void ui_construct_image_new();
 static void ui_construct_ask_load();
+static void ui_construct_brushes();
 
 static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
@@ -68,6 +70,7 @@ static int button_img_new_ok(HLH_gui_element *e, HLH_gui_msg msg, int di, void *
 static int button_img_new_cancel(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_toolbox_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int button_brushes_open(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
 //Function implementations
@@ -154,7 +157,8 @@ void gui_construct(void)
    //-------------------------------------
    HLH_gui_group *group_tools = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
    HLH_gui_separator_create(&group_tools->e,HLH_GUI_FILL_X,0);
-   HLH_gui_button_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL," ",NULL);
+   HLH_gui_button *button = HLH_gui_button_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL," ",NULL);
+   button->e.msg_usr = button_brushes_open;
    {
       HLH_gui_radiobutton *rfirst = NULL;
       HLH_gui_group *group = HLH_gui_group_create(&group_tools->e,HLH_GUI_LAYOUT_HORIZONTAL);
@@ -596,7 +600,6 @@ static int radiobutton_toolbox_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
       //Uncheck
       if(di==0)
       {
-         //HLH_gui_element_ignore(&gui_groups_sample[e->usr]->e,1);
       }
       //Check
       else if(di==1)
@@ -606,5 +609,49 @@ static int radiobutton_toolbox_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
    }
 
    return 0;
+}
+
+//GUI_brush *gui_brush_create(HLH_gui_element *parent, uint64_t flags, Project *project, Settings *settings, int brush_num);
+//void gui_brushes_update(HLH_gui_window *window, const Settings *settings);
+
+static int button_brushes_open(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      ui_construct_brushes();
+   }
+
+   return 0;
+}
+
+static void ui_construct_brushes()
+{
+   HLH_gui_window *win = HLH_gui_window_create("Brushes", 500, 200, NULL);
+   HLH_gui_window_block(window_root, win);
+   HLH_gui_group *group = HLH_gui_group_create(&win->e, HLH_GUI_FILL);
+
+   for(int y = 0;y<5;y++)
+   {
+      HLH_gui_group *row = HLH_gui_group_create(&group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
+      for(int x = 0;x<12;x++)
+      {
+         gui_brush_create(&row->e,HLH_GUI_LAYOUT_HORIZONTAL,gui.canvas->project,gui.canvas->settings,y*12+x);
+      }
+   }
+
+   gui_brushes_update(win,gui.canvas->settings);
+
+   /*HLH_gui_label_create(&group->e, 0, "Are you sure you want");
+   HLH_gui_label_create(&group->e, 0, "to start a new image?");
+   group = HLH_gui_group_create(&group->e, 0);
+   HLH_gui_button *button = HLH_gui_button_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL | HLH_GUI_FILL_X, "Cancel", NULL);
+   button->e.msg_usr = ask_new_msg;
+   button->e.usr = 0;
+   button = HLH_gui_button_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL | HLH_GUI_FILL_X, "Save", NULL);
+   button->e.msg_usr = ask_new_msg;
+   button->e.usr = 1;
+   button = HLH_gui_button_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL | HLH_GUI_FILL_X, "Confirm", NULL);
+   button->e.msg_usr = ask_new_msg;
+   button->e.usr = 2;*/
 }
 //-------------------------------------

@@ -47,6 +47,7 @@ Project *project_new(int32_t width, int32_t height, const Settings *settings)
    p->layers[0] = layer_new(width*height);
    p->layers[1] = layer_new(width*height);
    p->undo_map = HLH_bitmap_create(((width+15)/16)*((height+15)/16));
+   p->bitmap = HLH_bitmap_create(width*height);
    p->old = layer_new(width*height);
 
    undo_init(p);
