@@ -40,6 +40,23 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
    //HLH_error_check(project!=NULL,"brush_place","project must be non-NULL\n");
    //HLH_error_check(layer>=0,"brush_place","invalid layer '%d'\n",layer);
    //HLH_error_check(layer<project->num_layers,"brush_place","invalid layer '%d'\n",layer);
+   
+   if(layer!=project->num_layers-1)
+   {
+      for(int by = y/16;by<=(y+brush->height)/16;by++)
+      {
+         if(by<0||by>=(project->height+15)/16)
+            continue;
+
+         for(int bx = x/16;bx<=(x+brush->width)/16;bx++)
+         {
+            if(bx<0||bx>=(project->width+15)/16)
+               continue;
+
+            
+         }
+      }
+   }
 
    if(x<0||y<0||x>=project->width||y>=project->height)
       return 0;
@@ -109,6 +126,7 @@ void gui_brushes_update(HLH_gui_window *window, const Settings *settings)
    }
 
    SDL_UpdateTexture(brush_icons,NULL,data,16*60*4);
+   free(data);
 }
 
 static int gui_brush_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)

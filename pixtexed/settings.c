@@ -73,10 +73,66 @@ Settings *settings_init()
 
    //Brushes
    //-------------------------------------
+   
+   //Square 1x1
    s->brushes[0] = calloc(1,sizeof(*s->brushes[0])+1);
    s->brushes[0]->width = 1;
    s->brushes[0]->height = 1;
    s->brushes[0]->data[0] = 1;
+
+   //Square 2x2
+   s->brushes[1] = calloc(1,sizeof(*s->brushes[1])+4);
+   s->brushes[1]->width = 2;
+   s->brushes[1]->height = 2;
+   for(int i = 0;i<4;i++) s->brushes[1]->data[i] = 1;
+
+   //Square 3x3
+   s->brushes[2] = calloc(1,sizeof(*s->brushes[2])+9);
+   s->brushes[2]->width = 3;
+   s->brushes[2]->height = 3;
+   for(int i = 0;i<9;i++) s->brushes[2]->data[i] = 1;
+
+   //Square 4x4
+   s->brushes[3] = calloc(1,sizeof(*s->brushes[3])+16);
+   s->brushes[3]->width = 4;
+   s->brushes[3]->height = 4;
+   for(int i = 0;i<16;i++) s->brushes[3]->data[i] = 1;
+
+   //Square 5x5
+   s->brushes[4] = calloc(1,sizeof(*s->brushes[4])+25);
+   s->brushes[4]->width = 5;
+   s->brushes[4]->height = 5;
+   for(int i = 0;i<25;i++) s->brushes[4]->data[i] = 1;
+
+   //Square 7x7
+   s->brushes[5] = calloc(1,sizeof(*s->brushes[5])+49);
+   s->brushes[5]->width = 7;
+   s->brushes[5]->height = 7;
+   for(int i = 0;i<49;i++) s->brushes[5]->data[i] = 1;
+
+   //Square 8x8
+   s->brushes[6] = calloc(1,sizeof(*s->brushes[6])+64);
+   s->brushes[6]->width = 8;
+   s->brushes[6]->height = 8;
+   for(int i = 0;i<64;i++) s->brushes[6]->data[i] = 1;
+
+   //Square 12x12
+   s->brushes[7] = calloc(1,sizeof(*s->brushes[7])+144);
+   s->brushes[7]->width = 12;
+   s->brushes[7]->height = 12;
+   for(int i = 0;i<144;i++) s->brushes[7]->data[i] = 1;
+
+   //Square 16x16
+   s->brushes[8] = calloc(1,sizeof(*s->brushes[8])+256);
+   s->brushes[8]->width = 16;
+   s->brushes[8]->height = 16;
+   for(int i = 0;i<256;i++) s->brushes[8]->data[i] = 1;
+
+   //Square sieve 16x16
+   s->brushes[9] = calloc(1,sizeof(*s->brushes[9])+256);
+   s->brushes[9]->width = 16;
+   s->brushes[9]->height = 16;
+   for(int i = 0;i<256;i++) if(((i&1)+i/16)&1) s->brushes[9]->data[i] = 1;
    //-------------------------------------
 
    s->palette_selected = 1;

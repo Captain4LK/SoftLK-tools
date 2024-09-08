@@ -206,6 +206,9 @@ static int draw_event_pen(Project *project, int32_t mx, int32_t my, uint8_t butt
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
    {
+      //Clear preview
+      brush_place(project,settings,settings->brushes[0],mx/256,my/256,project->num_layers-1,0);
+
       //Prepare undo
       HLH_bitmap_clear(project->undo_map);
       undo_begin_layer_chunks(project);
@@ -234,6 +237,16 @@ static int draw_event_pen(Project *project, int32_t mx, int32_t my, uint8_t butt
    else if(!(button&HLH_GUI_MOUSE_LEFT)&&(old_state&HLH_GUI_MOUSE_LEFT))
    {
       undo_end_layer_chunks(project);
+   }
+   else
+   {
+      if(mx/256==project->state.x0/256&&my/256==project->state.y0/256)
+         return 0;
+      brush_place(project,settings,settings->brushes[0],project->state.x0/256,project->state.y0/256,project->num_layers-1,0);
+      brush_place(project,settings,settings->brushes[0],mx/256,my/256,project->num_layers-1,settings->palette_selected);
+      project->state.x0 = mx;
+      project->state.y0 = my;
+      return 1;
    }
 
    return 0;
