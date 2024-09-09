@@ -71,6 +71,7 @@ static int button_img_new_cancel(HLH_gui_element *e, HLH_gui_msg msg, int di, vo
 static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_toolbox_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_brushes_open(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int button_brushes_select(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
 //Function implementations
@@ -115,6 +116,7 @@ void gui_construct(void)
    //Middle -- Canvas
    //-------------------------------------
    Settings *settings = settings_init();
+   settings_build_lut(settings);
    GUI_canvas *canvas = gui_canvas_create(&group_middle->e,HLH_GUI_FILL|HLH_GUI_LAYOUT_HORIZONTAL,project_new(64,64,settings),settings);
    gui.canvas = canvas;
    gui_canvas_update_project(gui.canvas,canvas->project);
@@ -635,7 +637,8 @@ static void ui_construct_brushes()
       HLH_gui_group *row = HLH_gui_group_create(&group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
       for(int x = 0;x<12;x++)
       {
-         gui_brush_create(&row->e,HLH_GUI_LAYOUT_HORIZONTAL,gui.canvas->project,gui.canvas->settings,y*12+x);
+         GUI_brush *brush = gui_brush_create(&row->e,HLH_GUI_LAYOUT_HORIZONTAL,gui.canvas->project,gui.canvas->settings,y*12+x);
+         brush->e.msg_usr = button_brushes_select;
       }
    }
 
@@ -653,5 +656,18 @@ static void ui_construct_brushes()
    button = HLH_gui_button_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL | HLH_GUI_FILL_X, "Confirm", NULL);
    button->e.msg_usr = ask_new_msg;
    button->e.usr = 2;*/
+}
+
+static int button_brushes_select(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   GUI_brush *brush = (GUI_brush *)e;
+
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      brush->settings->brush_selected = (uint8_t)brush->brush_num;
+      HLH_gui_window_close(brush->e.window);
+   }
+
+   return 0;
 }
 //-------------------------------------

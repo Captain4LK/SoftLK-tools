@@ -17,5 +17,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 Settings *settings_init();
 
 void settings_free(Settings *s);
+void settings_build_lut(Settings *s);
 
 #endif

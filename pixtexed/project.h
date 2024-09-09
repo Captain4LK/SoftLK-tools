@@ -31,9 +31,12 @@ typedef struct
 
    uint8_t palette_selected;
 
+   uint8_t color_white;
+
    //0 - 47 default
    //48 - 59 custom
    //60 - 63 internal use
+   uint8_t brush_selected;
    Brush *brushes[64];
 }Settings;
 
