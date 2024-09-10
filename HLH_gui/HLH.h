@@ -34,6 +34,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //--------------------------------
 #define HLH_max(a,b) ((a)>(b)?(a):(b))
 #define HLH_min(a,b) ((a)<(b)?(a):(b))
+#define HLH_abs(a) ((a)<0?-(a):(a))
 #define HLH_non_zero(a) ((a)+((a)==0))
 //--------------------------------
 
@@ -208,7 +209,7 @@ int HLH_bitmap_check(uint32_t *bitmap, intptr_t bit)
       return 0;
 
    intptr_t pos = bit/32;
-   uint32_t value = 1<<(bit-pos*32);
+   uint32_t value = (uint32_t)1<<(bit-pos*32);
    return !!(bitmap[pos]&value);
 }
 

@@ -301,6 +301,7 @@ int HLH_gui_message_loop(void)
                   core_windows[i] = core_windows[core_window_count - 1];
                   core_window_count--;
                   core_windows = realloc(core_windows, sizeof(*core_windows) * core_window_count);
+                  win = NULL;
                   break;
                }
             }
@@ -354,6 +355,8 @@ int HLH_gui_message_loop(void)
                HLH_gui_element_msg_all(&win->e, HLH_GUI_MSG_BUTTON_REPEAT, event.key.keysym.scancode, NULL);
             else
                HLH_gui_element_msg_all(&win->e, HLH_GUI_MSG_BUTTON_DOWN, event.key.keysym.scancode, NULL);
+
+            win = core_find_window(SDL_GetWindowFromID(event.key.windowID));
          }
          break;
       case SDL_KEYUP:
@@ -364,6 +367,8 @@ int HLH_gui_message_loop(void)
                continue;
 
             HLH_gui_element_msg_all(&win->e, HLH_GUI_MSG_BUTTON_UP, event.key.keysym.scancode, NULL);
+
+            win = core_find_window(SDL_GetWindowFromID(event.key.windowID));
          }
          break;
       case SDL_MOUSEBUTTONDOWN:
@@ -381,6 +386,7 @@ int HLH_gui_message_loop(void)
          case SDL_BUTTON_MIDDLE: mouse.button |= HLH_GUI_MOUSE_MIDDLE; break;
          }
          HLH_gui_handle_mouse(&win->e, mouse);
+         win = core_find_window(SDL_GetWindowFromID(event.window.windowID));
 
          break;
       case SDL_MOUSEBUTTONUP:
@@ -398,6 +404,7 @@ int HLH_gui_message_loop(void)
          case SDL_BUTTON_MIDDLE: mouse.button &= ~HLH_GUI_MOUSE_MIDDLE; break;
          }
          HLH_gui_handle_mouse(&win->e, mouse);
+         win = core_find_window(SDL_GetWindowFromID(event.window.windowID));
 
          break;
       case SDL_TEXTINPUT:
@@ -412,6 +419,7 @@ int HLH_gui_message_loop(void)
             in.ch = event.text.text[i];
             HLH_gui_element_msg(win->keyboard,HLH_GUI_MSG_TEXTINPUT,0,&in);
          }
+         win = core_find_window(SDL_GetWindowFromID(event.text.windowID));
 
          break;
       case SDL_TEXTEDITING:

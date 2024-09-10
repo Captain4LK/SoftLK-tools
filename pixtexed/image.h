@@ -42,6 +42,8 @@ Image8 *image8_new(int32_t width, int32_t height);
 Image32 *image32_new(int32_t width, int32_t height);
 Image64 *image64_new(int32_t width, int32_t height);
 
+Image8 *image32to8(const Image32 *img);
+
 Image8 *Image8_dup(const Image8 *src);
 Image32 *Image32_dup(const Image32 *src);
 Image64 *Image64_dup(const Image64 *src);
