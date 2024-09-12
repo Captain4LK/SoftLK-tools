@@ -12,8 +12,11 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdio.h>
 #include <stdint.h>
 
+#include "HLH_gui.h"
+
 #define RPNG_IMPLEMENTATION
 #define RPNG_DEFLATE_IMPLEMENTATION
+#define RPNG_SHOW_LOG_INFO
 #include "rpng.h"
 //-------------------------------------
 
@@ -143,9 +146,14 @@ Image8 *png_load(const char *path)
       }
       else
       {
+         uint8_t *pix = (uint8_t *)data;
          for(int i = 0;i<width*height;i++)
-            img->data[i] = color32(data[3*i],data[3*i+1],data[3*i+2],255);
+            img->data[i] = color32(pix[3*i],pix[3*i+1],pix[3*i+2],255);
       }
+
+      FILE *f = fopen("/tmp/out.png","wb");
+      HLH_gui_image_save(f,img->data,img->width,img->height,"png");
+      fclose(f);
 
       Image8 *img8 = image32to8(img);
       free(img);
@@ -163,11 +171,17 @@ Image8 *png_load(const char *path)
       }
       else
       {
+         uint8_t *pix = (uint8_t *)data;
          for(int i = 0;i<width*height;i++)
          {
-            img->data[i] = color32(data[4*i],data[4*i+1],data[4*i+2],255);
+            img->data[i] = color32(pix[4*i],pix[4*i+1],pix[4*i+2],255);
          }
       }
+
+      FILE *f = fopen("/tmp/out.png","wb");
+      HLH_gui_image_save(f,img->data,img->width,img->height,"png");
+      fclose(f);
+//void HLH_gui_image_save(FILE *fp, uint32_t *data, int width, int height, const char *ext);
 
       Image8 *img8 = image32to8(img);
       free(img);

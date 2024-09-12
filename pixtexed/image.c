@@ -78,7 +78,7 @@ Image64 *image64_new(int32_t width, int32_t height)
 
 Image8 *image32to8(const Image32 *img)
 {
-   uint32_t palette[256];
+   uint32_t palette[256] = {0};
    uint32_t centers[256] = {0};
    uint32_t *clusters[256] = {0};
 
@@ -87,7 +87,7 @@ Image8 *image32to8(const Image32 *img)
    rand_xor rng;
    rand_xor_seed(&rng,0);
 
-   int index = rand_xor_next(&rng)%(img->width*img->height);
+   int index = (int)(rand_xor_next(&rng)%(img->width*img->height));
    centers[0] = img->data[index];
 
    uint64_t *distance = NULL;
@@ -201,10 +201,10 @@ Image8 *image32to8(const Image32 *img)
 
          if(HLH_array_length(clusters[j])>0)
          {
-            uint32_t r = sum_r/HLH_array_length(clusters[j]);
-            uint32_t g = sum_g/HLH_array_length(clusters[j]);
-            uint32_t b = sum_b/HLH_array_length(clusters[j]);
-            uint32_t a = 255;
+            uint8_t r = (uint8_t)(sum_r/HLH_array_length(clusters[j]));
+            uint8_t g = (uint8_t)(sum_g/HLH_array_length(clusters[j]));
+            uint8_t b = (uint8_t)(sum_b/HLH_array_length(clusters[j]));
+            uint8_t a = 255;
             centers[j] = color32(r,g,b,a);
             palette[j] = centers[j];
          }
@@ -253,7 +253,7 @@ Image8 *image32to8(const Image32 *img)
          if(dist<dist_min)
          {
             dist_min = dist;
-            index_min = j;
+            index_min = (uint8_t)j;
          }
       }
 
