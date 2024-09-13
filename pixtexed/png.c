@@ -151,10 +151,6 @@ Image8 *png_load(const char *path)
             img->data[i] = color32(pix[3*i],pix[3*i+1],pix[3*i+2],255);
       }
 
-      FILE *f = fopen("/tmp/out.png","wb");
-      HLH_gui_image_save(f,img->data,img->width,img->height,"png");
-      fclose(f);
-
       Image8 *img8 = image32to8(img);
       free(img);
       return img8;
@@ -177,11 +173,6 @@ Image8 *png_load(const char *path)
             img->data[i] = color32(pix[4*i],pix[4*i+1],pix[4*i+2],255);
          }
       }
-
-      FILE *f = fopen("/tmp/out.png","wb");
-      HLH_gui_image_save(f,img->data,img->width,img->height,"png");
-      fclose(f);
-//void HLH_gui_image_save(FILE *fp, uint32_t *data, int width, int height, const char *ext);
 
       Image8 *img8 = image32to8(img);
       free(img);

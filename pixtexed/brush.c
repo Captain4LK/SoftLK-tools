@@ -37,10 +37,6 @@ static void brush_draw(GUI_brush *brush);
 
 int brush_place(Project *project, const Settings *settings, const Brush *brush, int x, int y, int layer, uint8_t color)
 {
-   //HLH_error_check(project!=NULL,"brush_place","project must be non-NULL\n");
-   //HLH_error_check(layer>=0,"brush_place","invalid layer '%d'\n",layer);
-   //HLH_error_check(layer<project->num_layers,"brush_place","invalid layer '%d'\n",layer);
-
    //Center brush
    x-=brush->width/2;
    y-=brush->height/2;
@@ -66,50 +62,37 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
       }
    }
 
-   //TODO(Captain4LK): clip brush, similar to sprite rendering in RvR?
-   int drawn = 0;
-   for(int by = 0;by<brush->height;by++)
-   {
-      for(int bx = 0;bx<brush->width;bx++)
-      {
-         int dx = x+bx;
-         int dy = y+by;
-         if(dx<0||dy<0||dx>=project->width||dy>=project->height)
-            continue;
-         drawn++;
+   //Clip source texture
+   int draw_start_y = 0;
+   int draw_start_x = 0;
+   int draw_end_x = brush->width;
+   int draw_end_y = brush->height;
+   if(x<0)
+      draw_start_x = -x;
+   if(y<0)
+      draw_start_y = -y;
+   if(x + draw_end_x>project->width)
+      draw_end_x = brush->width + (project->width - x - draw_end_x);
+   if(y + draw_end_y>project->height)
+      draw_end_y = brush->height + (project->height - y - draw_end_y);
 
-         if(brush->data[by*brush->width+bx])
-         {
-            project->layers[layer]->data[dy*project->width+dx] = color;
-            project_update(project,dx,dy,settings);
-         }
+   //Clip dst sprite
+   x = x<0?0:x;
+   y = y<0?0:y;
+
+   const uint8_t *src = &brush->data[draw_start_x + draw_start_y * brush->width];
+   int src_step = -(draw_end_x - draw_start_x) + brush->width;
+
+   for(int y1 = draw_start_y; y1<draw_end_y; y1++, src += src_step)
+   {
+      for(int x1 = draw_start_x; x1<draw_end_x; x1++, src++)
+      {
+         project->layers[layer]->data[(y+y1)*project->width+x+x1] = color;
+         project_update(project,x+x1,y+y1,settings);
       }
    }
 
-   return !!drawn;
-
-   //if(x<0||y<0||x>=project->width||y>=project->height)
-      //return 0;
-
-   //uint32_t index = y*project->width+x;
-   //if(project->bitmap[index/32]&(1<<(index-(index/32)*32)))
-      //return 0;
-
-   /*if(layer!=project->num_layers-1&&!HLH_bitmap_check(project->undo_map,(y/16)*((project->width+15)/16)+x/16))
-   {
-      HLH_bitmap_set(project->undo_map,(y/16)*((project->width+15)/16)+x/16);
-      undo_track_layer_chunk(project,x/16,y/16,layer);
-   }*/
-
-   //project->layers[layer]->data[index] = color;
-   //project->layers[layer]->data[index] = project->palette_selected;
-   //project_update(project,x,y,settings);
-   //project->bitmap[index/32]|=1<<(index-(index/32)*32);
-
-   //return 1;
-
-//HLH_err:
-   //return 0;
+   return draw_start_y<draw_end_y&&draw_start_x<draw_end_x;
 }
 
 GUI_brush *gui_brush_create(HLH_gui_element *parent, uint64_t flags, Project *project, Settings *settings, int brush_num)

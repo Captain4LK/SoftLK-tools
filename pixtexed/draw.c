@@ -525,20 +525,14 @@ static int draw_event_rect_fill(Project *project, int32_t mx, int32_t my, uint8_
       draw_line(project,settings,settings->brushes[0],0,y1,project->width*256+128,y1,project->num_layers-1,0);
 
       //Fill rect
-      if(y0<y1)
-      {
-         for(int y = y0;y<=y1;y++)
-         {
-            draw_line(project,settings,settings->brushes[0],x0,y,x1,y,0,settings->palette_selected);
-         }
-      }
-      else
-      {
-         for(int y = y1;y<=y0;y++)
-         {
-            draw_line(project,settings,settings->brushes[0],x0,y,x1,y,0,settings->palette_selected);
-         }
-      }
+      int width = HLH_abs(x1/256-x0/256)+1;
+      int height = HLH_abs(y1/256-y0/256)+1;
+      Brush *brush = malloc(sizeof(*brush)+width*height);
+      brush->width = width;
+      brush->height = height;
+      memset(brush->data,1,brush->width*brush->height);
+      brush_place(project,settings,brush,HLH_min(x1,x0)/256+brush->width/2,HLH_min(y1,y0)/256+brush->height/2,0,settings->palette_selected);
+      free(brush);
 
       undo_end_layer_chunks(project);
 
