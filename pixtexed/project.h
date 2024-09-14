@@ -93,10 +93,15 @@ typedef struct
 
 Project *project_new(int32_t width, int32_t height, const Settings *settings);
 Project *project_from_image8(Settings *settings, const Image8 *img);
+void project_free(Project *project);
+
 Image32 *project_to_image32(const Project *project, const Settings *settings);
 Image8 *project_to_image8(const Project *project, const Settings *settings);
+
+void project_layer_add(Project *project, int pos);
+void project_layer_free(Project *project, int pos);
+
 void project_update(Project *project, int x, int y, const Settings *settings);
 void project_update_full(Project *project, const Settings *settings);
-void project_free(Project *project);
 
 #endif

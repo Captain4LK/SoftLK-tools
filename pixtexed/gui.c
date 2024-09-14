@@ -72,6 +72,7 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
 static int radiobutton_toolbox_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_brushes_open(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_brushes_select(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
 //Function implementations
@@ -213,6 +214,22 @@ void gui_construct(void)
    //-------------------------------------
    HLH_gui_group *group_status = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
    //HLH_gui_label_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"TEST");
+
+   button = HLH_gui_button_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"+",NULL);
+   button->e.msg_usr = button_layer_control;
+   button->e.usr = 0;
+   button = HLH_gui_button_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"-",NULL);
+   button->e.msg_usr = button_layer_control;
+   button->e.usr = 1;
+   button = HLH_gui_button_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"\x1b",NULL);
+   button->e.msg_usr = button_layer_control;
+   button->e.usr = 2;
+   button = HLH_gui_button_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"\x1a",NULL);
+   button->e.msg_usr = button_layer_control;
+   button->e.usr = 3;
+   button = HLH_gui_button_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"\x1f",NULL);
+   button->e.msg_usr = button_layer_control;
+   button->e.usr = 4;
 
    HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"1",NULL);
    HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"2",NULL);
@@ -666,6 +683,30 @@ static int button_brushes_select(HLH_gui_element *e, HLH_gui_msg msg, int di, vo
    {
       brush->settings->brush_selected = (uint8_t)brush->brush_num;
       HLH_gui_window_close(brush->e.window);
+   }
+
+   return 0;
+}
+
+static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      if(e->usr==0) //Add layer
+      {
+      }
+      else if(e->usr==1) //Delete layer
+      {
+      }
+      else if(e->usr==2) //Move layer left
+      {
+      }
+      else if(e->usr==3) //Move layer right
+      {
+      }
+      else if(e->usr==4) //Merge layer
+      {
+      }
    }
 
    return 0;

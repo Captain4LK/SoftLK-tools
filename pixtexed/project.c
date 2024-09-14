@@ -183,4 +183,30 @@ void project_free(Project *project)
    free(project->layers);
    free(project);
 }
+
+void project_layer_add(Project *project, int pos)
+{
+   if(project==NULL)
+      return;
+
+   project->num_layers++;
+   project->layers = realloc(project->layers,sizeof(*project->layers)*project->num_layers);
+   for(int i = project->num_layers-1;i>pos;i--)
+      project->layers[i] = project->layers[i-1];
+   project->layers[pos] = layer_new(project->width*project->height);
+}
+
+void project_layer_free(Project *project, int pos)
+{
+   if(project==NULL)
+      return;
+
+   if(pos>=project->num_layers-1)
+      return;
+
+   layer_free(project->layers[pos]);
+   for(int i = pos;i<project->num_layers-1;i++)
+      project->layers[i] = project->layers[i+1];
+   project->num_layers--;
+}
 //-------------------------------------
