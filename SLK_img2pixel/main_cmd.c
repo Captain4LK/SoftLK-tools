@@ -14,9 +14,12 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include <stdarg.h>
 
 #define HLH_IMPLEMENTATION
 #include "HLH.h"
+#define HLH_RW_IMPLEMENTATION
+#include "HLH_rw.h"
 #define HLH_JSON_IMPLEMENTATION
 #include "HLH_json.h"
 #define OPTPARSE_IMPLEMENTATION
@@ -260,7 +263,6 @@ int main(int argc, char **argv)
    SLK_image64_tint(sampled,tint_red,tint_green,tint_blue);
 
    if(generate_palette)
-
    {
       if(generate_colors>0)
          dither_config.palette_colors = generate_colors;

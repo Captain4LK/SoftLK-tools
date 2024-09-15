@@ -15,6 +15,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <string.h>
 #include <limits.h>
 #include "HLH.h"
+#include "HLH_rw.h"
 //-------------------------------------
 
 //Internal includes
@@ -62,27 +63,29 @@ void SLK_image32_write_pcx(FILE *f, const SLK_image32 *img, uint32_t *colors, in
       indices[i] = index;
    }
 
-   uint16_t val = 0;
-   fputc(0x0a,f);
-   fputc(0x05,f);
-   fputc(0x01,f);
-   fputc(0x08,f);
-   val = 0; fwrite(&val,2,1,f);
-   val = 0; fwrite(&val,2,1,f);
-   val = img->w-1; fwrite(&val,2,1,f);
-   val = img->h-1; fwrite(&val,2,1,f);
-   val = img->w; fwrite(&val,2,1,f);
-   val = img->h; fwrite(&val,2,1,f);
+   HLH_rw rw = {0};
+   HLH_rw_init_file(&rw,f);
+   //Header
+   HLH_rw_write_u8(&rw,0x0a);
+   HLH_rw_write_u8(&rw,0x05);
+   HLH_rw_write_u8(&rw,0x01);
+   HLH_rw_write_u8(&rw,0x08);
+   HLH_rw_write_u16(&rw,0x0000);
+   HLH_rw_write_u16(&rw,0x0000);
+   HLH_rw_write_u16(&rw,(uint16_t)(img->w-1));
+   HLH_rw_write_u16(&rw,(uint16_t)(img->h-1));
+   HLH_rw_write_u16(&rw,0x0048);
+   HLH_rw_write_u16(&rw,0x0048);
    for(int i = 0;i<48;i++)
-      fputc(0x00,f);
-   fputc(0x00,f);
-   fputc(0x01,f);
-   val = img->w; fwrite(&val,2,1,f);
-   val = 0; fwrite(&val,2,1,f);
-   val = 0; fwrite(&val,2,1,f);
-   val = 0; fwrite(&val,2,1,f);
+      HLH_rw_write_u8(&rw,0x00);
+   HLH_rw_write_u8(&rw,0x00);
+   HLH_rw_write_u8(&rw,0x01);
+   HLH_rw_write_u16(&rw,(uint16_t)img->w);
+   HLH_rw_write_u16(&rw,0x0001);
+   HLH_rw_write_u16(&rw,0x0000);
+   HLH_rw_write_u16(&rw,0x0000);
    for(int i = 0;i<54;i++)
-      fputc(0x00,f);
+      HLH_rw_write_u8(&rw,0x00);
 
    //RLE encode
    for(int y = 0;y<img->h;y++)
@@ -97,61 +100,61 @@ void SLK_image32_write_pcx(FILE *f, const SLK_image32 *img, uint32_t *colors, in
          }
          else
          {
-            if(length>1||current>191)
+            while(length>0)
             {
-               while(length>0)
+               if(length>1||current>191)
                {
                   int part_len = HLH_min(length,63);
-                  fputc(part_len|0xc0,f);
-                  fputc(current,f);
+                  HLH_rw_write_u8(&rw,(uint8_t)(part_len|0xc0));
+                  HLH_rw_write_u8(&rw,current);
                   length-=part_len;
                }
-            }
-            else
-            {
-               fputc(current,f);
+               else
+               {
+                  HLH_rw_write_u8(&rw,current);
+                  length--;
+               }
             }
             length = 1;
             current = indices[y*img->w+x];
          }
       }
-      if(length>0)
+      while(length>0)
       {
          if(length>1||current>191)
          {
-            while(length>0)
-            {
-               int part_len = HLH_min(length,63);
-               fputc(part_len|0xc0,f);
-               fputc(current,f);
-               length-=part_len;
-            }
+            int part_len = HLH_min(length,63);
+            HLH_rw_write_u8(&rw,(uint8_t)(part_len|0xc0));
+            HLH_rw_write_u8(&rw,current);
+            length-=part_len;
          }
          else
          {
-            fputc(current,f);
+            HLH_rw_write_u8(&rw,current);
+            length--;
          }
       }
    }
 
-   //Write palette
-   fputc(0x0c,f);
+   //Palette
+   HLH_rw_write_u8(&rw,0x0c);
    for(int i = 0;i<256;i++)
    {
-      if(i>=color_count)
+      if(i<color_count)
       {
-         fputc(0x00,f);
-         fputc(0x00,f);
-         fputc(0x00,f);
+         HLH_rw_write_u8(&rw,(uint8_t)SLK_color32_r(colors[i]));
+         HLH_rw_write_u8(&rw,(uint8_t)SLK_color32_g(colors[i]));
+         HLH_rw_write_u8(&rw,(uint8_t)SLK_color32_b(colors[i]));
       }
       else
       {
-         fputc(SLK_color32_r(colors[i]),f);
-         fputc(SLK_color32_g(colors[i]),f);
-         fputc(SLK_color32_b(colors[i]),f);
+         HLH_rw_write_u8(&rw,0);
+         HLH_rw_write_u8(&rw,0);
+         HLH_rw_write_u8(&rw,0);
       }
    }
 
+   HLH_rw_close(&rw);
    free(indices);
 }
 //-------------------------------------
