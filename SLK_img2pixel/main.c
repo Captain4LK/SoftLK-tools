@@ -53,7 +53,11 @@ int main(int argc, char **argv)
    atexit(settings_save);
 
    gui_construct();
-   gui_load_preset(NULL);
+
+   FILE *f = fopen("default.json","r");
+   gui_load_preset(f);
+   if(f!=NULL)
+      fclose(f);
 
    return HLH_gui_message_loop();
 }
