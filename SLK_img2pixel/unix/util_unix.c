@@ -127,7 +127,7 @@ FILE *preset_load_select()
 //const char *image_save_select()
 FILE *image_save_select(char ext[512])
 {
-   const char *filter_patterns[4] = {"*.png","*.bmp","*.tga","pcx"};
+   const char *filter_patterns[4] = {"*.png","*.bmp","*.tga","*.pcx"};
    const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,4,filter_patterns,NULL);
 
    memset(path_image,0,sizeof(path_image));
