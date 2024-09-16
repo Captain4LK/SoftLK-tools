@@ -57,12 +57,22 @@ void HLH_gui_draw_rectangle_fill(HLH_gui_element *e, HLH_gui_rect rect, uint32_t
 
 void HLH_gui_draw_string(HLH_gui_element *e, HLH_gui_rect bounds, const char *text, int len, uint32_t color, int align_center)
 {
+   SDL_Rect clip = {0};
+   clip.x = bounds.minx;
+   clip.y = bounds.miny;
+   clip.w = bounds.maxx-bounds.minx;
+   clip.h = bounds.maxy-bounds.miny;
+   SDL_RenderSetClipRect(e->window->renderer, &clip);
+
    int scale = HLH_gui_get_scale();
    int x = bounds.minx;
    int y = (bounds.miny + bounds.maxy - HLH_GUI_GLYPH_HEIGHT * scale) / 2;
 
    if(align_center)
       x += (bounds.maxx - bounds.minx - len * HLH_GUI_GLYPH_WIDTH * scale) / 2;
+
+   if(x<bounds.minx)
+      x = bounds.minx+((bounds.maxx-bounds.minx)-len*HLH_GUI_GLYPH_WIDTH*scale);
 
    SDL_SetTextureColorMod(e->window->font, color & 255, (color >> 8) & 255, (color >> 16) & 255);
 

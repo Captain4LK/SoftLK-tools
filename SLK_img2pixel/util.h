@@ -16,6 +16,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 FILE *image_load_select();
 FILE *palette_load_select(char ext[512]);
 FILE *preset_load_select();
+void dir_input_select(char path[512]);
+void dir_output_select(char path[512]);
 
 //Close with fclose() when done
 FILE *image_save_select(char ext[512]);

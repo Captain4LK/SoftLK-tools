@@ -18,6 +18,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define HLH_IMPLEMENTATION
 #include "HLH.h"
+#define HLH_PATH_IMPLEMENTATION
+#include "HLH_path.h"
 #define HLH_RW_IMPLEMENTATION
 #include "HLH_rw.h"
 #define HLH_JSON_IMPLEMENTATION

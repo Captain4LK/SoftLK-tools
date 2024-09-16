@@ -42,7 +42,8 @@ typedef enum
    HLH_GUI_MSG_TEXTINPUT = 14,
    HLH_GUI_MSG_TEXTINPUT_END = 15,
    HLH_GUI_MSG_MOUSE_LEAVE = 16,
-   HLH_GUI_MSG_USER_START = 17,
+   HLH_GUI_MSG_DRAGNDROP = 17,
+   HLH_GUI_MSG_USER_START = 18,
 }HLH_gui_msg;
 
 typedef struct
@@ -361,6 +362,7 @@ HLH_gui_group *HLH_gui_group_create(HLH_gui_element *parent, uint64_t flags);
 
 //Label
 HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint64_t flags, const char *text);
+void HLH_gui_label_set(HLH_gui_label *label, const char *txt);
 
 //Buttons
 HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds);

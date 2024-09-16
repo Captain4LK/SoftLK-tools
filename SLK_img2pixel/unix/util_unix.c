@@ -40,6 +40,8 @@ static char path_preset_load[512] = {0};
 static char path_image_save[512] = {0};
 static char path_palette_save[512] = {0};
 static char path_preset_save[512] = {0};
+static char path_dir_input[512] = {0};
+static char path_dir_output[512] = {0};
 
 static char path_image[512] = {0};
 static char path_palette[512] = {0};
@@ -198,6 +200,8 @@ void settings_load(const char *path)
    strncpy(path_image_save,HLH_json_get_object_string(&root->root,"path_image_save",""),511);
    strncpy(path_palette_save,HLH_json_get_object_string(&root->root,"path_palette_save",""),511);
    strncpy(path_preset_save,HLH_json_get_object_string(&root->root,"path_preset_save",""),511);
+   strncpy(path_dir_input,HLH_json_get_object_string(&root->root,"path_dir_input",""),511);
+   strncpy(path_dir_output,HLH_json_get_object_string(&root->root,"path_dir_output",""),511);
    gui_scale = HLH_json_get_object_integer(&root->root,"gui_scale",1);
    path_image_load[511] = '\0';
    path_palette_load[511] = '\0';
@@ -205,6 +209,8 @@ void settings_load(const char *path)
    path_image_save[511] = '\0';
    path_palette_save[511] = '\0';
    path_preset_save[511] = '\0';
+   path_dir_input[511] = '\0';
+   path_dir_output[511] = '\0';
    HLH_gui_set_scale(gui_scale);
 
    HLH_json_free(root);
@@ -224,12 +230,40 @@ void settings_save()
    HLH_json_object_add_string(&root->root,"path_image_save",path_image_save);
    HLH_json_object_add_string(&root->root,"path_palette_save",path_palette_save);
    HLH_json_object_add_string(&root->root,"path_preset_save",path_preset_save);
+   HLH_json_object_add_string(&root->root,"path_dir_input",path_dir_input);
+   HLH_json_object_add_string(&root->root,"path_dir_output",path_dir_output);
    HLH_json_object_add_integer(&root->root,"gui_scale",gui_scale);
 
    HLH_json_write_file(f,&root->root);
    HLH_json_free(root);
 
    fclose(f);
+}
+
+void dir_input_select(char path[512])
+{
+   const char *path_dir = tinyfd_selectFolderDialog("Select input directory",path_dir_input);
+   if(path_dir==NULL)
+   {
+      path[0] = '\0';
+      return;
+   }
+
+   strncpy(path,path_dir,512);
+   path[511] = '\0';
+}
+
+void dir_output_select(char path[512])
+{
+   const char *path_dir = tinyfd_selectFolderDialog("Select output directory",path_dir_input);
+   if(path_dir==NULL)
+   {
+      path[0] = '\0';
+      return;
+   }
+
+   strncpy(path,path_dir,512);
+   path[511] = '\0';
 }
 
 static int slk_path_pop_ext(const char *path, char *out, char *ext)

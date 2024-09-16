@@ -42,6 +42,15 @@ HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint64_t flags, con
    return label;
 }
 
+void HLH_gui_label_set(HLH_gui_label *label, const char *txt)
+{
+   if(label->text!=NULL)
+      free(label->text);
+   label->text_len = (int)strlen(txt);
+   label->text = malloc(label->text_len + 1);
+   strcpy(label->text, txt);
+}
+
 static int label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    HLH_gui_label *label = (HLH_gui_label *)e;
@@ -58,6 +67,7 @@ static int label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    {}
    else if(msg==HLH_GUI_MSG_DRAW)
    {
+      HLH_gui_draw_rectangle_fill(e, e->bounds, 0xff5a5a5a);
       HLH_gui_draw_string(e, e->bounds, label->text, label->text_len, 0x1f1f1f, 1);
    }
    else if(msg==HLH_GUI_MSG_DESTROY)

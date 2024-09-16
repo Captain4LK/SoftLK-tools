@@ -15,8 +15,11 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <string.h>
 #include <time.h>
 
+#include "cute_files.h"
+
 #include "HLH_gui.h"
 #include "HLH.h"
+#include "HLH_path.h"
 #include "HLH_json.h"
 //-------------------------------------
 
@@ -143,6 +146,7 @@ static SLK_image32 *gui_input = NULL;
 static SLK_image32 *gui_output = NULL;
 
 static HLH_gui_group *gui_bar_sample;
+static HLH_gui_group *gui_bar_type;
 static HLH_gui_group *gui_groups_sample[2];
 static HLH_gui_group *gui_bar_dither;
 static HLH_gui_group *gui_bar_distance;
@@ -211,6 +215,14 @@ static struct
    HLH_gui_checkbutton *palette_kmeanspp;
 }gui;
 
+static HLH_gui_window *window_root;
+
+//batch
+static int batch_type;
+static char batch_input[512];
+static char batch_output[512];
+static HLH_gui_label *batch_progress;
+
 //img2pixel
 static int block_process = 0;
 static int color_selected = 0;
@@ -242,22 +254,28 @@ static SLK_image64 *cache_tint;
 //-------------------------------------
 
 //Function prototypes
+static int main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int rb_radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_sample_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_scale_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int radiobutton_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int menu_tools_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int checkbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_distance_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_palette_gen_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static void radiobutton_palette_draw(HLH_gui_radiobutton *r);
+
+static void ui_construct_batch();
 
 static void gui_process(int from);
 //-------------------------------------
@@ -267,6 +285,8 @@ static void gui_process(int from);
 void gui_construct(void)
 {
    HLH_gui_window *win = HLH_gui_window_create("SLK_img2pixel",1000,600,NULL);
+   win->e.msg_usr = main_window_msg;
+   window_root = win;
 
    //Menubar
    //-------------------------------------
@@ -282,18 +302,25 @@ void gui_construct(void)
       "Preset",
       "Palette",
    };
-   HLH_gui_element *menus[2];
+   const char *menu2[] = 
+   {
+      "Batch",
+      "File watch",
+   };
+   HLH_gui_element *menus[3];
    menus[0] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu0,3,menu_load_msg);
    menus[1] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu1,3,menu_save_msg);
+   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,1,menu_tools_msg);
 
    const char *menubar[] = 
    {
       "Load",
       "Save",
+      "Tools",
    };
 
    HLH_gui_group *root_group = HLH_gui_group_create(&win->e,HLH_GUI_FILL);
-   HLH_gui_menubar_create(&root_group->e,HLH_GUI_FILL_X,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_STYLE_01,menubar,menus,2,NULL);
+   HLH_gui_menubar_create(&root_group->e,HLH_GUI_FILL_X,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_STYLE_01,menubar,menus,3,NULL);
    HLH_gui_separator_create(&root_group->e,HLH_GUI_FILL_X,0);
    //-------------------------------------
 
@@ -478,7 +505,6 @@ void gui_construct(void)
       r->e.usr = 8;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[8] = r;
-      HLH_gui_radiobutton_set(first,1,1);
       const char *bar_dither[1] = {"Bayer 4x4         \x1f"};
       gui_bar_dither = HLH_gui_menubar_create(&gui_groups_left[1]->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_dither,(HLH_gui_element **)&group_dither,1,NULL);
       
@@ -495,6 +521,8 @@ void gui_construct(void)
       HLH_gui_element_ignore(&gui_groups_dither[0]->e,1);
       HLH_gui_element_ignore(&gui_groups_dither[1]->e,1);
       HLH_gui_element_ignore(&gui_groups_dither[2]->e,1);
+
+      HLH_gui_radiobutton_set(first,1,1);
    }
    //-------------------------------------
 
@@ -1654,5 +1682,294 @@ void gui_load_preset(FILE *f)
 
    block_process = 0;
    gui_process(0);
+}
+
+static int main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_DRAGNDROP)
+   {
+      const char *path = dp;
+      if(path==NULL)
+         return 0;
+
+      FILE *f = fopen(path,"rb");
+      if(f==NULL)
+         return 0;
+
+      SLK_image32 *img = NULL;
+      int width,height;
+      uint32_t *data = HLH_gui_image_load(f,&width,&height);
+      if(data!=NULL&&width>0&&height>0)
+      {
+         img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
+         img->w = width;
+         img->h = height;
+         memcpy(img->data,data,sizeof(*img->data)*width*height);
+      }
+      HLH_gui_image_free(data);
+      fclose(f);
+
+      if(img==NULL)
+         return 0;
+
+      HLH_gui_imgcmp_update0(gui_imgcmp,img->data,img->w,img->h,1);
+      if(gui_input!=NULL)
+      {
+         free(gui_input);
+         gui_input = NULL;
+      }
+      gui_input = SLK_image32_dup(img);
+      free(img);
+
+      gui_process(0);
+   }
+
+   return 0;
+}
+
+static void ui_construct_batch()
+{
+   batch_type = 0;
+   //batch_input[0] = '\0';
+   //batch_output[0] = '\0';
+
+   HLH_gui_window *win = HLH_gui_window_create("Batch processing", 500, 100, NULL);
+   HLH_gui_window_block(window_root, win);
+   HLH_gui_group *group_root = HLH_gui_group_create(&win->e, HLH_GUI_FILL);
+   HLH_gui_group *group_select = HLH_gui_group_create(&group_root->e, HLH_GUI_FILL);
+   HLH_gui_button *b = NULL;
+
+   {
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL_X);
+
+      HLH_gui_group *group_type = HLH_gui_group_create(&group->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
+      HLH_gui_radiobutton *r = NULL;
+      HLH_gui_radiobutton *first = NULL;
+      r = HLH_gui_radiobutton_create(&group_type->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"png",NULL);
+      first = r;
+      r->e.usr = 0;
+      r->e.msg_usr = radiobutton_batch_msg;
+      r = HLH_gui_radiobutton_create(&group_type->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"pcx",NULL);
+      r->e.usr = 1;
+      r->e.msg_usr = radiobutton_batch_msg;
+      const char *bar_type[1] = {"png  \x1f"};
+      gui_bar_type = HLH_gui_menubar_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,HLH_GUI_LAYOUT_HORIZONTAL,bar_type,(HLH_gui_element **)&group_type,1,NULL);
+      HLH_gui_radiobutton_set(first,1,1);
+
+      batch_progress = HLH_gui_label_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FILL_X, "Progress    0/   0");
+   }
+   {
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL_X);
+      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Input ",NULL);
+      b->e.usr = 0;
+      b->e.msg_usr = button_batch_msg;
+      b->e.usr_ptr = HLH_gui_label_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FILL_X, batch_input);
+   }
+   {
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL_X);
+      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Output",NULL);
+      b->e.usr = 1;
+      b->e.msg_usr = button_batch_msg;
+      b->e.usr_ptr = HLH_gui_label_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FILL_X, batch_output);
+   }
+   {
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,0);
+      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Exit",NULL);
+      b->e.usr = 2;
+      b->e.msg_usr = button_batch_msg;
+      HLH_gui_label_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL, "     ");
+      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Run ",NULL);
+      b->e.usr = 3;
+      b->e.msg_usr = button_batch_msg;
+   }
+}
+
+static int menu_tools_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_menubutton *m = (HLH_gui_menubutton *)e;
+
+   if(msg==HLH_GUI_MSG_CLICK_MENU)
+   {
+      //Batch
+      if(m->index==0)
+      {
+         ui_construct_batch();
+      }
+   }
+
+   return 0;
+}
+
+static int radiobutton_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_radiobutton *r = (HLH_gui_radiobutton *)e;
+
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      if(di)
+      {
+         batch_type = r->e.usr;
+         char tmp[256];
+         snprintf(tmp,256,"%s  \x1f",r->text);
+         HLH_gui_menubar_label_set(gui_bar_type,tmp,0);
+      }
+   }
+
+   return 0;
+}
+
+static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      //Input select
+      if(e->usr==0)
+      {
+         dir_input_select(batch_input);
+         HLH_gui_label_set((HLH_gui_label *)e->usr_ptr,batch_input);
+         HLH_gui_element_redraw((HLH_gui_element *)e->usr_ptr);
+      }
+      //Output select
+      else if(e->usr==1)
+      {
+         dir_output_select(batch_output);
+         HLH_gui_label_set((HLH_gui_label *)e->usr_ptr,batch_output);
+         HLH_gui_element_redraw((HLH_gui_element *)e->usr_ptr);
+         //HLH_gui_element_redraw(&e->window->e);
+      }
+      //Exit
+      else if(e->usr==2)
+      {
+         HLH_gui_window_close(e->window);
+      }
+      //Run
+      else if(e->usr==3)
+      {
+         int files = 0;
+         cf_dir_t dir;
+         cf_dir_open(&dir,batch_input);
+         while (dir.has_next)
+         {
+            cf_file_t file;
+            cf_read_file(&dir, &file);
+
+            if(strcmp(file.name,".")!=0&&strcmp(file.name,"..")!=0)
+            {
+               files++;
+            }
+
+            cf_dir_next(&dir);
+         }
+         cf_dir_close(&dir);
+
+         int current = 0;
+         cf_dir_open(&dir,batch_input);
+         while (dir.has_next)
+         {
+            cf_file_t file;
+            cf_read_file(&dir, &file);
+
+            if(strcmp(file.name,".")==0||strcmp(file.name,"..")==0)
+            {
+               cf_dir_next(&dir);
+               continue;
+            }
+
+            SLK_image32 *img = NULL;
+            char tmp[512];
+            snprintf(tmp,512,"%s/%s",batch_input,file.name);
+            FILE *f = fopen(tmp,"rb");
+            if(f!=NULL)
+            {
+               int width,height;
+               uint32_t *data = HLH_gui_image_load(f,&width,&height);
+               if(data!=NULL&&width>0&&height>0)
+               {
+                  img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
+                  img->w = width;
+                  img->h = height;
+                  memcpy(img->data,data,sizeof(*img->data)*width*height);
+               }
+               HLH_gui_image_free(data);
+               fclose(f);
+            }
+
+            if(img!=NULL)
+            {
+               SLK_image64 *img64 = SLK_image64_dup32(img);
+               free(img);
+               SLK_image64_blur(img64,blur_amount);
+
+               int width = 0;
+               int height = 0;
+               if(scale_relative)
+               {
+                  width = img64->w/HLH_non_zero(size_relative_x);
+                  height = img64->h/HLH_non_zero(size_relative_y);
+               }
+               else
+               {
+                  width = size_absolute_x;
+                  height = size_absolute_y;
+               }
+               SLK_image64 *sample64 = SLK_image64_sample(img64,width,height,sample_mode,x_offset,y_offset);
+               free(img64);
+               SLK_image64_sharpen(sample64,sharp_amount);
+               SLK_image64_hscb(sample64,hue,saturation,contrast,brightness);
+               SLK_image64_gamma(sample64,gamma);
+               SLK_image64_tint(sample64,tint_red,tint_green,tint_blue);
+               SLK_image32 *output = SLK_image64_dither(sample64,&dither_config);
+               free(sample64);
+
+               char noext[512];
+               HLH_path_pop_ext(file.name,noext,NULL);
+
+               if(batch_type==0)
+               {
+                  snprintf(tmp,512,"%s/%s.png",batch_output,noext);
+                  f = fopen(tmp,"wb");
+                  if(f!=NULL)
+                  {
+                     HLH_gui_image_save(f,output->data,output->w,output->h,"png");
+                     fclose(f);
+                  }
+               }
+               else
+               {
+                  snprintf(tmp,512,"%s/%s.pcx",batch_output,noext);
+                  f = fopen(tmp,"wb");
+                  if(f!=NULL)
+                  {
+                     SLK_image32_write_pcx(f,output,dither_config.palette,dither_config.palette_colors);
+                     fclose(f);
+                  }
+               }
+
+               free(output);
+            }
+
+            if(current%5==0)
+            {
+               char label[512];
+               snprintf(label,512,"Progress %4d/%4d",current,files);
+               HLH_gui_label_set(batch_progress,label);
+               HLH_gui_element_redraw_now(&batch_progress->e);
+            }
+            current++;
+
+            cf_dir_next(&dir);
+         }
+
+         char label[512];
+         snprintf(label,512,"Progress %4d/%4d",current,files);
+         HLH_gui_label_set(batch_progress,label);
+         HLH_gui_element_redraw_now(&batch_progress->e);
+
+         cf_dir_close(&dir);
+         //HLH_gui_window_close(e->window);
+      }
+   }
+
+   return 0;
 }
 //-------------------------------------

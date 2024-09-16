@@ -17,10 +17,14 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define HLH_IMPLEMENTATION
 #include "HLH.h"
+#define HLH_PATH_IMPLEMENTATION
+#include "HLH_path.h"
 #define HLH_RW_IMPLEMENTATION
 #include "HLH_rw.h"
 #define HLH_JSON_IMPLEMENTATION
 #include "HLH_json.h"
+#define CUTE_FILES_IMPLEMENTATION
+#include "cute_files.h"
 
 #include "HLH_gui.h"
 //-------------------------------------
