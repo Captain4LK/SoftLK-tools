@@ -1,6 +1,6 @@
 #!/bin/sh
 
-flags="-I../external/ -Wall -Wextra -Wno-unused -Wshadow -std=c99"
+flags="-I../3rd/ -Wall -Wextra -Wno-unused -Wshadow -std=c99"
 sources="color.c tint.c blur.c kmeans.c image.c sharp.c sample.c hscb.c pcx.c gamma.c postprocess.c dither.c palette.c unix/util_unix.c ../external/tinyfiledialogs.c"
 
 if [ $# -lt 1 ]; then
