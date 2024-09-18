@@ -275,6 +275,8 @@ void dir_input_select(char path[512])
    {
       strncpy(path,path_dir,512);
       path[511] = '\0';
+      strncpy(path_dir_input,path_dir,512);
+      path_dir_input[511] = '\0';
       //strncpy(path_dir_input,path,512);
       //convert_utf8_to_wchar(input_dir,512,path);
       NFD_FreePathU8(path);
@@ -298,6 +300,8 @@ void dir_output_select(char path[512])
    {
       strncpy(path,path_dir,512);
       path[511] = '\0';
+      strncpy(path_dir_output,path_dir,512);
+      path_dir_output[511] = '\0';
       //strncpy(path_dir_input,path,512);
       //convert_utf8_to_wchar(input_dir,512,path);
       NFD_FreePathU8(path);

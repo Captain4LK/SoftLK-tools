@@ -251,11 +251,13 @@ void dir_input_select(char path[512])
 
    strncpy(path,path_dir,512);
    path[511] = '\0';
+   strncpy(path_dir_input,path_dir,512);
+   path_dir_input[511] = '\0';
 }
 
 void dir_output_select(char path[512])
 {
-   const char *path_dir = tinyfd_selectFolderDialog("Select output directory",path_dir_input);
+   const char *path_dir = tinyfd_selectFolderDialog("Select output directory",path_dir_output);
    if(path_dir==NULL)
    {
       path[0] = '\0';
@@ -264,6 +266,8 @@ void dir_output_select(char path[512])
 
    strncpy(path,path_dir,512);
    path[511] = '\0';
+   strncpy(path_dir_output,path_dir,512);
+   path_dir_output[511] = '\0';
 }
 
 static int slk_path_pop_ext(const char *path, char *out, char *ext)
