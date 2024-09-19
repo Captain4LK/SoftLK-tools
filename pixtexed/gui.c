@@ -20,6 +20,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "util.h"
 #include "settings.h"
 #include "brush.h"
+#include "undo.h"
 //-------------------------------------
 
 //#defines
@@ -38,22 +39,26 @@ typedef enum
    ENTRY_IMG_HEIGHT,
 }Entry_id;
 
-static struct
+/*static struct
 {
    HLH_gui_entry *entry_img_width;
    HLH_gui_entry *entry_img_height;
 
    HLH_gui_radiobutton *palette_colors[256];
+   HLH_gui_radiobutton *layers[16];
 
    GUI_canvas *canvas;
-}gui;
+}gui;*/
 //-------------------------------------
 
 //Variables
 static HLH_gui_window *window_root;
+GUI_state gui_state;
 //-------------------------------------
 
 //Function prototypes
+static void ui_replace_project(Project *project);
+
 static void ui_construct_ask_new();
 static void ui_construct_image_new();
 static void ui_construct_ask_load();
@@ -73,6 +78,7 @@ static int radiobutton_toolbox_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
 static int button_brushes_open(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_brushes_select(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int radiobutton_layer_select(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
 //Function implementations
@@ -118,9 +124,8 @@ void gui_construct(void)
    //-------------------------------------
    Settings *settings = settings_init();
    settings_build_lut(settings);
-   GUI_canvas *canvas = gui_canvas_create(&group_middle->e,HLH_GUI_FILL|HLH_GUI_LAYOUT_HORIZONTAL,project_new(64,64,settings),settings);
-   gui.canvas = canvas;
-   gui_canvas_update_project(gui.canvas,canvas->project);
+   GUI_canvas *canvas = gui_canvas_create(&group_middle->e,HLH_GUI_FILL|HLH_GUI_LAYOUT_HORIZONTAL,project_new(64,64,settings),settings,&gui_state);
+   gui_state.canvas = canvas;
    //-------------------------------------
 
    //Right -- palette, brushes
@@ -128,7 +133,7 @@ void gui_construct(void)
    HLH_gui_separator_create(&group_middle->e,HLH_GUI_FILL_Y|HLH_GUI_LAYOUT_HORIZONTAL,1);
    HLH_gui_group *group_right = HLH_gui_group_create(&group_middle->e,HLH_GUI_FILL_Y|HLH_GUI_LAYOUT_HORIZONTAL);
    HLH_gui_group *group_pal = HLH_gui_group_create(&group_right->e,0);
-   //gui.group_palette = group_pal;
+   //gui_state.group_palette = group_pal;
    {
       int color = 0;
       HLH_gui_radiobutton *rfirst;
@@ -140,14 +145,14 @@ void gui_construct(void)
             r = HLH_gui_radiobutton_create(&group_pal->e,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y,"",NULL);
             if(i==0&&j==0)
                rfirst = r;
-            gui.palette_colors[color] = r;
-            r->e.usr_ptr = &gui.canvas->settings->palette[color];
+            gui_state.palette_colors[color] = r;
+            r->e.usr_ptr = &gui_state.canvas->settings->palette[color];
             r->e.usr = color++;
             r->e.msg_usr = radiobutton_palette_msg;
          }
          r = HLH_gui_radiobutton_create(&group_pal->e,HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y,"",NULL);
-         gui.palette_colors[color] = r;
-         r->e.usr_ptr = &gui.canvas->settings->palette[color];
+         gui_state.palette_colors[color] = r;
+         r->e.usr_ptr = &gui_state.canvas->settings->palette[color];
          r->e.usr = color++;
          r->e.msg_usr = radiobutton_palette_msg;
       }
@@ -231,22 +236,17 @@ void gui_construct(void)
    button->e.msg_usr = button_layer_control;
    button->e.usr = 4;
 
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"1",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"2",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"3",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"4",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"5",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"6",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"7",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"8",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"9",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"10",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"11",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"12",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"13",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"14",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"15",NULL);
-   HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"16",NULL);
+   for(int i = 0;i<16;i++)
+   {
+      char tmp[128];
+      snprintf(tmp,128,"%d",i+1);
+      HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,tmp,NULL);
+      gui_state.layers[i] = r;
+      r->e.usr = i;
+      r->e.msg_usr = radiobutton_layer_select;
+      if(i>0)
+         HLH_gui_element_ignore(&r->e,1);
+   }
    //-------------------------------------
 
    //Animation + Status
@@ -254,6 +254,20 @@ void gui_construct(void)
    HLH_gui_group *group_anim = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
    HLH_gui_radiobutton_create(&group_anim->e,HLH_GUI_LAYOUT_HORIZONTAL,"a",NULL);
    //-------------------------------------
+
+   ui_replace_project(canvas->project);
+}
+
+static void ui_replace_project(Project *project)
+{
+   gui_canvas_update_project(gui_state.canvas,project);
+   project->layer_selected = 0;
+
+   for(int i = 1;i<16;i++)
+   {
+      HLH_gui_element_ignore(&gui_state.layers[i]->e,1);
+   }
+   HLH_gui_radiobutton_set(gui_state.layers[0],1,1);
 }
 
 static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -274,22 +288,22 @@ static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Save
       else if(m->index==2)
       {
-         if(strlen(gui.canvas->project->file)>0)
+         if(strlen(gui_state.canvas->project->file)>0)
          {
-            Image8 *img = project_to_image8(gui.canvas->project,gui.canvas->settings);
-            if(!image8_save(img,gui.canvas->project->file,gui.canvas->project->ext))
+            Image8 *img = project_to_image8(gui_state.canvas->project,gui_state.canvas->settings);
+            if(!image8_save(img,gui_state.canvas->project->file,gui_state.canvas->project->ext))
             {
-               gui.canvas->project->file[0] = '\0';
+               gui_state.canvas->project->file[0] = '\0';
             }
             free(img);
          }
          else
          {
-            image_save_select(gui.canvas->project->file,gui.canvas->project->ext);
-            Image8 *img = project_to_image8(gui.canvas->project,gui.canvas->settings);
-            if(!image8_save(img,gui.canvas->project->file,gui.canvas->project->ext))
+            image_save_select(gui_state.canvas->project->file,gui_state.canvas->project->ext);
+            Image8 *img = project_to_image8(gui_state.canvas->project,gui_state.canvas->settings);
+            if(!image8_save(img,gui_state.canvas->project->file,gui_state.canvas->project->ext))
             {
-               gui.canvas->project->file[0] = '\0';
+               gui_state.canvas->project->file[0] = '\0';
             }
             free(img);
          }
@@ -297,11 +311,11 @@ static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Save as
       else if(m->index==3)
       {
-         image_save_select(gui.canvas->project->file,gui.canvas->project->ext);
-         Image8 *img = project_to_image8(gui.canvas->project,gui.canvas->settings);
-         if(!image8_save(img,gui.canvas->project->file,gui.canvas->project->ext))
+         image_save_select(gui_state.canvas->project->file,gui_state.canvas->project->ext);
+         Image8 *img = project_to_image8(gui_state.canvas->project,gui_state.canvas->settings);
+         if(!image8_save(img,gui_state.canvas->project->file,gui_state.canvas->project->ext))
          {
-            gui.canvas->project->file[0] = '\0';
+            gui_state.canvas->project->file[0] = '\0';
          }
          free(img);
       }
@@ -412,11 +426,11 @@ static int ask_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          HLH_gui_window_close(e->window);
 
-         image_load_select(gui.canvas->project->file,gui.canvas->project->ext);
-         Image8 *img = image8_load(gui.canvas->project->file,gui.canvas->project->ext);
-         Project *p = project_from_image8(gui.canvas->settings,img);
+         image_load_select(gui_state.canvas->project->file,gui_state.canvas->project->ext);
+         Image8 *img = image8_load(gui_state.canvas->project->file,gui_state.canvas->project->ext);
+         Project *p = project_from_image8(gui_state.canvas->settings,img);
          free(img);
-         gui_canvas_update_project(gui.canvas,p);
+         ui_replace_project(p);
       }
    }
 
@@ -440,9 +454,9 @@ static void ui_construct_image_new()
    b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"\x10",NULL);
    b->e.msg_usr = button_add_msg;
    b->e.usr = BUTTON_IMG_WIDTH;
-   gui.entry_img_width = HLH_gui_entry_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,5);
-   gui.entry_img_width->e.msg_usr = entry_msg;
-   gui.entry_img_width->e.usr = ENTRY_IMG_WIDTH;
+   gui_state.entry_img_width = HLH_gui_entry_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,5);
+   gui_state.entry_img_width->e.msg_usr = entry_msg;
+   gui_state.entry_img_width->e.usr = ENTRY_IMG_WIDTH;
 
    group = HLH_gui_group_create(&group_root->e,0);
    HLH_gui_label_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Height");
@@ -452,9 +466,9 @@ static void ui_construct_image_new()
    b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"\x10",NULL);
    b->e.msg_usr = button_add_msg;
    b->e.usr = BUTTON_IMG_HEIGHT;
-   gui.entry_img_height = HLH_gui_entry_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,5);
-   gui.entry_img_height->e.msg_usr = entry_msg;
-   gui.entry_img_height->e.usr = ENTRY_IMG_HEIGHT;
+   gui_state.entry_img_height = HLH_gui_entry_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,5);
+   gui_state.entry_img_height->e.msg_usr = entry_msg;
+   gui_state.entry_img_height->e.usr = ENTRY_IMG_HEIGHT;
 
    group = HLH_gui_group_create(&group_root->e,0);
    b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"  Ok  ",NULL);
@@ -463,8 +477,8 @@ static void ui_construct_image_new()
    b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Cancel",NULL);
    b->e.msg_usr = button_img_new_cancel;
 
-   HLH_gui_entry_set(gui.entry_img_width,"64");
-   HLH_gui_entry_set(gui.entry_img_height,"64");
+   HLH_gui_entry_set(gui_state.entry_img_width,"64");
+   HLH_gui_entry_set(gui_state.entry_img_height,"64");
 }
 
 static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -475,15 +489,15 @@ static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       char buffer[512];
       if(button->e.usr==BUTTON_IMG_WIDTH)
       {
-         int width = (int)strtol(gui.entry_img_width->entry,NULL,10);
+         int width = (int)strtol(gui_state.entry_img_width->entry,NULL,10);
          snprintf(buffer,512,"%d",width+1);
-         HLH_gui_entry_set(gui.entry_img_width,buffer);
+         HLH_gui_entry_set(gui_state.entry_img_width,buffer);
       }
       else if(button->e.usr==BUTTON_IMG_HEIGHT)
       {
-         int height = (int)strtol(gui.entry_img_height->entry,NULL,10);
+         int height = (int)strtol(gui_state.entry_img_height->entry,NULL,10);
          snprintf(buffer,512,"%d",height+1);
-         HLH_gui_entry_set(gui.entry_img_height,buffer);
+         HLH_gui_entry_set(gui_state.entry_img_height,buffer);
       }
    }
 
@@ -498,15 +512,15 @@ static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       char buffer[512];
       if(button->e.usr==BUTTON_IMG_WIDTH)
       {
-         int width = (int)strtol(gui.entry_img_width->entry,NULL,10);
+         int width = (int)strtol(gui_state.entry_img_width->entry,NULL,10);
          snprintf(buffer,512,"%d",width-1);
-         HLH_gui_entry_set(gui.entry_img_width,buffer);
+         HLH_gui_entry_set(gui_state.entry_img_width,buffer);
       }
       else if(button->e.usr==BUTTON_IMG_HEIGHT)
       {
-         int height = (int)strtol(gui.entry_img_height->entry,NULL,10);
+         int height = (int)strtol(gui_state.entry_img_height->entry,NULL,10);
          snprintf(buffer,512,"%d",height-1);
-         HLH_gui_entry_set(gui.entry_img_height,buffer);
+         HLH_gui_entry_set(gui_state.entry_img_height,buffer);
       }
    }
 
@@ -547,7 +561,7 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
 
    if(msg==HLH_GUI_MSG_DRAW)
    {
-      //if(r->e.usr>=gui.canvas->project->palette_colors)
+      //if(r->e.usr>=gui_state.canvas->project->palette_colors)
          //return 1;
 
       int scale = HLH_gui_get_scale();
@@ -601,11 +615,11 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
    {
       if(di)
       {
-         gui.canvas->settings->palette_selected = (uint8_t)r->e.usr;
+         gui_state.canvas->settings->palette_selected = (uint8_t)r->e.usr;
          //uint32_t c = dither_config.palette[color_selected];
-         //HLH_gui_slider_set(gui.slider_color_red,SLK_color32_r(c),255,1,1);
-         //HLH_gui_slider_set(gui.slider_color_green,SLK_color32_g(c),255,1,1);
-         //HLH_gui_slider_set(gui.slider_color_blue,SLK_color32_b(c),255,1,1);
+         //HLH_gui_slider_set(gui_state.slider_color_red,SLK_color32_r(c),255,1,1);
+         //HLH_gui_slider_set(gui_state.slider_color_green,SLK_color32_g(c),255,1,1);
+         //HLH_gui_slider_set(gui_state.slider_color_blue,SLK_color32_b(c),255,1,1);
       }
    }
 
@@ -623,7 +637,7 @@ static int radiobutton_toolbox_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
       //Check
       else if(di==1)
       {
-         gui.canvas->project->tools.selected = e->usr;
+         gui_state.canvas->project->tools.selected = e->usr;
       }
    }
 
@@ -654,12 +668,12 @@ static void ui_construct_brushes()
       HLH_gui_group *row = HLH_gui_group_create(&group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
       for(int x = 0;x<12;x++)
       {
-         GUI_brush *brush = gui_brush_create(&row->e,HLH_GUI_LAYOUT_HORIZONTAL,gui.canvas->project,gui.canvas->settings,y*12+x);
+         GUI_brush *brush = gui_brush_create(&row->e,HLH_GUI_LAYOUT_HORIZONTAL,gui_state.canvas->project,gui_state.canvas->settings,y*12+x);
          brush->e.msg_usr = button_brushes_select;
       }
    }
 
-   gui_brushes_update(win,gui.canvas->settings);
+   gui_brushes_update(win,gui_state.canvas->settings);
 
    /*HLH_gui_label_create(&group->e, 0, "Are you sure you want");
    HLH_gui_label_create(&group->e, 0, "to start a new image?");
@@ -694,9 +708,25 @@ static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, voi
    {
       if(e->usr==0) //Add layer
       {
+         if(gui_state.canvas->project->num_layers<17)
+         {
+            undo_track_layer_add(gui_state.canvas->project);
+            project_layer_add(gui_state.canvas->project,gui_state.canvas->project->num_layers-1);
+            HLH_gui_element_ignore(&gui_state.layers[gui_state.canvas->project->num_layers-2]->e,0);
+            HLH_gui_element_layout(&e->window->e, e->window->e.bounds);
+            HLH_gui_element_redraw(&e->window->e);
+         }
       }
       else if(e->usr==1) //Delete layer
       {
+         if(gui_state.canvas->project->num_layers>2)
+         {
+            undo_track_layer_delete(gui_state.canvas->project,gui_state.canvas->project->layer_selected);
+            HLH_gui_element_ignore(&gui_state.layers[gui_state.canvas->project->num_layers-2]->e,1);
+            project_layer_delete(gui_state.canvas->project,gui_state.canvas->project->layer_selected);
+            HLH_gui_element_layout(&e->window->e, e->window->e.bounds);
+            HLH_gui_element_redraw(&e->window->e);
+         }
       }
       else if(e->usr==2) //Move layer left
       {
@@ -706,6 +736,19 @@ static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, voi
       }
       else if(e->usr==4) //Merge layer
       {
+      }
+   }
+
+   return 0;
+}
+
+static int radiobutton_layer_select(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      if(di)
+      {
+         gui_state.canvas->project->layer_selected = e->usr;
       }
    }
 

@@ -17,6 +17,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "draw.h"
 #include "brush.h"
 #include "undo.h"
+#include "layer.h"
 //-------------------------------------
 
 //#defines
@@ -217,9 +218,9 @@ static int draw_event_pen(Project *project, int32_t mx, int32_t my, uint8_t butt
       HLH_bitmap_clear(project->undo_map);
       undo_begin_layer_chunks(project);
 
-      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
+      layer_copy(project->old,project->layers[project->layer_selected],sizeof(*project->old->data)*project->width*project->height);
 
-      brush_place(project,settings,settings->brushes[settings->brush_selected],mx/256,my/256,0,settings->palette_selected);
+      brush_place(project,settings,settings->brushes[settings->brush_selected],mx/256,my/256,project->layer_selected,settings->palette_selected);
       project->state.x0 = mx;
       project->state.y0 = my;
 
@@ -230,9 +231,9 @@ static int draw_event_pen(Project *project, int32_t mx, int32_t my, uint8_t butt
       if(mx/256==project->state.x0/256&&my/256==project->state.y0/256)
          return 0;
 
-      draw_line(project,settings,settings->brushes[settings->brush_selected],mx,my,project->state.x0,project->state.y0,0,settings->palette_selected);
-      brush_place(project,settings,settings->brushes[settings->brush_selected],mx/256,my/256,0,settings->palette_selected);
-      brush_place(project,settings,settings->brushes[settings->brush_selected],project->state.x0/256,project->state.y0/256,0,settings->palette_selected);
+      draw_line(project,settings,settings->brushes[settings->brush_selected],mx,my,project->state.x0,project->state.y0,project->layer_selected,settings->palette_selected);
+      brush_place(project,settings,settings->brushes[settings->brush_selected],mx/256,my/256,project->layer_selected,settings->palette_selected);
+      brush_place(project,settings,settings->brushes[settings->brush_selected],project->state.x0/256,project->state.y0/256,project->layer_selected,settings->palette_selected);
       project->state.x0 = mx;
       project->state.y0 = my;
 
@@ -268,7 +269,7 @@ static int draw_event_line(Project *project, int32_t mx, int32_t my, uint8_t but
       HLH_bitmap_clear(project->undo_map);
       undo_begin_layer_chunks(project);
 
-      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
+      layer_copy(project->old,project->layers[project->layer_selected],sizeof(*project->old->data)*project->width*project->height);
 
       project->state.x0 = mx;
       project->state.y0 = my;
@@ -295,7 +296,7 @@ static int draw_event_line(Project *project, int32_t mx, int32_t my, uint8_t but
    else if(!(button&HLH_GUI_MOUSE_LEFT)&&(old_state&HLH_GUI_MOUSE_LEFT))
    {
       draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
-      draw_line(project,settings,settings->brushes[settings->brush_selected],project->state.x0,project->state.y0,project->state.x1,project->state.y1,0,settings->palette_selected);
+      draw_line(project,settings,settings->brushes[settings->brush_selected],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->layer_selected,settings->palette_selected);
       undo_end_layer_chunks(project);
 
       return 1;
@@ -322,9 +323,9 @@ static int draw_event_flood(Project *project, int32_t mx, int32_t my, uint8_t bu
       HLH_bitmap_clear(project->bitmap);
       undo_begin_layer_chunks(project);
 
-      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
+      layer_copy(project->old,project->layers[project->layer_selected],sizeof(*project->old->data)*project->width*project->height);
 
-      uint8_t flood = project->layers[0]->data[(my/256)*project->width+mx/256];
+      uint8_t flood = project->layers[project->layer_selected]->data[(my/256)*project->width+mx/256];
       int32_t *todo = NULL;
       HLH_array_push(todo,mx/256);
       HLH_array_push(todo,my/256);
@@ -335,30 +336,30 @@ static int draw_event_flood(Project *project, int32_t mx, int32_t my, uint8_t bu
          y = todo[HLH_array_length(todo)-1];
          x = todo[HLH_array_length(todo)-2];
          HLH_array_length_set(todo,HLH_array_length(todo)-2);
-         brush_place(project,settings,settings->brushes[0],x,y,0,settings->palette_selected);
+         brush_place(project,settings,settings->brushes[0],x,y,project->layer_selected,settings->palette_selected);
 
-         if(x>0&&project->layers[0]->data[y*project->width+x-1]==flood&&
+         if(x>0&&project->layers[project->layer_selected]->data[y*project->width+x-1]==flood&&
             !HLH_bitmap_check(project->bitmap,y*project->width+x-1))
          {
             HLH_array_push(todo,x-1);
             HLH_array_push(todo,y);
             HLH_bitmap_set(project->bitmap,y*project->width+x-1);
          }
-         if(y>0&&project->layers[0]->data[(y-1)*project->width+x]==flood&&
+         if(y>0&&project->layers[project->layer_selected]->data[(y-1)*project->width+x]==flood&&
             !HLH_bitmap_check(project->bitmap,(y-1)*project->width+x))
          {
             HLH_array_push(todo,x);
             HLH_array_push(todo,y-1);
             HLH_bitmap_set(project->bitmap,(y-1)*project->width+x);
          }
-         if(x<project->width-1&&project->layers[0]->data[y*project->width+x+1]==flood&&
+         if(x<project->width-1&&project->layers[project->layer_selected]->data[y*project->width+x+1]==flood&&
             !HLH_bitmap_check(project->bitmap,y*project->width+x+1))
          {
             HLH_array_push(todo,x+1);
             HLH_array_push(todo,y);
             HLH_bitmap_set(project->bitmap,y*project->width+x+1);
          }
-         if(y<project->height-1&&project->layers[0]->data[(y+1)*project->width+x]==flood&&
+         if(y<project->height-1&&project->layers[project->layer_selected]->data[(y+1)*project->width+x]==flood&&
             !HLH_bitmap_check(project->bitmap,(y+1)*project->width+x))
          {
             HLH_array_push(todo,x);
@@ -388,7 +389,7 @@ static int draw_event_rect_outline(Project *project, int32_t mx, int32_t my, uin
       HLH_bitmap_clear(project->undo_map);
       undo_begin_layer_chunks(project);
 
-      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
+      layer_copy(project->old,project->layers[project->layer_selected],sizeof(*project->old->data)*project->width*project->height);
 
       project->state.x0 = (mx/256)*256+128;
       project->state.y0 = (my/256)*256+128;
@@ -444,10 +445,10 @@ static int draw_event_rect_outline(Project *project, int32_t mx, int32_t my, uin
       draw_line(project,settings,settings->brushes[0],0,y1,project->width*256+128,y1,project->num_layers-1,0);
 
       //Draw rect
-      draw_line(project,settings,settings->brushes[settings->brush_selected],x0,y0,x1,y0,0,settings->palette_selected);
-      draw_line(project,settings,settings->brushes[settings->brush_selected],x0,y1,x1,y1,0,settings->palette_selected);
-      draw_line(project,settings,settings->brushes[settings->brush_selected],x0,y0,x0,y1,0,settings->palette_selected);
-      draw_line(project,settings,settings->brushes[settings->brush_selected],x1,y0,x1,y1,0,settings->palette_selected);
+      draw_line(project,settings,settings->brushes[settings->brush_selected],x0,y0,x1,y0,project->layer_selected,settings->palette_selected);
+      draw_line(project,settings,settings->brushes[settings->brush_selected],x0,y1,x1,y1,project->layer_selected,settings->palette_selected);
+      draw_line(project,settings,settings->brushes[settings->brush_selected],x0,y0,x0,y1,project->layer_selected,settings->palette_selected);
+      draw_line(project,settings,settings->brushes[settings->brush_selected],x1,y0,x1,y1,project->layer_selected,settings->palette_selected);
 
       undo_end_layer_chunks(project);
 
@@ -469,7 +470,7 @@ static int draw_event_rect_fill(Project *project, int32_t mx, int32_t my, uint8_
       HLH_bitmap_clear(project->undo_map);
       undo_begin_layer_chunks(project);
 
-      layer_copy(project->old,project->layers[0],sizeof(*project->old->data)*project->width*project->height);
+      layer_copy(project->old,project->layers[project->layer_selected],sizeof(*project->old->data)*project->width*project->height);
 
       project->state.x0 = (mx/256)*256+128;
       project->state.y0 = (my/256)*256+128;
@@ -531,7 +532,7 @@ static int draw_event_rect_fill(Project *project, int32_t mx, int32_t my, uint8_
       brush->width = width;
       brush->height = height;
       memset(brush->data,1,brush->width*brush->height);
-      brush_place(project,settings,brush,HLH_min(x1,x0)/256+brush->width/2,HLH_min(y1,y0)/256+brush->height/2,0,settings->palette_selected);
+      brush_place(project,settings,brush,HLH_min(x1,x0)/256+brush->width/2,HLH_min(y1,y0)/256+brush->height/2,project->layer_selected,settings->palette_selected);
       free(brush);
 
       undo_end_layer_chunks(project);

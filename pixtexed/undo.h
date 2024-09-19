@@ -13,15 +13,18 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define _UNDO_H_
 
 #include "project.h"
+#include "gui.h"
 
 void undo_init(Project *p);
 void undo_free(Project *p);
 void undo_reset(Project *p);
-void undo(Project *p, const Settings *settings);
-void redo(Project *p, const Settings *settings);
+void undo(Project *p, const Settings *settings, GUI_state *gui);
+void redo(Project *p, const Settings *settings, GUI_state *gui);
 
 void undo_begin_layer_chunks(Project *p);
 void undo_track_layer_chunk(Project *p, int x, int y, int32_t layer);
 void undo_end_layer_chunks(Project *p);
+void undo_track_layer_add(Project *p);
+void undo_track_layer_delete(Project *p, int pos);
 
 #endif

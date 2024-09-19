@@ -14,15 +14,13 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #include <stddef.h>
 #include "image.h"
+#include "gui.h"
 
-typedef struct
-{
-   int tmp;
-   uint8_t data[];
-}Layer;
 
 Layer *layer_new(size_t size);
 void layer_free(Layer *layer);
 void layer_copy(Layer *dst, const Layer *src, size_t size);
+
+GUI_layer *gui_layer_create(HLH_gui_element *parent, uint64_t flags, Project *project, Settings *settings);
 
 #endif

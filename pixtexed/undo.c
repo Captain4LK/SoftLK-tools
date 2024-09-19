@@ -40,6 +40,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 typedef enum
 {
    ED_LAYER_CHUNKS,
+   ED_LAYER_ADD,
+   ED_LAYER_DEL,
 }Ed_action;
 //-------------------------------------
 
@@ -60,8 +62,12 @@ static void redo_write16(Project *p, uint16_t val);
 static void redo_write32(Project *p, uint32_t val);
 static void redo_write64(Project *p, uint64_t val);
 
-static void undo_layer_chunk(Project *p, int pos, int endpos);
-static void redo_layer_chunk(Project *p, int pos, int endpos);
+static void undo_layer_chunk(Project *p, GUI_state *gui, int pos, int endpos);
+static void redo_layer_chunk(Project *p, GUI_state *gui, int pos, int endpos);
+static void undo_layer_add(Project *p, GUI_state *gui, int pos, int endpos);
+static void redo_layer_add(Project *p, GUI_state *gui, int pos, int endpos);
+static void undo_layer_del(Project *p, GUI_state *gui, int pos, int endpos);
+static void redo_layer_del(Project *p, GUI_state *gui, int pos, int endpos);
 //-------------------------------------
 
 //Function implementations
@@ -96,7 +102,7 @@ void undo_reset(Project *p)
    p->redo_pos = 0;
 }
 
-void undo(Project *p, const Settings *settings)
+void undo(Project *p, const Settings *settings, GUI_state *gui)
 {
    int pos = p->undo_pos;
    uint32_t len = 0;
@@ -114,7 +120,6 @@ void undo(Project *p, const Settings *settings)
    if(pos==endpos)
       return;
 
-
    //New redo entry
    redo_write8(p,REDO_RECORD);
    redo_write16(p,action);
@@ -124,7 +129,9 @@ void undo(Project *p, const Settings *settings)
    //Apply undoes
    switch(action)
    {
-   case ED_LAYER_CHUNKS: undo_layer_chunk(p,pos,endpos); break;
+   case ED_LAYER_CHUNKS: undo_layer_chunk(p,gui,pos,endpos); break;
+   case ED_LAYER_ADD: undo_layer_add(p,gui,pos,endpos); break;
+   case ED_LAYER_DEL: undo_layer_del(p,gui,pos,endpos); break;
    }
 
    redo_write32(p,p->redo_entry_len);
@@ -135,7 +142,7 @@ void undo(Project *p, const Settings *settings)
    project_update_full(p,settings);
 }
 
-void redo(Project *p, const Settings *settings)
+void redo(Project *p, const Settings *settings, GUI_state *gui)
 {
    int pos = p->redo_pos;
    uint32_t len = 0;
@@ -169,7 +176,9 @@ void redo(Project *p, const Settings *settings)
    //Apply redoes
    switch(action)
    {
-   case ED_LAYER_CHUNKS: redo_layer_chunk(p,pos,endpos); break;
+   case ED_LAYER_CHUNKS: redo_layer_chunk(p,gui,pos,endpos); break;
+   case ED_LAYER_ADD: redo_layer_add(p,gui,pos,endpos); break;
+   case ED_LAYER_DEL: redo_layer_del(p,gui,pos,endpos); break;
    }
 
    undo_write32(p,p->undo_entry_len);
@@ -307,7 +316,7 @@ void undo_end_layer_chunks(Project *p)
    undo_end(p);
 }
 
-static void undo_layer_chunk(Project *p, int pos, int endpos)
+static void undo_layer_chunk(Project *p, GUI_state *gui, int pos, int endpos)
 {
    while(pos!=endpos)
    {
@@ -351,7 +360,7 @@ static void undo_layer_chunk(Project *p, int pos, int endpos)
    }
 }
 
-static void redo_layer_chunk(Project *p, int pos, int endpos)
+static void redo_layer_chunk(Project *p, GUI_state *gui, int pos, int endpos)
 {
    while(pos!=endpos)
    {
@@ -391,6 +400,81 @@ static void redo_layer_chunk(Project *p, int pos, int endpos)
             p->layers[layer]->data[(y*16+py)*p->width+x*16+px] = chunk[py*16+px];
          }
       }
+   }
+}
+
+void undo_track_layer_add(Project *p)
+{
+   //We need to write something, so...
+   undo_begin(p,ED_LAYER_ADD);
+   undo_write8(p,0);
+   undo_end(p);
+}
+
+static void undo_layer_add(Project *p, GUI_state *gui, int pos, int endpos)
+{
+   while(pos!=endpos)
+   {
+      uint8_t tmp;
+      undo_read8(p,tmp,pos);
+      redo_write8(p,tmp);
+
+      HLH_gui_element_ignore(&gui->layers[gui_state.canvas->project->num_layers-2]->e,1);
+      project_layer_delete(p,p->num_layers-2);
+      HLH_gui_element_layout(&gui->canvas->e.window->e, gui->canvas->e.window->e.bounds);
+      HLH_gui_element_redraw(&gui->canvas->e.window->e);
+   }
+}
+
+static void redo_layer_add(Project *p, GUI_state *gui, int pos, int endpos)
+{
+   while(pos!=endpos)
+   {
+      uint8_t tmp;
+      redo_read8(p,tmp,pos);
+      undo_write8(p,tmp);
+
+      project_layer_add(p,p->num_layers-1);
+      HLH_gui_element_ignore(&gui->layers[gui->canvas->project->num_layers-2]->e,0);
+      HLH_gui_element_layout(&gui->canvas->e.window->e, gui->canvas->e.window->e.bounds);
+      HLH_gui_element_redraw(&gui->canvas->e.window->e);
+   }
+}
+
+void undo_track_layer_delete(Project *p, int pos)
+{
+   undo_begin(p,ED_LAYER_DEL);
+   undo_write32(p,pos);
+   undo_end(p);
+}
+
+static void undo_layer_del(Project *p, GUI_state *gui, int pos, int endpos)
+{
+   while(pos!=endpos)
+   {
+      int32_t layer;
+      undo_read32(p,layer,pos);
+      redo_write32(p,layer);
+
+      project_layer_add(p,layer);
+      HLH_gui_element_ignore(&gui->layers[gui->canvas->project->num_layers-2]->e,0);
+      HLH_gui_element_layout(&gui->canvas->e.window->e, gui->canvas->e.window->e.bounds);
+      HLH_gui_element_redraw(&gui->canvas->e.window->e);
+   }
+}
+
+static void redo_layer_del(Project *p, GUI_state *gui, int pos, int endpos)
+{
+   while(pos!=endpos)
+   {
+      int32_t layer;
+      redo_read32(p,layer,pos);
+      undo_write32(p,layer);
+
+      HLH_gui_element_ignore(&gui->layers[gui_state.canvas->project->num_layers-2]->e,1);
+      project_layer_delete(p,layer);
+      HLH_gui_element_layout(&gui->canvas->e.window->e, gui->canvas->e.window->e.bounds);
+      HLH_gui_element_redraw(&gui->canvas->e.window->e);
    }
 }
 //-------------------------------------

@@ -196,9 +196,11 @@ void project_layer_add(Project *project, int pos)
    project->layers[pos] = layer_new(project->width*project->height);
 }
 
-void project_layer_free(Project *project, int pos)
+void project_layer_delete(Project *project, int pos)
 {
    if(project==NULL)
+      return;
+   if(project->num_layers<=2)
       return;
 
    if(pos>=project->num_layers-1)

@@ -13,7 +13,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define _PROJECT_H_
 
 #include <stdint.h>
-#include "layer.h"
 #include "image.h"
 #include "tool.h"
 
@@ -23,6 +22,12 @@ typedef struct
    int32_t height;
    uint8_t data[];
 }Brush;
+
+typedef struct
+{
+   int tmp;
+   uint8_t data[];
+}Layer;
 
 typedef struct
 {
@@ -74,6 +79,7 @@ typedef struct
 
    //uint8_t palette_selected;
 
+   int layer_selected;
    Toolbox tools;
 
    //Undo
@@ -99,7 +105,7 @@ Image32 *project_to_image32(const Project *project, const Settings *settings);
 Image8 *project_to_image8(const Project *project, const Settings *settings);
 
 void project_layer_add(Project *project, int pos);
-void project_layer_free(Project *project, int pos);
+void project_layer_delete(Project *project, int pos);
 
 void project_update(Project *project, int x, int y, const Settings *settings);
 void project_update_full(Project *project, const Settings *settings);

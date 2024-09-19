@@ -14,24 +14,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #include "HLH_gui.h"
 #include "project.h"
+#include "gui.h"
 
-typedef struct
-{
-   HLH_gui_element e;
-
-   float x;
-   float y;
-   float scale;
-   Project *project;
-   Settings *settings;
-   SDL_Texture *img;
-
-   int shift_down;
-   int ctrl_down;
-   int alt_down;
-}GUI_canvas;
-
-GUI_canvas *gui_canvas_create(HLH_gui_element *parent, uint64_t flags, Project *project, Settings *settings);
+GUI_canvas *gui_canvas_create(HLH_gui_element *parent, uint64_t flags, Project *project, Settings *settings, GUI_state *gui);
 void gui_canvas_update_project(GUI_canvas *canvas, Project *project);
 
 #endif

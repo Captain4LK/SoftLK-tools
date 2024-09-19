@@ -12,6 +12,54 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _GUI_H_
 
+#include "HLH_gui.h"
+
+#include "project.h"
+
+typedef struct GUI_state GUI_state;
+
+typedef struct
+{
+   HLH_gui_element e;
+
+   Project *project;
+   Settings *settings;
+   int text_len;
+   char *text;
+   int state;
+   int checked;
+}GUI_layer;
+
+typedef struct
+{
+   HLH_gui_element e;
+
+   float x;
+   float y;
+   float scale;
+   Project *project;
+   Settings *settings;
+   GUI_state *gui;
+   SDL_Texture *img;
+
+   int shift_down;
+   int ctrl_down;
+   int alt_down;
+}GUI_canvas;
+
+struct GUI_state
+{
+   HLH_gui_entry *entry_img_width;
+   HLH_gui_entry *entry_img_height;
+
+   HLH_gui_radiobutton *palette_colors[256];
+   HLH_gui_radiobutton *layers[16];
+
+   GUI_canvas *canvas;
+};
+
+extern GUI_state gui_state;
+
 void gui_construct(void);
 
 #endif

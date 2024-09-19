@@ -27,6 +27,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
+static int gui_layer_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
 //Function implementations
@@ -49,5 +50,16 @@ void layer_free(Layer *layer)
 void layer_copy(Layer *dst, const Layer *src, size_t size)
 {
    memcpy(dst,src,size);
+}
+
+GUI_layer *gui_layer_create(HLH_gui_element *parent, uint64_t flags, Project *project, Settings *settings)
+{
+   GUI_layer *layer = (GUI_layer *)HLH_gui_element_create(sizeof(*layer),parent,flags,gui_layer_msg);
+   return layer;
+}
+
+static int gui_layer_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   return 0;
 }
 //-------------------------------------
