@@ -22,18 +22,6 @@ typedef struct
 {
    HLH_gui_element e;
 
-   Project *project;
-   Settings *settings;
-   int text_len;
-   char *text;
-   int state;
-   int checked;
-}GUI_layer;
-
-typedef struct
-{
-   HLH_gui_element e;
-
    float x;
    float y;
    float scale;
@@ -47,13 +35,27 @@ typedef struct
    int alt_down;
 }GUI_canvas;
 
+typedef struct
+{
+   HLH_gui_element e;
+
+   //Project *project;
+   //Settings *settings;
+   GUI_canvas *canvas;
+   int layer_num;
+   int text_len;
+   char *text;
+   int state;
+   int checked;
+}GUI_layer;
+
 struct GUI_state
 {
    HLH_gui_entry *entry_img_width;
    HLH_gui_entry *entry_img_height;
 
    HLH_gui_radiobutton *palette_colors[256];
-   HLH_gui_radiobutton *layers[16];
+   GUI_layer *layers[16];
 
    GUI_canvas *canvas;
 };

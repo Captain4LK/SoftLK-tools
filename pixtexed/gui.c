@@ -20,6 +20,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "util.h"
 #include "settings.h"
 #include "brush.h"
+#include "layer.h"
 #include "undo.h"
 //-------------------------------------
 
@@ -240,12 +241,13 @@ void gui_construct(void)
    {
       char tmp[128];
       snprintf(tmp,128,"%d",i+1);
-      HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,tmp,NULL);
-      gui_state.layers[i] = r;
-      r->e.usr = i;
-      r->e.msg_usr = radiobutton_layer_select;
+      GUI_layer *l = gui_layer_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,canvas,i);
+      //HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,tmp,NULL);
+      gui_state.layers[i] = l;
+      l->e.usr = i;
+      l->e.msg_usr = radiobutton_layer_select;
       if(i>0)
-         HLH_gui_element_ignore(&r->e,1);
+         HLH_gui_element_ignore(&l->e,1);
    }
    //-------------------------------------
 
@@ -263,11 +265,13 @@ static void ui_replace_project(Project *project)
    gui_canvas_update_project(gui_state.canvas,project);
    project->layer_selected = 0;
 
-   for(int i = 1;i<16;i++)
+   for(int i = 0;i<16;i++)
    {
-      HLH_gui_element_ignore(&gui_state.layers[i]->e,1);
+      gui_state.layers[i]->canvas = gui_state.canvas;
+      if(i>0)
+         HLH_gui_element_ignore(&gui_state.layers[i]->e,1);
    }
-   HLH_gui_radiobutton_set(gui_state.layers[0],1,1);
+   gui_layer_set(gui_state.layers[0],HLH_GUI_MOUSE_LEFT);
 }
 
 static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -744,11 +748,50 @@ static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, voi
 
 static int radiobutton_layer_select(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
+   GUI_layer *l = (GUI_layer *)e;
    if(msg==HLH_GUI_MSG_CLICK)
    {
-      if(di)
+      if(di==HLH_GUI_MOUSE_LEFT)
       {
-         gui_state.canvas->project->layer_selected = e->usr;
+         l->canvas->project->layer_selected = l->layer_num;
+         l->canvas->project->layers[l->layer_num]->hidden = 0;
+      }
+      else if(di==HLH_GUI_MOUSE_RIGHT)
+      {
+         if(l->layer_num==l->canvas->project->layer_selected)
+         {
+            int found = 0;
+            for(int i = 0;i<l->canvas->project->num_layers-1;i++)
+            {
+               if(i==l->layer_num)
+                  continue;
+               if(!l->canvas->project->layers[i]->hidden)
+               {
+                  found = 1;
+                  break;
+               }
+            }
+
+            for(int i = 0;i<l->canvas->project->num_layers-1;i++)
+            {
+               if(i==l->layer_num)
+                  continue;
+
+               if(found)
+               {
+                  if(!l->canvas->project->layers[i]->hidden)
+                     l->canvas->project->layers[i]->hidden = 2;
+               }
+               else if(l->canvas->project->layers[i]->hidden==2)
+               {
+                  l->canvas->project->layers[i]->hidden = 0;
+               }
+            }
+         }
+         else
+         {
+            l->canvas->project->layers[l->layer_num]->hidden = !l->canvas->project->layers[l->layer_num]->hidden;
+         }
       }
    }
 

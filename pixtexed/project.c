@@ -85,10 +85,15 @@ Image32 *project_to_image32(const Project *project, const Settings *settings)
    if(img==NULL)
       return NULL;
 
+   int first = 1;
    for(int i = 0;i<project->num_layers;i++)
    {
-      if(i==0)
+      if(project->layers[i]->hidden)
+         continue;
+
+      if(first)
       {
+         first = 0;
          for(int j = 0;j<project->width*project->height;j++)
          {
             img->data[j] = settings->palette[project->layers[i]->data[j]];
@@ -117,10 +122,16 @@ Image8 *project_to_image8(const Project *project, const Settings *settings)
       return NULL;
 
    memcpy(img->palette,settings->palette,sizeof(settings->palette));
+
+   int first = 1;
    for(int i = 0;i<project->num_layers;i++)
    {
-      if(i==0)
+      if(project->layers[i]->hidden)
+         continue;
+
+      if(first)
       {
+         first = 0;
          for(int j = 0;j<project->width*project->height;j++)
          {
             img->data[j] = project->layers[i]->data[j];
@@ -141,21 +152,36 @@ Image8 *project_to_image8(const Project *project, const Settings *settings)
 
 void project_update(Project *project, int x, int y, const Settings *settings)
 {
-   project->combined->data[y*project->width+x] = settings->palette[project->layers[0]->data[y*project->width+x]];
-
-   for(int i = 1;i<project->num_layers;i++)
+   int first = 1;
+   for(int i = 0;i<project->num_layers;i++)
    {
-      if(project->layers[i]->data[y*project->width+x])
+      if(project->layers[i]->hidden)
+         continue;
+
+      if(first)
+      {
+         first = 0;
          project->combined->data[y*project->width+x] = settings->palette[project->layers[i]->data[y*project->width+x]];
+      }
+      else
+      {
+         if(project->layers[i]->data[y*project->width+x])
+            project->combined->data[y*project->width+x] = settings->palette[project->layers[i]->data[y*project->width+x]];
+      }
    }
 }
 
 void project_update_full(Project *project, const Settings *settings)
 {
+   int first = 1;
    for(int i = 0;i<project->num_layers;i++)
    {
-      if(i==0)
+      if(project->layers[i]->hidden)
+         continue;
+
+      if(first)
       {
+         first = 0;
          for(int j = 0;j<project->width*project->height;j++)
          {
             project->combined->data[j] = settings->palette[project->layers[i]->data[j]];

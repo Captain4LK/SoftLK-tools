@@ -25,7 +25,7 @@ typedef struct
 
 typedef struct
 {
-   int tmp;
+   uint8_t hidden;
    uint8_t data[];
 }Layer;
 
