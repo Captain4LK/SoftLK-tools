@@ -14,7 +14,42 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #include <stdint.h>
 #include "image.h"
-#include "tool.h"
+
+typedef enum
+{
+   TOOL_PEN,
+   TOOL_LINE,
+   TOOL_FLOOD,
+   TOOL_RECT_OUTLINE,
+   TOOL_RECT_FILL,
+   TOOL_GRADIENT,
+   TOOL_SPLINE,
+   TOOL_SPRAY,
+   TOOL_POLYLINE,
+   TOOL_POLYFORM,
+   TOOL_CIRCLE_OUTLINE,
+   TOOL_CIRCLE_FILL,
+   TOOL_SELECT_RECT,
+   TOOL_SELECT_LASSO,
+   TOOL_PIPETTE,
+}Tool_type;
+
+typedef struct
+{
+   Tool_type selected;
+
+   struct
+   {
+      int place_mode;
+   }pen;
+   struct
+   {
+      int32_t x0;
+      int32_t y0;
+      int32_t x1;
+      int32_t y2;
+   }line;
+}Toolbox;
 
 typedef struct
 {

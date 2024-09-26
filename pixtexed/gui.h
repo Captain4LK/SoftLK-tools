@@ -49,6 +49,18 @@ typedef struct
    int checked;
 }GUI_layer;
 
+typedef struct
+{
+   HLH_gui_element e;
+
+   GUI_canvas *canvas;
+   Tool_type type;
+
+   HLH_gui_rect icon_bounds;
+   int state;
+   int checked;
+}GUI_tool;
+
 struct GUI_state
 {
    HLH_gui_entry *entry_img_width;
@@ -56,6 +68,7 @@ struct GUI_state
 
    HLH_gui_radiobutton *palette_colors[256];
    GUI_layer *layers[16];
+   GUI_tool *tools[15];
 
    GUI_canvas *canvas;
 };

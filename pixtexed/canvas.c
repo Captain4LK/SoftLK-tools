@@ -16,6 +16,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "canvas.h"
 #include "draw.h"
 #include "undo.h"
+#include "layer.h"
 //-------------------------------------
 
 //#defines
@@ -117,12 +118,16 @@ static int gui_canvas_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          {
             redo(canvas->project,canvas->settings,canvas->gui);
             gui_canvas_update_project(canvas,canvas->project);
+            if(canvas->project->layer_selected>canvas->project->num_layers-2)
+               gui_layer_set(canvas->gui->layers[canvas->project->num_layers-2],HLH_GUI_MOUSE_LEFT);
             HLH_gui_element_redraw(&canvas->e);
          }
          else
          {
             undo(canvas->project,canvas->settings,canvas->gui);
             gui_canvas_update_project(canvas,canvas->project);
+            if(canvas->project->layer_selected>canvas->project->num_layers-2)
+               gui_layer_set(canvas->gui->layers[canvas->project->num_layers-2],HLH_GUI_MOUSE_LEFT);
             HLH_gui_element_redraw(&canvas->e);
          }
       }

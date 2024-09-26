@@ -26,5 +26,9 @@ void undo_track_layer_chunk(Project *p, int x, int y, int32_t layer);
 void undo_end_layer_chunks(Project *p);
 void undo_track_layer_add(Project *p);
 void undo_track_layer_delete(Project *p, int pos);
+void undo_begin_layer_settings(Project *p);
+void undo_track_layer_settings(Project *p, int32_t layer);
+void undo_end_layer_settings(Project *p);
+void undo_track_layer_move(Project *p, int32_t layer, int8_t direction);
 
 #endif

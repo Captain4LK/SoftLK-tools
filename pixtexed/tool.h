@@ -14,37 +14,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #include <stdint.h>
 
-typedef enum
-{
-   TOOL_PEN,
-   TOOL_LINE,
-   TOOL_FLOOD,
-   TOOL_RECT_OUTLINE,
-   TOOL_RECT_FILL,
-   TOOL_GRADIENT,
-   TOOL_SPLINE,
-   TOOL_SPRAY,
-   TOOL_POLYLINE,
-   TOOL_POLYFORM,
-   TOOL_CIRCLE_OUTLINE,
-   TOOL_CIRCLE_FILL,
-   TOOL_SPHERE_GRAD,
-}Tool_type;
+#include "gui.h"
 
-typedef struct
-{
-   Tool_type selected;
-
-   struct
-   {
-   }pen;
-   struct
-   {
-      int32_t x0;
-      int32_t y0;
-      int32_t x1;
-      int32_t y2;
-   }line;
-}Toolbox;
+GUI_tool *gui_tool_create(HLH_gui_element *parent, uint64_t flags, GUI_canvas *canvas, Tool_type type);
+void gui_tool_set(GUI_tool *t, uint8_t button);
 
 #endif

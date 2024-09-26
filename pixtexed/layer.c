@@ -16,6 +16,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Internal includes
 #include "layer.h"
 #include "canvas.h"
+#include "undo.h"
 //-------------------------------------
 
 //#defines
@@ -96,7 +97,49 @@ void gui_layer_set(GUI_layer *l, uint8_t button)
       l->checked = 1;
    }
 
-   HLH_gui_element_msg(&l->e, HLH_GUI_MSG_CLICK, button, NULL);
+   if(button==HLH_GUI_MOUSE_LEFT)
+   {
+      l->canvas->project->layer_selected = l->layer_num;
+      l->canvas->project->layers[l->layer_num]->hidden = 0;
+   }
+   else if(button==HLH_GUI_MOUSE_RIGHT)
+   {
+      if(l->layer_num==l->canvas->project->layer_selected)
+      {
+         int found = 0;
+         for(int i = 0;i<l->canvas->project->num_layers-1;i++)
+         {
+            if(i==l->layer_num)
+               continue;
+            if(!l->canvas->project->layers[i]->hidden)
+            {
+               found = 1;
+               break;
+            }
+         }
+
+         for(int i = 0;i<l->canvas->project->num_layers-1;i++)
+         {
+            if(i==l->layer_num)
+               continue;
+
+            if(found)
+            {
+               if(!l->canvas->project->layers[i]->hidden)
+                  l->canvas->project->layers[i]->hidden = 2;
+            }
+            else if(l->canvas->project->layers[i]->hidden==2)
+            {
+               l->canvas->project->layers[i]->hidden = 0;
+            }
+         }
+      }
+      else
+      {
+         l->canvas->project->layers[l->layer_num]->hidden = !l->canvas->project->layers[l->layer_num]->hidden;
+      }
+   }
+
    if(l->e.parent!=NULL)
       HLH_gui_element_redraw(l->e.parent);
    else

@@ -162,6 +162,7 @@ HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height, 
       {
          SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(data, w, h, 32, w * 4, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
          window->icons = SDL_CreateTextureFromSurface(window->renderer, surface);
+         SDL_SetTextureBlendMode(window->icons,SDL_BLENDMODE_BLEND);
          SDL_FreeSurface(surface);
          stbi_image_free(data);
       }

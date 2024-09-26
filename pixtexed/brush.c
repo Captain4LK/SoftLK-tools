@@ -63,8 +63,8 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
    }
 
    //Clip source texture
-   int draw_start_y = 0;
    int draw_start_x = 0;
+   int draw_start_y = 0;
    int draw_end_x = brush->width;
    int draw_end_y = brush->height;
    if(x<0)
@@ -83,12 +83,16 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
    const uint8_t *src = &brush->data[draw_start_x + draw_start_y * brush->width];
    int src_step = -(draw_end_x - draw_start_x) + brush->width;
 
-   for(int y1 = draw_start_y; y1<draw_end_y; y1++, src += src_step)
+   for(int y1 = draw_start_y; y1<draw_end_y; y1++, src += src_step,y++)
    {
-      for(int x1 = draw_start_x; x1<draw_end_x; x1++, src++)
+      int dx = x;
+      for(int x1 = draw_start_x; x1<draw_end_x; x1++, src++,dx++)
       {
-         project->layers[layer]->data[(y+y1)*project->width+x+x1] = color;
-         project_update(project,x+x1,y+y1,settings);
+         if(*src)
+         {
+            project->layers[layer]->data[(y)*project->width+dx] = color;
+            project_update(project,dx,y,settings);
+         }
       }
    }
 

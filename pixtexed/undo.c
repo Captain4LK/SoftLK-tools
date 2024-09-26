@@ -42,6 +42,8 @@ typedef enum
    ED_LAYER_CHUNKS,
    ED_LAYER_ADD,
    ED_LAYER_DEL,
+   ED_LAYER_SETTINGS,
+   ED_LAYER_MOVE,
 }Ed_action;
 //-------------------------------------
 
@@ -68,6 +70,10 @@ static void undo_layer_add(Project *p, GUI_state *gui, int pos, int endpos);
 static void redo_layer_add(Project *p, GUI_state *gui, int pos, int endpos);
 static void undo_layer_del(Project *p, GUI_state *gui, int pos, int endpos);
 static void redo_layer_del(Project *p, GUI_state *gui, int pos, int endpos);
+static void undo_layer_settings(Project *p, GUI_state *gui, int pos, int endpos);
+static void redo_layer_settings(Project *p, GUI_state *gui, int pos, int endpos);
+static void undo_layer_move(Project *p, GUI_state *gui, int pos, int endpos);
+static void redo_layer_move(Project *p, GUI_state *gui, int pos, int endpos);
 //-------------------------------------
 
 //Function implementations
@@ -132,6 +138,8 @@ void undo(Project *p, const Settings *settings, GUI_state *gui)
    case ED_LAYER_CHUNKS: undo_layer_chunk(p,gui,pos,endpos); break;
    case ED_LAYER_ADD: undo_layer_add(p,gui,pos,endpos); break;
    case ED_LAYER_DEL: undo_layer_del(p,gui,pos,endpos); break;
+   case ED_LAYER_SETTINGS: undo_layer_settings(p,gui,pos,endpos); break;
+   case ED_LAYER_MOVE: undo_layer_move(p,gui,pos,endpos); break;
    }
 
    redo_write32(p,p->redo_entry_len);
@@ -179,6 +187,8 @@ void redo(Project *p, const Settings *settings, GUI_state *gui)
    case ED_LAYER_CHUNKS: redo_layer_chunk(p,gui,pos,endpos); break;
    case ED_LAYER_ADD: redo_layer_add(p,gui,pos,endpos); break;
    case ED_LAYER_DEL: redo_layer_del(p,gui,pos,endpos); break;
+   case ED_LAYER_SETTINGS: redo_layer_settings(p,gui,pos,endpos); break;
+   case ED_LAYER_MOVE: redo_layer_move(p,gui,pos,endpos); break;
    }
 
    undo_write32(p,p->undo_entry_len);
@@ -475,6 +485,98 @@ static void redo_layer_del(Project *p, GUI_state *gui, int pos, int endpos)
       project_layer_delete(p,layer);
       HLH_gui_element_layout(&gui->canvas->e.window->e, gui->canvas->e.window->e.bounds);
       HLH_gui_element_redraw(&gui->canvas->e.window->e);
+   }
+}
+
+void undo_begin_layer_settings(Project *p)
+{
+   undo_begin(p,ED_LAYER_SETTINGS);
+}
+
+void undo_track_layer_settings(Project *p, int32_t layer)
+{
+   undo_write32(p,layer);
+   //undo_write8(p,p->layers[layer]->hidden);
+}
+
+void undo_end_layer_settings(Project *p)
+{
+   undo_end(p);
+}
+
+static void undo_layer_settings(Project *p, GUI_state *gui, int pos, int endpos)
+{
+   while(pos!=endpos)
+   {
+      int32_t layer;
+      uint8_t hidden;
+
+      //undo_read8(p,hidden,pos);
+      undo_read32(p,layer,pos);
+      redo_write32(p,layer);
+      //redo_write8(p,p->layers[layer]->hidden);
+
+      //p->layers[layer]->hidden = hidden;
+   }
+}
+
+static void redo_layer_settings(Project *p, GUI_state *gui, int pos, int endpos)
+{
+   while(pos!=endpos)
+   {
+      int32_t layer;
+      uint8_t hidden;
+
+      //redo_read8(p,hidden,pos);
+      redo_read32(p,layer,pos);
+      undo_write32(p,layer);
+      //undo_write8(p,p->layers[layer]->hidden);
+
+      //p->layers[layer]->hidden = hidden;
+   }
+}
+
+void undo_track_layer_move(Project *p, int32_t layer, int8_t direction)
+{
+   undo_begin(p,ED_LAYER_MOVE);
+   undo_write32(p,layer);
+   undo_write8(p,direction);
+   undo_end(p);
+}
+
+static void undo_layer_move(Project *p, GUI_state *gui, int pos, int endpos)
+{
+   while(pos!=endpos)
+   {
+      int32_t layer;
+      int8_t direction;
+
+      undo_read8(p,direction,pos);
+      undo_read32(p,layer,pos);
+      redo_write32(p,layer);
+      redo_write8(p,direction);
+
+      Layer *tmp = p->layers[layer];
+      p->layers[layer] = p->layers[layer+direction];
+      p->layers[layer+direction] = tmp;
+   }
+}
+
+static void redo_layer_move(Project *p, GUI_state *gui, int pos, int endpos)
+{
+   while(pos!=endpos)
+   {
+      int32_t layer;
+      int8_t direction;
+
+      redo_read8(p,direction,pos);
+      redo_read32(p,layer,pos);
+      undo_write32(p,layer);
+      undo_write8(p,direction);
+
+      Layer *tmp = p->layers[layer];
+      p->layers[layer] = p->layers[layer+direction];
+      p->layers[layer+direction] = tmp;
    }
 }
 //-------------------------------------
