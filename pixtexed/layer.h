@@ -13,7 +13,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define _LAYER_H_
 
 #include <stddef.h>
-#include "image.h"
+#include "shared/image.h"
 #include "gui.h"
 
 

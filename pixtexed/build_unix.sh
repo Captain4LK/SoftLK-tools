@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -lm"
+CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm"
 printf "
 .POSIX:
 CC      = gcc
@@ -14,6 +14,11 @@ all: pixtexed
 obj=""
 
 for src in $(find ./ -name "*.c"); do
+   gcc -MM -MT "${src%%.c}.o" "$src" $CFLAGS
+   obj="$obj ${src%%.c}.o"
+done
+
+for src in $(find ../shared -name "*.c"); do
    gcc -MM -MT "${src%%.c}.o" "$src" $CFLAGS
    obj="$obj ${src%%.c}.o"
 done

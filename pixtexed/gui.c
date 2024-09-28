@@ -16,7 +16,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "gui.h"
 #include "canvas.h"
 #include "project.h"
-#include "color.h"
+#include "shared/color.h"
 #include "util.h"
 #include "settings.h"
 #include "brush.h"

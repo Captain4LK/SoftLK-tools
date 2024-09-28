@@ -19,12 +19,10 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
-#include "../external/HLH.h"
 #include "img2pixel.h"
 //-------------------------------------
 
 //#defines
-//-------------------------------------
 //-------------------------------------
 
 //Variables
