@@ -33,7 +33,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function implementations
 
-void SLK_image32_write_pcx(FILE *f, const SLK_image32 *img, uint32_t *colors, int color_count)
+/*void SLK_image32_write_pcx(FILE *f, const SLK_image32 *img, uint32_t *colors, int color_count)
 {
    //Make indexed
    uint8_t *indices = calloc(img->w*img->h,1);
@@ -154,5 +154,5 @@ void SLK_image32_write_pcx(FILE *f, const SLK_image32 *img, uint32_t *colors, in
 
    HLH_rw_close(&rw);
    free(indices);
-}
+}*/
 //-------------------------------------

@@ -16,6 +16,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <time.h>
 
 #include "cute_files.h"
+#include "shared/image.h"
 
 #include "HLH_gui.h"
 #include "HLH.h"
@@ -142,8 +143,9 @@ static HLH_gui_imgcmp *gui_imgcmp;
 
 static HLH_gui_group *gui_groups_left[4];
 
-static SLK_image32 *gui_input = NULL;
-static SLK_image32 *gui_output = NULL;
+static Image32 *gui_input = NULL;
+//static Image32 *gui_output = NULL;
+static Image8 *gui_output = NULL;
 
 static HLH_gui_group *gui_bar_sample;
 static HLH_gui_group *gui_bar_type;
@@ -242,15 +244,15 @@ static float saturation = 1.f;
 static float hue = 0.f;
 static float gamma = 1.f;
 static int kmeanspp = 0;
-SLK_dither_config dither_config = {.alpha_threshold = 128};
+static SLK_dither_config dither_config = {.alpha_threshold = 128};
 static uint8_t tint_red = 255;
 static uint8_t tint_green = 255;
 static uint8_t tint_blue = 255;
 
 //cached
-static SLK_image64 *cache_sample;
-static SLK_image64 *cache_sharp;
-static SLK_image64 *cache_tint;
+static Image64 *cache_sample;
+static Image64 *cache_sharp;
+static Image64 *cache_tint;
 //-------------------------------------
 
 //Function prototypes
@@ -726,7 +728,7 @@ static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Image
       if(m->index==0)
       {
-         SLK_image32 *img = NULL;
+         Image32 *img = NULL;
          FILE *f = image_load_select();
          if(f!=NULL)
          {
@@ -735,8 +737,8 @@ static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
             if(data!=NULL&&width>0&&height>0)
             {
                img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
-               img->w = width;
-               img->h = height;
+               img->width = width;
+               img->height = height;
                memcpy(img->data,data,sizeof(*img->data)*width*height);
             }
             HLH_gui_image_free(data);
@@ -745,13 +747,13 @@ static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
          if(img!=NULL)
          {
-            HLH_gui_imgcmp_update0(gui_imgcmp,img->data,img->w,img->h,1);
+            HLH_gui_imgcmp_update0(gui_imgcmp,img->data,img->width,img->height,1);
             if(gui_input!=NULL)
             {
                free(gui_input);
                gui_input = NULL;
             }
-            gui_input = SLK_image32_dup(img);
+            gui_input = image32_dup(img);
             free(img);
 
             gui_process(0);
@@ -803,15 +805,20 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
             return 0;
 
          char ext[512] = {0};
-         FILE *f = image_save_select(ext);
+         char path[1024] = {0};
+         image_save_select(path,ext);
 
-         if(strcmp(ext,"pcx")==0||strcmp(ext,"PCX")==0)
-            SLK_image32_write_pcx(f,gui_output,dither_config.palette,dither_config.palette_colors);
-         else
-            HLH_gui_image_save(f,gui_output->data,gui_output->w,gui_output->h,ext);
+         //TODO(Captain4LK): restore saving, use image8_save
+         image8_save(gui_output,path,ext);
+//int image8_save(const Image8 *img, const char *path, const char *ext);
+         //HLH_gui_image_save(f,gui_output->data,gui_output->width,gui_output->height,ext);
+         //if(strcmp(ext,"pcx")==0||strcmp(ext,"PCX")==0)
+            //image32_write_pcx(f,gui_output,dither_config.palette,dither_config.palette_colors);
+         //else
+            //HLH_gui_image_save(f,gui_output->data,gui_output->width,gui_output->height,ext);
 
-         if(f!=NULL)
-            fclose(f);
+         //if(f!=NULL)
+            //fclose(f);
 
          //const char *image = image_save_select();
          //HLH_gui_image_save(image,gui_output->data,gui_output->w,gui_output->h);
@@ -1463,8 +1470,8 @@ static int button_palette_gen_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {
-      SLK_image32 *img_kmeans = SLK_image32_dup64(cache_tint);
-      SLK_image32_kmeans(img_kmeans,dither_config.palette,dither_config.palette_colors,time(NULL),kmeanspp);
+      Image32 *img_kmeans = image64to32(cache_tint);
+      image32_kmeans(img_kmeans,dither_config.palette,dither_config.palette_colors,time(NULL),kmeanspp);
       free(img_kmeans);
       HLH_gui_element_redraw(&gui.group_palette->e);
       gui_process(3);
@@ -1491,22 +1498,22 @@ static void gui_process(int from)
          cache_sample = NULL;
       }
 
-      SLK_image64 *img = SLK_image64_dup32(gui_input);
-      SLK_image64_blur(img,blur_amount);
+      Image64 *img = image32to64(gui_input);
+      image64_blur(img,blur_amount);
 
       int width = 0;
       int height = 0;
       if(scale_relative)
       {
-         width = img->w/HLH_non_zero(size_relative_x);
-         height = img->h/HLH_non_zero(size_relative_y);
+         width = img->width/HLH_non_zero(size_relative_x);
+         height = img->height/HLH_non_zero(size_relative_y);
       }
       else
       {
          width = size_absolute_x;
          height = size_absolute_y;
       }
-      cache_sample = SLK_image64_sample(img,width,height,sample_mode,x_offset,y_offset);
+      cache_sample = image64_sample(img,width,height,sample_mode,x_offset,y_offset);
       free(img);
    }
 
@@ -1518,9 +1525,9 @@ static void gui_process(int from)
          cache_sharp = NULL;
       }
 
-      cache_sharp = SLK_image64_dup(cache_sample);
+      cache_sharp = image64_dup(cache_sample);
 
-      SLK_image64_sharpen(cache_sharp,sharp_amount);
+      image64_sharpen(cache_sharp,sharp_amount);
    }
 
    if(from<=2||cache_tint==NULL)
@@ -1531,16 +1538,22 @@ static void gui_process(int from)
          cache_tint = NULL;
       }
 
-      cache_tint = SLK_image64_dup(cache_sharp);
-      SLK_image64_hscb(cache_tint,hue,saturation,contrast,brightness);
-      SLK_image64_gamma(cache_tint,gamma);
-      SLK_image64_tint(cache_tint,tint_red,tint_green,tint_blue);
+      cache_tint = image64_dup(cache_sharp);
+      image64_hscb(cache_tint,hue,saturation,contrast,brightness);
+      image64_gamma(cache_tint,gamma);
+      image64_tint(cache_tint,tint_red,tint_green,tint_blue);
    }
 
-   SLK_image64 *dither_input = SLK_image64_dup(cache_tint);
-   gui_output = SLK_image64_dither(dither_input,&dither_config);
+   Image64 *dither_input = image64_dup(cache_tint);
+   gui_output = image64_dither(dither_input,&dither_config);
    free(dither_input);
-   HLH_gui_imgcmp_update1(gui_imgcmp,gui_output->data,gui_output->w,gui_output->h,1);
+
+   if(gui_output!=NULL)
+   {
+      Image32 *output32 = image8to32(gui_output);
+      HLH_gui_imgcmp_update1(gui_imgcmp,output32->data,output32->width,output32->height,1);
+      free(output32);
+   }
 }
 
 void gui_load_preset(FILE *f)
@@ -1696,14 +1709,14 @@ static int main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
       if(f==NULL)
          return 0;
 
-      SLK_image32 *img = NULL;
+      Image32 *img = NULL;
       int width,height;
       uint32_t *data = HLH_gui_image_load(f,&width,&height);
       if(data!=NULL&&width>0&&height>0)
       {
          img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
-         img->w = width;
-         img->h = height;
+         img->width = width;
+         img->height = height;
          memcpy(img->data,data,sizeof(*img->data)*width*height);
       }
       HLH_gui_image_free(data);
@@ -1712,13 +1725,13 @@ static int main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
       if(img==NULL)
          return 0;
 
-      HLH_gui_imgcmp_update0(gui_imgcmp,img->data,img->w,img->h,1);
+      HLH_gui_imgcmp_update0(gui_imgcmp,img->data,img->width,img->height,1);
       if(gui_input!=NULL)
       {
          free(gui_input);
          gui_input = NULL;
       }
-      gui_input = SLK_image32_dup(img);
+      gui_input = image32_dup(img);
       free(img);
 
       gui_process(0);
@@ -1875,7 +1888,7 @@ static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *d
                continue;
             }
 
-            SLK_image32 *img = NULL;
+            Image32 *img = NULL;
             char tmp[512];
             snprintf(tmp,512,"%s/%s",batch_input,file.name);
             FILE *f = fopen(tmp,"rb");
@@ -1886,8 +1899,8 @@ static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *d
                if(data!=NULL&&width>0&&height>0)
                {
                   img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
-                  img->w = width;
-                  img->h = height;
+                  img->width = width;
+                  img->height = height;
                   memcpy(img->data,data,sizeof(*img->data)*width*height);
                }
                HLH_gui_image_free(data);
@@ -1896,29 +1909,29 @@ static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *d
 
             if(img!=NULL)
             {
-               SLK_image64 *img64 = SLK_image64_dup32(img);
+               Image64 *img64 = image32to64(img);
                free(img);
-               SLK_image64_blur(img64,blur_amount);
+               image64_blur(img64,blur_amount);
 
                int width = 0;
                int height = 0;
                if(scale_relative)
                {
-                  width = img64->w/HLH_non_zero(size_relative_x);
-                  height = img64->h/HLH_non_zero(size_relative_y);
+                  width = img64->width/HLH_non_zero(size_relative_x);
+                  height = img64->height/HLH_non_zero(size_relative_y);
                }
                else
                {
                   width = size_absolute_x;
                   height = size_absolute_y;
                }
-               SLK_image64 *sample64 = SLK_image64_sample(img64,width,height,sample_mode,x_offset,y_offset);
+               Image64 *sample64 = image64_sample(img64,width,height,sample_mode,x_offset,y_offset);
                free(img64);
-               SLK_image64_sharpen(sample64,sharp_amount);
-               SLK_image64_hscb(sample64,hue,saturation,contrast,brightness);
-               SLK_image64_gamma(sample64,gamma);
-               SLK_image64_tint(sample64,tint_red,tint_green,tint_blue);
-               SLK_image32 *output = SLK_image64_dither(sample64,&dither_config);
+               image64_sharpen(sample64,sharp_amount);
+               image64_hscb(sample64,hue,saturation,contrast,brightness);
+               image64_gamma(sample64,gamma);
+               image64_tint(sample64,tint_red,tint_green,tint_blue);
+               Image8 *output = image64_dither(sample64,&dither_config);
                free(sample64);
 
                char noext[512];
@@ -1927,22 +1940,26 @@ static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *d
                if(batch_type==0)
                {
                   snprintf(tmp,512,"%s/%s.png",batch_output,noext);
-                  f = fopen(tmp,"wb");
-                  if(f!=NULL)
-                  {
-                     HLH_gui_image_save(f,output->data,output->w,output->h,"png");
-                     fclose(f);
-                  }
+                  image8_save(output,tmp,"png");
+//int image8_save(const Image8 *img, const char *path, const char *ext);
+                  //f = fopen(tmp,"wb");
+                  //if(f!=NULL)
+                  //{
+                     //HLH_gui_image_save(f,output->data,output->width,output->height,"png");
+                     //fclose(f);
+                  //}
                }
                else
                {
                   snprintf(tmp,512,"%s/%s.pcx",batch_output,noext);
-                  f = fopen(tmp,"wb");
+                  image8_save(output,tmp,"pcx");
+                  /*f = fopen(tmp,"wb");
                   if(f!=NULL)
                   {
-                     SLK_image32_write_pcx(f,output,dither_config.palette,dither_config.palette_colors);
+                     //TODO(Captain4LK): restore pcx using image8_save
+                     //image32_write_pcx(f,output,dither_config.palette,dither_config.palette_colors);
                      fclose(f);
-                  }
+                  }*/
                }
 
                free(output);

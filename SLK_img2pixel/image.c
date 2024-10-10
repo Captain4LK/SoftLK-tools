@@ -32,7 +32,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function implementations
 
-SLK_image32 *SLK_image32_dup(const SLK_image32 *src)
+/*SLK_image32 *SLK_image32_dup(const SLK_image32 *src)
 {
    if(src==NULL||src->w<=0||src->h<=0)
       return NULL;
@@ -84,5 +84,5 @@ SLK_image64 *SLK_image64_dup32(const SLK_image32 *src)
       img->data[i] = SLK_color32_to_64(src->data[i]);
 
    return img;
-}
+}*/
 //-------------------------------------

@@ -41,10 +41,13 @@ Image32 *image32_new(int32_t width, int32_t height);
 Image64 *image64_new(int32_t width, int32_t height);
 
 Image8 *image32to8(const Image32 *img);
+Image32 *image64to32(const Image64 *src);
+Image64 *image32to64(const Image32 *src);
+Image32 *image8to32(const Image8 *src);
 
-Image8 *Image8_dup(const Image8 *src);
-Image32 *Image32_dup(const Image32 *src);
-Image64 *Image64_dup(const Image64 *src);
+Image8 *image8_dup(const Image8 *src);
+Image32 *image32_dup(const Image32 *src);
+Image64 *image64_dup(const Image64 *src);
 
 int image8_save(const Image8 *img, const char *path, const char *ext);
 Image8 *image8_load(const char *path, const char *ext);

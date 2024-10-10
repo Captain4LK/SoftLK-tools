@@ -34,7 +34,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function implementations
 
-void SLK_image64_tint(SLK_image64 *img, uint8_t tint_r, uint8_t tint_g, uint8_t tint_b)
+void image64_tint(Image64 *img, uint8_t tint_r, uint8_t tint_g, uint8_t tint_b)
 {
    if(tint_r==255&&tint_g==255&&tint_b==255)
       return;
@@ -44,11 +44,11 @@ void SLK_image64_tint(SLK_image64 *img, uint8_t tint_r, uint8_t tint_g, uint8_t 
    uint64_t tb = tint_b;
 
 #pragma omp parallel for
-   for(int y = 0;y<img->h;y++)
+   for(int y = 0;y<img->height;y++)
    {
-      for(int x = 0;x<img->w;x++)
+      for(int x = 0;x<img->width;x++)
       {
-         uint64_t p = img->data[y*img->w+x];
+         uint64_t p = img->data[y*img->width+x];
          uint64_t r = SLK_color64_r(p);
          uint64_t g = SLK_color64_g(p);
          uint64_t b = SLK_color64_b(p);
@@ -58,7 +58,7 @@ void SLK_image64_tint(SLK_image64 *img, uint8_t tint_r, uint8_t tint_g, uint8_t 
          g = (g*tg)/255;
          b = (b*tb)/255;
 
-         img->data[y*img->w+x] = r|(g<<16)|(b<<32)|(a<<48);
+         img->data[y*img->width+x] = r|(g<<16)|(b<<32)|(a<<48);
       }
    }
 }

@@ -22,6 +22,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#include "shared/image.h"
 #include "img2pixel.h"
 //-------------------------------------
 
@@ -100,17 +101,17 @@ static int slk_palette_size = 0;
 //-------------------------------------
 
 //Function prototypes
-static SLK_image32 *slk_dither_closest(SLK_image64 *img, const SLK_dither_config *config);
-static SLK_image32 *slk_assign_median(SLK_image64 *img, const SLK_dither_config *config);
-static void slk_dither_threshold_apply(SLK_image64 *img, int dim, const float *threshold, const SLK_dither_config *config);
-static SLK_image32 *slk_dither_floyd(SLK_image64 *img, const SLK_dither_config *config);
-static SLK_image32 *slk_dither_floyd2(SLK_image64 *img, const SLK_dither_config *config);
-static void slk_floyd_apply_error(SLK_image64 *img, float er, float eg, float eb, int x, int y);
+static Image8 *slk_dither_closest(Image64 *img, const SLK_dither_config *config);
+static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config);
+static void slk_dither_threshold_apply(Image64 *img, int dim, const float *threshold, const SLK_dither_config *config);
+static Image8 *slk_dither_floyd(Image64 *img, const SLK_dither_config *config);
+static Image8 *slk_dither_floyd2(Image64 *img, const SLK_dither_config *config);
+static void slk_floyd_apply_error(Image64 *img, float er, float eg, float eb, int x, int y);
 
 static void slk_color32_to_lab(uint32_t c, float *l0, float *l1, float *l2);
 static void slk_color32_to_rgb(uint32_t c, float *l0, float *l1, float *l2);
 
-static uint32_t slk_color_closest(uint64_t c, const SLK_dither_config *config);
+static uint8_t slk_color_closest(uint64_t c, const SLK_dither_config *config);
 static float slk_dist_rgb_euclidian(float a0, float a1, float a2, float b0, float b1, float b2);
 static float slk_dist_rgb_weighted(float a0, float a1, float a2, float b0, float b1, float b2);
 static float slk_dist_rgb_redmean(float a0, float a1, float a2, float b0, float b1, float b2);
@@ -138,7 +139,7 @@ static int color_cmp_b(const void *a, const void *b);
 
 //Function implementations
 
-SLK_image32 *SLK_image64_dither(SLK_image64 *img, const SLK_dither_config *config)
+Image8 *image64_dither(Image64 *img, const SLK_dither_config *config)
 {
    //Convert palette to desired format
    switch(config->color_dist)
@@ -187,35 +188,38 @@ SLK_image32 *SLK_image64_dither(SLK_image64 *img, const SLK_dither_config *confi
    return slk_dither_closest(img,config);
 }
 
-static SLK_image32 *slk_dither_closest(SLK_image64 *img, const SLK_dither_config *config)
+static Image8 *slk_dither_closest(Image64 *img, const SLK_dither_config *config)
 {
-   SLK_image32 *out = SLK_image32_dup64(img);
+   Image8 *out = image8_new(img->width,img->height);
+   out->color_count = config->palette_colors;
+   for(int i = 0;i<config->palette_colors;i++)
+      out->palette[i] = config->palette[i];
 
 #pragma omp parallel for
-   for(int y = 0;y<img->h;y++)
+   for(int y = 0;y<img->height;y++)
    {
-      for(int x = 0;x<img->w;x++)
+      for(int x = 0;x<img->width;x++)
       {
-         uint64_t p = img->data[y*img->w+x];
+         uint64_t p = img->data[y*img->width+x];
          if((int)(SLK_color64_a(p)/128)<config->alpha_threshold)
          {
-            out->data[y*img->w+x] = 0;
+            out->data[y*img->width+x] = 0;
             continue;
          }
 
-         out->data[y*img->w+x] = slk_color_closest(p,config);
+         out->data[y*img->width+x] = slk_color_closest(p,config);
       }
    }
 
    return out;
 }
 
-static SLK_image32 *slk_assign_median(SLK_image64 *img, const SLK_dither_config *config)
+static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
 {
    int target = HLH_max(1,HLH_min(config->target_colors,config->palette_colors));
 
-   uint32_t *colors = calloc(2*img->w*img->h,sizeof(*colors));
-   for(int i = 0;i<img->w*img->h;i++)
+   uint32_t *colors = calloc(2*img->width*img->height,sizeof(*colors));
+   for(int i = 0;i<img->width*img->height;i++)
    {
       colors[i*2+0] = SLK_color64_to_32(img->data[i]);
       colors[i*2+1] = i;
@@ -224,7 +228,7 @@ static SLK_image32 *slk_assign_median(SLK_image64 *img, const SLK_dither_config 
 
    //Put all above alpha threshold at start
    int slow = 0;
-   for(int i = 0;i<img->w*img->h;i++)
+   for(int i = 0;i<img->width*img->height;i++)
    {
       if(SLK_color32_a(colors[i*2+0])>=config->alpha_threshold)
       {
@@ -422,7 +426,10 @@ static SLK_image32 *slk_assign_median(SLK_image64 *img, const SLK_dither_config 
    //Find best asignment
    uint8_t *assign_lowest = kuhn_match(box_count,config->palette_colors,errors);
    free(errors);
-   SLK_image32 *out = SLK_image32_dup64(img);
+   Image8 *out = image8_new(img->width,img->height);
+   out->color_count = config->palette_colors;
+   for(int i = 0;i<config->palette_colors;i++)
+      out->palette[i] = config->palette[i];
    for(int i = 0;i<box_count;i++)
    {
       for(int j = 0;j<boxes[i].count;j++)
@@ -432,7 +439,7 @@ static SLK_image32 *slk_assign_median(SLK_image64 *img, const SLK_dither_config 
          if(SLK_color32_a(color)<config->alpha_threshold)
             out->data[index] = 0;
          else
-            out->data[index] = config->palette[assign_lowest[i]];
+            out->data[index] = assign_lowest[i];
       }
    }
 
@@ -443,100 +450,106 @@ static SLK_image32 *slk_assign_median(SLK_image64 *img, const SLK_dither_config 
    return out;
 }
 
-static void slk_dither_threshold_apply(SLK_image64 *img, int dim, const float *threshold, const SLK_dither_config *config)
+static void slk_dither_threshold_apply(Image64 *img, int dim, const float *threshold, const SLK_dither_config *config)
 {
 #pragma omp parallel for
-   for(int y = 0;y<img->h;y++)
+   for(int y = 0;y<img->height;y++)
    {
-      for(int x = 0;x<img->w;x++)
+      for(int x = 0;x<img->width;x++)
       {
-         uint64_t p = img->data[y*img->w+x];
-         uint8_t mod = (1<<dim)-1;
-         uint8_t threshold_id = ((y&mod)<<dim)+(x&mod);
-         uint64_t r = HLH_max(0,HLH_min(0x7fff,SLK_color64_r(p)+0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f)));
-         uint64_t g = HLH_max(0,HLH_min(0x7fff,SLK_color64_g(p)+0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f)));
-         uint64_t b = HLH_max(0,HLH_min(0x7fff,SLK_color64_b(p)+0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f)));
+         uint64_t p = img->data[y*img->width+x];
+         uint8_t mod = (uint8_t)((1<<dim)-1);
+         uint8_t threshold_id = (uint8_t)(((y&mod)<<dim)+(x&mod));
+         uint64_t r = HLH_max(0,HLH_min(0x7fff,(int64_t)SLK_color64_r(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
+         uint64_t g = HLH_max(0,HLH_min(0x7fff,(int64_t)SLK_color64_g(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
+         uint64_t b = HLH_max(0,HLH_min(0x7fff,(int64_t)SLK_color64_b(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
          uint64_t a = SLK_color64_a(p);
-         img->data[y*img->w+x] = (r)|(g<<16)|(b<<32)|(a<<48);
+         img->data[y*img->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
       }
    }
 }
 
-static SLK_image32 *slk_dither_floyd(SLK_image64 *img, const SLK_dither_config *config)
+static Image8 *slk_dither_floyd(Image64 *img, const SLK_dither_config *config)
 {
-   SLK_image32 *out = SLK_image32_dup64(img);
+   Image8 *out = image8_new(img->width,img->height);
+   out->color_count = config->palette_colors;
+   for(int i = 0;i<config->palette_colors;i++)
+      out->palette[i] = config->palette[i];
 
-   for(int y = 0;y<img->h;y++)
+   for(int y = 0;y<img->height;y++)
    {
-      for(int x = 0;x<img->w;x++)
+      for(int x = 0;x<img->width;x++)
       {
-         uint64_t p = img->data[y*img->w+x];
+         uint64_t p = img->data[y*img->width+x];
          if((int)(SLK_color64_a(p)/128)<config->alpha_threshold)
          {
-            out->data[y*img->w+x] = 0;
+            out->data[y*img->width+x] = 0;
             continue;
          }
 
-         uint32_t c = slk_color_closest(p,config);
-         float error_r = (float)SLK_color32_r(SLK_color64_to_32(p))-(float)SLK_color32_r(c);
-         float error_g = (float)SLK_color32_g(SLK_color64_to_32(p))-(float)SLK_color32_g(c);
-         float error_b = (float)SLK_color32_b(SLK_color64_to_32(p))-(float)SLK_color32_b(c);
+         uint8_t c = slk_color_closest(p,config);
+         float error_r = (float)SLK_color32_r(SLK_color64_to_32(p))-(float)SLK_color32_r(config->palette[c]);
+         float error_g = (float)SLK_color32_g(SLK_color64_to_32(p))-(float)SLK_color32_g(config->palette[c]);
+         float error_b = (float)SLK_color32_b(SLK_color64_to_32(p))-(float)SLK_color32_b(config->palette[c]);
          slk_floyd_apply_error(img,(error_r*7.f)/16.f,(error_g*7.f)/16.f,(error_b*7.f)/16.f,x+1,y);
          slk_floyd_apply_error(img,(error_r*3.f)/16.f,(error_g*3.f)/16.f,(error_b*3.f)/16.f,x-1,y+1);
          slk_floyd_apply_error(img,(error_r*5.f)/16.f,(error_g*5.f)/16.f,(error_b*5.f)/16.f,x,y+1);
          slk_floyd_apply_error(img,(error_r*1.f)/16.f,(error_g*1.f)/16.f,(error_b*1.f)/16.f,x+1,y+1);
 
-         out->data[y*img->w+x] = c;
+         out->data[y*img->width+x] = c;
       }
    }
 
    return out;
 }
 
-static SLK_image32 *slk_dither_floyd2(SLK_image64 *img, const SLK_dither_config *config)
+static Image8 *slk_dither_floyd2(Image64 *img, const SLK_dither_config *config)
 {
-   SLK_image32 *out = SLK_image32_dup64(img);
+   Image8 *out = image8_new(img->width,img->height);
+   out->color_count = config->palette_colors;
+   for(int i = 0;i<config->palette_colors;i++)
+      out->palette[i] = config->palette[i];
 
-   for(int y = 0;y<img->h;y++)
+   for(int y = 0;y<img->height;y++)
    {
-      for(int x = 0;x<img->w;x++)
+      for(int x = 0;x<img->width;x++)
       {
-         uint64_t p = img->data[y*img->w+x];
+         uint64_t p = img->data[y*img->width+x];
          if((int)(SLK_color64_a(p)/128)<config->alpha_threshold)
          {
-            out->data[y*img->w+x] = 0;
+            out->data[y*img->width+x] = 0;
             continue;
          }
 
-         uint32_t c = slk_color_closest(p,config);
-         float error = (float)SLK_color32_r(SLK_color64_to_32(p))-(float)SLK_color32_r(c);
-         error+=(float)SLK_color32_g(SLK_color64_to_32(p))-(float)SLK_color32_g(c);
-         error+=(float)SLK_color32_b(SLK_color64_to_32(p))-(float)SLK_color32_b(c);
+         uint8_t c = slk_color_closest(p,config);
+         float error = (float)SLK_color32_r(SLK_color64_to_32(p))-(float)SLK_color32_r(config->palette[c]);
+         error+=(float)SLK_color32_g(SLK_color64_to_32(p))-(float)SLK_color32_g(config->palette[c]);
+         error+=(float)SLK_color32_b(SLK_color64_to_32(p))-(float)SLK_color32_b(config->palette[c]);
          error/=3.f;
          slk_floyd_apply_error(img,(error*7.f)/16.f,(error*7.f)/16.f,(error*7.f)/16.f,x+1,y);
          slk_floyd_apply_error(img,(error*3.f)/16.f,(error*3.f)/16.f,(error*3.f)/16.f,x-1,y+1);
          slk_floyd_apply_error(img,(error*5.f)/16.f,(error*5.f)/16.f,(error*5.f)/16.f,x,y+1);
          slk_floyd_apply_error(img,(error*1.f)/16.f,(error*1.f)/16.f,(error*1.f)/16.f,x+1,y+1);
 
-         out->data[y*img->w+x] = c;
+         out->data[y*img->width+x] = c;
       }
    }
 
    return out;
 }
 
-static void slk_floyd_apply_error(SLK_image64 *img, float er, float eg, float eb, int x, int y)
+static void slk_floyd_apply_error(Image64 *img, float er, float eg, float eb, int x, int y)
 {
-   if(x<0||x>=img->w||y<0||y>=img->h)
+   if(x<0||x>=img->width||y<0||y>=img->height)
       return;
 
-   uint64_t p = img->data[y*img->w+x];
+   uint64_t p = img->data[y*img->width+x];
    uint64_t r = HLH_max(0,HLH_min(0x7fff,SLK_color64_r(p)+er*128.f));
    uint64_t g = HLH_max(0,HLH_min(0x7fff,SLK_color64_g(p)+eg*128.f));
    uint64_t b = HLH_max(0,HLH_min(0x7fff,SLK_color64_b(p)+eb*128.f));
    uint64_t a = SLK_color64_a(p);
 
-   img->data[y*img->w+x] = (r)|(g<<16)|(b<<32)|(a<<48);
+   img->data[y*img->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
 }
 
 static void slk_color32_to_rgb(uint32_t c, float *l0, float *l1, float *l2)
@@ -601,7 +614,7 @@ static void slk_color32_to_lab(uint32_t c, float *l0, float *l1, float *l2)
    //-------------------------------------
 }
 
-static uint32_t slk_color_closest(uint64_t c, const SLK_dither_config *config)
+static uint8_t slk_color_closest(uint64_t c, const SLK_dither_config *config)
 {
    float min_dist = 1e12;
    int min_index = 0;
@@ -656,7 +669,7 @@ static uint32_t slk_color_closest(uint64_t c, const SLK_dither_config *config)
       }
    }
 
-   return config->palette[min_index];
+   return min_index;
 }
 
 static float slk_dist_rgb_euclidian(float a0, float a1, float a2, float b0, float b1, float b2)

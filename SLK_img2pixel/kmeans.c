@@ -36,7 +36,7 @@ typedef uint64_t rand_xor[2];
 //-------------------------------------
 
 //Function prototypes
-static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmeanspp);
+static uint32_t *choose_centers(Image32 *img, int k, uint64_t seed, int kmeanspp);
 
 static uint64_t rand_murmur3_avalanche64(uint64_t h);
 static void rand_xor_seed(rand_xor *xor, uint64_t seed);
@@ -45,7 +45,7 @@ static uint64_t rand_xor_next(rand_xor *xor);
 
 //Function implementations
 
-void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed, int kmeanspp)
+void image32_kmeans(Image32 *img, uint32_t *palette, int colors, uint64_t seed, int kmeanspp)
 {
    if(img==NULL)
       return;
@@ -72,7 +72,7 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
          HLH_array_length_set(clusters[j],0);
 
 #pragma omp parallel for
-      for(int j = 0;j<img->w*img->h;j++)
+      for(int j = 0;j<img->width*img->height;j++)
       {
          uint32_t cur = img->data[j];
          int32_t cr = SLK_color32_r(cur);
@@ -139,7 +139,7 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
          //This path doesn't really seem to get hit though
          else
          {
-            centers[j] = img->data[rand()%(img->w*img->h)];
+            centers[j] = img->data[rand()%(img->width*img->height)];
             palette[j] = 0xff000000;
          }
 
@@ -157,9 +157,9 @@ void SLK_image32_kmeans(SLK_image32 *img, uint32_t *palette, int colors, uint64_
    free(clusters);
 }
 
-uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int colors, uint64_t seed)
+uint32_t image32_kmeans_largest(Image32 *img, uint32_t *palette, int colors, uint64_t seed)
 {
-   if(img==NULL||img->w<=0||img->h<=0)
+   if(img==NULL||img->width<=0||img->height<=0)
       return 0xff000000;
    if(palette==NULL)
       return 0xff000000;
@@ -174,7 +174,7 @@ uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int col
       for(int j = 0;j<colors;j++)
          HLH_array_length_set(clusters[j],0);
 
-      for(int j = 0;j<img->w*img->h;j++)
+      for(int j = 0;j<img->width*img->height;j++)
       {
          uint32_t cur = img->data[j];
          int32_t cr = SLK_color32_r(cur);
@@ -229,7 +229,7 @@ uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int col
          //This path doesn't really seem to get hit though
          else
          {
-            centers[j] = img->data[rand()%(img->w*img->h)];
+            centers[j] = img->data[rand()%(img->width*img->height)];
          }
 
          palette[j] = centers[j];
@@ -255,9 +255,9 @@ uint32_t SLK_image32_kmeans_largest(SLK_image32 *img, uint32_t *palette, int col
    return largest;
 }
 
-static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmeanspp)
+static uint32_t *choose_centers(Image32 *img, int k, uint64_t seed, int kmeanspp)
 {
-   if(img==NULL||img->w<=0||img->h<=0)
+   if(img==NULL||img->width<=0||img->height<=0)
       return NULL;
 
    rand_xor rng;
@@ -268,7 +268,7 @@ static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmea
    {
       for(int i = 0;i<k;i++)
       {
-         int index = rand_xor_next(&rng)%(img->w*img->h);
+         int index = rand_xor_next(&rng)%(img->width*img->height);
          HLH_array_push(centers,img->data[index]);
       }
 
@@ -276,18 +276,18 @@ static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmea
    }
 
    //Choose initial center
-   int index = rand_xor_next(&rng)%(img->w*img->h);
+   int index = rand_xor_next(&rng)%(img->width*img->height);
    HLH_array_push(centers,img->data[index]);
 
    uint64_t *distance = NULL;
-   HLH_array_length_set(distance,img->w*img->h);
-   for(int i = 0;i<img->w*img->h;i++)
+   HLH_array_length_set(distance,img->width*img->height);
+   for(int i = 0;i<img->width*img->height;i++)
       distance[i] = UINT64_MAX;
    
    for(int i = 1;i<k;i++)
    {
       uint64_t dist_sum = 0;
-      for(int j = 0;j<img->w*img->h;j++)
+      for(int j = 0;j<img->width*img->height;j++)
       {
          uint32_t cur = img->data[j];
          int32_t cr = SLK_color32_r(cur);
@@ -316,7 +316,7 @@ static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmea
          random = rand_xor_next(&rng)%dist_sum;
       int found = 0;
       uint64_t dist_cur = 0;
-      for(int j = 0;j<img->w*img->h;j++)
+      for(int j = 0;j<img->width*img->height;j++)
       {
          dist_cur+=distance[j];
          if(random<dist_cur)
@@ -328,7 +328,7 @@ static uint32_t *choose_centers(SLK_image32 *img, int k, uint64_t seed, int kmea
       }
 
       if(!found)
-         HLH_array_push(centers,img->data[rand_xor_next(&rng)%(img->w*img->h)]);
+         HLH_array_push(centers,img->data[rand_xor_next(&rng)%(img->width*img->height)]);
    }
 
    HLH_array_free(distance);

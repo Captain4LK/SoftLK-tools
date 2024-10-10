@@ -1,26 +1,40 @@
 #!/bin/sh
+set -e
 
-flags="-I../3rd/ -Wall -Wextra -Wno-unused -Wshadow -std=c99"
-sources="color.c tint.c blur.c kmeans.c image.c sharp.c sample.c hscb.c pcx.c gamma.c postprocess.c dither.c palette.c unix/util_unix.c ../external/tinyfiledialogs.c"
+CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I."
+printf "
+.POSIX:
+CC      = gcc
+CFLAGS  = %s
+LDFLAGS =
+LDLIBS  = 
+all: img2pix img2pix_cmd
+" "$CFLAGS"
 
-if [ $# -lt 1 ]; then
-   echo "unspecified target, need either gui or cmd"
-   exit 0 
-fi
+obj=""
 
-if [ $1 = "gui" ]; then
-   sources="$sources main.c gui.c ../HLH_gui/HLH_gui_all.c"
+function add_file
+{
+   gcc -MM -MT "${1%%.c}.o" "$1" $CFLAGS
+   obj="$obj ${1%%.c}.o"
+}
 
-   gcc -o ../bin/SLK_img2pix $sources $flags -lm -lSDL2 -O3 -g -fopenmp -I../HLH_gui
+for src in $(find ./ -maxdepth 1 -name "*.c"); do
+   add_file "$src"
+done
 
+for src in $(find ../shared -name "*.c"); do
+   add_file "$src"
+done
 
-elif [ $1 = "cmd" ]; then
-   sources="$sources main_cmd.c ../HLH_gui/HLH_gui_all.c"
+add_file "../external/tinyfiledialogs.c"
+add_file "../HLH_gui/HLH_gui_all.c"
+add_file "unix/util_unix.c"
 
-   gcc -o ../bin/SLK_img2pix_cmd $sources $flags -Wall -Wextra -lm -O3 -s -flto=auto -fopenmp -I../HLH_gui
+echo "obj= $obj"
 
-else
+gcc -MM -MT "main/main.o" "main/main.c" $CFLAGS
+gcc -MM -MT "main/main_cmd.o" "main/main_cmd.c" $CFLAGS
 
-   echo "unknown target, need either gui or cmd"
-
-fi
+printf "img2pix_cmd: \$(obj) main/main_cmd.o\n\tgcc -o ../bin/SLK_img2pix_cmd $^ $CFLAGS -lSDL2\n"
+printf "img2pix: \$(obj) main/main.o\n\tgcc -o ../bin/SLK_img2pix $^ $CFLAGS -lSDL2\nclean:\n\trm -f \$(obj) ../bin/SLK_img2pix ../bin/SLK_img2pix_cmd \n"

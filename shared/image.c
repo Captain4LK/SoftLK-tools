@@ -261,7 +261,49 @@ Image8 *image32to8(const Image32 *img)
    return img8;
 }
 
-Image8 *Image8_dup(const Image8 *src)
+Image32 *image64to32(const Image64 *src)
+{
+   if(src==NULL||src->width<=0||src->height<=0)
+      return NULL;
+
+   Image32 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->width*src->height);
+   img->width = src->width;
+   img->height = src->height;
+   for(int i = 0;i<img->width*img->height;i++)
+      img->data[i] = color64_to_32(src->data[i]);
+
+   return img;
+}
+
+Image64 *image32to64(const Image32 *src)
+{
+   if(src==NULL||src->width<=0||src->height<=0)
+      return NULL;
+
+   Image64 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->width*src->height);
+   img->width = src->width;
+   img->height = src->height;
+   for(int i = 0;i<img->width*img->height;i++)
+      img->data[i] = color32_to_64(src->data[i]);
+
+   return img;
+}
+
+Image32 *image8to32(const Image8 *src)
+{
+   if(src==NULL||src->width<=0||src->height<=0)
+      return NULL;
+
+   Image32 *img = malloc(sizeof(*img)+sizeof(*img->data)*src->width*src->height);
+   img->width = src->width;
+   img->height = src->height;
+   for(int i = 0;i<img->width*img->height;i++)
+      img->data[i] = src->palette[src->data[i]];
+
+   return img;
+}
+
+Image8 *image8_dup(const Image8 *src)
 {
    if(src==NULL||src->width<=0||src->height<=0)
       return NULL;
@@ -275,7 +317,7 @@ Image8 *Image8_dup(const Image8 *src)
    return img;
 }
 
-Image32 *Image32_dup(const Image32 *src)
+Image32 *image32_dup(const Image32 *src)
 {
    if(src==NULL||src->width<=0||src->height<=0)
       return NULL;
@@ -288,7 +330,7 @@ Image32 *Image32_dup(const Image32 *src)
    return img;
 }
 
-Image64 *Image64_dup(const Image64 *src)
+Image64 *image64_dup(const Image64 *src)
 {
    if(src==NULL||src->width<=0||src->height<=0)
       return NULL;

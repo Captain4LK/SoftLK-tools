@@ -26,6 +26,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "HLH_json.h"
 #define OPTPARSE_IMPLEMENTATION
 #include "optparse.h"
+#define CUTE_FILES_IMPLEMENTATION
+#include "cute_files.h"
 
 #include "HLH_gui.h"
 //-------------------------------------
@@ -60,7 +62,7 @@ static float saturation = 1.f;
 static float hue = 0.f;
 static float gamma = 1.f;
 static int kmeanspp = 0;
-SLK_dither_config dither_config = {.alpha_threshold = 128, .dither_mode = SLK_DITHER_BAYER4X4, .color_dist = SLK_RGB_REDMEAN,
+static SLK_dither_config dither_config = {.alpha_threshold = 128, .dither_mode = SLK_DITHER_BAYER4X4, .color_dist = SLK_RGB_REDMEAN,
                                    .target_colors = 8, .dither_amount = 0.2f, .palette_colors = 256, .palette =
    {
       0xffff00ff, 0xff000000, 0xff080808, 0xff0f0f0f, 0xff1f1f1f, 0xff2f2f2f, 0xff3f3f3f, 0xff4b4b4b,
@@ -191,9 +193,9 @@ int main(int argc, char **argv)
    {
    }
 
-   SLK_image32 *img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
-   img->w = width;
-   img->h = height;
+   Image32 *img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
+   img->width = width;
+   img->height = height;
    memcpy(img->data,data,sizeof(*img->data)*width*height);
    HLH_gui_image_free(data);
    fclose(f);
@@ -247,29 +249,29 @@ int main(int argc, char **argv)
 
    if(scale_relative)
    {
-      width = img->w/HLH_non_zero(size_relative_x);
-      height = img->h/HLH_non_zero(size_relative_y);
+      width = img->width/HLH_non_zero(size_relative_x);
+      height = img->height/HLH_non_zero(size_relative_y);
    }
    else
    {
       width = size_absolute_x;
       height = size_absolute_y;
    }
-   SLK_image64 *img64 = SLK_image64_dup32(img);
-   SLK_image64_blur(img64,blur_amount);
-   SLK_image64 *sampled = SLK_image64_sample(img64,width,height,sample_mode,x_offset,y_offset);
+   Image64 *img64 = image32to64(img);
+   image64_blur(img64,blur_amount);
+   Image64 *sampled = image64_sample(img64,width,height,sample_mode,x_offset,y_offset);
    free(img64);
-   SLK_image64_sharpen(sampled,sharp_amount);
-   SLK_image64_hscb(sampled,hue,saturation,contrast,brightness);
-   SLK_image64_gamma(sampled,gamma);
-   SLK_image64_tint(sampled,tint_red,tint_green,tint_blue);
+   image64_sharpen(sampled,sharp_amount);
+   image64_hscb(sampled,hue,saturation,contrast,brightness);
+   image64_gamma(sampled,gamma);
+   image64_tint(sampled,tint_red,tint_green,tint_blue);
 
    if(generate_palette)
    {
       if(generate_colors>0)
          dither_config.palette_colors = generate_colors;
-      SLK_image32 *img_kmeans = SLK_image32_dup64(sampled);
-      SLK_image32_kmeans(img_kmeans,dither_config.palette,dither_config.palette_colors,time(NULL),kmeanspp);
+      Image32 *img_kmeans = image64to32(sampled);
+      image32_kmeans(img_kmeans,dither_config.palette,dither_config.palette_colors,time(NULL),kmeanspp);
       free(img_kmeans);
    }
 
@@ -285,24 +287,27 @@ int main(int argc, char **argv)
       }
    }
 
-   SLK_image32 *out = SLK_image64_dither(sampled,&dither_config);
+   Image8 *out = image64_dither(sampled,&dither_config);
 
-   f = fopen(path_out,"wb");
+   /*f = fopen(path_out,"wb");
    if(f==NULL)
    {
       fprintf(stderr,"Failed to open output image '%s'\n",path_out);
       return -1;
-   }
+   }*/
 
    char ext[512];
    slk_path_pop_ext(path_out,NULL,ext);
-   //HLH_gui_image_save(f,out->data,out->w,out->h,ext);
-   if(strcmp(ext,"pcx")==0||strcmp(ext,"PCX")==0)
-      SLK_image32_write_pcx(f,out,dither_config.palette,dither_config.palette_colors);
-   else
-      HLH_gui_image_save(f,out->data,out->w,out->h,ext);
 
-   fclose(f);
+   image8_save(out,path_out,ext);
+   //TODO(Captain4LK): readd image saving, using image8_write
+   //HLH_gui_image_save(f,out->data,out->w,out->h,ext);
+   //if(strcmp(ext,"pcx")==0||strcmp(ext,"PCX")==0)
+      //Image32_write_pcx(f,out,dither_config.palette,dither_config.palette_colors);
+   //else
+   //HLH_gui_image_save(f,out->data,out->width,out->height,ext);
+
+   //fclose(f);
 
    return 0;
 }

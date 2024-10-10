@@ -33,22 +33,22 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Function implementations
 
-void SLK_image64_sharpen(SLK_image64 *img, float amount)
+void image64_sharpen(Image64 *img, float amount)
 {
    if(amount<1e-2)
       return;
 
-   SLK_image64 *blur = SLK_image64_dup(img);
-   SLK_image64_blur(blur, 1.f);
+   Image64 *blur = image64_dup(img);
+   image64_blur(blur, 1.f);
 
    int32_t amount_fixed = (int32_t)(amount*256);
 
 #pragma omp parallel for
-   for(int y = 0;y<img->h;y++)
+   for(int y = 0;y<img->height;y++)
    {
-      for(int x = 0;x<img->w;x++)
+      for(int x = 0;x<img->width;x++)
       {
-         int i = y*img->w+x;
+         int i = y*img->width+x;
          int32_t r = SLK_color64_r(img->data[i]);
          int32_t rb = SLK_color64_r(blur->data[i]);
          int32_t g = SLK_color64_g(img->data[i]);

@@ -127,8 +127,11 @@ FILE *preset_load_select()
 }
 
 //const char *image_save_select()
-FILE *image_save_select(char ext[512])
+//FILE *image_save_select(char ext[512])
+void image_save_select(char path[1024], char ext[512])
 {
+   path[0] = '\0';
+
    const char *filter_patterns[4] = {"*.png","*.bmp","*.tga","*.pcx"};
    const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,4,filter_patterns,NULL);
 
@@ -138,11 +141,13 @@ FILE *image_save_select(char ext[512])
       strncpy(path_image_save,file_path,511);
       path_image_save[511] = '\0';
       slk_path_pop_ext(file_path, NULL, ext);
-      return fopen(file_path,"wb");
+      strncpy(path,file_path,1023);
+      path[1023] = '\0';
+      //return fopen(file_path,"wb");
       //strncpy(path_image,file_path,511);
    }
 
-   return NULL;
+   //return NULL;
 
    //return path_image;
 }

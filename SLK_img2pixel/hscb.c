@@ -35,7 +35,7 @@ static void slk_hue(uint64_t *color, float hue);
 
 //Function implementations
 
-void SLK_image64_hscb(SLK_image64 *img, float hue, float saturation, float contrast, float brightness)
+void image64_hscb(Image64 *img, float hue, float saturation, float contrast, float brightness)
 {
    if(img==NULL)
       return;
@@ -63,11 +63,11 @@ void SLK_image64_hscb(SLK_image64 *img, float hue, float saturation, float contr
    float wb = (t+brightness)*(float)0x7fff;
 
 #pragma omp parallel for
-   for(int y = 0;y<img->h;y++)
+   for(int y = 0;y<img->height;y++)
    {
-      for(int x = 0;x<img->w;x++)
+      for(int x = 0;x<img->width;x++)
       {
-         uint64_t in = img->data[y*img->w+x];
+         uint64_t in = img->data[y*img->width+x];
          uint64_t a = SLK_color64_a(in);
          
          if(hue!=0.f)
@@ -81,7 +81,7 @@ void SLK_image64_hscb(SLK_image64 *img, float hue, float saturation, float contr
          uint64_t g = HLH_max(0,HLH_min(0x7fff,(int)((rg*fr)+(gg*fg)+(bg*fb)+wg)));
          uint64_t b = HLH_max(0,HLH_min(0x7fff,(int)((rb*fr)+(gb*fg)+(bb*fb)+wb)));
 
-         img->data[y*img->w+x] = (r)|(g<<16)|(b<<32)|(a<<48);
+         img->data[y*img->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
       }
    }
 }

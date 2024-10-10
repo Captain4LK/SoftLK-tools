@@ -35,7 +35,7 @@ static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst,
 
 //Function implementations
 
-void SLK_image64_blur(SLK_image64 *img, float sz)
+void image64_blur(Image64 *img, float sz)
 {
    if(img==NULL)
       return;
@@ -44,20 +44,20 @@ void SLK_image64_blur(SLK_image64 *img, float sz)
       return;
 
    //Can't blur images this small
-   if(img->w<=(int)sz||img->h<=(int)sz)
+   if(img->width<=(int)sz||img->height<=(int)sz)
       return;
 
    //Horizontal
 #pragma omp parallel
    {
-      uint64_t *buffer0 = malloc(sizeof(*buffer0)*img->w);
-      uint64_t *buffer1 = malloc(sizeof(*buffer1)*img->w);
+      uint64_t *buffer0 = malloc(sizeof(*buffer0)*img->width);
+      uint64_t *buffer1 = malloc(sizeof(*buffer1)*img->width);
 #pragma omp for
-      for(int y = 0;y<img->h;y++)
+      for(int y = 0;y<img->height;y++)
       {
-         boxblur_line((uint16_t *)(img->data+y*img->w),(uint16_t *)buffer0,img->w,sz);
-         boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->w,sz);
-         boxblur_line((uint16_t *)buffer1,(uint16_t *)(img->data+y*img->w),img->w,sz);
+         boxblur_line((uint16_t *)(img->data+y*img->width),(uint16_t *)buffer0,img->width,sz);
+         boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->width,sz);
+         boxblur_line((uint16_t *)buffer1,(uint16_t *)(img->data+y*img->width),img->width,sz);
       }
       free(buffer0);
       free(buffer1);
@@ -66,20 +66,20 @@ void SLK_image64_blur(SLK_image64 *img, float sz)
    //Vertical
 #pragma omp parallel
    {
-      uint64_t *buffer0 = malloc(sizeof(*buffer0)*img->h);
-      uint64_t *buffer1 = malloc(sizeof(*buffer1)*img->h);
+      uint64_t *buffer0 = malloc(sizeof(*buffer0)*img->height);
+      uint64_t *buffer1 = malloc(sizeof(*buffer1)*img->height);
 #pragma omp for
-      for(int x = 0;x<img->w;x++)
+      for(int x = 0;x<img->width;x++)
       {
-         for(int y = 0;y<img->h;y++)
-            buffer0[y] = img->data[y*img->w+x];
+         for(int y = 0;y<img->height;y++)
+            buffer0[y] = img->data[y*img->width+x];
 
-         boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->h,sz);
-         boxblur_line((uint16_t *)buffer1,(uint16_t *)buffer0,img->h,sz);
-         boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->h,sz);
+         boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->height,sz);
+         boxblur_line((uint16_t *)buffer1,(uint16_t *)buffer0,img->height,sz);
+         boxblur_line((uint16_t *)buffer0,(uint16_t *)buffer1,img->height,sz);
 
-         for(int y = 0;y<img->h;y++)
-            img->data[y*img->w+x] = buffer0[y];
+         for(int y = 0;y<img->height;y++)
+            img->data[y*img->width+x] = buffer0[y];
       }
       free(buffer0);
       free(buffer1);

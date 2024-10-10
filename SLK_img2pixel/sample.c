@@ -17,6 +17,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#include "shared/image.h"
+#include "shared/color.h"
 #include "img2pixel.h"
 //-------------------------------------
 
@@ -31,11 +33,11 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static SLK_image64 *slk_sample_nearest(const SLK_image64 *img, int width, int height, float x_off, float y_off);
-static SLK_image64 *slk_sample_linear(const SLK_image64 *img, int width, int height, float x_off, float y_off);
-static SLK_image64 *slk_sample_bicubic(const SLK_image64 *img, int width, int height, float x_off, float y_off);
-static SLK_image64 *slk_sample_lanczos(const SLK_image64 *img, int width, int height, float x_off, float y_off);
-static SLK_image64 *slk_sample_cluster(const SLK_image64 *img, int width, int height, float x_off, float y_off);
+static Image64 *slk_sample_nearest(const Image64 *img, int width, int height, float x_off, float y_off);
+static Image64 *slk_sample_linear(const Image64 *img, int width, int height, float x_off, float y_off);
+static Image64 *slk_sample_bicubic(const Image64 *img, int width, int height, float x_off, float y_off);
+static Image64 *slk_sample_lanczos(const Image64 *img, int width, int height, float x_off, float y_off);
+static Image64 *slk_sample_cluster(const Image64 *img, int width, int height, float x_off, float y_off);
 
 static float slk_blend_linear(float sx, float sy, float c0, float c1, float c2, float c3);
 static float slk_blend_bicubic(float c0, float c1, float c2, float c3, float t);
@@ -44,10 +46,10 @@ static float slk_lanczos(float v);
 
 //Function implementations
 
-SLK_image64 *SLK_image64_sample(const SLK_image64 *img, int width, int height, int sample_mode, float x_off, float y_off)
+Image64 *image64_sample(const Image64 *img, int width, int height, int sample_mode, float x_off, float y_off)
 {
    if(img==NULL)
-      return SLK_image64_dup(img);
+      return image64_dup(img);
    //TODO(Captain4LK): integer only math?
    width = HLH_max(1,width);
    height = HLH_max(1,height);
@@ -64,14 +66,14 @@ SLK_image64 *SLK_image64_sample(const SLK_image64 *img, int width, int height, i
    return NULL;
 }
 
-static SLK_image64 *slk_sample_nearest(const SLK_image64 *img, int width, int height, float x_off, float y_off)
+static Image64 *slk_sample_nearest(const Image64 *img, int width, int height, float x_off, float y_off)
 {
-   SLK_image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
-   out->w = width;
-   out->h = height;
+   Image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
+   out->width = width;
+   out->height = height;
 
-   float w = (img->w-1)/(float)width;
-   float h = (img->h-1)/(float)height;
+   float w = (img->width-1)/(float)width;
+   float h = (img->height-1)/(float)height;
 
 #pragma omp parallel for
    for(int y = 0;y<height;y++)
@@ -81,23 +83,23 @@ static SLK_image64 *slk_sample_nearest(const SLK_image64 *img, int width, int he
          float dx = x+x_off+0.5f;
          float dy = y+y_off+0.5f;
 
-         int ix = HLH_max(0,HLH_min(img->w-1,(int)roundf(dx*w)));
-         int iy = HLH_max(0,HLH_min(img->h-1,(int)roundf(dy*h)));
-         out->data[y*width+x] = img->data[iy*img->w+ix];
+         int ix = HLH_max(0,HLH_min(img->width-1,(int)roundf(dx*w)));
+         int iy = HLH_max(0,HLH_min(img->height-1,(int)roundf(dy*h)));
+         out->data[y*width+x] = img->data[iy*img->width+ix];
       }
    }
 
    return out;
 }
 
-static SLK_image64 *slk_sample_linear(const SLK_image64 *img, int width, int height, float x_off, float y_off)
+static Image64 *slk_sample_linear(const Image64 *img, int width, int height, float x_off, float y_off)
 {
-   SLK_image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
-   out->w = width;
-   out->h = height;
+   Image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
+   out->width = width;
+   out->height = height;
 
-   float fw = (float)(img->w-1)/(float)width;
-   float fh = (float)(img->h-1)/(float)height;
+   float fw = (float)(img->width-1)/(float)width;
+   float fh = (float)(img->height-1)/(float)height;
 
 #pragma omp parallel for
    for(int y = 0;y<height;y++)
@@ -114,14 +116,14 @@ static SLK_image64 *slk_sample_linear(const SLK_image64 *img, int width, int hei
          uint64_t p2 = UINT64_C(0x7fff000000000000);
          uint64_t p3 = UINT64_C(0x7fff000000000000);
 
-         if(ix>=0&&ix<img->w&&iy>=0&&iy<img->h)
-            p0 = img->data[iy*img->w+ix];
-         if(ix+1>=0&&ix+1<img->w&&iy>=0&&iy<img->h)
-            p1 = img->data[iy*img->w+ix+1];
-         if(ix>=0&&ix<img->w&&iy+1>=0&&iy+1<img->h)
-            p2 = img->data[(iy+1)*img->w+ix];
-         if(ix+1>=0&&ix+1<img->w&&iy+1>=0&&iy+1<img->h)
-            p3 = img->data[(iy+1)*img->w+ix+1];
+         if(ix>=0&&ix<img->width&&iy>=0&&iy<img->height)
+            p0 = img->data[iy*img->width+ix];
+         if(ix+1>=0&&ix+1<img->width&&iy>=0&&iy<img->height)
+            p1 = img->data[iy*img->width+ix+1];
+         if(ix>=0&&ix<img->width&&iy+1>=0&&iy+1<img->height)
+            p2 = img->data[(iy+1)*img->width+ix];
+         if(ix+1>=0&&ix+1<img->width&&iy+1>=0&&iy+1<img->height)
+            p3 = img->data[(iy+1)*img->width+ix+1];
 
          float c0 = slk_blend_linear(six,siy,(float)SLK_color64_r(p0),(float)SLK_color64_r(p1),(float)SLK_color64_r(p2),(float)SLK_color64_r(p3));
          float c1 = slk_blend_linear(six,siy,(float)SLK_color64_g(p0),(float)SLK_color64_g(p1),(float)SLK_color64_g(p2),(float)SLK_color64_g(p3));
@@ -133,7 +135,7 @@ static SLK_image64 *slk_sample_linear(const SLK_image64 *img, int width, int hei
          uint64_t b = HLH_max(0,HLH_min(0x7fff,(int)c2));
          uint64_t a = HLH_max(0,HLH_min(0x7fff,(int)c3));
 
-         out->data[y*out->w+x] = (r)|(g<<16)|(b<<32)|(a<<48);
+         out->data[y*out->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
       }
    }
 
@@ -147,14 +149,14 @@ static float slk_blend_linear(float sx, float sy, float c0, float c1, float c2, 
    return (1.f-sy)*t0+sy*t1;
 }
 
-static SLK_image64 *slk_sample_bicubic(const SLK_image64 *img, int width, int height, float x_off, float y_off)
+static Image64 *slk_sample_bicubic(const Image64 *img, int width, int height, float x_off, float y_off)
 {
-   SLK_image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
-   out->w = width;
-   out->h = height;
+   Image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
+   out->width = width;
+   out->height = height;
 
-   float fw = (float)(img->w-1)/(float)width;
-   float fh = (float)(img->h-1)/(float)height;
+   float fw = (float)(img->width-1)/(float)width;
+   float fh = (float)(img->height-1)/(float)height;
 
 #pragma omp parallel for
    for(int y = 0;y<height;y++)
@@ -183,41 +185,41 @@ static SLK_image64 *slk_sample_bicubic(const SLK_image64 *img, int width, int he
          uint64_t p32 = UINT64_C(0x7fff000000000000);
          uint64_t p33 = UINT64_C(0x7fff000000000000);
 
-         if(ix-1>=0&&ix-1<img->w&&iy-1>=0&&iy-1<img->h)
-            p00 = img->data[(iy-1)*img->w+ix-1];
-         if(ix>=0&&ix<img->w&&iy-1>=0&&iy-1<img->h)
-            p01 = img->data[(iy-1)*img->w+ix];
-         if(ix+1>=0&&ix+1<img->w&&iy-1>=0&&iy-1<img->h)
-            p02 = img->data[(iy-1)*img->w+ix+1];
-         if(ix+2>=0&&ix+2<img->w&&iy-1>=0&&iy-1<img->h)
-            p03 = img->data[(iy-1)*img->w+ix+2];
+         if(ix-1>=0&&ix-1<img->width&&iy-1>=0&&iy-1<img->height)
+            p00 = img->data[(iy-1)*img->width+ix-1];
+         if(ix>=0&&ix<img->width&&iy-1>=0&&iy-1<img->height)
+            p01 = img->data[(iy-1)*img->width+ix];
+         if(ix+1>=0&&ix+1<img->width&&iy-1>=0&&iy-1<img->height)
+            p02 = img->data[(iy-1)*img->width+ix+1];
+         if(ix+2>=0&&ix+2<img->width&&iy-1>=0&&iy-1<img->height)
+            p03 = img->data[(iy-1)*img->width+ix+2];
 
-         if(ix-1>=0&&ix-1<img->w&&iy>=0&&iy<img->h)
-            p10 = img->data[(iy)*img->w+ix-1];
-         if(ix>=0&&ix<img->w&&iy>=0&&iy<img->h)
-            p11 = img->data[(iy)*img->w+ix];
-         if(ix+1>=0&&ix+1<img->w&&iy>=0&&iy<img->h)
-            p12 = img->data[(iy)*img->w+ix+1];
-         if(ix+2>=0&&ix+2<img->w&&iy>=0&&iy<img->h)
-            p13 = img->data[(iy)*img->w+ix+2];
+         if(ix-1>=0&&ix-1<img->width&&iy>=0&&iy<img->height)
+            p10 = img->data[(iy)*img->width+ix-1];
+         if(ix>=0&&ix<img->width&&iy>=0&&iy<img->height)
+            p11 = img->data[(iy)*img->width+ix];
+         if(ix+1>=0&&ix+1<img->width&&iy>=0&&iy<img->height)
+            p12 = img->data[(iy)*img->width+ix+1];
+         if(ix+2>=0&&ix+2<img->width&&iy>=0&&iy<img->height)
+            p13 = img->data[(iy)*img->width+ix+2];
 
-         if(ix-1>=0&&ix-1<img->w&&iy+1>=0&&iy+1<img->h)
-            p20 = img->data[(iy+1)*img->w+ix-1];
-         if(ix>=0&&ix<img->w&&iy+1>=0&&iy+1<img->h)
-            p21 = img->data[(iy+1)*img->w+ix];
-         if(ix+1>=0&&ix+1<img->w&&iy+1>=0&&iy+1<img->h)
-            p22 = img->data[(iy+1)*img->w+ix+1];
-         if(ix+2>=0&&ix+2<img->w&&iy+1>=0&&iy+1<img->h)
-            p23 = img->data[(iy+1)*img->w+ix+2];
+         if(ix-1>=0&&ix-1<img->width&&iy+1>=0&&iy+1<img->height)
+            p20 = img->data[(iy+1)*img->width+ix-1];
+         if(ix>=0&&ix<img->width&&iy+1>=0&&iy+1<img->height)
+            p21 = img->data[(iy+1)*img->width+ix];
+         if(ix+1>=0&&ix+1<img->width&&iy+1>=0&&iy+1<img->height)
+            p22 = img->data[(iy+1)*img->width+ix+1];
+         if(ix+2>=0&&ix+2<img->width&&iy+1>=0&&iy+1<img->height)
+            p23 = img->data[(iy+1)*img->width+ix+2];
 
-         if(ix-1>=0&&ix-1<img->w&&iy+2>=0&&iy+2<img->h)
-            p30 = img->data[(iy+2)*img->w+ix-1];
-         if(ix>=0&&ix<img->w&&iy+2>=0&&iy+2<img->h)
-            p31 = img->data[(iy+2)*img->w+ix];
-         if(ix+1>=0&&ix+1<img->w&&iy+2>=0&&iy+2<img->h)
-            p32 = img->data[(iy+2)*img->w+ix+1];
-         if(ix+2>=0&&ix+2<img->w&&iy+2>=0&&iy+2<img->h)
-            p33 = img->data[(iy+2)*img->w+ix+2];
+         if(ix-1>=0&&ix-1<img->width&&iy+2>=0&&iy+2<img->height)
+            p30 = img->data[(iy+2)*img->width+ix-1];
+         if(ix>=0&&ix<img->width&&iy+2>=0&&iy+2<img->height)
+            p31 = img->data[(iy+2)*img->width+ix];
+         if(ix+1>=0&&ix+1<img->width&&iy+2>=0&&iy+2<img->height)
+            p32 = img->data[(iy+2)*img->width+ix+1];
+         if(ix+2>=0&&ix+2<img->width&&iy+2>=0&&iy+2<img->height)
+            p33 = img->data[(iy+2)*img->width+ix+2];
 
          float c0 = slk_blend_bicubic((float)SLK_color64_r(p00),(float)SLK_color64_r(p01),(float)SLK_color64_r(p02),(float)SLK_color64_r(p03),six);
          float c1 = slk_blend_bicubic((float)SLK_color64_r(p10),(float)SLK_color64_r(p11),(float)SLK_color64_r(p12),(float)SLK_color64_r(p13),six);
@@ -243,7 +245,7 @@ static SLK_image64 *slk_sample_bicubic(const SLK_image64 *img, int width, int he
          c3 = slk_blend_bicubic((float)SLK_color64_a(p30),(float)SLK_color64_a(p31),(float)SLK_color64_a(p32),(float)SLK_color64_a(p33),six);
          uint64_t a = HLH_max(0,HLH_min(0x7fff,(int)slk_blend_bicubic(c0,c1,c2,c3,siy)));
 
-         out->data[y*out->w+x] = (r)|(g<<16)|(b<<32)|(a<<48);
+         out->data[y*out->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
       }
    }
 
@@ -260,14 +262,14 @@ static float slk_blend_bicubic(float c0, float c1, float c2, float c3, float t)
    return a0*t*t*t+a1*t*t+a2*t+a3;
 }
 
-static SLK_image64 *slk_sample_lanczos(const SLK_image64 *img, int width, int height, float x_off, float y_off)
+static Image64 *slk_sample_lanczos(const Image64 *img, int width, int height, float x_off, float y_off)
 {
-   SLK_image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
-   out->w = width;
-   out->h = height;
+   Image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
+   out->width = width;
+   out->height = height;
 
-   float fw = (float)(img->w-1)/(float)width;
-   float fh = (float)(img->h-1)/(float)height;
+   float fw = (float)(img->width-1)/(float)width;
+   float fh = (float)(img->height-1)/(float)height;
 
 #pragma omp parallel for
    for(int y = 0;y<height;y++)
@@ -305,18 +307,18 @@ static SLK_image64 *slk_sample_lanczos(const SLK_image64 *img, int width, int he
             uint64_t p04 = UINT64_C(0x7fff000000000000);
             uint64_t p05 = UINT64_C(0x7fff000000000000);
 
-            if(ix-2>=0&&ix-2<img->w&&iy-2+i>=0&&iy-2+i<img->h)
-               p00 = img->data[(iy-2+i)*img->w+ix-2];
-            if(ix-1>=0&&ix-1<img->w&&iy-2+i>=0&&iy-2+i<img->h)
-               p01 = img->data[(iy-2+i)*img->w+ix-1];
-            if(ix>=0&&ix<img->w&&iy-2+i>=0&&iy-2+i<img->h)
-               p02 = img->data[(iy-2+i)*img->w+ix];
-            if(ix+1>=0&&ix+1<img->w&&iy-2+i>=0&&iy-2+i<img->h)
-               p03 = img->data[(iy-2+i)*img->w+ix+1];
-            if(ix+2>=0&&ix+2<img->w&&iy-2+i>=0&&iy-2+i<img->h)
-               p04 = img->data[(iy-2+i)*img->w+ix+2];
-            if(ix+3>=0&&ix+3<img->w&&iy-2+i>=0&&iy-2+i<img->h)
-               p05 = img->data[(iy-2+i)*img->w+ix+3];
+            if(ix-2>=0&&ix-2<img->width&&iy-2+i>=0&&iy-2+i<img->height)
+               p00 = img->data[(iy-2+i)*img->width+ix-2];
+            if(ix-1>=0&&ix-1<img->width&&iy-2+i>=0&&iy-2+i<img->height)
+               p01 = img->data[(iy-2+i)*img->width+ix-1];
+            if(ix>=0&&ix<img->width&&iy-2+i>=0&&iy-2+i<img->height)
+               p02 = img->data[(iy-2+i)*img->width+ix];
+            if(ix+1>=0&&ix+1<img->width&&iy-2+i>=0&&iy-2+i<img->height)
+               p03 = img->data[(iy-2+i)*img->width+ix+1];
+            if(ix+2>=0&&ix+2<img->width&&iy-2+i>=0&&iy-2+i<img->height)
+               p04 = img->data[(iy-2+i)*img->width+ix+2];
+            if(ix+3>=0&&ix+3<img->width&&iy-2+i>=0&&iy-2+i<img->height)
+               p05 = img->data[(iy-2+i)*img->width+ix+3];
 
             cr[i] = a0*(float)SLK_color64_r(p00)+a1*(float)SLK_color64_r(p01)+a2*(float)SLK_color64_r(p02)+a3*(float)SLK_color64_r(p03)+a4*(float)SLK_color64_r(p04)+a5*(float)SLK_color64_r(p05);
             cg[i] = a0*(float)SLK_color64_g(p00)+a1*(float)SLK_color64_g(p01)+a2*(float)SLK_color64_g(p02)+a3*(float)SLK_color64_g(p03)+a4*(float)SLK_color64_g(p04)+a5*(float)SLK_color64_g(p05);
@@ -329,7 +331,7 @@ static SLK_image64 *slk_sample_lanczos(const SLK_image64 *img, int width, int he
          uint64_t b = HLH_max(0,HLH_min(0x7fff,b0*cb[0]+b1*cb[1]+b2*cb[2]+b3*cb[3]+b4*cb[4]+b5*cb[5]));
          uint64_t a = HLH_max(0,HLH_min(0x7fff,b0*ca[0]+b1*ca[1]+b2*ca[2]+b3*ca[3]+b4*ca[4]+b5*ca[5]));
 
-         out->data[y*out->w+x] = (r)|(g<<16)|(b<<32)|(a<<48);
+         out->data[y*out->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
       }
    }
 
@@ -346,14 +348,14 @@ static float slk_lanczos(float v)
    return ((3.f*sinf(PI32*v)*sinf(PI32*v/3.f))/(PI32*PI32*v*v));
 }
 
-static SLK_image64 *slk_sample_cluster(const SLK_image64 *img, int width, int height, float x_off, float y_off)
+static Image64 *slk_sample_cluster(const Image64 *img, int width, int height, float x_off, float y_off)
 {
 
-   float w = (img->w)/(float)width;
-   float h = (img->h)/(float)height;
+   float w = (img->width)/(float)width;
+   float h = (img->height)/(float)height;
 
-   float grid_x = ((float)img->w/(float)(width));
-   float grid_y = ((float)img->h/(float)(height));
+   float grid_x = ((float)img->width/(float)(width));
+   float grid_y = ((float)img->height/(float)(height));
    int igrid_x = grid_x;
    int igrid_y = grid_y;
    if(igrid_x<=0||igrid_y<=0)
@@ -361,15 +363,15 @@ static SLK_image64 *slk_sample_cluster(const SLK_image64 *img, int width, int he
       return slk_sample_nearest(img,width,height,x_off,y_off);
    }
 
-   SLK_image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
-   out->w = width;
-   out->h = height;
+   Image64 *out = malloc(sizeof(*out)+sizeof(*out->data)*width*height);
+   out->width = width;
+   out->height = height;
 
 #pragma omp parallel
    {
-      SLK_image32 *cluster = malloc(sizeof(*cluster)+sizeof(*cluster->data)*igrid_x*igrid_y);
-      cluster->w = igrid_x;
-      cluster->h = igrid_y;
+      Image32 *cluster = malloc(sizeof(*cluster)+sizeof(*cluster->data)*igrid_x*igrid_y);
+      cluster->width = igrid_x;
+      cluster->height = igrid_y;
       uint32_t colors[16];
 
 #pragma omp for
@@ -380,26 +382,26 @@ static SLK_image64 *slk_sample_cluster(const SLK_image64 *img, int width, int he
             float dx = x+x_off+0.5f;
             float dy = y+y_off+0.5f;
 
-            int ix = HLH_max(0,HLH_min(img->w-1,(int)roundf(dx*w)));
-            int iy = HLH_max(0,HLH_min(img->h-1,(int)roundf(dy*h)));
-            uint64_t a = SLK_color64_a(img->data[iy*img->w+ix]);
+            int ix = HLH_max(0,HLH_min(img->width-1,(int)roundf(dx*w)));
+            int iy = HLH_max(0,HLH_min(img->height-1,(int)roundf(dy*h)));
+            uint64_t a = SLK_color64_a(img->data[iy*img->width+ix]);
 
             for(int iy = 0;iy<igrid_y;iy++)
             {
-               //out->data[y*width+x] = img->data[iy*img->w+ix];
+               //out->data[y*width+x] = img->data[iy*img->width+ix];
                for(int ix = 0;ix<igrid_x;ix++)
                {
                   cluster->data[iy*igrid_x+ix] = 0xff000000;
-                  if(x*grid_x+ix>=0&&x*grid_x+ix<img->w&&y*grid_y+iy>=0&&y*grid_y+iy<img->h)
-                     cluster->data[iy*igrid_x+ix] = SLK_color64_to_32(img->data[((int)(y*grid_y)+iy)*img->w+(int)(x*grid_x)+ix]);
+                  if(x*grid_x+ix>=0&&x*grid_x+ix<img->width&&y*grid_y+iy>=0&&y*grid_y+iy<img->height)
+                     cluster->data[iy*igrid_x+ix] = SLK_color64_to_32(img->data[((int)(y*grid_y)+iy)*img->width+(int)(x*grid_x)+ix]);
                }
             }
-            uint64_t c = SLK_color32_to_64(SLK_image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
+            uint64_t c = color32_to_64(image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
             uint64_t r = SLK_color64_r(c);
             uint64_t g = SLK_color64_g(c);
             uint64_t b = SLK_color64_b(c);
             out->data[y*width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
-            //out->data[y*width+x] = SLK_color32_to_64(SLK_image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
+            //out->data[y*width+x] = SLK_color32_to_64(Image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
          }
       }
 

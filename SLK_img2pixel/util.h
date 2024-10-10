@@ -20,7 +20,7 @@ void dir_input_select(char path[512]);
 void dir_output_select(char path[512]);
 
 //Close with fclose() when done
-FILE *image_save_select(char ext[512]);
+void image_save_select(char path[1024], char ext[512]);
 FILE *palette_save_select(char ext[512]);
 FILE *preset_save_select();
 
