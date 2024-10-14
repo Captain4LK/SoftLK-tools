@@ -66,7 +66,7 @@ typedef struct
    int target_colors;
 }SLK_dither_config;
 
-uint64_t SLK_color32_to_64(uint32_t c);
+/*uint64_t SLK_color32_to_64(uint32_t c);
 uint64_t SLK_color64_r(uint64_t c);
 uint64_t SLK_color64_g(uint64_t c);
 uint64_t SLK_color64_b(uint64_t c);
@@ -75,7 +75,7 @@ uint32_t SLK_color64_to_32(uint64_t c);
 uint32_t SLK_color32_r(uint32_t c);
 uint32_t SLK_color32_g(uint32_t c);
 uint32_t SLK_color32_b(uint32_t c);
-uint32_t SLK_color32_a(uint32_t c);
+uint32_t SLK_color32_a(uint32_t c);*/
 
 //Max 256
 void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *ext);

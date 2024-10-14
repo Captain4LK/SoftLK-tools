@@ -22,6 +22,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "../external/HLH.h"
+#include "shared/color.h"
 #include "img2pixel.h"
 //-------------------------------------
 
@@ -75,19 +76,19 @@ void image32_kmeans(Image32 *img, uint32_t *palette, int colors, uint64_t seed, 
       for(int j = 0;j<img->width*img->height;j++)
       {
          uint32_t cur = img->data[j];
-         int32_t cr = SLK_color32_r(cur);
-         int32_t cg = SLK_color32_g(cur);
-         int32_t cb = SLK_color32_b(cur);
-         int32_t ca = SLK_color32_a(cur);
+         int32_t cr = color32_r(cur);
+         int32_t cg = color32_g(cur);
+         int32_t cb = color32_b(cur);
+         int32_t ca = color32_a(cur);
 
          uint64_t dist_min = UINT64_MAX;
          int min_i = 0;
          for(int c = 0;c<(int)HLH_array_length(centers);c++)
          {
-            int32_t r = SLK_color32_r(centers[c]);
-            int32_t g = SLK_color32_g(centers[c]);
-            int32_t b = SLK_color32_b(centers[c]);
-            int32_t a = SLK_color32_a(centers[c]);
+            int32_t r = color32_r(centers[c]);
+            int32_t g = color32_g(centers[c]);
+            int32_t b = color32_b(centers[c]);
+            int32_t a = color32_a(centers[c]);
 
             uint64_t dist = (cr-r)*(cr-r);
             dist+=(cg-g)*(cg-g);
@@ -120,9 +121,9 @@ void image32_kmeans(Image32 *img, uint32_t *palette, int colors, uint64_t seed, 
          uint64_t sum_b = 0;
          for(int c = 0;c<(int)HLH_array_length(clusters[j]);c++)
          {
-            sum_r+=SLK_color32_r(clusters[j][c]);
-            sum_g+=SLK_color32_g(clusters[j][c]);
-            sum_b+=SLK_color32_b(clusters[j][c]);
+            sum_r+=color32_r(clusters[j][c]);
+            sum_g+=color32_g(clusters[j][c]);
+            sum_b+=color32_b(clusters[j][c]);
          }
 
          if(HLH_array_length(clusters[j])>0)
@@ -177,17 +178,17 @@ uint32_t image32_kmeans_largest(Image32 *img, uint32_t *palette, int colors, uin
       for(int j = 0;j<img->width*img->height;j++)
       {
          uint32_t cur = img->data[j];
-         int32_t cr = SLK_color32_r(cur);
-         int32_t cg = SLK_color32_g(cur);
-         int32_t cb = SLK_color32_b(cur);
+         int32_t cr = color32_r(cur);
+         int32_t cg = color32_g(cur);
+         int32_t cb = color32_b(cur);
 
          uint64_t dist_min = UINT64_MAX;
          int min_i = 0;
          for(int c = 0;c<(int)HLH_array_length(centers);c++)
          {
-            int32_t r = SLK_color32_r(centers[c]);
-            int32_t g = SLK_color32_g(centers[c]);
-            int32_t b = SLK_color32_b(centers[c]);
+            int32_t r = color32_r(centers[c]);
+            int32_t g = color32_g(centers[c]);
+            int32_t b = color32_b(centers[c]);
 
             uint64_t dist = (cr-r)*(cr-r);
             dist+=(cg-g)*(cg-g);
@@ -211,9 +212,9 @@ uint32_t image32_kmeans_largest(Image32 *img, uint32_t *palette, int colors, uin
          uint64_t sum_b = 0;
          for(int c = 0;c<(int)HLH_array_length(clusters[j]);c++)
          {
-            sum_r+=SLK_color32_r(clusters[j][c]);
-            sum_g+=SLK_color32_g(clusters[j][c]);
-            sum_b+=SLK_color32_b(clusters[j][c]);
+            sum_r+=color32_r(clusters[j][c]);
+            sum_g+=color32_g(clusters[j][c]);
+            sum_b+=color32_b(clusters[j][c]);
          }
 
          if(HLH_array_length(clusters[j])>0)
@@ -290,16 +291,16 @@ static uint32_t *choose_centers(Image32 *img, int k, uint64_t seed, int kmeanspp
       for(int j = 0;j<img->width*img->height;j++)
       {
          uint32_t cur = img->data[j];
-         int32_t cr = SLK_color32_r(cur);
-         int32_t cg = SLK_color32_g(cur);
-         int32_t cb = SLK_color32_b(cur);
-         int32_t ca = SLK_color32_a(cur);
+         int32_t cr = color32_r(cur);
+         int32_t cg = color32_g(cur);
+         int32_t cb = color32_b(cur);
+         int32_t ca = color32_a(cur);
 
          int center_index = HLH_array_length(centers)-1;
-         int32_t r = SLK_color32_r(centers[center_index]);
-         int32_t g = SLK_color32_g(centers[center_index]);
-         int32_t b = SLK_color32_b(centers[center_index]);
-         int32_t a = SLK_color32_a(centers[center_index]);
+         int32_t r = color32_r(centers[center_index]);
+         int32_t g = color32_g(centers[center_index]);
+         int32_t b = color32_b(centers[center_index]);
+         int32_t a = color32_a(centers[center_index]);
 
          uint64_t dist = (cr-r)*(cr-r);
          dist+=(cg-g)*(cg-g);

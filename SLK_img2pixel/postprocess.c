@@ -17,6 +17,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#include "shared/color.h"
 #include "img2pixel.h"
 //-------------------------------------
 
@@ -42,32 +43,32 @@ Image32 *Image32_postprocess(Image32 *img, uint32_t *color_inline, uint32_t *col
    {
       for(int x = 0;x<img->width;x++)
       {
-         if(color_inline!=NULL&&SLK_color32_a(img->data[y*img->width+x])!=0)
+         if(color_inline!=NULL&&color32_a(img->data[y*img->width+x])!=0)
          {
             int empty = 0;
-            if(y-1>=0&&y-1<img->height&&SLK_color32_a(img->data[(y-1)*img->width+x])==0)
+            if(y-1>=0&&y-1<img->height&&color32_a(img->data[(y-1)*img->width+x])==0)
                empty++;
-            if(y+1>=0&&y+1<img->height&&SLK_color32_a(img->data[(y+1)*img->width+x])==0)
+            if(y+1>=0&&y+1<img->height&&color32_a(img->data[(y+1)*img->width+x])==0)
                empty++;
-            if(x-1>=0&&x-1<img->width&&SLK_color32_a(img->data[y*img->width+x-1])==0)
+            if(x-1>=0&&x-1<img->width&&color32_a(img->data[y*img->width+x-1])==0)
                empty++;
-            if(x+1>=0&&x+1<img->width&&SLK_color32_a(img->data[y*img->width+x+1])==0)
+            if(x+1>=0&&x+1<img->width&&color32_a(img->data[y*img->width+x+1])==0)
                empty++;
 
             if(empty!=0)
                out->data[y*img->width+x] = *color_inline;
          }
 
-         if(color_outline!=NULL&&SLK_color32_a(img->data[y*img->width+x])==0)
+         if(color_outline!=NULL&&color32_a(img->data[y*img->width+x])==0)
          {
             int empty = 0;
-            if(y-1>=0&&y-1<img->height&&SLK_color32_a(img->data[(y-1)*img->width+x])!=0)
+            if(y-1>=0&&y-1<img->height&&color32_a(img->data[(y-1)*img->width+x])!=0)
                empty++;
-            if(y+1>=0&&y+1<img->height&&SLK_color32_a(img->data[(y+1)*img->width+x])!=0)
+            if(y+1>=0&&y+1<img->height&&color32_a(img->data[(y+1)*img->width+x])!=0)
                empty++;
-            if(x-1>=0&&x-1<img->width&&SLK_color32_a(img->data[y*img->width+x-1])!=0)
+            if(x-1>=0&&x-1<img->width&&color32_a(img->data[y*img->width+x-1])!=0)
                empty++;
-            if(x+1>=0&&x+1<img->width&&SLK_color32_a(img->data[y*img->width+x+1])!=0)
+            if(x+1>=0&&x+1<img->width&&color32_a(img->data[y*img->width+x+1])!=0)
                empty++;
 
             if(empty!=0)

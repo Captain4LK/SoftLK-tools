@@ -17,6 +17,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#include "shared/color.h"
 #include "img2pixel.h"
 //-------------------------------------
 
@@ -49,10 +50,10 @@ void image64_tint(Image64 *img, uint8_t tint_r, uint8_t tint_g, uint8_t tint_b)
       for(int x = 0;x<img->width;x++)
       {
          uint64_t p = img->data[y*img->width+x];
-         uint64_t r = SLK_color64_r(p);
-         uint64_t g = SLK_color64_g(p);
-         uint64_t b = SLK_color64_b(p);
-         uint64_t a = SLK_color64_a(p);
+         uint64_t r = color64_r(p);
+         uint64_t g = color64_g(p);
+         uint64_t b = color64_b(p);
+         uint64_t a = color64_a(p);
 
          r = (r*tr)/255;
          g = (g*tg)/255;

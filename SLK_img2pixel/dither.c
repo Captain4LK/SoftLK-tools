@@ -22,6 +22,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#include "shared/color.h"
 #include "shared/image.h"
 #include "img2pixel.h"
 //-------------------------------------
@@ -201,7 +202,7 @@ static Image8 *slk_dither_closest(Image64 *img, const SLK_dither_config *config)
       for(int x = 0;x<img->width;x++)
       {
          uint64_t p = img->data[y*img->width+x];
-         if((int)(SLK_color64_a(p)/128)<config->alpha_threshold)
+         if((int)(color64_a(p)/128)<config->alpha_threshold)
          {
             out->data[y*img->width+x] = 0;
             continue;
@@ -221,7 +222,7 @@ static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
    uint32_t *colors = calloc(2*img->width*img->height,sizeof(*colors));
    for(int i = 0;i<img->width*img->height;i++)
    {
-      colors[i*2+0] = SLK_color64_to_32(img->data[i]);
+      colors[i*2+0] = color64_to_32(img->data[i]);
       colors[i*2+1] = i;
    }
    slk_median_box *boxes = calloc(target,sizeof(*boxes));
@@ -230,7 +231,7 @@ static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
    int slow = 0;
    for(int i = 0;i<img->width*img->height;i++)
    {
-      if(SLK_color32_a(colors[i*2+0])>=config->alpha_threshold)
+      if(color32_a(colors[i*2+0])>=config->alpha_threshold)
       {
          uint32_t tmp = colors[2*i+0];
          colors[2*i+0] = colors[2*slow+0];
@@ -254,12 +255,12 @@ static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
    for(int i = 0;i<boxes[0].count;i++)
    {
       uint32_t c = colors[2*(boxes[0].start+i)];
-      min_r = HLH_min(min_r,(int)SLK_color32_r(c));
-      max_r = HLH_max(max_r,(int)SLK_color32_r(c));
-      min_g = HLH_min(min_g,(int)SLK_color32_g(c));
-      max_g = HLH_max(max_g,(int)SLK_color32_g(c));
-      min_b = HLH_min(min_b,(int)SLK_color32_b(c));
-      max_b = HLH_max(max_b,(int)SLK_color32_b(c));
+      min_r = HLH_min(min_r,(int)color32_r(c));
+      max_r = HLH_max(max_r,(int)color32_r(c));
+      min_g = HLH_min(min_g,(int)color32_g(c));
+      max_g = HLH_max(max_g,(int)color32_g(c));
+      min_b = HLH_min(min_b,(int)color32_b(c));
+      max_b = HLH_max(max_b,(int)color32_b(c));
    }
    boxes[0].range_red = max_r-min_r;
    boxes[0].range_green = max_g-min_g;
@@ -297,28 +298,28 @@ static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
       int len = 0;
       if(largest==boxes[max_box].range_red)
       {
-         uint32_t cut = (SLK_color32_r(colors[2*boxes[max_box].start])+SLK_color32_r(colors[2*(boxes[max_box].start+boxes[max_box].count-1)]))/2;
+         uint32_t cut = (color32_r(colors[2*boxes[max_box].start])+color32_r(colors[2*(boxes[max_box].start+boxes[max_box].count-1)]))/2;
          for(len = 0;;len++)
          {
-            if(SLK_color32_r(colors[2*(boxes[max_box].start+len)])>cut)
+            if(color32_r(colors[2*(boxes[max_box].start+len)])>cut)
                break;
          }
       }
       else if(largest==boxes[max_box].range_green)
       {
-         uint32_t cut = (SLK_color32_g(colors[2*boxes[max_box].start])+SLK_color32_g(colors[2*(boxes[max_box].start+boxes[max_box].count-1)]))/2;
+         uint32_t cut = (color32_g(colors[2*boxes[max_box].start])+color32_g(colors[2*(boxes[max_box].start+boxes[max_box].count-1)]))/2;
          for(len = 0;;len++)
          {
-            if(SLK_color32_g(colors[2*(boxes[max_box].start+len)])>cut)
+            if(color32_g(colors[2*(boxes[max_box].start+len)])>cut)
                break;
          }
       }
       else if(largest==boxes[max_box].range_blue)
       {
-         uint32_t cut = (SLK_color32_b(colors[2*boxes[max_box].start])+SLK_color32_b(colors[2*(boxes[max_box].start+boxes[max_box].count-1)]))/2;
+         uint32_t cut = (color32_b(colors[2*boxes[max_box].start])+color32_b(colors[2*(boxes[max_box].start+boxes[max_box].count-1)]))/2;
          for(len = 0;;len++)
          {
-            if(SLK_color32_b(colors[2*(boxes[max_box].start+len)])>cut)
+            if(color32_b(colors[2*(boxes[max_box].start+len)])>cut)
                break;
          }
       }
@@ -338,12 +339,12 @@ static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
       for(int i = 0;i<boxes[max_box].count;i++)
       {
          uint32_t c = colors[2*(boxes[max_box].start+i)];
-         min_r = HLH_min(min_r,(int)SLK_color32_r(c));
-         max_r = HLH_max(max_r,(int)SLK_color32_r(c));
-         min_g = HLH_min(min_g,(int)SLK_color32_g(c));
-         max_g = HLH_max(max_g,(int)SLK_color32_g(c));
-         min_b = HLH_min(min_b,(int)SLK_color32_b(c));
-         max_b = HLH_max(max_b,(int)SLK_color32_b(c));
+         min_r = HLH_min(min_r,(int)color32_r(c));
+         max_r = HLH_max(max_r,(int)color32_r(c));
+         min_g = HLH_min(min_g,(int)color32_g(c));
+         max_g = HLH_max(max_g,(int)color32_g(c));
+         min_b = HLH_min(min_b,(int)color32_b(c));
+         max_b = HLH_max(max_b,(int)color32_b(c));
       }
       boxes[max_box].range_red = max_r-min_r;
       boxes[max_box].range_green = max_g-min_g;
@@ -358,12 +359,12 @@ static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
       for(int i = 0;i<boxes[box_count].count;i++)
       {
          uint32_t c = colors[2*(boxes[box_count].start+i)];
-         min_r = HLH_min(min_r,(int)SLK_color32_r(c));
-         max_r = HLH_max(max_r,(int)SLK_color32_r(c));
-         min_g = HLH_min(min_g,(int)SLK_color32_g(c));
-         max_g = HLH_max(max_g,(int)SLK_color32_g(c));
-         min_b = HLH_min(min_b,(int)SLK_color32_b(c));
-         max_b = HLH_max(max_b,(int)SLK_color32_b(c));
+         min_r = HLH_min(min_r,(int)color32_r(c));
+         max_r = HLH_max(max_r,(int)color32_r(c));
+         min_g = HLH_min(min_g,(int)color32_g(c));
+         max_g = HLH_max(max_g,(int)color32_g(c));
+         min_b = HLH_min(min_b,(int)color32_b(c));
+         max_b = HLH_max(max_b,(int)color32_b(c));
       }
       boxes[box_count].range_red = max_r-min_r;
       boxes[box_count].range_green = max_g-min_g;
@@ -436,7 +437,7 @@ static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
       {
          uint32_t index = colors[2*(boxes[i].start+j)+1];
          uint32_t color = colors[2*(boxes[i].start+j)];
-         if(SLK_color32_a(color)<config->alpha_threshold)
+         if(color32_a(color)<config->alpha_threshold)
             out->data[index] = 0;
          else
             out->data[index] = assign_lowest[i];
@@ -460,10 +461,10 @@ static void slk_dither_threshold_apply(Image64 *img, int dim, const float *thres
          uint64_t p = img->data[y*img->width+x];
          uint8_t mod = (uint8_t)((1<<dim)-1);
          uint8_t threshold_id = (uint8_t)(((y&mod)<<dim)+(x&mod));
-         uint64_t r = HLH_max(0,HLH_min(0x7fff,(int64_t)SLK_color64_r(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
-         uint64_t g = HLH_max(0,HLH_min(0x7fff,(int64_t)SLK_color64_g(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
-         uint64_t b = HLH_max(0,HLH_min(0x7fff,(int64_t)SLK_color64_b(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
-         uint64_t a = SLK_color64_a(p);
+         uint64_t r = HLH_max(0,HLH_min(0x7fff,(int64_t)color64_r(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
+         uint64_t g = HLH_max(0,HLH_min(0x7fff,(int64_t)color64_g(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
+         uint64_t b = HLH_max(0,HLH_min(0x7fff,(int64_t)color64_b(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
+         uint64_t a = color64_a(p);
          img->data[y*img->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
       }
    }
@@ -481,16 +482,16 @@ static Image8 *slk_dither_floyd(Image64 *img, const SLK_dither_config *config)
       for(int x = 0;x<img->width;x++)
       {
          uint64_t p = img->data[y*img->width+x];
-         if((int)(SLK_color64_a(p)/128)<config->alpha_threshold)
+         if((int)(color64_a(p)/128)<config->alpha_threshold)
          {
             out->data[y*img->width+x] = 0;
             continue;
          }
 
          uint8_t c = slk_color_closest(p,config);
-         float error_r = (float)SLK_color32_r(SLK_color64_to_32(p))-(float)SLK_color32_r(config->palette[c]);
-         float error_g = (float)SLK_color32_g(SLK_color64_to_32(p))-(float)SLK_color32_g(config->palette[c]);
-         float error_b = (float)SLK_color32_b(SLK_color64_to_32(p))-(float)SLK_color32_b(config->palette[c]);
+         float error_r = (float)color32_r(color64_to_32(p))-(float)color32_r(config->palette[c]);
+         float error_g = (float)color32_g(color64_to_32(p))-(float)color32_g(config->palette[c]);
+         float error_b = (float)color32_b(color64_to_32(p))-(float)color32_b(config->palette[c]);
          slk_floyd_apply_error(img,(error_r*7.f)/16.f,(error_g*7.f)/16.f,(error_b*7.f)/16.f,x+1,y);
          slk_floyd_apply_error(img,(error_r*3.f)/16.f,(error_g*3.f)/16.f,(error_b*3.f)/16.f,x-1,y+1);
          slk_floyd_apply_error(img,(error_r*5.f)/16.f,(error_g*5.f)/16.f,(error_b*5.f)/16.f,x,y+1);
@@ -515,16 +516,16 @@ static Image8 *slk_dither_floyd2(Image64 *img, const SLK_dither_config *config)
       for(int x = 0;x<img->width;x++)
       {
          uint64_t p = img->data[y*img->width+x];
-         if((int)(SLK_color64_a(p)/128)<config->alpha_threshold)
+         if((int)(color64_a(p)/128)<config->alpha_threshold)
          {
             out->data[y*img->width+x] = 0;
             continue;
          }
 
          uint8_t c = slk_color_closest(p,config);
-         float error = (float)SLK_color32_r(SLK_color64_to_32(p))-(float)SLK_color32_r(config->palette[c]);
-         error+=(float)SLK_color32_g(SLK_color64_to_32(p))-(float)SLK_color32_g(config->palette[c]);
-         error+=(float)SLK_color32_b(SLK_color64_to_32(p))-(float)SLK_color32_b(config->palette[c]);
+         float error = (float)color32_r(color64_to_32(p))-(float)color32_r(config->palette[c]);
+         error+=(float)color32_g(color64_to_32(p))-(float)color32_g(config->palette[c]);
+         error+=(float)color32_b(color64_to_32(p))-(float)color32_b(config->palette[c]);
          error/=3.f;
          slk_floyd_apply_error(img,(error*7.f)/16.f,(error*7.f)/16.f,(error*7.f)/16.f,x+1,y);
          slk_floyd_apply_error(img,(error*3.f)/16.f,(error*3.f)/16.f,(error*3.f)/16.f,x-1,y+1);
@@ -544,27 +545,27 @@ static void slk_floyd_apply_error(Image64 *img, float er, float eg, float eb, in
       return;
 
    uint64_t p = img->data[y*img->width+x];
-   uint64_t r = HLH_max(0,HLH_min(0x7fff,SLK_color64_r(p)+er*128.f));
-   uint64_t g = HLH_max(0,HLH_min(0x7fff,SLK_color64_g(p)+eg*128.f));
-   uint64_t b = HLH_max(0,HLH_min(0x7fff,SLK_color64_b(p)+eb*128.f));
-   uint64_t a = SLK_color64_a(p);
+   uint64_t r = HLH_max(0,HLH_min(0x7fff,color64_r(p)+er*128.f));
+   uint64_t g = HLH_max(0,HLH_min(0x7fff,color64_g(p)+eg*128.f));
+   uint64_t b = HLH_max(0,HLH_min(0x7fff,color64_b(p)+eb*128.f));
+   uint64_t a = color64_a(p);
 
    img->data[y*img->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
 }
 
 static void slk_color32_to_rgb(uint32_t c, float *l0, float *l1, float *l2)
 {
-   *l0 = (float)SLK_color32_r(c)/255.f;
-   *l1 = (float)SLK_color32_g(c)/255.f;
-   *l2 = (float)SLK_color32_b(c)/255.f;
+   *l0 = (float)color32_r(c)/255.f;
+   *l1 = (float)color32_g(c)/255.f;
+   *l2 = (float)color32_b(c)/255.f;
 }
 
 static void slk_color32_to_lab(uint32_t c, float *l0, float *l1, float *l2)
 {
    //Convert to rgb
-   float r = (float)SLK_color32_r(c)/255.f;
-   float g = (float)SLK_color32_g(c)/255.f;
-   float b = (float)SLK_color32_b(c)/255.f;
+   float r = (float)color32_r(c)/255.f;
+   float g = (float)color32_g(c)/255.f;
+   float b = (float)color32_b(c)/255.f;
 
    //Convert to xyz
    //-------------------------------------
@@ -627,12 +628,12 @@ static uint8_t slk_color_closest(uint64_t c, const SLK_dither_config *config)
    case SLK_RGB_EUCLIDIAN:
    case SLK_RGB_WEIGHTED:
    case SLK_RGB_REDMEAN:
-      slk_color32_to_rgb(SLK_color64_to_32(c),&c0,&c1,&c2);
+      slk_color32_to_rgb(color64_to_32(c),&c0,&c1,&c2);
       break;
    case SLK_LAB_CIE76:
    case SLK_LAB_CIE94:
    case SLK_LAB_CIEDE2000:
-      slk_color32_to_lab(SLK_color64_to_32(c),&c0,&c1,&c2);
+      slk_color32_to_lab(color64_to_32(c),&c0,&c1,&c2);
       break;
    }
 
@@ -1096,20 +1097,20 @@ static int color_cmp_r(const void *a, const void *b)
 {
    uint32_t ca = *((uint32_t *)a);
    uint32_t cb = *((uint32_t *)b);
-   return (int)SLK_color32_r(ca)-(int)SLK_color32_r(cb);
+   return (int)color32_r(ca)-(int)color32_r(cb);
 }
 
 static int color_cmp_g(const void *a, const void *b)
 {
    uint32_t ca = *((uint32_t *)a);
    uint32_t cb = *((uint32_t *)b);
-   return (int)SLK_color32_g(ca)-(int)SLK_color32_g(cb);
+   return (int)color32_g(ca)-(int)color32_g(cb);
 }
 
 static int color_cmp_b(const void *a, const void *b)
 {
    uint32_t ca = *((uint32_t *)a);
    uint32_t cb = *((uint32_t *)b);
-   return (int)SLK_color32_b(ca)-(int)SLK_color32_b(cb);
+   return (int)color32_b(ca)-(int)color32_b(cb);
 }
 //-------------------------------------

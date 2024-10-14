@@ -17,6 +17,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#include "shared/color.h"
 #include "img2pixel.h"
 //-------------------------------------
 
@@ -68,14 +69,14 @@ void image64_hscb(Image64 *img, float hue, float saturation, float contrast, flo
       for(int x = 0;x<img->width;x++)
       {
          uint64_t in = img->data[y*img->width+x];
-         uint64_t a = SLK_color64_a(in);
+         uint64_t a = color64_a(in);
          
          if(hue!=0.f)
             slk_hue(&in,hue);
 
-         float fr = (float)SLK_color64_r(in);
-         float fg = (float)SLK_color64_g(in);
-         float fb = (float)SLK_color64_b(in);
+         float fr = (float)color64_r(in);
+         float fg = (float)color64_g(in);
+         float fb = (float)color64_b(in);
          
          uint64_t r = HLH_max(0,HLH_min(0x7fff,(int)((rr*fr)+(gr*fg)+(br*fb)+wr)));
          uint64_t g = HLH_max(0,HLH_min(0x7fff,(int)((rg*fr)+(gg*fg)+(bg*fb)+wg)));
@@ -93,9 +94,9 @@ static void slk_hue(uint64_t *color, float hue)
    float v = 0.f;
 
    {
-      float r = SLK_color64_r(*color)/(float)0x7fff;
-      float g = SLK_color64_g(*color)/(float)0x7fff;
-      float b = SLK_color64_b(*color)/(float)0x7fff;
+      float r = color64_r(*color)/(float)0x7fff;
+      float g = color64_g(*color)/(float)0x7fff;
+      float b = color64_b(*color)/(float)0x7fff;
       float cmax = HLH_max(r,HLH_max(g,b));
       float cmin = HLH_min(r,HLH_min(g,b));
       float diff = cmax-cmin;
@@ -186,7 +187,7 @@ static void slk_hue(uint64_t *color, float hue)
       uint64_t cr = HLH_max(0,HLH_min(0x7fff,(int)(0x7fff*r)));
       uint64_t cg = HLH_max(0,HLH_min(0x7fff,(int)(0x7fff*g)));
       uint64_t cb = HLH_max(0,HLH_min(0x7fff,(int)(0x7fff*b)));
-      uint64_t ca = SLK_color64_a(*color);
+      uint64_t ca = color64_a(*color);
       *color = (cr)|(cg<<16)|(cb<<32)|(ca<<48);
    }
 }

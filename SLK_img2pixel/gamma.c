@@ -17,6 +17,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#include "shared/color.h"
 #include "img2pixel.h"
 //-------------------------------------
 
@@ -45,11 +46,11 @@ void image64_gamma(Image64 *img, float gamma)
       for(int x = 0;x<img->width;x++)
       {
          uint64_t p = img->data[y*img->width+x];
-         uint64_t a = SLK_color64_a(p);
+         uint64_t a = color64_a(p);
          
-         float fr = (float)SLK_color64_r(p);
-         float fg = (float)SLK_color64_g(p);
-         float fb = (float)SLK_color64_b(p);
+         float fr = (float)color64_r(p);
+         float fg = (float)color64_g(p);
+         float fb = (float)color64_b(p);
 
          uint64_t r = HLH_max(0,HLH_min(0x7fff,(int)((float)0x7fff*powf(fr/(float)0x7fff,gamma))));
          uint64_t g = HLH_max(0,HLH_min(0x7fff,(int)((float)0x7fff*powf(fg/(float)0x7fff,gamma))));

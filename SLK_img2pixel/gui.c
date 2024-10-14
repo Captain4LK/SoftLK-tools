@@ -16,7 +16,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <time.h>
 
 #include "cute_files.h"
-#include "shared/image.h"
 
 #include "HLH_gui.h"
 #include "HLH.h"
@@ -25,6 +24,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#include "shared/color.h"
+#include "shared/image.h"
 #include "img2pixel.h"
 #include "util.h"
 #include "gui.h"
@@ -780,9 +781,9 @@ static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
             fclose(f);
             block_process = 1;
             HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-1,255,1,1);
-            HLH_gui_slider_set(gui.slider_color_red,SLK_color32_r(dither_config.palette[color_selected]),255,1,1);
-            HLH_gui_slider_set(gui.slider_color_green,SLK_color32_g(dither_config.palette[color_selected]),255,1,1);
-            HLH_gui_slider_set(gui.slider_color_blue,SLK_color32_b(dither_config.palette[color_selected]),255,1,1);
+            HLH_gui_slider_set(gui.slider_color_red,color32_r(dither_config.palette[color_selected]),255,1,1);
+            HLH_gui_slider_set(gui.slider_color_green,color32_g(dither_config.palette[color_selected]),255,1,1);
+            HLH_gui_slider_set(gui.slider_color_blue,color32_b(dither_config.palette[color_selected]),255,1,1);
             block_process = 0;
             gui_process(3);
          }
@@ -1019,7 +1020,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(s->e.usr==SLIDER_COLOR_RED)
       {
          uint32_t c = dither_config.palette[color_selected];
-         dither_config.palette[color_selected] = ((uint32_t)s->value)|(SLK_color32_g(c)<<8)|(SLK_color32_b(c)<<16)|(SLK_color32_a(c)<<24);
+         dither_config.palette[color_selected] = ((uint32_t)s->value)|(color32_g(c)<<8)|(color32_b(c)<<16)|(color32_a(c)<<24);
          snprintf(buffer,512,"%d",s->value);
          HLH_gui_entry_set(gui.entry_color_red,buffer);
 
@@ -1032,7 +1033,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(s->e.usr==SLIDER_COLOR_GREEN)
       {
          uint32_t c = dither_config.palette[color_selected];
-         dither_config.palette[color_selected] = (SLK_color32_r(c))|((uint32_t)s->value<<8)|(SLK_color32_b(c)<<16)|(SLK_color32_a(c)<<24);
+         dither_config.palette[color_selected] = (color32_r(c))|((uint32_t)s->value<<8)|(color32_b(c)<<16)|(color32_a(c)<<24);
          snprintf(buffer,512,"%d",s->value);
          HLH_gui_entry_set(gui.entry_color_green,buffer);
 
@@ -1045,7 +1046,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(s->e.usr==SLIDER_COLOR_BLUE)
       {
          uint32_t c = dither_config.palette[color_selected];
-         dither_config.palette[color_selected] = (SLK_color32_r(c))|(SLK_color32_g(c)<<8)|((uint32_t)s->value<<16)|(SLK_color32_a(c)<<24);
+         dither_config.palette[color_selected] = (color32_r(c))|(color32_g(c)<<8)|((uint32_t)s->value<<16)|(color32_a(c)<<24);
          snprintf(buffer,512,"%d",s->value);
          HLH_gui_entry_set(gui.entry_color_blue,buffer);
 
@@ -1236,11 +1237,11 @@ static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(button->e.usr==BUTTON_COLOR_COUNT)
          HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors+4-1,255,1,1);
       else if(button->e.usr==BUTTON_COLOR_RED)
-         HLH_gui_slider_set(gui.slider_color_red,SLK_color32_r(dither_config.palette[color_selected])+4,255,1,1);
+         HLH_gui_slider_set(gui.slider_color_red,color32_r(dither_config.palette[color_selected])+4,255,1,1);
       else if(button->e.usr==BUTTON_COLOR_GREEN)
-         HLH_gui_slider_set(gui.slider_color_green,SLK_color32_g(dither_config.palette[color_selected])+4,255,1,1);
+         HLH_gui_slider_set(gui.slider_color_green,color32_g(dither_config.palette[color_selected])+4,255,1,1);
       else if(button->e.usr==BUTTON_COLOR_BLUE)
-         HLH_gui_slider_set(gui.slider_color_blue,SLK_color32_b(dither_config.palette[color_selected])+4,255,1,1);
+         HLH_gui_slider_set(gui.slider_color_blue,color32_b(dither_config.palette[color_selected])+4,255,1,1);
       else if(button->e.usr==BUTTON_TINT_RED)
          HLH_gui_slider_set(gui.slider_tint_red,tint_red+4,255,1,1);
       else if(button->e.usr==BUTTON_TINT_GREEN)
@@ -1292,11 +1293,11 @@ static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(button->e.usr==BUTTON_COLOR_COUNT)
          HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-4-1,255,1,1);
       else if(button->e.usr==BUTTON_COLOR_RED)
-         HLH_gui_slider_set(gui.slider_color_red,SLK_color32_r(dither_config.palette[color_selected])-4,255,1,1);
+         HLH_gui_slider_set(gui.slider_color_red,color32_r(dither_config.palette[color_selected])-4,255,1,1);
       else if(button->e.usr==BUTTON_COLOR_GREEN)
-         HLH_gui_slider_set(gui.slider_color_green,SLK_color32_g(dither_config.palette[color_selected])-4,255,1,1);
+         HLH_gui_slider_set(gui.slider_color_green,color32_g(dither_config.palette[color_selected])-4,255,1,1);
       else if(button->e.usr==BUTTON_COLOR_BLUE)
-         HLH_gui_slider_set(gui.slider_color_blue,SLK_color32_b(dither_config.palette[color_selected])-4,255,1,1);
+         HLH_gui_slider_set(gui.slider_color_blue,color32_b(dither_config.palette[color_selected])-4,255,1,1);
       else if(button->e.usr==BUTTON_TINT_RED)
          HLH_gui_slider_set(gui.slider_tint_red,tint_red-4,255,1,1);
       else if(button->e.usr==BUTTON_TINT_GREEN)
@@ -1436,7 +1437,7 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
       if(r->checked)
       {
          uint32_t box_color = 0xff000000;
-         if(SLK_color32_r(color)<128&&SLK_color32_g(color)<128&&SLK_color32_b(color)<128)
+         if(color32_r(color)<128&&color32_g(color)<128&&color32_b(color)<128)
             box_color = 0xffffffff;
          HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + offset + 5 * scale, bounds.miny + offset + 4 * scale, bounds.minx + dim + offset - 4 * scale, bounds.miny + offset - 5 * scale + dim), box_color);
       }
@@ -1457,9 +1458,9 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
       {
          color_selected = r->e.usr;
          uint32_t c = dither_config.palette[color_selected];
-         HLH_gui_slider_set(gui.slider_color_red,SLK_color32_r(c),255,1,1);
-         HLH_gui_slider_set(gui.slider_color_green,SLK_color32_g(c),255,1,1);
-         HLH_gui_slider_set(gui.slider_color_blue,SLK_color32_b(c),255,1,1);
+         HLH_gui_slider_set(gui.slider_color_red,color32_r(c),255,1,1);
+         HLH_gui_slider_set(gui.slider_color_green,color32_g(c),255,1,1);
+         HLH_gui_slider_set(gui.slider_color_blue,color32_b(c),255,1,1);
       }
    }
 

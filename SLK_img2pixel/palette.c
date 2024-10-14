@@ -20,6 +20,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Internal includes
+#include "shared/color.h"
 #include "img2pixel.h"
 //-------------------------------------
 
@@ -131,9 +132,9 @@ void SLK_palette_save(FILE *f, uint32_t *colors, int color_count, const char *ex
       fprintf(f,"#Colors: %d\n",color_count);
       for(int i = 0;i<color_count;i++)
       {
-         uint32_t r = SLK_color32_r(colors[i]);
-         uint32_t g = SLK_color32_g(colors[i]);
-         uint32_t b = SLK_color32_b(colors[i]);
+         uint32_t r = color32_r(colors[i]);
+         uint32_t g = color32_g(colors[i]);
+         uint32_t b = color32_b(colors[i]);
          fprintf(f,"%d %d %d %x%x%x%x%x%x\n",r,g,b,(r>>4)&15,r&15,(g>>4)&15,g&15,(b>>4)&15,b&15);
       }
    }
@@ -141,9 +142,9 @@ void SLK_palette_save(FILE *f, uint32_t *colors, int color_count, const char *ex
    {
       for(int i = 0;i<color_count;i++)
       {
-         uint32_t r = SLK_color32_r(colors[i]);
-         uint32_t g = SLK_color32_g(colors[i]);
-         uint32_t b = SLK_color32_b(colors[i]);
+         uint32_t r = color32_r(colors[i]);
+         uint32_t g = color32_g(colors[i]);
+         uint32_t b = color32_b(colors[i]);
          fprintf(f,"%x%x%x%x%x%x\n",(r>>4)&15,r&15,(g>>4)&15,g&15,(b>>4)&15,b&15);
       }
    }
@@ -153,9 +154,9 @@ void SLK_palette_save(FILE *f, uint32_t *colors, int color_count, const char *ex
       fprintf(f,"JASC-PAL\n0100\n%d\n",color_count);
       for(int i = 0;i<color_count;i++)
       {
-         uint32_t r = SLK_color32_r(colors[i]);
-         uint32_t g = SLK_color32_g(colors[i]);
-         uint32_t b = SLK_color32_b(colors[i]);
+         uint32_t r = color32_r(colors[i]);
+         uint32_t g = color32_g(colors[i]);
+         uint32_t b = color32_b(colors[i]);
          fprintf(f,"%d %d %d\n",r,g,b);
       }
    }

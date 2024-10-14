@@ -72,8 +72,8 @@ static Image64 *slk_sample_nearest(const Image64 *img, int width, int height, fl
    out->width = width;
    out->height = height;
 
-   float w = (img->width-1)/(float)width;
-   float h = (img->height-1)/(float)height;
+   float w = ((float)img->width-1)/(float)width;
+   float h = ((float)img->height-1)/(float)height;
 
 #pragma omp parallel for
    for(int y = 0;y<height;y++)
@@ -125,10 +125,10 @@ static Image64 *slk_sample_linear(const Image64 *img, int width, int height, flo
          if(ix+1>=0&&ix+1<img->width&&iy+1>=0&&iy+1<img->height)
             p3 = img->data[(iy+1)*img->width+ix+1];
 
-         float c0 = slk_blend_linear(six,siy,(float)SLK_color64_r(p0),(float)SLK_color64_r(p1),(float)SLK_color64_r(p2),(float)SLK_color64_r(p3));
-         float c1 = slk_blend_linear(six,siy,(float)SLK_color64_g(p0),(float)SLK_color64_g(p1),(float)SLK_color64_g(p2),(float)SLK_color64_g(p3));
-         float c2 = slk_blend_linear(six,siy,(float)SLK_color64_b(p0),(float)SLK_color64_b(p1),(float)SLK_color64_b(p2),(float)SLK_color64_b(p3));
-         float c3 = slk_blend_linear(six,siy,(float)SLK_color64_a(p0),(float)SLK_color64_a(p1),(float)SLK_color64_a(p2),(float)SLK_color64_a(p3));
+         float c0 = slk_blend_linear(six,siy,(float)color64_r(p0),(float)color64_r(p1),(float)color64_r(p2),(float)color64_r(p3));
+         float c1 = slk_blend_linear(six,siy,(float)color64_g(p0),(float)color64_g(p1),(float)color64_g(p2),(float)color64_g(p3));
+         float c2 = slk_blend_linear(six,siy,(float)color64_b(p0),(float)color64_b(p1),(float)color64_b(p2),(float)color64_b(p3));
+         float c3 = slk_blend_linear(six,siy,(float)color64_a(p0),(float)color64_a(p1),(float)color64_a(p2),(float)color64_a(p3));
 
          uint64_t r = HLH_max(0,HLH_min(0x7fff,(int)c0));
          uint64_t g = HLH_max(0,HLH_min(0x7fff,(int)c1));
@@ -221,28 +221,28 @@ static Image64 *slk_sample_bicubic(const Image64 *img, int width, int height, fl
          if(ix+2>=0&&ix+2<img->width&&iy+2>=0&&iy+2<img->height)
             p33 = img->data[(iy+2)*img->width+ix+2];
 
-         float c0 = slk_blend_bicubic((float)SLK_color64_r(p00),(float)SLK_color64_r(p01),(float)SLK_color64_r(p02),(float)SLK_color64_r(p03),six);
-         float c1 = slk_blend_bicubic((float)SLK_color64_r(p10),(float)SLK_color64_r(p11),(float)SLK_color64_r(p12),(float)SLK_color64_r(p13),six);
-         float c2 = slk_blend_bicubic((float)SLK_color64_r(p20),(float)SLK_color64_r(p21),(float)SLK_color64_r(p22),(float)SLK_color64_r(p23),six);
-         float c3 = slk_blend_bicubic((float)SLK_color64_r(p30),(float)SLK_color64_r(p31),(float)SLK_color64_r(p32),(float)SLK_color64_r(p33),six);
+         float c0 = slk_blend_bicubic((float)color64_r(p00),(float)color64_r(p01),(float)color64_r(p02),(float)color64_r(p03),six);
+         float c1 = slk_blend_bicubic((float)color64_r(p10),(float)color64_r(p11),(float)color64_r(p12),(float)color64_r(p13),six);
+         float c2 = slk_blend_bicubic((float)color64_r(p20),(float)color64_r(p21),(float)color64_r(p22),(float)color64_r(p23),six);
+         float c3 = slk_blend_bicubic((float)color64_r(p30),(float)color64_r(p31),(float)color64_r(p32),(float)color64_r(p33),six);
          uint64_t r = HLH_max(0,HLH_min(0x7fff,(int)slk_blend_bicubic(c0,c1,c2,c3,siy)));
 
-         c0 = slk_blend_bicubic((float)SLK_color64_g(p00),(float)SLK_color64_g(p01),(float)SLK_color64_g(p02),(float)SLK_color64_g(p03),six);
-         c1 = slk_blend_bicubic((float)SLK_color64_g(p10),(float)SLK_color64_g(p11),(float)SLK_color64_g(p12),(float)SLK_color64_g(p13),six);
-         c2 = slk_blend_bicubic((float)SLK_color64_g(p20),(float)SLK_color64_g(p21),(float)SLK_color64_g(p22),(float)SLK_color64_g(p23),six);
-         c3 = slk_blend_bicubic((float)SLK_color64_g(p30),(float)SLK_color64_g(p31),(float)SLK_color64_g(p32),(float)SLK_color64_g(p33),six);
+         c0 = slk_blend_bicubic((float)color64_g(p00),(float)color64_g(p01),(float)color64_g(p02),(float)color64_g(p03),six);
+         c1 = slk_blend_bicubic((float)color64_g(p10),(float)color64_g(p11),(float)color64_g(p12),(float)color64_g(p13),six);
+         c2 = slk_blend_bicubic((float)color64_g(p20),(float)color64_g(p21),(float)color64_g(p22),(float)color64_g(p23),six);
+         c3 = slk_blend_bicubic((float)color64_g(p30),(float)color64_g(p31),(float)color64_g(p32),(float)color64_g(p33),six);
          uint64_t g = HLH_max(0,HLH_min(0x7fff,(int)slk_blend_bicubic(c0,c1,c2,c3,siy)));
 
-         c0 = slk_blend_bicubic((float)SLK_color64_b(p00),(float)SLK_color64_b(p01),(float)SLK_color64_b(p02),(float)SLK_color64_b(p03),six);
-         c1 = slk_blend_bicubic((float)SLK_color64_b(p10),(float)SLK_color64_b(p11),(float)SLK_color64_b(p12),(float)SLK_color64_b(p13),six);
-         c2 = slk_blend_bicubic((float)SLK_color64_b(p20),(float)SLK_color64_b(p21),(float)SLK_color64_b(p22),(float)SLK_color64_b(p23),six);
-         c3 = slk_blend_bicubic((float)SLK_color64_b(p30),(float)SLK_color64_b(p31),(float)SLK_color64_b(p32),(float)SLK_color64_b(p33),six);
+         c0 = slk_blend_bicubic((float)color64_b(p00),(float)color64_b(p01),(float)color64_b(p02),(float)color64_b(p03),six);
+         c1 = slk_blend_bicubic((float)color64_b(p10),(float)color64_b(p11),(float)color64_b(p12),(float)color64_b(p13),six);
+         c2 = slk_blend_bicubic((float)color64_b(p20),(float)color64_b(p21),(float)color64_b(p22),(float)color64_b(p23),six);
+         c3 = slk_blend_bicubic((float)color64_b(p30),(float)color64_b(p31),(float)color64_b(p32),(float)color64_b(p33),six);
          uint64_t b = HLH_max(0,HLH_min(0x7fff,(int)slk_blend_bicubic(c0,c1,c2,c3,siy)));
 
-         c0 = slk_blend_bicubic((float)SLK_color64_a(p00),(float)SLK_color64_a(p01),(float)SLK_color64_a(p02),(float)SLK_color64_a(p03),six);
-         c1 = slk_blend_bicubic((float)SLK_color64_a(p10),(float)SLK_color64_a(p11),(float)SLK_color64_a(p12),(float)SLK_color64_a(p13),six);
-         c2 = slk_blend_bicubic((float)SLK_color64_a(p20),(float)SLK_color64_a(p21),(float)SLK_color64_a(p22),(float)SLK_color64_a(p23),six);
-         c3 = slk_blend_bicubic((float)SLK_color64_a(p30),(float)SLK_color64_a(p31),(float)SLK_color64_a(p32),(float)SLK_color64_a(p33),six);
+         c0 = slk_blend_bicubic((float)color64_a(p00),(float)color64_a(p01),(float)color64_a(p02),(float)color64_a(p03),six);
+         c1 = slk_blend_bicubic((float)color64_a(p10),(float)color64_a(p11),(float)color64_a(p12),(float)color64_a(p13),six);
+         c2 = slk_blend_bicubic((float)color64_a(p20),(float)color64_a(p21),(float)color64_a(p22),(float)color64_a(p23),six);
+         c3 = slk_blend_bicubic((float)color64_a(p30),(float)color64_a(p31),(float)color64_a(p32),(float)color64_a(p33),six);
          uint64_t a = HLH_max(0,HLH_min(0x7fff,(int)slk_blend_bicubic(c0,c1,c2,c3,siy)));
 
          out->data[y*out->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
@@ -320,10 +320,10 @@ static Image64 *slk_sample_lanczos(const Image64 *img, int width, int height, fl
             if(ix+3>=0&&ix+3<img->width&&iy-2+i>=0&&iy-2+i<img->height)
                p05 = img->data[(iy-2+i)*img->width+ix+3];
 
-            cr[i] = a0*(float)SLK_color64_r(p00)+a1*(float)SLK_color64_r(p01)+a2*(float)SLK_color64_r(p02)+a3*(float)SLK_color64_r(p03)+a4*(float)SLK_color64_r(p04)+a5*(float)SLK_color64_r(p05);
-            cg[i] = a0*(float)SLK_color64_g(p00)+a1*(float)SLK_color64_g(p01)+a2*(float)SLK_color64_g(p02)+a3*(float)SLK_color64_g(p03)+a4*(float)SLK_color64_g(p04)+a5*(float)SLK_color64_g(p05);
-            cb[i] = a0*(float)SLK_color64_b(p00)+a1*(float)SLK_color64_b(p01)+a2*(float)SLK_color64_b(p02)+a3*(float)SLK_color64_b(p03)+a4*(float)SLK_color64_b(p04)+a5*(float)SLK_color64_b(p05);
-            ca[i] = a0*(float)SLK_color64_a(p00)+a1*(float)SLK_color64_a(p01)+a2*(float)SLK_color64_a(p02)+a3*(float)SLK_color64_a(p03)+a4*(float)SLK_color64_a(p04)+a5*(float)SLK_color64_a(p05);
+            cr[i] = a0*(float)color64_r(p00)+a1*(float)color64_r(p01)+a2*(float)color64_r(p02)+a3*(float)color64_r(p03)+a4*(float)color64_r(p04)+a5*(float)color64_r(p05);
+            cg[i] = a0*(float)color64_g(p00)+a1*(float)color64_g(p01)+a2*(float)color64_g(p02)+a3*(float)color64_g(p03)+a4*(float)color64_g(p04)+a5*(float)color64_g(p05);
+            cb[i] = a0*(float)color64_b(p00)+a1*(float)color64_b(p01)+a2*(float)color64_b(p02)+a3*(float)color64_b(p03)+a4*(float)color64_b(p04)+a5*(float)color64_b(p05);
+            ca[i] = a0*(float)color64_a(p00)+a1*(float)color64_a(p01)+a2*(float)color64_a(p02)+a3*(float)color64_a(p03)+a4*(float)color64_a(p04)+a5*(float)color64_a(p05);
          }
 
          uint64_t r = HLH_max(0,HLH_min(0x7fff,b0*cr[0]+b1*cr[1]+b2*cr[2]+b3*cr[3]+b4*cr[4]+b5*cr[5]));
@@ -384,7 +384,7 @@ static Image64 *slk_sample_cluster(const Image64 *img, int width, int height, fl
 
             int ix = HLH_max(0,HLH_min(img->width-1,(int)roundf(dx*w)));
             int iy = HLH_max(0,HLH_min(img->height-1,(int)roundf(dy*h)));
-            uint64_t a = SLK_color64_a(img->data[iy*img->width+ix]);
+            uint64_t a = color64_a(img->data[iy*img->width+ix]);
 
             for(int iy = 0;iy<igrid_y;iy++)
             {
@@ -393,13 +393,13 @@ static Image64 *slk_sample_cluster(const Image64 *img, int width, int height, fl
                {
                   cluster->data[iy*igrid_x+ix] = 0xff000000;
                   if(x*grid_x+ix>=0&&x*grid_x+ix<img->width&&y*grid_y+iy>=0&&y*grid_y+iy<img->height)
-                     cluster->data[iy*igrid_x+ix] = SLK_color64_to_32(img->data[((int)(y*grid_y)+iy)*img->width+(int)(x*grid_x)+ix]);
+                     cluster->data[iy*igrid_x+ix] = color64_to_32(img->data[((int)(y*grid_y)+iy)*img->width+(int)(x*grid_x)+ix]);
                }
             }
             uint64_t c = color32_to_64(image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
-            uint64_t r = SLK_color64_r(c);
-            uint64_t g = SLK_color64_g(c);
-            uint64_t b = SLK_color64_b(c);
+            uint64_t r = color64_r(c);
+            uint64_t g = color64_g(c);
+            uint64_t b = color64_b(c);
             out->data[y*width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
             //out->data[y*width+x] = SLK_color32_to_64(Image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
          }
