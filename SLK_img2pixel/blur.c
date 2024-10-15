@@ -99,7 +99,7 @@ static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst,
    int32_t amp = (65536*64)/HLH_max(1,(2*r+1)*64+alpha*2);
    int32_t amp_clip;
    if(amp>128)
-      amp_clip = (((int64_t)65536*65536*64)/amp)-1;
+      amp_clip = (int32_t)((((int64_t)65536*65536*64)/amp)-1);
    else
       amp_clip = 0x7fffffff;
 
@@ -139,10 +139,10 @@ static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst,
       sum_a+=src[s1+3]*alpha1+src[s1+7]*alpha;
       s1+=4;
 
-      uint64_t cr = (((uint64_t)sum_r*amp)/(65536*64));
-      uint64_t cg = (((uint64_t)sum_g*amp)/(65536*64));
-      uint64_t cb = (((uint64_t)sum_b*amp)/(65536*64));
-      uint64_t ca = (((uint64_t)sum_a*amp)/(65536*64));
+      uint16_t cr = (uint16_t)(((uint64_t)sum_r*amp)/(65536*64));
+      uint16_t cg = (uint16_t)(((uint64_t)sum_g*amp)/(65536*64));
+      uint16_t cb = (uint16_t)(((uint64_t)sum_b*amp)/(65536*64));
+      uint16_t ca = (uint16_t)(((uint64_t)sum_a*amp)/(65536*64));
       dst[d] = cr;
       dst[d+1] = cg;
       dst[d+2] = cb;
@@ -165,10 +165,10 @@ static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst,
       sum_a+=src[s1+3]*alpha1+src[s1+7]*alpha;
       s1+=4;
 
-      uint64_t cr = (((uint64_t)sum_r*amp)/(65536*64));
-      uint64_t cg = (((uint64_t)sum_g*amp)/(65536*64));
-      uint64_t cb = (((uint64_t)sum_b*amp)/(65536*64));
-      uint64_t ca = (((uint64_t)sum_a*amp)/(65536*64));
+      uint16_t cr = (uint16_t)(((uint64_t)sum_r*amp)/(65536*64));
+      uint16_t cg = (uint16_t)(((uint64_t)sum_g*amp)/(65536*64));
+      uint16_t cb = (uint16_t)(((uint64_t)sum_b*amp)/(65536*64));
+      uint16_t ca = (uint16_t)(((uint64_t)sum_a*amp)/(65536*64));
       dst[d] = cr;
       dst[d+1] = cg;
       dst[d+2] = cb;
@@ -189,10 +189,10 @@ static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst,
       sum_b+=src[(width-1)*4+2]*(alpha1+alpha);
       sum_a+=src[(width-1)*4+3]*(alpha1+alpha);
 
-      uint64_t cr = (((uint64_t)sum_r*amp)/(65536*64));
-      uint64_t cg = (((uint64_t)sum_g*amp)/(65536*64));
-      uint64_t cb = (((uint64_t)sum_b*amp)/(65536*64));
-      uint64_t ca = (((uint64_t)sum_a*amp)/(65536*64));
+      uint16_t cr = (uint16_t)(((uint64_t)sum_r*amp)/(65536*64));
+      uint16_t cg = (uint16_t)(((uint64_t)sum_g*amp)/(65536*64));
+      uint16_t cb = (uint16_t)(((uint64_t)sum_b*amp)/(65536*64));
+      uint16_t ca = (uint16_t)(((uint64_t)sum_a*amp)/(65536*64));
       dst[d] = cr;
       dst[d+1] = cg;
       dst[d+2] = cb;

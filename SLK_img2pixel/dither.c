@@ -545,9 +545,9 @@ static void slk_floyd_apply_error(Image64 *img, float er, float eg, float eb, in
       return;
 
    uint64_t p = img->data[y*img->width+x];
-   uint64_t r = HLH_max(0,HLH_min(0x7fff,color64_r(p)+er*128.f));
-   uint64_t g = HLH_max(0,HLH_min(0x7fff,color64_g(p)+eg*128.f));
-   uint64_t b = HLH_max(0,HLH_min(0x7fff,color64_b(p)+eb*128.f));
+   uint64_t r = HLH_max(0,HLH_min(0x7fff,(int64_t)((float)color64_r(p)+er*128.f)));
+   uint64_t g = HLH_max(0,HLH_min(0x7fff,(int64_t)((float)color64_g(p)+eg*128.f)));
+   uint64_t b = HLH_max(0,HLH_min(0x7fff,(int64_t)((float)color64_b(p)+eb*128.f)));
    uint64_t a = color64_a(p);
 
    img->data[y*img->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
@@ -574,51 +574,51 @@ static void slk_color32_to_lab(uint32_t c, float *l0, float *l1, float *l2)
    float z = 0.f;
 
    if(r>0.04045)
-      r = powf((r+0.055)/1.055,2.4);
+      r = powf((r+0.055f)/1.055f,2.4f);
    else
-      r = (r/12.92);
+      r = (r/12.92f);
   
-   if(g>0.04045)
-      g = powf((g+0.055)/1.055,2.4);
+   if(g>0.04045f)
+      g = powf((g+0.055f)/1.055f,2.4f);
    else
-      g = (g/12.92);
+      g = (g/12.92f);
   
-   if(b>0.04045)
-      b = powf((b+0.055)/1.055,2.4);
+   if(b>0.04045f)
+      b = powf((b+0.055f)/1.055f,2.4f);
    else
-      b = (b/12.92);
+      b = (b/12.92f);
 
-   x = (r*0.4124+g*0.3576+b*0.1805);
-   y = (r*0.2126+g*0.7152+b*0.0722);
-   z = (r*0.0193+g*0.1192+b*0.9504);
+   x = (r*0.4124f+g*0.3576f+b*0.1805f);
+   y = (r*0.2126f+g*0.7152f+b*0.0722f);
+   z = (r*0.0193f+g*0.1192f+b*0.9504f);
    //-------------------------------------
 
    //Convert to lab
-   if(x>0.008856)
-      x = powf(x,1.0/3.0);
+   if(x>0.008856f)
+      x = powf(x,1.0f/3.0f);
    else
-      x = (7.787*x)+(16.0/116.0);
+      x = (7.787f*x)+(16.0f/116.0f);
 
-   if(y>0.008856)
-      y = powf(y,1.0/3.0);
+   if(y>0.008856f)
+      y = powf(y,1.0f/3.0f);
    else
-      y = (7.787*y)+(16.0/116.0);
+      y = (7.787f*y)+(16.0f/116.0f);
 
-   if(z>0.008856)
-      z = powf(z,1.0/3.0);
+   if(z>0.008856f)
+      z = powf(z,1.0f/3.0f);
    else
-      z = (7.787*z)+(16.0/116.0);
+      z = (7.787f*z)+(16.0f/116.0f);
 
-   *l0 = 116.0*y-16.0;
-   *l1 = 500.0*(x-y);
-   *l2 = 200.0*(y-z);
+   *l0 = 116.0f*y-16.0f;
+   *l1 = 500.0f*(x-y);
+   *l2 = 200.0f*(y-z);
    //-------------------------------------
 }
 
 static uint8_t slk_color_closest(uint64_t c, const SLK_dither_config *config)
 {
-   float min_dist = 1e12;
-   int min_index = 0;
+   float min_dist = 1e12f;
+   uint8_t min_index = 0;
 
    float c0 = 0.f;
    float c1 = 0.f;
@@ -666,7 +666,7 @@ static uint8_t slk_color_closest(uint64_t c, const SLK_dither_config *config)
       if(dist<min_dist)
       {
          min_dist = dist;
-         min_index = i;
+         min_index = (uint8_t)i;
       }
    }
 
@@ -710,7 +710,7 @@ static float slk_dist_cie94(float a0, float a1, float a2, float b0, float b1, fl
 
    float dist = r1*r1+r2*r2+r3*r3;
    if(isnan(dist))
-      dist = 1e15;
+      dist = 1e15f;
    return dist;
 }
 
@@ -778,7 +778,7 @@ static float slk_dist_ciede2000(float b0, float b1, float b2, float c0, float c1
    double SC = 1.0f+0.045f*Cs_;
    double SH = 1.0f+0.015f*Cs_*T;
 
-   return (L/SL)*(L/SL)+(Cs/SC)*(Cs/SC)+(H/SH)*(H/SH)+RT*(Cs/SC)*(H_/SH);
+   return (float)((L/SL)*(L/SL)+(Cs/SC)*(Cs/SC)+(H/SH)*(H/SH)+RT*(Cs/SC)*(H_/SH));
 }
 
 static uint64_t rand_murmur3_avalanche64(uint64_t h)
@@ -972,7 +972,7 @@ static int kuhn_find_prime(int n, int m, double *table, uint8_t *marks, uint8_t 
       else
       {
          HLH_bitmap_free(zeroes);
-         *prime = row*m+col;
+         *prime = (uint32_t)(row*m+col);
          return 1;
       }
    }
@@ -1085,7 +1085,7 @@ static uint8_t *kuhn_assign(int n, int m, uint8_t *marks)
       {
          if(marks[i*m+j]==1)
          {
-            assign[i] = j;
+            assign[i] = (uint8_t)j;
          }
       }
    }

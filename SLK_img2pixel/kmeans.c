@@ -1,7 +1,7 @@
 /*
 SLK_img2pixel - a tool for converting images to pixelart
 
-Written in 2021,2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2021,2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -128,9 +128,9 @@ void image32_kmeans(Image32 *img, uint32_t *palette, int colors, uint64_t seed, 
 
          if(HLH_array_length(clusters[j])>0)
          {
-            uint32_t r = sum_r/HLH_array_length(clusters[j]);
-            uint32_t g = sum_g/HLH_array_length(clusters[j]);
-            uint32_t b = sum_b/HLH_array_length(clusters[j]);
+            uint32_t r = (uint32_t)(sum_r/HLH_array_length(clusters[j]));
+            uint32_t g = (uint32_t)(sum_g/HLH_array_length(clusters[j]));
+            uint32_t b = (uint32_t)(sum_b/HLH_array_length(clusters[j]));
             uint32_t a = 255;
             centers[j] = (r)|(g<<8)|(b<<16)|(a<<24);
             palette[j] = centers[j];
@@ -219,9 +219,9 @@ uint32_t image32_kmeans_largest(Image32 *img, uint32_t *palette, int colors, uin
 
          if(HLH_array_length(clusters[j])>0)
          {
-            uint32_t r = (sum_r/HLH_array_length(clusters[j]));
-            uint32_t g = (sum_g/HLH_array_length(clusters[j]));
-            uint32_t b = (sum_b/HLH_array_length(clusters[j]));
+            uint32_t r = (uint32_t)(sum_r/HLH_array_length(clusters[j]));
+            uint32_t g = (uint32_t)(sum_g/HLH_array_length(clusters[j]));
+            uint32_t b = (uint32_t)(sum_b/HLH_array_length(clusters[j]));
             uint32_t a = 255;
             centers[j] = (r)|(g<<8)|(b<<16)|(a<<24);
          }
@@ -269,7 +269,7 @@ static uint32_t *choose_centers(Image32 *img, int k, uint64_t seed, int kmeanspp
    {
       for(int i = 0;i<k;i++)
       {
-         int index = rand_xor_next(&rng)%(img->width*img->height);
+         int index = (int)(rand_xor_next(&rng)%(img->width*img->height));
          HLH_array_push(centers,img->data[index]);
       }
 
@@ -277,7 +277,7 @@ static uint32_t *choose_centers(Image32 *img, int k, uint64_t seed, int kmeanspp
    }
 
    //Choose initial center
-   int index = rand_xor_next(&rng)%(img->width*img->height);
+   int index = (int)(rand_xor_next(&rng)%(img->width*img->height));
    HLH_array_push(centers,img->data[index]);
 
    uint64_t *distance = NULL;
@@ -296,7 +296,7 @@ static uint32_t *choose_centers(Image32 *img, int k, uint64_t seed, int kmeanspp
          int32_t cb = color32_b(cur);
          int32_t ca = color32_a(cur);
 
-         int center_index = HLH_array_length(centers)-1;
+         int center_index = (int)HLH_array_length(centers)-1;
          int32_t r = color32_r(centers[center_index]);
          int32_t g = color32_g(centers[center_index]);
          int32_t b = color32_b(centers[center_index]);

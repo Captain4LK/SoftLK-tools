@@ -899,7 +899,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       char buffer[512];
       if(s->e.usr==SLIDER_BLUR)
       {
-         blur_amount = s->value/16.f;
+         blur_amount = (float)s->value/16.f;
          snprintf(buffer,512,"%.2f",blur_amount);
          HLH_gui_entry_set(gui.entry_blur,buffer);
          gui_process(0);
@@ -955,7 +955,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       }
       else if(s->e.usr==SLIDER_DITHER_AMOUNT)
       {
-         dither_config.dither_amount = s->value/500.f;
+         dither_config.dither_amount = (float)s->value/500.f;
          snprintf(buffer,512,"%.2f",dither_config.dither_amount);
          HLH_gui_entry_set(gui.entry_dither_amount,buffer);
          gui_process(3);
@@ -1058,21 +1058,21 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       }
       else if(s->e.usr==SLIDER_TINT_RED)
       {
-         tint_red = s->value;
+         tint_red = (uint8_t)s->value;
          snprintf(buffer,512,"%d",s->value);
          HLH_gui_entry_set(gui.entry_tint_red,buffer);
          gui_process(2);
       }
       else if(s->e.usr==SLIDER_TINT_GREEN)
       {
-         tint_green = s->value;
+         tint_green = (uint8_t)s->value;
          snprintf(buffer,512,"%d",s->value);
          HLH_gui_entry_set(gui.entry_tint_green,buffer);
          gui_process(2);
       }
       else if(s->e.usr==SLIDER_TINT_BLUE)
       {
-         tint_blue = s->value;
+         tint_blue = (uint8_t)s->value;
          snprintf(buffer,512,"%d",s->value);
          HLH_gui_entry_set(gui.entry_tint_blue,buffer);
          gui_process(2);
@@ -1104,22 +1104,22 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       }
       else if(entry->e.usr==ENTRY_WIDTH)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_width,value-1,511,1,1);
       }
       else if(entry->e.usr==ENTRY_HEIGHT)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_height,value-1,511,1,1);
       }
       else if(entry->e.usr==ENTRY_SCALE_X)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_scale_x,value-1,31,1,1);
       }
       else if(entry->e.usr==ENTRY_SCALE_Y)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_scale_y,value-1,31,1,1);
       }
       else if(entry->e.usr==ENTRY_SHARP)
@@ -1129,7 +1129,7 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       }
       else if(entry->e.usr==ENTRY_ALPHA_THRESHOLD)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_alpha_threshold,value,255,1,1);
       }
       else if(entry->e.usr==ENTRY_DITHER_AMOUNT)
@@ -1139,42 +1139,42 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       }
       else if(entry->e.usr==ENTRY_TARGET_COLORS)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_target_colors,value-1,255,1,1);
       }
       else if(entry->e.usr==ENTRY_COLOR_COUNT)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_color_count,value-1,255,1,1);
       }
       else if(entry->e.usr==ENTRY_COLOR_RED)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_color_red,value,255,1,1);
       }
       else if(entry->e.usr==ENTRY_COLOR_GREEN)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_color_green,value,255,1,1);
       }
       else if(entry->e.usr==ENTRY_COLOR_BLUE)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_color_blue,value,255,1,1);
       }
       else if(entry->e.usr==ENTRY_TINT_RED)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_tint_red,value,255,1,1);
       }
       else if(entry->e.usr==ENTRY_TINT_GREEN)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_tint_green,value,255,1,1);
       }
       else if(entry->e.usr==ENTRY_TINT_BLUE)
       {
-         int value = strtol(entry->entry,NULL,10);
+         int value = (int)strtol(entry->entry,NULL,10);
          HLH_gui_slider_set(gui.slider_tint_blue,value,255,1,1);
       }
       else if(entry->e.usr==ENTRY_BRIGHTNESS)
@@ -1565,35 +1565,35 @@ void gui_load_preset(FILE *f)
       HLH_json5 fallback = {0};
       HLH_json5_root *root = HLH_json_parse_file_stream(f);
 
-      blur_amount = HLH_json_get_object_real(&root->root,"blur_amount",0.);
-      sample_mode = HLH_json_get_object_integer(&root->root,"sample_mode",0);
-      x_offset = HLH_json_get_object_real(&root->root,"x_offset",0.f);
-      y_offset = HLH_json_get_object_real(&root->root,"y_offset",0.f);
+      blur_amount = (float)HLH_json_get_object_real(&root->root,"blur_amount",0.);
+      sample_mode = (int)HLH_json_get_object_integer(&root->root,"sample_mode",0);
+      x_offset = (float)HLH_json_get_object_real(&root->root,"x_offset",0.f);
+      y_offset = (float)HLH_json_get_object_real(&root->root,"y_offset",0.f);
       scale_relative = HLH_json_get_object_boolean(&root->root,"scale_relative",0);
-      size_relative_x = HLH_json_get_object_integer(&root->root,"size_relative_x",2);
-      size_relative_y = HLH_json_get_object_integer(&root->root,"size_relative_y",2);
-      size_absolute_x = HLH_json_get_object_integer(&root->root,"size_absolute_x",64);
-      size_absolute_y = HLH_json_get_object_integer(&root->root,"size_absolute_y",64);
-      sharp_amount = HLH_json_get_object_real(&root->root,"sharp_amount",0.f);
-      brightness = HLH_json_get_object_real(&root->root,"brightness",0.f);
-      contrast = HLH_json_get_object_real(&root->root,"contrast",1.f);
-      saturation = HLH_json_get_object_real(&root->root,"saturation",1.f);
-      hue = HLH_json_get_object_real(&root->root,"hue",0.f);
-      gamma = HLH_json_get_object_real(&root->root,"gamma",1.f);
+      size_relative_x = (int)HLH_json_get_object_integer(&root->root,"size_relative_x",2);
+      size_relative_y = (int)HLH_json_get_object_integer(&root->root,"size_relative_y",2);
+      size_absolute_x = (int)HLH_json_get_object_integer(&root->root,"size_absolute_x",64);
+      size_absolute_y = (int)HLH_json_get_object_integer(&root->root,"size_absolute_y",64);
+      sharp_amount = (float)HLH_json_get_object_real(&root->root,"sharp_amount",0.f);
+      brightness = (float)HLH_json_get_object_real(&root->root,"brightness",0.f);
+      contrast = (float)HLH_json_get_object_real(&root->root,"contrast",1.f);
+      saturation = (float)HLH_json_get_object_real(&root->root,"saturation",1.f);
+      hue = (float)HLH_json_get_object_real(&root->root,"hue",0.f);
+      gamma = (float)HLH_json_get_object_real(&root->root,"gamma",1.f);
       kmeanspp = HLH_json_get_object_boolean(&root->root,"kmeanspp",1);
-      tint_red = HLH_json_get_object_integer(&root->root,"tint_red",255);
-      tint_green = HLH_json_get_object_integer(&root->root,"tint_green",255);
-      tint_blue = HLH_json_get_object_integer(&root->root,"tint_blue",255);
-      dither_config.alpha_threshold = HLH_json_get_object_integer(&root->root,"dither_alpha_threshold",128);
-      dither_config.dither_amount = HLH_json_get_object_real(&root->root,"dither_dither_amount",0.2f);
-      dither_config.target_colors = HLH_json_get_object_integer(&root->root,"dither_target_colors",8);
+      tint_red = (uint8_t)HLH_json_get_object_integer(&root->root,"tint_red",255);
+      tint_green = (uint8_t)HLH_json_get_object_integer(&root->root,"tint_green",255);
+      tint_blue = (uint8_t)HLH_json_get_object_integer(&root->root,"tint_blue",255);
+      dither_config.alpha_threshold = (int)HLH_json_get_object_integer(&root->root,"dither_alpha_threshold",128);
+      dither_config.dither_amount = (float)HLH_json_get_object_real(&root->root,"dither_dither_amount",0.2f);
+      dither_config.target_colors = (int)HLH_json_get_object_integer(&root->root,"dither_target_colors",8);
       //dither_config.use_median = HLH_json_get_object_boolean(&root->root,"dither_use_median",0);
-      dither_config.dither_mode = HLH_json_get_object_integer(&root->root,"dither_dither_mode",2);
-      dither_config.color_dist = HLH_json_get_object_integer(&root->root,"dither_color_dist",2);
-      dither_config.palette_colors = HLH_json_get_object_integer(&root->root,"dither_palette_colors",2);
+      dither_config.dither_mode = (int)HLH_json_get_object_integer(&root->root,"dither_dither_mode",2);
+      dither_config.color_dist = (int)HLH_json_get_object_integer(&root->root,"dither_color_dist",2);
+      dither_config.palette_colors = (int)HLH_json_get_object_integer(&root->root,"dither_palette_colors",2);
       HLH_json5 *array = HLH_json_get_object_array(&root->root,"dither_palette",&fallback);
       for(int i = 0;i<256;i++)
-         dither_config.palette[i] = HLH_json_get_array_integer(array,i,0);
+         dither_config.palette[i] = (uint32_t)HLH_json_get_array_integer(array,i,0);
 
       HLH_json_free(root);
 
@@ -1890,8 +1890,8 @@ static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *d
             }
 
             Image32 *img = NULL;
-            char tmp[512];
-            snprintf(tmp,512,"%s/%s",batch_input,file.name);
+            char tmp[1028];
+            snprintf(tmp,1024,"%s/%s",batch_input,file.name);
             FILE *f = fopen(tmp,"rb");
             if(f!=NULL)
             {
@@ -1940,27 +1940,13 @@ static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *d
 
                if(batch_type==0)
                {
-                  snprintf(tmp,512,"%s/%s.png",batch_output,noext);
+                  snprintf(tmp,1028,"%s/%s.png",batch_output,noext);
                   image8_save(output,tmp,"png");
-//int image8_save(const Image8 *img, const char *path, const char *ext);
-                  //f = fopen(tmp,"wb");
-                  //if(f!=NULL)
-                  //{
-                     //HLH_gui_image_save(f,output->data,output->width,output->height,"png");
-                     //fclose(f);
-                  //}
                }
                else
                {
-                  snprintf(tmp,512,"%s/%s.pcx",batch_output,noext);
+                  snprintf(tmp,1028,"%s/%s.pcx",batch_output,noext);
                   image8_save(output,tmp,"pcx");
-                  /*f = fopen(tmp,"wb");
-                  if(f!=NULL)
-                  {
-                     //TODO(Captain4LK): restore pcx using image8_save
-                     //image32_write_pcx(f,output,dither_config.palette,dither_config.palette_colors);
-                     fclose(f);
-                  }*/
                }
 
                free(output);

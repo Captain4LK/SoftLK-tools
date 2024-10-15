@@ -207,7 +207,7 @@ void settings_load(const char *path)
    strncpy(path_preset_save,HLH_json_get_object_string(&root->root,"path_preset_save",""),511);
    strncpy(path_dir_input,HLH_json_get_object_string(&root->root,"path_dir_input",""),511);
    strncpy(path_dir_output,HLH_json_get_object_string(&root->root,"path_dir_output",""),511);
-   gui_scale = HLH_json_get_object_integer(&root->root,"gui_scale",1);
+   gui_scale = (int)HLH_json_get_object_integer(&root->root,"gui_scale",1);
    path_image_load[511] = '\0';
    path_palette_load[511] = '\0';
    path_preset_load[511] = '\0';
@@ -295,7 +295,7 @@ static int slk_path_pop_ext(const char *path, char *out, char *ext)
 
       strncpy(out,path,PATH_MAX-1);
       out[PATH_MAX-1] = '\0';
-      return strlen(out);
+      return (int)strlen(out);
    }
 
    //slash after dot --> no extension
@@ -306,7 +306,7 @@ static int slk_path_pop_ext(const char *path, char *out, char *ext)
 
       strncpy(out,path,PATH_MAX-1);
       out[PATH_MAX-1] = '\0';
-      return strlen(out);
+      return (int)strlen(out);
    }
 
    if(ext!=NULL)
@@ -322,6 +322,6 @@ static int slk_path_pop_ext(const char *path, char *out, char *ext)
    strncpy(out,path,min(len_copy,PATH_MAX-1));
    out[min(len_copy,PATH_MAX-1)] = '\0';
 #undef min
-   return strlen(out);
+   return (int)strlen(out);
 }
 //-------------------------------------

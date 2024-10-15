@@ -16,20 +16,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #include "shared/image.h"
 
-/*typedef struct
-{
-   int w;
-   int h;
-   uint32_t data[];
-}SLK_image32;
-
-typedef struct
-{
-   int w;
-   int h;
-   uint64_t data[];
-}SLK_image64;*/
-
 typedef enum
 {
    SLK_RGB_EUCLIDIAN,
@@ -66,27 +52,9 @@ typedef struct
    int target_colors;
 }SLK_dither_config;
 
-/*uint64_t SLK_color32_to_64(uint32_t c);
-uint64_t SLK_color64_r(uint64_t c);
-uint64_t SLK_color64_g(uint64_t c);
-uint64_t SLK_color64_b(uint64_t c);
-uint64_t SLK_color64_a(uint64_t c);
-uint32_t SLK_color64_to_32(uint64_t c);
-uint32_t SLK_color32_r(uint32_t c);
-uint32_t SLK_color32_g(uint32_t c);
-uint32_t SLK_color32_b(uint32_t c);
-uint32_t SLK_color32_a(uint32_t c);*/
-
 //Max 256
 void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *ext);
 void SLK_palette_save(FILE *f, uint32_t *colors, int color_count, const char *ext);
-
-//SLK_image32 *SLK_image32_dup(const SLK_image32 *src);
-//SLK_image32 *SLK_image32_dup64(const SLK_image64 *src);
-//SLK_image64 *SLK_image64_dup(const SLK_image64 *src);
-//SLK_image64 *SLK_image64_dup32(const SLK_image32 *src);
-
-//void SLK_image32_write_pcx(FILE *f, const SLK_image32 *img, uint32_t *colors, int color_count);
 
 void image64_blur(Image64 *img, float sz);
 void image64_sharpen(Image64 *img, float amount);

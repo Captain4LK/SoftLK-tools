@@ -292,8 +292,8 @@ Image8 *pcx_load(const char *path)
          status_intensity = HLH_max(color32_g(ega_palette[1]),color32_b(ega_palette[1]))>200;
       }
       uint32_t cga_map[4][3] = {{2,4,6},{10,12,14},{3,5,7},{11,13,15}};
-      uint8_t index = status_palette*2+status_intensity;
-      uint8_t foreground = (color32_r(ega_palette[0]))/16;
+      uint8_t index = (uint8_t)(status_palette*2+status_intensity);
+      uint8_t foreground = (uint8_t)((color32_r(ega_palette[0]))/16);
       img->palette[0] = cga_palette[foreground];
       img->palette[1] = cga_palette[cga_map[index][0]];
       img->palette[2] = cga_palette[cga_map[index][1]];

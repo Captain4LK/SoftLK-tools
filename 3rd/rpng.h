@@ -855,7 +855,7 @@ void rpng_chunk_write_comp_text(const char *filename, char *keyword, char *text)
         int text_len = (int)strlen(text);
 
         // Compress filtered image data and generate a valid zlib stream
-        struct sdefl *sde = (struct sdefl *)RPNG_CALLOC(sizeof(struct sdefl), 1);
+        struct sdefl *sde = (struct sdefl *)RPNG_CALLOC(1,sizeof(struct sdefl));
         int bounds = sdefl_bound(text_len);
         unsigned char *comp_text = (unsigned char *)RPNG_CALLOC(bounds, 1);
         int comp_text_size = zsdeflate(sde, comp_text, (unsigned char *)text, text_len, RPNG_COMPRESSION_LEVEL);
@@ -2017,7 +2017,7 @@ static char *rpng_deflate_image_data(const char *image_data, int image_data_size
 
     int out = 0, x = 0, a = 0, b = 0, c = 0;
     int sum_value[5] = { 0 };
-    int best_filter = 0;
+    unsigned char best_filter = 0;
 
     for (int y = 0; y < height; y++)
     {
@@ -2059,7 +2059,7 @@ static char *rpng_deflate_image_data(const char *image_data, int image_data_size
             best_filter = 0;
             int best_value = sum_value[0];
 
-            for (int filter = 1; filter < 5; filter++)
+            for (unsigned char filter = 1; filter < 5; filter++)
             {
                 if (sum_value[filter] < best_value)
                 {
@@ -2068,7 +2068,7 @@ static char *rpng_deflate_image_data(const char *image_data, int image_data_size
                 }
             }
         }
-        else if ((forced_filter_type >= 0) && (forced_filter_type <= 4)) best_filter = forced_filter_type;
+        else if ((forced_filter_type >= 0) && (forced_filter_type <= 4)) best_filter = (unsigned char)forced_filter_type;
 
         // Register scanline filter byte
         data_filtered[(scanline_size + 1)*y] = best_filter;
@@ -2097,7 +2097,7 @@ static char *rpng_deflate_image_data(const char *image_data, int image_data_size
     }
 
     // Compress filtered image data and generate a valid zlib stream
-    struct sdefl *sde = (struct sdefl*)RPNG_CALLOC(sizeof(struct sdefl), 1);
+    struct sdefl *sde = (struct sdefl*)RPNG_CALLOC(1,sizeof(struct sdefl));
     int bounds = sdefl_bound(data_filtered_size);
     char *comp_data = (char *)RPNG_CALLOC(bounds, 1);
     int comp_data_size = zsdeflate(sde, comp_data, data_filtered, data_filtered_size, RPNG_COMPRESSION_LEVEL);
@@ -2161,7 +2161,7 @@ static char *rpng_inflate_image_data(char *image_data, int image_data_size, int 
                     case 0: out = x; break;         // Filter type 0: None (Usually used for indexed images)
                     case 1: out = x + a; break;     // Filter type 1: Sub
                     case 2: out = x + b; break;     // Filter type 2: Up
-                    case 3: out = x + ((a + b)>>1); break;    // Filter type 3: Average
+                    case 3: out = (unsigned char)(x + ((a + b)>>1)); break;    // Filter type 3: Average
                     case 4: out = x + rpng_paeth_predictor(a, b, c); break;  // Filter type 4: Paeth
                     default: break;
                 }
@@ -2256,7 +2256,7 @@ static char *load_file_to_buffer(const char *filename, int *bytes_read)
             // WARNING: On binary streams SEEK_END could not be found,
             // using fseek() and ftell() could not work in some (rare) cases
             fseek(file, 0, SEEK_END);
-            int file_size = ftell(file);
+            int file_size = (int)ftell(file);
             fseek(file, 0, SEEK_SET);
 
             if (file_size > 0)
@@ -3044,7 +3044,7 @@ static int
 sinfl_peek(struct sinfl *s, int cnt) {
   assert(cnt >= 0 && cnt <= 56);
   assert(cnt <= s->bitcnt);
-  return s->bitbuf & ((1ull << cnt) - 1);
+  return (int)(s->bitbuf & ((1ull << cnt) - 1));
 }
 static void
 sinfl_eat(struct sinfl *s, int cnt) {

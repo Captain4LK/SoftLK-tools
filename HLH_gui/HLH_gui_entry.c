@@ -56,7 +56,7 @@ void HLH_gui_entry_set(HLH_gui_entry *entry, char *text)
 
    strncpy(entry->entry,text,entry->max_len);
    entry->entry[entry->max_len] = '\0';
-   entry->len = strlen(entry->entry);
+   entry->len = (int)strlen(entry->entry);
    HLH_gui_element_redraw(&entry->e);
 }
 

@@ -91,13 +91,13 @@ Image8 *png_load(const char *path)
       Image8 *img = image8_new(width,height);
       img->color_count = 256;
       for(int i = 0;i<256;i++)
-         img->palette[i] = color32(i,i,i,255);
+         img->palette[i] = color32((uint8_t)i,(uint8_t)i,(uint8_t)i,255);
 
       if(bit_depth==16)
       {
          uint16_t *pix = (uint16_t *)data;
          for(int i = 0;i<width*height;i++)
-            img->data[i] = pix[i]/256;
+            img->data[i] = (uint8_t)(pix[i]/256);
       }
       else
       {
@@ -114,13 +114,13 @@ Image8 *png_load(const char *path)
       Image8 *img = image8_new(width,height);
       img->color_count = 256;
       for(int i = 0;i<256;i++)
-         img->palette[i] = color32(i,i,i,255);
+         img->palette[i] = color32((uint8_t)i,(uint8_t)i,(uint8_t)i,255);
 
       if(bit_depth==16)
       {
          uint16_t *pix = (uint16_t *)data;
          for(int i = 0;i<width*height;i++)
-            img->data[i] = pix[2*i]/256;
+            img->data[i] = (uint8_t)(pix[2*i]/256);
       }
       else
       {
@@ -140,7 +140,7 @@ Image8 *png_load(const char *path)
       {
          uint16_t *pix = (uint16_t *)data;
          for(int i = 0;i<width*height;i++)
-            img->data[i] = color32(pix[3*i]/256,pix[3*i+1]/256,pix[3*i+2]/256,255);
+            img->data[i] = color32((uint8_t)(pix[3*i]/256),(uint8_t)(pix[3*i+1]/256),(uint8_t)(pix[3*i+2]/256),255);
       }
       else
       {
@@ -161,7 +161,7 @@ Image8 *png_load(const char *path)
       {
          uint16_t *pix = (uint16_t *)data;
          for(int i = 0;i<width*height;i++)
-            img->data[i] = color32(pix[4*i]/256,pix[4*i+1]/256,pix[4*i+2]/256,255);
+            img->data[i] = color32((uint8_t)(pix[4*i]/256),(uint8_t)(pix[4*i+1]/256),(uint8_t)(pix[4*i+2]/256),255);
       }
       else
       {

@@ -94,9 +94,9 @@ static void slk_hue(uint64_t *color, float hue)
    float v = 0.f;
 
    {
-      float r = color64_r(*color)/(float)0x7fff;
-      float g = color64_g(*color)/(float)0x7fff;
-      float b = color64_b(*color)/(float)0x7fff;
+      float r = (float)color64_r(*color)/(float)0x7fff;
+      float g = (float)color64_g(*color)/(float)0x7fff;
+      float b = (float)color64_b(*color)/(float)0x7fff;
       float cmax = HLH_max(r,HLH_max(g,b));
       float cmin = HLH_min(r,HLH_min(g,b));
       float diff = cmax-cmin;

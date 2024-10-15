@@ -50,12 +50,12 @@ void image64_sharpen(Image64 *img, float amount)
       for(int x = 0;x<img->width;x++)
       {
          int i = y*img->width+x;
-         int32_t r = color64_r(img->data[i]);
-         int32_t rb = color64_r(blur->data[i]);
-         int32_t g = color64_g(img->data[i]);
-         int32_t gb = color64_g(blur->data[i]);
-         int32_t b = color64_b(img->data[i]);
-         int32_t bb = color64_b(blur->data[i]);
+         int32_t r = (int32_t)color64_r(img->data[i]);
+         int32_t rb = (int32_t)color64_r(blur->data[i]);
+         int32_t g = (int32_t)color64_g(img->data[i]);
+         int32_t gb = (int32_t)color64_g(blur->data[i]);
+         int32_t b = (int32_t)color64_b(img->data[i]);
+         int32_t bb = (int32_t)color64_b(blur->data[i]);
 
          uint64_t cr = HLH_max(0,HLH_min(0x7fff,r+((r-rb)*amount_fixed)/256));
          uint64_t cg = HLH_max(0,HLH_min(0x7fff,g+((g-gb)*amount_fixed)/256));

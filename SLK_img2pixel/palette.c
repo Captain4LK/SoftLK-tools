@@ -182,7 +182,7 @@ static int slk_path_pop_ext(const char *path, char *out, char *ext)
 
       strncpy(out,path,PATH_MAX-1);
       out[PATH_MAX-1] = '\0';
-      return strlen(out);
+      return (int)strlen(out);
    }
 
    //slash after dot --> no extension
@@ -193,7 +193,7 @@ static int slk_path_pop_ext(const char *path, char *out, char *ext)
 
       strncpy(out,path,PATH_MAX-1);
       out[PATH_MAX-1] = '\0';
-      return strlen(out);
+      return (int)strlen(out);
    }
 
    if(ext!=NULL)
@@ -209,7 +209,7 @@ static int slk_path_pop_ext(const char *path, char *out, char *ext)
    strncpy(out,path,min(len_copy,PATH_MAX-1));
    out[min(len_copy,PATH_MAX-1)] = '\0';
 #undef min
-   return strlen(out);
+   return (int)strlen(out);
 }
 
 static int chartoi(char in)

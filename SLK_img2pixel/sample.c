@@ -80,8 +80,8 @@ static Image64 *slk_sample_nearest(const Image64 *img, int width, int height, fl
    {
       for(int x = 0;x<width;x++)
       {
-         float dx = x+x_off+0.5f;
-         float dy = y+y_off+0.5f;
+         float dx = (float)x+x_off+0.5f;
+         float dy = (float)y+y_off+0.5f;
 
          int ix = HLH_max(0,HLH_min(img->width-1,(int)roundf(dx*w)));
          int iy = HLH_max(0,HLH_min(img->height-1,(int)roundf(dy*h)));
@@ -255,7 +255,7 @@ static Image64 *slk_sample_bicubic(const Image64 *img, int width, int height, fl
 static float slk_blend_bicubic(float c0, float c1, float c2, float c3, float t)
 {
    float a0 = -0.5f*c0+1.5f*c1-1.5f*c2+0.5f*c3;
-   float a1 = c0-2.5f*c1+2.f*c2-0.5*c3;
+   float a1 = c0-2.5f*c1+2.f*c2-0.5f*c3;
    float a2 = -0.5f*c0+0.5f*c2;
    float a3 = c1;
 
@@ -326,10 +326,10 @@ static Image64 *slk_sample_lanczos(const Image64 *img, int width, int height, fl
             ca[i] = a0*(float)color64_a(p00)+a1*(float)color64_a(p01)+a2*(float)color64_a(p02)+a3*(float)color64_a(p03)+a4*(float)color64_a(p04)+a5*(float)color64_a(p05);
          }
 
-         uint64_t r = HLH_max(0,HLH_min(0x7fff,b0*cr[0]+b1*cr[1]+b2*cr[2]+b3*cr[3]+b4*cr[4]+b5*cr[5]));
-         uint64_t g = HLH_max(0,HLH_min(0x7fff,b0*cg[0]+b1*cg[1]+b2*cg[2]+b3*cg[3]+b4*cg[4]+b5*cg[5]));
-         uint64_t b = HLH_max(0,HLH_min(0x7fff,b0*cb[0]+b1*cb[1]+b2*cb[2]+b3*cb[3]+b4*cb[4]+b5*cb[5]));
-         uint64_t a = HLH_max(0,HLH_min(0x7fff,b0*ca[0]+b1*ca[1]+b2*ca[2]+b3*ca[3]+b4*ca[4]+b5*ca[5]));
+         uint64_t r = HLH_max(0,HLH_min(0x7fff,(int)(b0*cr[0]+b1*cr[1]+b2*cr[2]+b3*cr[3]+b4*cr[4]+b5*cr[5])));
+         uint64_t g = HLH_max(0,HLH_min(0x7fff,(int)(b0*cg[0]+b1*cg[1]+b2*cg[2]+b3*cg[3]+b4*cg[4]+b5*cg[5])));
+         uint64_t b = HLH_max(0,HLH_min(0x7fff,(int)(b0*cb[0]+b1*cb[1]+b2*cb[2]+b3*cb[3]+b4*cb[4]+b5*cb[5])));
+         uint64_t a = HLH_max(0,HLH_min(0x7fff,(int)(b0*ca[0]+b1*ca[1]+b2*ca[2]+b3*ca[3]+b4*ca[4]+b5*ca[5])));
 
          out->data[y*out->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
       }
@@ -351,13 +351,13 @@ static float slk_lanczos(float v)
 static Image64 *slk_sample_cluster(const Image64 *img, int width, int height, float x_off, float y_off)
 {
 
-   float w = (img->width)/(float)width;
-   float h = (img->height)/(float)height;
+   float w = (float)img->width/(float)width;
+   float h = (float)img->height/(float)height;
 
    float grid_x = ((float)img->width/(float)(width));
    float grid_y = ((float)img->height/(float)(height));
-   int igrid_x = grid_x;
-   int igrid_y = grid_y;
+   int igrid_x = (int)grid_x;
+   int igrid_y = (int)grid_y;
    if(igrid_x<=0||igrid_y<=0)
    {
       return slk_sample_nearest(img,width,height,x_off,y_off);
@@ -379,21 +379,25 @@ static Image64 *slk_sample_cluster(const Image64 *img, int width, int height, fl
       {
          for(int x = 0;x<width;x++)
          {
-            float dx = x+x_off+0.5f;
-            float dy = y+y_off+0.5f;
+            float dx = (float)x+x_off+0.5f;
+            float dy = (float)y+y_off+0.5f;
 
             int ix = HLH_max(0,HLH_min(img->width-1,(int)roundf(dx*w)));
             int iy = HLH_max(0,HLH_min(img->height-1,(int)roundf(dy*h)));
             uint64_t a = color64_a(img->data[iy*img->width+ix]);
 
-            for(int iy = 0;iy<igrid_y;iy++)
+            for(int gy = 0;gy<igrid_y;gy++)
             {
-               //out->data[y*width+x] = img->data[iy*img->width+ix];
-               for(int ix = 0;ix<igrid_x;ix++)
+               for(int gx = 0;gx<igrid_x;gx++)
                {
-                  cluster->data[iy*igrid_x+ix] = 0xff000000;
-                  if(x*grid_x+ix>=0&&x*grid_x+ix<img->width&&y*grid_y+iy>=0&&y*grid_y+iy<img->height)
-                     cluster->data[iy*igrid_x+ix] = color64_to_32(img->data[((int)(y*grid_y)+iy)*img->width+(int)(x*grid_x)+ix]);
+                  float fx = (float)x;
+                  float fy = (float)y;
+                  float fgx = (float) gx;
+                  float fgy = (float) gy;
+
+                  cluster->data[gy*igrid_x+gx] = 0xff000000;
+                  if(fx*grid_x+fgx>=0&&fx*grid_x+fgx<img->width&&fy*grid_y+fgy>=0&&fy*grid_y+fgy<img->height)
+                     cluster->data[gy*igrid_x+gx] = color64_to_32(img->data[((int)(fy*grid_y)+gy)*img->width+(int)(fx*grid_x)+gx]);
                }
             }
             uint64_t c = color32_to_64(image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
@@ -401,7 +405,6 @@ static Image64 *slk_sample_cluster(const Image64 *img, int width, int height, fl
             uint64_t g = color64_g(c);
             uint64_t b = color64_b(c);
             out->data[y*width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
-            //out->data[y*width+x] = SLK_color32_to_64(Image32_kmeans_largest(cluster,colors,3,0xdeadbeef));
          }
       }
 

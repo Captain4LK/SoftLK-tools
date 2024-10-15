@@ -68,7 +68,7 @@ void HLH_gui_menubar_label_set(HLH_gui_group *bar, const char *label, int which)
 
    HLH_gui_dropdown *drop = (HLH_gui_dropdown *)bar->e.children[which];
    free(drop->text);
-   drop->text_len = strlen(label);
+   drop->text_len = (int)strlen(label);
    drop->text = malloc(drop->text_len+1);
    strcpy(drop->text,label);
 
