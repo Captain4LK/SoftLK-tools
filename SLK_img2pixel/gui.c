@@ -1750,7 +1750,7 @@ static void ui_construct_batch()
    HLH_gui_window *win = HLH_gui_window_create("Batch processing", 500, 100, NULL);
    HLH_gui_window_block(window_root, win);
    HLH_gui_group *group_root = HLH_gui_group_create(&win->e, HLH_GUI_FILL);
-   HLH_gui_group *group_select = HLH_gui_group_create(&group_root->e, HLH_GUI_FILL);
+   HLH_gui_group_create(&group_root->e, HLH_GUI_FILL);
    HLH_gui_button *b = NULL;
 
    {

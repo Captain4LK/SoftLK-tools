@@ -102,13 +102,13 @@ Image8 *image32to8(const Image32 *img)
          int32_t cr = color32_r(cur);
          int32_t cg = color32_g(cur);
          int32_t cb = color32_b(cur);
-         int32_t ca = color32_a(cur);
+         //int32_t ca = color32_a(cur);
 
          int center_index = i-1;
          int32_t r = color32_r(centers[center_index]);
          int32_t g = color32_g(centers[center_index]);
          int32_t b = color32_b(centers[center_index]);
-         int32_t a = color32_a(centers[center_index]);
+         //int32_t a = color32_a(centers[center_index]);
 
          uint64_t dist = (cr-r)*(cr-r);
          dist+=(cg-g)*(cg-g);
@@ -159,7 +159,7 @@ Image8 *image32to8(const Image32 *img)
          int32_t cr = color32_r(cur);
          int32_t cg = color32_g(cur);
          int32_t cb = color32_b(cur);
-         int32_t ca = color32_a(cur);
+         //int32_t ca = color32_a(cur);
 
          uint64_t dist_min = UINT64_MAX;
          int min_i = 0;
@@ -168,7 +168,7 @@ Image8 *image32to8(const Image32 *img)
             int32_t r = color32_r(centers[c]);
             int32_t g = color32_g(centers[c]);
             int32_t b = color32_b(centers[c]);
-            int32_t a = color32_a(centers[c]);
+            //int32_t a = color32_a(centers[c]);
 
             uint64_t dist = (cr-r)*(cr-r);
             dist+=(cg-g)*(cg-g);
@@ -232,7 +232,7 @@ Image8 *image32to8(const Image32 *img)
       int32_t cr = color32_r(cur);
       int32_t cg = color32_g(cur);
       int32_t cb = color32_b(cur);
-      int32_t ca = color32_a(cur);
+      //int32_t ca = color32_a(cur);
 
       uint8_t index_min = 0;
       uint64_t dist_min = UINT64_MAX;
@@ -242,7 +242,7 @@ Image8 *image32to8(const Image32 *img)
          int32_t r = color32_r(palette[j]);
          int32_t g = color32_g(palette[j]);
          int32_t b = color32_b(palette[j]);
-         int32_t a = color32_a(palette[j]);
+         //int32_t a = color32_a(palette[j]);
 
          uint64_t dist = (cr-r)*(cr-r);
          dist+=(cg-g)*(cg-g);

@@ -147,7 +147,7 @@ static void imgcmp_draw(HLH_gui_imgcmp *img)
    HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), 0xffc8c8c8);
    HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), 0xffc8c8c8);
 
-   int clip_width = ((bounds.maxx-bounds.minx)*img->slider)/2048;
+   //int clip_width = ((bounds.maxx-bounds.minx)*img->slider)/2048;
    int view_x;
    int view_y;
    int view_width;

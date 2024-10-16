@@ -283,7 +283,7 @@ Image8 *pcx_load(const char *path)
          color32(0xff,0xff,0xff,0xff),
       };
 
-      uint8_t status_color_burst = !!(color32_r(ega_palette[1])&128);
+      //uint8_t status_color_burst = !!(color32_r(ega_palette[1])&128);
       uint8_t status_palette = !!(color32_r(ega_palette[1])&64);
       uint8_t status_intensity = !!(color32_r(ega_palette[1])&32);
       if(palette_mode!=0)

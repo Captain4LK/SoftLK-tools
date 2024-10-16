@@ -151,6 +151,8 @@ Image8 *png_load(const char *path)
 
       Image8 *img8 = image32to8(img);
       free(img);
+      free(data);
+
       return img8;
    }
    else if(color_channels==4)
@@ -174,6 +176,8 @@ Image8 *png_load(const char *path)
 
       Image8 *img8 = image32to8(img);
       free(img);
+      free(data);
+
       return img8;
    }
 

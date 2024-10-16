@@ -91,18 +91,12 @@ static void boxblur_line(const uint16_t * restrict src, uint16_t * restrict dst,
    int r = (int)rad;
    int32_t alpha = ((int32_t)(rad*64.f))&63;
    int32_t alpha1 = 64-alpha;
-   int32_t alpha_total = alpha-alpha1;
+   //int32_t alpha_total = alpha-alpha1;
    int32_t s1,s2,d;
-   s1 = s2 = -((r+1)/2)*4;
+   s2 = -((r+1)/2)*4;
    d = 0;
 
    int32_t amp = (65536*64)/HLH_max(1,(2*r+1)*64+alpha*2);
-   int32_t amp_clip;
-   if(amp>128)
-      amp_clip = (int32_t)((((int64_t)65536*65536*64)/amp)-1);
-   else
-      amp_clip = 0x7fffffff;
-
    int32_t sum_r = 0;
    int32_t sum_g = 0;
    int32_t sum_b = 0;
