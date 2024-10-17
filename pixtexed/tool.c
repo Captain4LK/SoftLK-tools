@@ -42,6 +42,8 @@ GUI_tool *gui_tool_create(HLH_gui_element *parent, uint64_t flags, GUI_canvas *c
    tool->type = type;
 
    gui_tool_update_icons(tool);
+   tool->icon_bounds.miny = 0;
+   tool->icon_bounds.maxy = 14;
 
    return tool;
 }
@@ -50,6 +52,8 @@ void gui_tool_set(GUI_tool *t, uint8_t button)
 {
    if(t==NULL)
       return;
+
+   Project *p = t->canvas->project;
 
    //if(button!=HLH_GUI_MOUSE_RIGHT)
    {
@@ -85,6 +89,8 @@ void gui_tool_set(GUI_tool *t, uint8_t button)
       switch(t->type)
       {
       case TOOL_PEN:
+         p->tools.pen.place_mode = (p->tools.pen.place_mode+1)&3;
+         gui_tool_update_icons(t);
          break;
       }
    }
@@ -102,94 +108,64 @@ static void gui_tool_update_icons(GUI_tool *tool)
    switch(tool->type)
    {
    case TOOL_PEN:
-      tool->icon_bounds.minx = 0;
-      tool->icon_bounds.miny = 0;
-      tool->icon_bounds.maxx = 14;
-      tool->icon_bounds.maxy = 14;
+      tool->icon_bounds.minx = 14*(tool->canvas->project->tools.pen.place_mode);
+      tool->icon_bounds.maxx = 14+14*(tool->canvas->project->tools.pen.place_mode);
       break;
    case TOOL_LINE:
       tool->icon_bounds.minx = 4*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 5*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_FLOOD:
       tool->icon_bounds.minx = 7*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 8*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_RECT_OUTLINE:
       tool->icon_bounds.minx = 9*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 10*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_RECT_FILL:
       tool->icon_bounds.minx = 10*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 11*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_GRADIENT:
       tool->icon_bounds.minx = 11*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 12*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_SPLINE:
       tool->icon_bounds.minx = 12*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 13*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_SPRAY:
       tool->icon_bounds.minx = 14*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 15*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_POLYLINE:
       tool->icon_bounds.minx = 15*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 16*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_POLYFORM:
       tool->icon_bounds.minx = 16*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 17*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_CIRCLE_OUTLINE:
       tool->icon_bounds.minx = 17*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 18*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_CIRCLE_FILL:
       tool->icon_bounds.minx = 21*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 22*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_SELECT_RECT:
       tool->icon_bounds.minx = 25*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 26*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_SELECT_LASSO:
       tool->icon_bounds.minx = 26*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 27*14;
-      tool->icon_bounds.maxy = 14;
       break;
    case TOOL_PIPETTE:
       tool->icon_bounds.minx = 27*14;
-      tool->icon_bounds.miny = 0;
       tool->icon_bounds.maxx = 28*14;
-      tool->icon_bounds.maxy = 14;
       break;
    }
 }

@@ -10,6 +10,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //External includes
 #include "HLH_gui.h"
+#include "HLH.h"
 //-------------------------------------
 
 //Internal includes
@@ -45,6 +46,7 @@ GUI_canvas *gui_canvas_create(HLH_gui_element *parent, uint64_t flags, Project *
    canvas->x = 0.f;
    canvas->y = 0.f;
    canvas->img = SDL_CreateTexture(canvas->e.window->renderer,SDL_PIXELFORMAT_ABGR8888,SDL_TEXTUREACCESS_STREAMING,project->width,project->height);
+   //gui_canvas_update_project(canvas,project);
 
    return canvas;
 }
@@ -54,7 +56,7 @@ void gui_canvas_update_project(GUI_canvas *canvas, Project *project)
    if(project==NULL||canvas==NULL)
       return;
 
-   if(canvas->project->width==project->width&&canvas->project->height==project->height)
+   if(canvas->project!=NULL&&canvas->project->width==project->width&&canvas->project->height==project->height)
    {
       if(canvas->project!=project)
          project_free(canvas->project);
