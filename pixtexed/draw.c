@@ -373,6 +373,7 @@ static int draw_event_pen_contour_fill(Project *project, int32_t mx, int32_t my,
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
    {
       //Clear preview
+      //TODO(Captain4LK): clear at x1,y1, same for every other pen drawing operation
       brush_place(project,settings,settings->brushes[settings->brush_selected],mx/256,my/256,project->num_layers-1,0);
 
       //Prepare undo
@@ -381,37 +382,103 @@ static int draw_event_pen_contour_fill(Project *project, int32_t mx, int32_t my,
 
       layer_copy(project->old,project->layers[project->layer_selected],sizeof(*project->old->data)*project->width*project->height);
 
-      brush_place(project,settings,settings->brushes[settings->brush_selected],mx/256,my/256,project->layer_selected,settings->palette_selected);
+      mx = HLH_min(project->width*256,HLH_max(mx,0));
+      my = HLH_min(project->height*256,HLH_max(my,0));
+
+      brush_place(project,settings,settings->brushes[0],mx/256,my/256,project->num_layers-1,1);
       project->state.x0 = mx;
       project->state.y0 = my;
+      project->state.x1 = mx;
+      project->state.y1 = my;
+      project->state.minx = INT32_MAX;
+      project->state.miny = INT32_MAX;
+      project->state.maxx = INT32_MIN;
+      project->state.maxy = INT32_MIN;
+
+      project->state.minx = HLH_min(project->state.minx,mx/256);
+      project->state.miny = HLH_min(project->state.miny,my/256);
+      project->state.maxx = HLH_max(project->state.maxx,mx/256);
+      project->state.maxy = HLH_max(project->state.maxy,my/256);
 
       return 1;
    }
    else if(button&HLH_GUI_MOUSE_LEFT)
    {
-      if(mx/256==project->state.x0/256&&my/256==project->state.y0/256)
+      if(mx/256==project->state.x1/256&&my/256==project->state.y1/256)
          return 0;
 
-      draw_line(project,settings,settings->brushes[settings->brush_selected],mx,my,project->state.x0,project->state.y0,project->layer_selected,settings->palette_selected);
-      brush_place(project,settings,settings->brushes[settings->brush_selected],mx/256,my/256,project->layer_selected,settings->palette_selected);
-      brush_place(project,settings,settings->brushes[settings->brush_selected],project->state.x0/256,project->state.y0/256,project->layer_selected,settings->palette_selected);
-      project->state.x0 = mx;
-      project->state.y0 = my;
+      mx = HLH_min(project->width*256-1,HLH_max(mx,0));
+      my = HLH_min(project->height*256-1,HLH_max(my,0));
+
+      draw_line(project,settings,settings->brushes[0],mx,my,project->state.x1,project->state.y1,project->num_layers-1,1);
+      brush_place(project,settings,settings->brushes[0],mx/256,my/256,project->num_layers-1,1);
+      brush_place(project,settings,settings->brushes[0],project->state.x1/256,project->state.y1/256,project->num_layers-1,1);
+      project->state.x1 = mx;
+      project->state.y1 = my;
+      project->state.minx = HLH_min(project->state.minx,mx/256);
+      project->state.miny = HLH_min(project->state.miny,my/256);
+      project->state.maxx = HLH_max(project->state.maxx,mx/256);
+      project->state.maxy = HLH_max(project->state.maxy,my/256);
 
       return 1;
    }
    else if(!(button&HLH_GUI_MOUSE_LEFT)&&(old_state&HLH_GUI_MOUSE_LEFT))
    {
+      mx = HLH_min(project->width*256-1,HLH_max(mx,0));
+      my = HLH_min(project->height*256-1,HLH_max(my,0));
+
+      draw_line(project,settings,settings->brushes[0],mx,my,project->state.x0,project->state.y0,project->num_layers-1,1);
+      brush_place(project,settings,settings->brushes[0],mx/256,my/256,project->num_layers-1,1);
+      brush_place(project,settings,settings->brushes[0],project->state.x0/256,project->state.y0/256,project->num_layers-1,1);
+      project->state.minx = HLH_min(project->state.minx,mx/256);
+      project->state.miny = HLH_min(project->state.miny,my/256);
+      project->state.maxx = HLH_max(project->state.maxx,mx/256);
+      project->state.maxy = HLH_max(project->state.maxy,my/256);
+
+      //Scan
+      for(int y = project->state.miny;y<=project->state.maxy;y++)
+      {
+         int count = 0;
+         for(int x = project->state.minx;x<=project->state.maxx;x++)
+         {
+            if(project->layers[project->num_layers-1]->data[y*project->width+x])
+               count++;
+         }
+
+         int on = 0;
+         int last = 0;
+         for(int x = project->state.minx;x<=project->state.maxx;x++)
+         {
+            if(project->layers[project->num_layers-1]->data[y*project->width+x])
+            {
+               brush_place(project,settings,settings->brushes[0],x,y,project->layer_selected,settings->palette_selected);
+               brush_place(project,settings,settings->brushes[0],x,y,project->num_layers-1,0);
+               if(!last)
+                  on = !on;
+               last = 1;
+               count--;
+            }
+            else
+            {
+               if(on&&count>0)
+                  brush_place(project,settings,settings->brushes[0],x,y,project->layer_selected,settings->palette_selected);
+               last = 0;
+            }
+         }
+      }
+
       undo_end_layer_chunks(project);
+
+      return 1;
    }
    else
    {
-      if(mx/256==project->state.x0/256&&my/256==project->state.y0/256)
+      if(mx/256==project->state.x1/256&&my/256==project->state.y1/256)
          return 0;
-      brush_place(project,settings,settings->brushes[settings->brush_selected],project->state.x0/256,project->state.y0/256,project->num_layers-1,0);
+      brush_place(project,settings,settings->brushes[settings->brush_selected],project->state.x1/256,project->state.y1/256,project->num_layers-1,0);
       brush_place(project,settings,settings->brushes[settings->brush_selected],mx/256,my/256,project->num_layers-1,settings->palette_selected);
-      project->state.x0 = mx;
-      project->state.y0 = my;
+      project->state.x1 = mx;
+      project->state.y1 = my;
       return 1;
    }
 

@@ -87,6 +87,11 @@ typedef struct
    int32_t x1;
    int32_t y1;
 
+   int32_t minx;
+   int32_t miny;
+   int32_t maxx;
+   int32_t maxy;
+
    uint8_t button;
 }Draw_state;
 
