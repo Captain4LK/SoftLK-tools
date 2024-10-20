@@ -48,6 +48,7 @@ GUI_tool *gui_tool_create(HLH_gui_element *parent, uint64_t flags, GUI_canvas *c
    return tool;
 }
 
+//TODO(Captain4LK): sent release draw event after switching tool
 void gui_tool_set(GUI_tool *t, uint8_t button)
 {
    if(t==NULL)
@@ -90,6 +91,10 @@ void gui_tool_set(GUI_tool *t, uint8_t button)
       {
       case TOOL_PEN:
          p->tools.pen.place_mode = (p->tools.pen.place_mode+1)&3;
+         gui_tool_update_icons(t);
+         break;
+      case TOOL_LINE:
+         p->tools.line.mode = (p->tools.line.mode+1)%3;
          gui_tool_update_icons(t);
          break;
       }
@@ -210,12 +215,6 @@ static int gui_tool_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       int scale = HLH_gui_get_scale();
       HLH_gui_rect bounds = tool->e.bounds;
 
-      //Infill
-      //if(tool->checked)
-         //HLH_gui_draw_rectangle_fill(&tool->e, HLH_gui_rect_make(bounds.minx + HLH_gui_get_scale(), bounds.miny + HLH_gui_get_scale(), bounds.maxx - HLH_gui_get_scale(), bounds.maxy - HLH_gui_get_scale()), 0xffeeeeee);
-      //else
-         //HLH_gui_draw_rectangle_fill(&tool->e, HLH_gui_rect_make(bounds.minx + HLH_gui_get_scale(), bounds.miny + HLH_gui_get_scale(), bounds.maxx - HLH_gui_get_scale(), bounds.maxy - HLH_gui_get_scale()), 0xff5a5a5a);
-
       //Outline
       HLH_gui_draw_rectangle(&tool->e, bounds, 0xff000000);
 
@@ -243,37 +242,6 @@ static int gui_tool_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       SDL_Rect src = {.x = tool->icon_bounds.minx, .y = tool->icon_bounds.miny, .w = width, .h = height};
       SDL_Rect dst = {.x = bounds.minx + 2 * scale, .y = bounds.miny + 2 * scale, .w = width*2*scale, .h = height*2*scale};
       SDL_RenderCopy(tool->e.window->renderer, tool->e.window->icons, &src, &dst);
-
-      /*
-      //Outline
-      HLH_gui_draw_rectangle(&layer->e, bounds, 0xff000000);
-
-      //Border
-      if(layer->state)
-      {
-         HLH_gui_draw_rectangle_fill(&layer->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), 0xff000000);
-         HLH_gui_draw_rectangle_fill(&layer->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), 0xff000000);
-
-         HLH_gui_draw_rectangle_fill(&layer->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), 0xff323232);
-         HLH_gui_draw_rectangle_fill(&layer->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), 0xff323232);
-      }
-      else
-      {
-         HLH_gui_draw_rectangle_fill(&layer->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 1 * scale), 0xff323232);
-         HLH_gui_draw_rectangle_fill(&layer->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), 0xff323232);
-
-         HLH_gui_draw_rectangle_fill(&layer->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), 0xffc8c8c8);
-         HLH_gui_draw_rectangle_fill(&layer->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), 0xffc8c8c8);
-      }
-
-      int height = (bounds.maxy - bounds.miny);
-      int dim = (HLH_GUI_GLYPH_HEIGHT)*HLH_gui_get_scale();
-      int offset = (height - dim) / 2;
-
-      if(layer->checked)
-         HLH_gui_draw_string(&layer->e, bounds, layer->text, layer->text_len, 0xff000000, 1);
-      else
-         HLH_gui_draw_string(&layer->e, bounds, layer->text, layer->text_len, 0xffeeeeee, 1);*/
    }
 
    return 0;

@@ -44,10 +44,11 @@ typedef struct
    }pen;
    struct
    {
-      int32_t x0;
-      int32_t y0;
-      int32_t x1;
-      int32_t y2;
+      int mode;
+      //int32_t x0;
+      //int32_t y0;
+      //int32_t x1;
+      //int32_t y2;
    }line;
 }Toolbox;
 
