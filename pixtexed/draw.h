@@ -15,5 +15,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "project.h"
 
 int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
+int draw_event_end(Project *project, const Settings *settings);
 
 #endif

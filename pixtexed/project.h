@@ -94,6 +94,8 @@ typedef struct
    int32_t maxy;
 
    uint8_t button;
+
+   uint8_t active;
 }Draw_state;
 
 typedef struct

@@ -16,6 +16,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "tool.h"
+#include "canvas.h"
+#include "draw.h"
 //-------------------------------------
 
 //#defines
@@ -48,7 +50,7 @@ GUI_tool *gui_tool_create(HLH_gui_element *parent, uint64_t flags, GUI_canvas *c
    return tool;
 }
 
-//TODO(Captain4LK): sent release draw event after switching tool
+//TODO(Captain4LK): sent new end draw event after switching tool
 void gui_tool_set(GUI_tool *t, uint8_t button)
 {
    if(t==NULL)
@@ -73,7 +75,12 @@ void gui_tool_set(GUI_tool *t, uint8_t button)
                {
                   b->icon_bounds.miny = 0;
                   b->icon_bounds.maxy = 14;
-                  //HLH_gui_element_msg(&b->e, HLH_GUI_MSG_CLICK, 0, NULL);
+
+                  if(draw_event_end(t->canvas->project,t->canvas->settings))
+                  {
+                     gui_canvas_update_project(t->canvas,t->canvas->project);
+                     HLH_gui_element_redraw(&t->canvas->e);
+                  }
                }
                b->checked = 0;
             }

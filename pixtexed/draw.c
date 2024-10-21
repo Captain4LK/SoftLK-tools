@@ -36,14 +36,14 @@ static void draw_line(Project *project, const Settings *settings, const Brush *b
 static uint8_t draw_clip_outcode(int32_t l, int32_t u, int32_t r, int32_t d, int32_t x, int32_t y);
 static int draw_clip_line(int32_t l, int32_t u, int32_t r, int32_t d, int32_t *x0, int32_t *y0, int32_t *x1, int32_t *y1);
 
-static int draw_event_pen_continuous(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
-static int draw_event_pen_discontinuous(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
-static int draw_event_pen_single(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
-static int draw_event_pen_contour_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
+static int draw_event_pen_continuous(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end);
+static int draw_event_pen_discontinuous(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end);
+static int draw_event_pen_single(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end);
+static int draw_event_pen_contour_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end);
 
-static int draw_event_line_single(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
-static int draw_event_line_connect(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
-static int draw_event_line_fan(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
+static int draw_event_line_single(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end);
+static int draw_event_line_connect(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end);
+static int draw_event_line_fan(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end);
 
 static int draw_event_flood(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
 static int draw_event_rect_outline(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
@@ -58,25 +58,86 @@ int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button, const S
    {
    case TOOL_PEN:
       if(project->tools.pen.place_mode==0)
-         return draw_event_pen_continuous(project,mx,my,button,settings);
+         return draw_event_pen_continuous(project,mx,my,button,settings,0);
       else if(project->tools.pen.place_mode==1)
-         return draw_event_pen_discontinuous(project,mx,my,button,settings);
+         return draw_event_pen_discontinuous(project,mx,my,button,settings,0);
       else if(project->tools.pen.place_mode==2)
-         return draw_event_pen_single(project,mx,my,button,settings);
+         return draw_event_pen_single(project,mx,my,button,settings,0);
       else if(project->tools.pen.place_mode==3)
-         return draw_event_pen_contour_fill(project,mx,my,button,settings);
+         return draw_event_pen_contour_fill(project,mx,my,button,settings,0);
       break;
    case TOOL_LINE:
       if(project->tools.line.mode==0)
-         return draw_event_line_single(project,mx,my,button,settings);
+         return draw_event_line_single(project,mx,my,button,settings,0);
       else if(project->tools.line.mode==1)
-         return draw_event_line_connect(project,mx,my,button,settings);
+         return draw_event_line_connect(project,mx,my,button,settings,0);
       else if(project->tools.line.mode==2)
-         return draw_event_line_fan(project,mx,my,button,settings);
+         return draw_event_line_fan(project,mx,my,button,settings,0);
       break;
    case TOOL_FLOOD: return draw_event_flood(project,mx,my,button,settings);
    case TOOL_RECT_OUTLINE: return draw_event_rect_outline(project,mx,my,button,settings);
    case TOOL_RECT_FILL: return draw_event_rect_fill(project,mx,my,button,settings);
+   //case TOOL_GRADIENT: return draw_event_gradient(project,mx,my,button,settings);
+   //case TOOL_SPLINE: return draw_event_spline(project,mx,my,button,settings);
+   }
+
+   return 0;
+}
+
+int draw_event_end(Project *project, const Settings *settings)
+{
+   switch(project->tools.selected)
+   {
+   case TOOL_PEN:
+      if(project->tools.pen.place_mode==0)
+      {
+         draw_event_pen_continuous(project,-1,-1,0,settings,0);
+         draw_event_pen_continuous(project,-1,-1,0,settings,1);
+         return 1;
+      }
+      else if(project->tools.pen.place_mode==1)
+      {
+         draw_event_pen_discontinuous(project,-1,-1,0,settings,0);
+         draw_event_pen_discontinuous(project,-1,-1,0,settings,1);
+         return 1;
+      }
+      else if(project->tools.pen.place_mode==2)
+      {
+         draw_event_pen_single(project,-1,-1,0,settings,0);
+         draw_event_pen_single(project,-1,-1,0,settings,1);
+         return 1;
+      }
+      else if(project->tools.pen.place_mode==3)
+      {
+         draw_event_pen_contour_fill(project,-1,-1,0,settings,0);
+         draw_event_pen_contour_fill(project,-1,-1,0,settings,1);
+         return 1;
+      }
+      break;
+   case TOOL_LINE:
+      if(project->tools.line.mode==0)
+      {
+         draw_event_line_single(project,-1,-1,0,settings,0);
+         draw_event_line_single(project,-1,-1,0,settings,1);
+         return 1;
+      }
+      else if(project->tools.line.mode==1)
+      {
+         draw_event_line_connect(project,-1,-1,0,settings,0);
+         draw_event_line_connect(project,-1,-1,HLH_GUI_MOUSE_RIGHT,settings,0);
+         draw_event_line_connect(project,-1,-1,0,settings,1);
+         return 1;
+      }
+      else if(project->tools.line.mode==2)
+      {
+         draw_event_line_fan(project,-1,-1,0,settings,0);
+         draw_event_line_fan(project,-1,-1,0,settings,1);
+         return 1;
+      }
+      break;
+   //case TOOL_FLOOD: return draw_event_flood(project,mx,my,button,settings);
+   //case TOOL_RECT_OUTLINE: return draw_event_rect_outline(project,mx,my,button,settings);
+   //case TOOL_RECT_FILL: return draw_event_rect_fill(project,mx,my,button,settings);
    //case TOOL_GRADIENT: return draw_event_gradient(project,mx,my,button,settings);
    //case TOOL_SPLINE: return draw_event_spline(project,mx,my,button,settings);
    }
@@ -226,10 +287,16 @@ static int draw_clip_line(int32_t l, int32_t u, int32_t r, int32_t d, int32_t *x
    return 0;
 }
 
-static int draw_event_pen_continuous(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+static int draw_event_pen_continuous(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end)
 {
    uint8_t old_state = project->state.button;
    project->state.button = button;
+
+   if(end)
+   {
+      brush_place(project,settings,settings->brushes[settings->brush_selected],project->state.x0/256,project->state.y0/256,project->num_layers-1,0);
+      return 1;
+   }
 
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
@@ -280,10 +347,16 @@ static int draw_event_pen_continuous(Project *project, int32_t mx, int32_t my, u
    return 0;
 }
 
-static int draw_event_pen_discontinuous(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+static int draw_event_pen_discontinuous(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end)
 {
    uint8_t old_state = project->state.button;
    project->state.button = button;
+
+   if(end)
+   {
+      brush_place(project,settings,settings->brushes[settings->brush_selected],project->state.x0/256,project->state.y0/256,project->num_layers-1,0);
+      return 1;
+   }
 
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
@@ -332,10 +405,16 @@ static int draw_event_pen_discontinuous(Project *project, int32_t mx, int32_t my
    return 0;
 }
 
-static int draw_event_pen_single(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+static int draw_event_pen_single(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end)
 {
    uint8_t old_state = project->state.button;
    project->state.button = button;
+
+   if(end)
+   {
+      brush_place(project,settings,settings->brushes[settings->brush_selected],project->state.x0/256,project->state.y0/256,project->num_layers-1,0);
+      return 1;
+   }
 
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
@@ -370,10 +449,16 @@ static int draw_event_pen_single(Project *project, int32_t mx, int32_t my, uint8
    return 0;
 }
 
-static int draw_event_pen_contour_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+static int draw_event_pen_contour_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end)
 {
    uint8_t old_state = project->state.button;
    project->state.button = button;
+
+   if(end)
+   {
+      brush_place(project,settings,settings->brushes[settings->brush_selected],project->state.x0/256,project->state.y0/256,project->num_layers-1,0);
+      return 1;
+   }
 
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
@@ -490,10 +575,16 @@ static int draw_event_pen_contour_fill(Project *project, int32_t mx, int32_t my,
    return 0;
 }
 
-static int draw_event_line_single(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+static int draw_event_line_single(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end)
 {
    uint8_t old_state = project->state.button;
    project->state.button = button;
+
+   if(end)
+   {
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
+      return 1;
+   }
 
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
@@ -538,13 +629,19 @@ static int draw_event_line_single(Project *project, int32_t mx, int32_t my, uint
    return 0;
 }
 
-static int draw_event_line_connect(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+static int draw_event_line_connect(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end)
 {
    uint8_t old_state = project->state.button;
    project->state.button = button;
 
+   if(end)
+   {
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
+      return 1;
+   }
+
    //Start new drawing operation
-   if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
+   if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT)&&!project->state.active)
    {
       //Prepare undo
       HLH_bitmap_clear(project->undo_map);
@@ -556,10 +653,29 @@ static int draw_event_line_connect(Project *project, int32_t mx, int32_t my, uin
       project->state.y0 = my;
       project->state.x1 = mx;
       project->state.y1 = my;
+      project->state.active = 1;
 
       return 1;
    }
-   else if(button&HLH_GUI_MOUSE_LEFT)
+   else if(!(button&HLH_GUI_MOUSE_LEFT)&&(old_state&HLH_GUI_MOUSE_LEFT))
+   {
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
+      draw_line(project,settings,settings->brushes[settings->brush_selected],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->layer_selected,settings->palette_selected);
+
+      project->state.x0 = mx;
+      project->state.y0 = my;
+
+      return 1;
+   }
+   else if(button& HLH_GUI_MOUSE_RIGHT&&!(old_state&HLH_GUI_MOUSE_RIGHT))
+   {
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
+      project->state.active = 0;
+      undo_end_layer_chunks(project);
+
+      return 1;
+   }
+   else if(project->state.active)
    {
       if(mx==project->state.x0&&my==project->state.y0)
          return 0;
@@ -571,14 +687,6 @@ static int draw_event_line_connect(Project *project, int32_t mx, int32_t my, uin
       project->state.y1 = my;
       draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,settings->palette_selected);
 
-
-      return 1;
-   }
-   else if(!(button&HLH_GUI_MOUSE_LEFT)&&(old_state&HLH_GUI_MOUSE_LEFT))
-   {
-      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
-      draw_line(project,settings,settings->brushes[settings->brush_selected],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->layer_selected,settings->palette_selected);
-      undo_end_layer_chunks(project);
 
       return 1;
    }
@@ -586,13 +694,18 @@ static int draw_event_line_connect(Project *project, int32_t mx, int32_t my, uin
    return 0;
 }
 
-static int draw_event_line_fan(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+static int draw_event_line_fan(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end)
 {
    uint8_t old_state = project->state.button;
    project->state.button = button;
 
-   //Start new drawing operation
-   if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
+   if(end)
+   {
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
+      return 1;
+   }
+
+   if(!(button&HLH_GUI_MOUSE_LEFT)&&(old_state&HLH_GUI_MOUSE_LEFT)&&!project->state.active)
    {
       //Prepare undo
       HLH_bitmap_clear(project->undo_map);
@@ -604,29 +717,35 @@ static int draw_event_line_fan(Project *project, int32_t mx, int32_t my, uint8_t
       project->state.y0 = my;
       project->state.x1 = mx;
       project->state.y1 = my;
+      project->state.active = 1;
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,settings->palette_selected);
 
       return 1;
    }
-   else if(button&HLH_GUI_MOUSE_LEFT)
+   else if(button&HLH_GUI_MOUSE_LEFT&&project->state.active)
    {
-      if(mx==project->state.x0&&my==project->state.y0)
-         return 0;
-
-      //Erease old
       draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
-
       project->state.x1 = mx;
       project->state.y1 = my;
       draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,settings->palette_selected);
-
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->layer_selected,settings->palette_selected);
 
       return 1;
    }
-   else if(!(button&HLH_GUI_MOUSE_LEFT)&&(old_state&HLH_GUI_MOUSE_LEFT))
+   else if(button& HLH_GUI_MOUSE_RIGHT&&!(old_state&HLH_GUI_MOUSE_RIGHT))
    {
       draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
-      draw_line(project,settings,settings->brushes[settings->brush_selected],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->layer_selected,settings->palette_selected);
+      project->state.active = 0;
       undo_end_layer_chunks(project);
+
+      return 1;
+   }
+   else if(project->state.active)
+   {
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,0);
+      project->state.x1 = mx;
+      project->state.y1 = my;
+      draw_line(project,settings,settings->brushes[0],project->state.x0,project->state.y0,project->state.x1,project->state.y1,project->num_layers-1,settings->palette_selected);
 
       return 1;
    }
