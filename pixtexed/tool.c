@@ -104,6 +104,10 @@ void gui_tool_set(GUI_tool *t, uint8_t button)
          p->tools.line.mode = (p->tools.line.mode+1)%3;
          gui_tool_update_icons(t);
          break;
+      case TOOL_FLOOD:
+         p->tools.flood.mode = (p->tools.flood.mode+1)%2;
+         gui_tool_update_icons(t);
+         break;
       }
    }
 
@@ -124,12 +128,12 @@ static void gui_tool_update_icons(GUI_tool *tool)
       tool->icon_bounds.maxx = 14+14*(tool->canvas->project->tools.pen.place_mode);
       break;
    case TOOL_LINE:
-      tool->icon_bounds.minx = 4*14;
-      tool->icon_bounds.maxx = 5*14;
+      tool->icon_bounds.minx = 4*14+14*(tool->canvas->project->tools.line.mode);
+      tool->icon_bounds.maxx = 5*14+14*(tool->canvas->project->tools.line.mode);
       break;
    case TOOL_FLOOD:
-      tool->icon_bounds.minx = 7*14;
-      tool->icon_bounds.maxx = 8*14;
+      tool->icon_bounds.minx = 7*14+14*(tool->canvas->project->tools.flood.mode);
+      tool->icon_bounds.maxx = 8*14+14*(tool->canvas->project->tools.flood.mode);
       break;
    case TOOL_RECT_OUTLINE:
       tool->icon_bounds.minx = 9*14;

@@ -45,7 +45,9 @@ static int draw_event_line_single(Project *project, int32_t mx, int32_t my, uint
 static int draw_event_line_connect(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end);
 static int draw_event_line_fan(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end);
 
-static int draw_event_flood(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
+static int draw_event_flood_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
+static int draw_event_flood_swap(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
+
 static int draw_event_rect_outline(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
 static int draw_event_rect_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
 //-------------------------------------
@@ -74,7 +76,12 @@ int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button, const S
       else if(project->tools.line.mode==2)
          return draw_event_line_fan(project,mx,my,button,settings,0);
       break;
-   case TOOL_FLOOD: return draw_event_flood(project,mx,my,button,settings);
+   case TOOL_FLOOD:
+      if(project->tools.flood.mode==0)
+         return draw_event_flood_fill(project,mx,my,button,settings);
+      else if(project->tools.flood.mode==1)
+         return draw_event_flood_swap(project,mx,my,button,settings);
+      break;
    case TOOL_RECT_OUTLINE: return draw_event_rect_outline(project,mx,my,button,settings);
    case TOOL_RECT_FILL: return draw_event_rect_fill(project,mx,my,button,settings);
    //case TOOL_GRADIENT: return draw_event_gradient(project,mx,my,button,settings);
@@ -135,7 +142,7 @@ int draw_event_end(Project *project, const Settings *settings)
          return 1;
       }
       break;
-   //case TOOL_FLOOD: return draw_event_flood(project,mx,my,button,settings);
+   case TOOL_FLOOD: return 1; //Nothing needed here
    //case TOOL_RECT_OUTLINE: return draw_event_rect_outline(project,mx,my,button,settings);
    //case TOOL_RECT_FILL: return draw_event_rect_fill(project,mx,my,button,settings);
    //case TOOL_GRADIENT: return draw_event_gradient(project,mx,my,button,settings);
@@ -753,7 +760,7 @@ static int draw_event_line_fan(Project *project, int32_t mx, int32_t my, uint8_t
    return 0;
 }
 
-static int draw_event_flood(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+static int draw_event_flood_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
 {
    uint8_t old_state = project->state.button;
    project->state.button = button;
@@ -816,6 +823,44 @@ static int draw_event_flood(Project *project, int32_t mx, int32_t my, uint8_t bu
          }
       }
       HLH_array_free(todo);
+
+      undo_end_layer_chunks(project);
+
+      return 1;
+   }
+
+   return 0;
+}
+
+static int draw_event_flood_swap(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+{
+   uint8_t old_state = project->state.button;
+   project->state.button = button;
+
+   //Start new drawing operation
+   if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
+   {
+      if(mx<0||my<0)
+         return 0;
+      if(mx/256>=project->width||my/256>=project->height)
+         return 0;
+
+      //Prepare undo
+      HLH_bitmap_clear(project->undo_map);
+      //HLH_bitmap_clear(project->bitmap);
+      undo_begin_layer_chunks(project);
+
+      uint8_t selected = project->layers[project->layer_selected]->data[(my/256)*project->width+mx/256];
+      for(int y = 0;y<project->height;y++)
+      {
+         for(int x = 0;x<project->width;x++)
+         {
+            if(project->layers[project->layer_selected]->data[y*project->width+x]==selected)
+            {
+               brush_place(project,settings,settings->brushes[0],x,y,project->layer_selected,settings->palette_selected);
+            }
+         }
+      }
 
       undo_end_layer_chunks(project);
 

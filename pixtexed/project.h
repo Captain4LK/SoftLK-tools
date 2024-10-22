@@ -50,6 +50,10 @@ typedef struct
       //int32_t x1;
       //int32_t y2;
    }line;
+   struct
+   {
+      int mode;
+   }flood;
 }Toolbox;
 
 typedef struct

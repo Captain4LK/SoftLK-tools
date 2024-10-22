@@ -87,6 +87,7 @@ void undo_init(Project *p)
    memset(p->undo_buffer, 0, sizeof(*p->undo_buffer) * UNDO_BUFFER_SIZE);
    p->redo_buffer = malloc(sizeof(*p->redo_buffer) * UNDO_BUFFER_SIZE);
    memset(p->redo_buffer, 0, sizeof(*p->redo_buffer) * UNDO_BUFFER_SIZE);
+   p->undo_entry_len = -1;
 }
 
 void undo_free(Project *p)
@@ -106,6 +107,7 @@ void undo_reset(Project *p)
    p->undo_pos = 0;
    p->redo_len = 0;
    p->redo_pos = 0;
+   p->undo_entry_len = -1;
 }
 
 void undo(Project *p, const Settings *settings, GUI_state *gui)
@@ -278,7 +280,11 @@ static void undo_begin(Project *p, Ed_action action)
 static void undo_end(Project *p)
 {
    int pos = WRAP(p->undo_pos - 3);
-   if(p->undo_entry_len==0)
+   if(p->undo_entry_len==-1)
+   {
+      //no undo begin at all
+   }
+   else if(p->undo_entry_len==0)
    {
       //empty
       p->undo_pos = pos;
@@ -290,6 +296,8 @@ static void undo_end(Project *p)
       undo_write32(p,p->undo_entry_len);
       p->undo_buffer[p->undo_pos] = JUNK_RECORD;
    }
+
+   p->undo_entry_len = -1;
 }
 
 void undo_begin_layer_chunks(Project *p)
