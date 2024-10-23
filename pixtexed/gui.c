@@ -198,6 +198,9 @@ void gui_construct(void)
    HLH_gui_group *group_status = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_X|HLH_GUI_LAYOUT_VERTICAL);
    //HLH_gui_label_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"TEST");
 
+   button = HLH_gui_button_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"\x0f",NULL);
+   button->e.msg_usr = button_layer_control;
+   button->e.usr = 5;
    button = HLH_gui_button_create(&group_status->e,HLH_GUI_LAYOUT_HORIZONTAL,"+",NULL);
    button->e.msg_usr = button_layer_control;
    button->e.usr = 0;
@@ -742,6 +745,9 @@ static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, voi
          }
       }
       else if(e->usr==4) //Merge layer
+      {
+      }
+      else if(e->usr==5) //Layer properties
       {
       }
    }

@@ -48,8 +48,8 @@ static int draw_event_line_fan(Project *project, int32_t mx, int32_t my, uint8_t
 static int draw_event_flood_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
 static int draw_event_flood_swap(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
 
-static int draw_event_rect_outline(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
-static int draw_event_rect_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings);
+static int draw_event_rect_outline(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end);
+static int draw_event_rect_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end);
 //-------------------------------------
 
 //Function implementations
@@ -82,8 +82,8 @@ int draw_event(Project *project, int32_t mx, int32_t my, uint8_t button, const S
       else if(project->tools.flood.mode==1)
          return draw_event_flood_swap(project,mx,my,button,settings);
       break;
-   case TOOL_RECT_OUTLINE: return draw_event_rect_outline(project,mx,my,button,settings);
-   case TOOL_RECT_FILL: return draw_event_rect_fill(project,mx,my,button,settings);
+   case TOOL_RECT_OUTLINE: return draw_event_rect_outline(project,mx,my,button,settings,0);
+   case TOOL_RECT_FILL: return draw_event_rect_fill(project,mx,my,button,settings,0);
    //case TOOL_GRADIENT: return draw_event_gradient(project,mx,my,button,settings);
    //case TOOL_SPLINE: return draw_event_spline(project,mx,my,button,settings);
    }
@@ -143,7 +143,10 @@ int draw_event_end(Project *project, const Settings *settings)
       }
       break;
    case TOOL_FLOOD: return 1; //Nothing needed here
-   //case TOOL_RECT_OUTLINE: return draw_event_rect_outline(project,mx,my,button,settings);
+   case TOOL_RECT_OUTLINE:
+      draw_event_rect_outline(project,-1,-1,0,settings,0);
+      draw_event_rect_outline(project,-1,-1,0,settings,1);
+      return 1;
    //case TOOL_RECT_FILL: return draw_event_rect_fill(project,mx,my,button,settings);
    //case TOOL_GRADIENT: return draw_event_gradient(project,mx,my,button,settings);
    //case TOOL_SPLINE: return draw_event_spline(project,mx,my,button,settings);
@@ -467,6 +470,8 @@ static int draw_event_pen_contour_fill(Project *project, int32_t mx, int32_t my,
       return 1;
    }
 
+   //TODO(Captain4LK): this needs to be reworked
+   //Store all lines drawn by mousemovement and rasterize based on that?
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
    {
@@ -535,7 +540,48 @@ static int draw_event_pen_contour_fill(Project *project, int32_t mx, int32_t my,
       //Scan
       for(int y = project->state.miny;y<=project->state.maxy;y++)
       {
-         int count = 0;
+         if(y==project->state.miny||y==project->state.maxy)
+         {
+            for(int x = project->state.minx;x<=project->state.maxx;x++)
+            {
+               if(project->layers[project->num_layers-1]->data[y*project->width+x])
+                  brush_place(project,settings,settings->brushes[0],x,y,project->layer_selected,settings->palette_selected);
+            }
+
+            continue;
+         }
+
+         int on = 0;
+         int last = 0;
+         for(int x = project->state.minx;x<=project->state.maxx;x++)
+         {
+            if(project->layers[project->num_layers-1]->data[y*project->width+x])
+            {
+               brush_place(project,settings,settings->brushes[0],x,y,project->layer_selected,settings->palette_selected);
+               last = 1;
+            }
+            else
+            {
+               if(last)
+               {
+                  if(project->layers[project->num_layers-1]->data[(y-1)*project->width+x])
+                     on = !on;
+                  else
+                     on = 0;
+               }
+
+               if(on)
+               {
+                  brush_place(project,settings,settings->brushes[0],x,y,project->layer_selected,settings->palette_selected);
+                  brush_place(project,settings,settings->brushes[0],x,y,project->num_layers-1,1);
+               }
+
+               last = 0;
+               //if(last)
+                  //on = !on;
+            }
+         }
+         /*int count = 0;
          for(int x = project->state.minx;x<=project->state.maxx;x++)
          {
             if(project->layers[project->num_layers-1]->data[y*project->width+x])
@@ -550,21 +596,40 @@ static int draw_event_pen_contour_fill(Project *project, int32_t mx, int32_t my,
             {
                brush_place(project,settings,settings->brushes[0],x,y,project->layer_selected,settings->palette_selected);
                brush_place(project,settings,settings->brushes[0],x,y,project->num_layers-1,0);
-               if(!last)
-                  on = !on;
+               //on = 1;
+               //if(!last)
+                  //on = !on;
                last = 1;
                count--;
             }
             else
             {
-               if(on&&count>0)
+               if(last)
+                  on = !on;
+               if(on)
                   brush_place(project,settings,settings->brushes[0],x,y,project->layer_selected,settings->palette_selected);
                last = 0;
+               //if(on&&count>0)
+                  //brush_place(project,settings,settings->brushes[0],x,y,project->layer_selected,settings->palette_selected);
+               //else
+                  //on = 0;
+               //last = 0;
             }
-         }
+         }*/
       }
 
+      //Clear preview
+
       undo_end_layer_chunks(project);
+
+      for(int y = project->state.miny;y<=project->state.maxy;y++)
+      {
+         for(int x = project->state.minx;x<=project->state.maxx;x++)
+         {
+            if(project->layers[project->num_layers-1]->data[y*project->width+x])
+               brush_place(project,settings,settings->brushes[0],x,y,project->num_layers-1,0);
+         }
+      }
 
       return 1;
    }
@@ -870,10 +935,15 @@ static int draw_event_flood_swap(Project *project, int32_t mx, int32_t my, uint8
    return 0;
 }
 
-static int draw_event_rect_outline(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+static int draw_event_rect_outline(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end)
 {
    uint8_t old_state = project->state.button;
    project->state.button = button;
+
+   if(end)
+   {
+      return 1;
+   }
 
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
@@ -951,10 +1021,15 @@ static int draw_event_rect_outline(Project *project, int32_t mx, int32_t my, uin
    return 0;
 }
 
-static int draw_event_rect_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings)
+static int draw_event_rect_fill(Project *project, int32_t mx, int32_t my, uint8_t button, const Settings *settings, int end)
 {
    uint8_t old_state = project->state.button;
    project->state.button = button;
+
+   if(end)
+   {
+      return 1;
+   }
 
    //Start new drawing operation
    if((button&HLH_GUI_MOUSE_LEFT)&&!(old_state&HLH_GUI_MOUSE_LEFT))
