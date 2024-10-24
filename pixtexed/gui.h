@@ -71,6 +71,8 @@ struct GUI_state
    GUI_tool *tools[15];
 
    GUI_canvas *canvas;
+
+   HLH_gui_group *group_layer_settings[2];
 };
 
 extern GUI_state gui_state;

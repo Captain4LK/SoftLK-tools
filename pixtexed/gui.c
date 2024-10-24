@@ -65,6 +65,7 @@ static void ui_construct_ask_new();
 static void ui_construct_image_new();
 static void ui_construct_ask_load();
 static void ui_construct_brushes();
+static void ui_construct_layer_settings(int layer);
 
 static int menu_file_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
@@ -353,6 +354,47 @@ static void ui_construct_ask_load()
    button = HLH_gui_button_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL | HLH_GUI_FILL_X, "Confirm", NULL);
    button->e.msg_usr = ask_load_msg;
    button->e.usr = 2;
+}
+
+static void ui_construct_layer_settings(int layer)
+{
+   HLH_gui_window *win = HLH_gui_window_create("Layer settings", 300, 400, NULL);
+   HLH_gui_window_block(window_root, win);
+   HLH_gui_group *group = HLH_gui_group_create(&win->e, HLH_GUI_FILL);
+
+   char tmp[512];
+   snprintf(tmp,512,"Layer %2d",layer+1);
+   HLH_gui_label_create(&group->e, 0, tmp);
+
+   //HLH_gui_group *group_type = HLH_gui_group_create(&group->e,HLH_GUI_FILL_X);
+   HLH_gui_label_create(&group->e, 0, "Layer type");
+
+   HLH_gui_group *group_select = HLH_gui_group_create(&group->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
+   HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_select->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Normal",NULL);
+   r = HLH_gui_radiobutton_create(&group_select->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bump",NULL);
+   //HLH_gui_label_create(&group_type->e, HLH_GUI_LAYOUT_HORIZONTAL, "Layer type");
+   const char *bar_select[1] = {"Normal \x1f"};
+   HLH_gui_menubar_create(&group->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_select,(HLH_gui_element **)&group_select,1,NULL);
+   HLH_gui_separator_create(&group->e, HLH_GUI_FILL_X, 0);
+   
+   //Blend modes
+   {
+      gui_state.group_layer_settings[0] = HLH_gui_group_create(&group->e,HLH_GUI_FILL);
+
+      //slider opacity
+   }
+
+   //Bump map
+   {
+      gui_state.group_layer_settings[1] = HLH_gui_group_create(&group->e,HLH_GUI_FILL);
+
+      //slider x direction
+      
+      //slider y direction
+
+      //slider z direction
+   }
+   //HLH_gui_group *group = HLH_gui_group_create(&win->e, HLH_GUI_FILL);
 }
 
 static int ask_new_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -749,6 +791,8 @@ static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, voi
       }
       else if(e->usr==5) //Layer properties
       {
+         ui_construct_layer_settings(0);
+//(static void ui_construct_layer_settings(int layer)
       }
    }
 
