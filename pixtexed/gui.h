@@ -65,6 +65,10 @@ struct GUI_state
 {
    HLH_gui_entry *entry_img_width;
    HLH_gui_entry *entry_img_height;
+   HLH_gui_entry *entry_opacity;
+   HLH_gui_entry *entry_light_dir_x;
+   HLH_gui_entry *entry_light_dir_y;
+   HLH_gui_entry *entry_light_dir_z;
 
    HLH_gui_radiobutton *palette_colors[256];
    GUI_layer *layers[16];
@@ -73,6 +77,13 @@ struct GUI_state
    GUI_canvas *canvas;
 
    HLH_gui_group *group_layer_settings[2];
+
+   HLH_gui_group *bar_layer_type;
+
+   HLH_gui_slider *slider_opacity;
+   HLH_gui_slider *slider_light_dir_x;
+   HLH_gui_slider *slider_light_dir_y;
+   HLH_gui_slider *slider_light_dir_z;
 };
 
 extern GUI_state gui_state;

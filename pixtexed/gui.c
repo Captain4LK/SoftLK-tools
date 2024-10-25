@@ -26,6 +26,22 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //#defines
+#define SLIDER(root_group,type,type_enum) \
+   group = HLH_gui_group_create(root_group,HLH_GUI_FILL_X); \
+   slider = HLH_gui_slider_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FILL_X,0); \
+   HLH_gui_slider_set(slider,-1,1,0,0); \
+   slider->e.msg_usr = slider_msg; \
+   slider->e.usr = SLIDER_##type_enum; \
+   gui_state.slider_##type = slider; \
+   b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"\x11",NULL); \
+   b->e.msg_usr = button_sub_msg; \
+   b->e.usr = BUTTON_##type_enum; \
+   b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"\x10",NULL); \
+   b->e.msg_usr = button_add_msg; \
+   b->e.usr = BUTTON_##type_enum; \
+   gui_state.entry_##type = HLH_gui_entry_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,5); \
+   gui_state.entry_##type->e.msg_usr = entry_msg; \
+   gui_state.entry_##type->e.usr = ENTRY_##type_enum;
 //-------------------------------------
 
 //Typedefs
@@ -33,13 +49,31 @@ typedef enum
 {
    BUTTON_IMG_WIDTH,
    BUTTON_IMG_HEIGHT,
+
+   BUTTON_OPACITY,
+   BUTTON_LIGHT_DIR_X,
+   BUTTON_LIGHT_DIR_Y,
+   BUTTON_LIGHT_DIR_Z,
 }Button_id;
 
 typedef enum
 {
    ENTRY_IMG_WIDTH,
    ENTRY_IMG_HEIGHT,
+
+   ENTRY_OPACITY,
+   ENTRY_LIGHT_DIR_X,
+   ENTRY_LIGHT_DIR_Y,
+   ENTRY_LIGHT_DIR_Z,
 }Entry_id;
+
+typedef enum
+{
+   SLIDER_OPACITY,
+   SLIDER_LIGHT_DIR_X,
+   SLIDER_LIGHT_DIR_Y,
+   SLIDER_LIGHT_DIR_Z,
+}Slider_id;
 
 /*static struct
 {
@@ -81,6 +115,8 @@ static int radiobutton_toolbox_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
 static int button_brushes_open(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_brushes_select(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int rb_layer_type_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 //-------------------------------------
 
 //Function implementations
@@ -358,42 +394,71 @@ static void ui_construct_ask_load()
 
 static void ui_construct_layer_settings(int layer)
 {
+   Project *p = gui_state.canvas->project;
+
    HLH_gui_window *win = HLH_gui_window_create("Layer settings", 300, 400, NULL);
    HLH_gui_window_block(window_root, win);
-   HLH_gui_group *group = HLH_gui_group_create(&win->e, HLH_GUI_FILL);
+   HLH_gui_group *group_root = HLH_gui_group_create(&win->e, HLH_GUI_FILL);
 
    char tmp[512];
-   snprintf(tmp,512,"Layer %2d",layer+1);
-   HLH_gui_label_create(&group->e, 0, tmp);
+   snprintf(tmp,512,"Layer %2d",gui_state.canvas->project->layer_selected+1);
+   HLH_gui_label_create(&group_root->e, 0, tmp);
 
    //HLH_gui_group *group_type = HLH_gui_group_create(&group->e,HLH_GUI_FILL_X);
-   HLH_gui_label_create(&group->e, 0, "Layer type");
+   HLH_gui_label_create(&group_root->e, 0, "Layer type");
 
-   HLH_gui_group *group_select = HLH_gui_group_create(&group->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
-   HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_select->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Normal",NULL);
-   r = HLH_gui_radiobutton_create(&group_select->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bump",NULL);
+   HLH_gui_radiobutton *rb_types[2];
+   HLH_gui_group *group_select = HLH_gui_group_create(&group_root->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
+   HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_select->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Blend",NULL);
+   r->e.usr = 0;
+   r->e.msg_usr = rb_layer_type_msg;
+   rb_types[0] = r;
+   r = HLH_gui_radiobutton_create(&group_select->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bump ",NULL);
+   r->e.usr = 1;
+   r->e.msg_usr = rb_layer_type_msg;
+   rb_types[1] = r;
    //HLH_gui_label_create(&group_type->e, HLH_GUI_LAYOUT_HORIZONTAL, "Layer type");
    const char *bar_select[1] = {"Normal \x1f"};
-   HLH_gui_menubar_create(&group->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_select,(HLH_gui_element **)&group_select,1,NULL);
-   HLH_gui_separator_create(&group->e, HLH_GUI_FILL_X, 0);
+   gui_state.bar_layer_type = HLH_gui_menubar_create(&group_root->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_select,(HLH_gui_element **)&group_select,1,NULL);
+   HLH_gui_separator_create(&group_root->e, HLH_GUI_FILL_X, 0);
    
    //Blend modes
    {
-      gui_state.group_layer_settings[0] = HLH_gui_group_create(&group->e,HLH_GUI_FILL);
+      gui_state.group_layer_settings[0] = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL);
 
       //slider opacity
+      HLH_gui_slider *slider;
+      HLH_gui_button *b;
+      HLH_gui_group *group;
+
+      HLH_gui_label_create(&gui_state.group_layer_settings[0]->e,0,"Opacity");
+      SLIDER(&gui_state.group_layer_settings[0]->e,opacity,OPACITY);
    }
 
    //Bump map
    {
-      gui_state.group_layer_settings[1] = HLH_gui_group_create(&group->e,HLH_GUI_FILL);
+      gui_state.group_layer_settings[1] = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL);
+      HLH_gui_slider *slider;
+      HLH_gui_button *b;
+      HLH_gui_group *group;
 
       //slider x direction
+      HLH_gui_label_create(&gui_state.group_layer_settings[1]->e,0,"Light x-direction");
+      SLIDER(&gui_state.group_layer_settings[1]->e,light_dir_x,LIGHT_DIR_X);
       
       //slider y direction
+      HLH_gui_label_create(&gui_state.group_layer_settings[1]->e,0,"Light y-direction");
+      SLIDER(&gui_state.group_layer_settings[1]->e,light_dir_y,LIGHT_DIR_Y);
 
       //slider z direction
+      HLH_gui_label_create(&gui_state.group_layer_settings[1]->e,0,"Light z-direction");
+      SLIDER(&gui_state.group_layer_settings[1]->e,light_dir_z,LIGHT_DIR_Z);
    }
+
+   HLH_gui_element_ignore(&gui_state.group_layer_settings[0]->e,1);
+   HLH_gui_element_ignore(&gui_state.group_layer_settings[1]->e,1);
+
+   HLH_gui_radiobutton_set(rb_types[p->layers[p->layer_selected]->type],1,1);
    //HLH_gui_group *group = HLH_gui_group_create(&win->e, HLH_GUI_FILL);
 }
 
@@ -527,6 +592,9 @@ static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          int height = (int)strtol(gui_state.entry_img_height->entry,NULL,10);
          snprintf(buffer,512,"%d",height+1);
          HLH_gui_entry_set(gui_state.entry_img_height,buffer);
+      }
+      else if(button->e.usr==BUTTON_OPACITY)
+      {
       }
    }
 
@@ -793,6 +861,41 @@ static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, voi
       {
          ui_construct_layer_settings(0);
 //(static void ui_construct_layer_settings(int layer)
+      }
+   }
+
+   return 0;
+}
+
+static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   HLH_gui_slider *s = (HLH_gui_slider *)e;
+   if(msg==HLH_GUI_MSG_SLIDER_VALUE_CHANGED)
+   {
+   }
+
+   return 0;
+}
+
+static int rb_layer_type_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      //Uncheck
+      if(di==0)
+      {
+         HLH_gui_element_ignore(&gui_state.group_layer_settings[e->usr]->e,1);
+      }
+      //Check
+      else
+      {
+         char tmp[256];
+         snprintf(tmp,256,"%s \x1f",((HLH_gui_radiobutton *)e)->text);
+         HLH_gui_menubar_label_set(gui_state.bar_layer_type,tmp,0);
+
+         HLH_gui_element_ignore(&gui_state.group_layer_settings[e->usr]->e,0);
+         HLH_gui_element_layout(&e->window->e, e->window->e.bounds);
+         HLH_gui_element_redraw(&e->window->e);
       }
    }
 

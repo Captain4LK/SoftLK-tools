@@ -17,6 +17,12 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 typedef enum
 {
+   LAYER_BLEND = 0,
+   LAYER_BUMP = 1,
+}Layer_type;
+
+typedef enum
+{
    TOOL_PEN,
    TOOL_LINE,
    TOOL_FLOOD,
@@ -66,6 +72,26 @@ typedef struct
 typedef struct
 {
    uint8_t hidden;
+
+   Layer_type type;
+
+   //Blend mode
+   //--------------------------------
+   float opacity;
+   //--------------------------------
+
+   //Bump mode
+   //--------------------------------
+   float light_dir_x;
+   float light_dir_y;
+   float light_dir_z;
+   //--------------------------------
+
+   //LUT for blending with layer below
+   uint8_t lut[256][256];
+
+   //Size: (2*height)*width
+   //Second buffer is for scratch usage for certain layer types
    uint8_t data[];
 }Layer;
 
