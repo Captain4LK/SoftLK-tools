@@ -578,6 +578,8 @@ static void ui_construct_image_new()
 static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    HLH_gui_button *button = (HLH_gui_button *)e;
+   Project *p = gui_state.canvas->project;
+
    if(msg==HLH_GUI_MSG_CLICK)
    {
       char buffer[512];
@@ -595,6 +597,7 @@ static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       }
       else if(button->e.usr==BUTTON_OPACITY)
       {
+         HLH_gui_slider_set(gui_state.slider_opacity,(int)(p->layers[p->layer_selected]->opacity*100)+5,100,1,1);
       }
    }
 
@@ -604,6 +607,8 @@ static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    HLH_gui_button *button = (HLH_gui_button *)e;
+   Project *p = gui_state.canvas->project;
+
    if(msg==HLH_GUI_MSG_CLICK)
    {
       char buffer[512];
@@ -618,6 +623,10 @@ static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          int height = (int)strtol(gui_state.entry_img_height->entry,NULL,10);
          snprintf(buffer,512,"%d",height-1);
          HLH_gui_entry_set(gui_state.entry_img_height,buffer);
+      }
+      else if(button->e.usr==BUTTON_OPACITY)
+      {
+         HLH_gui_slider_set(gui_state.slider_opacity,(int)(p->layers[p->layer_selected]->opacity*100)+5,100,1,1);
       }
    }
 
