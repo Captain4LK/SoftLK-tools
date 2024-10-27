@@ -459,6 +459,12 @@ static void ui_construct_layer_settings(int layer)
    HLH_gui_element_ignore(&gui_state.group_layer_settings[1]->e,1);
 
    HLH_gui_radiobutton_set(rb_types[p->layers[p->layer_selected]->type],1,1);
+
+   HLH_gui_slider_set(gui_state.slider_opacity,(int)(p->layers[p->layer_selected]->opacity*100),100,1,1);
+
+   HLH_gui_slider_set(gui_state.slider_light_dir_x,(int)(p->layers[p->layer_selected]->light_dir_x*100.f+100.f),200,1,1);
+   HLH_gui_slider_set(gui_state.slider_light_dir_y,(int)(p->layers[p->layer_selected]->light_dir_y*100.f+100.f),200,1,1);
+   HLH_gui_slider_set(gui_state.slider_light_dir_z,(int)(p->layers[p->layer_selected]->light_dir_z*100.f+100.f),200,1,1);
    //HLH_gui_group *group = HLH_gui_group_create(&win->e, HLH_GUI_FILL);
 }
 
@@ -599,6 +605,18 @@ static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       {
          HLH_gui_slider_set(gui_state.slider_opacity,(int)(p->layers[p->layer_selected]->opacity*100)+5,100,1,1);
       }
+      else if(button->e.usr==BUTTON_LIGHT_DIR_X)
+      {
+         HLH_gui_slider_set(gui_state.slider_light_dir_x,(int)(p->layers[p->layer_selected]->light_dir_x*100+100)+5,200,1,1);
+      }
+      else if(button->e.usr==BUTTON_LIGHT_DIR_Y)
+      {
+         HLH_gui_slider_set(gui_state.slider_light_dir_y,(int)(p->layers[p->layer_selected]->light_dir_y*100+100)+5,200,1,1);
+      }
+      else if(button->e.usr==BUTTON_LIGHT_DIR_Z)
+      {
+         HLH_gui_slider_set(gui_state.slider_light_dir_z,(int)(p->layers[p->layer_selected]->light_dir_z*100+100)+5,200,1,1);
+      }
    }
 
    return 0;
@@ -626,7 +644,19 @@ static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       }
       else if(button->e.usr==BUTTON_OPACITY)
       {
-         HLH_gui_slider_set(gui_state.slider_opacity,(int)(p->layers[p->layer_selected]->opacity*100)+5,100,1,1);
+         HLH_gui_slider_set(gui_state.slider_opacity,(int)(p->layers[p->layer_selected]->opacity*100)-5,100,1,1);
+      }
+      else if(button->e.usr==BUTTON_LIGHT_DIR_X)
+      {
+         HLH_gui_slider_set(gui_state.slider_light_dir_x,(int)(p->layers[p->layer_selected]->light_dir_x*100+100)-5,200,1,1);
+      }
+      else if(button->e.usr==BUTTON_LIGHT_DIR_Y)
+      {
+         HLH_gui_slider_set(gui_state.slider_light_dir_y,(int)(p->layers[p->layer_selected]->light_dir_y*100+100)-5,200,1,1);
+      }
+      else if(button->e.usr==BUTTON_LIGHT_DIR_Z)
+      {
+         HLH_gui_slider_set(gui_state.slider_light_dir_z,(int)(p->layers[p->layer_selected]->light_dir_z*100+100)-5,200,1,1);
       }
    }
 
@@ -635,6 +665,33 @@ static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
 static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
+   HLH_gui_entry *entry = (HLH_gui_entry *)e;
+   Project *p = gui_state.canvas->project;
+
+   if(msg==HLH_GUI_MSG_TEXTINPUT_END)
+   {
+      if(entry->e.usr==ENTRY_OPACITY)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui_state.slider_opacity,(int)(value*100.f),100,1,1);
+      }
+      else if(entry->e.usr==ENTRY_LIGHT_DIR_X)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui_state.slider_light_dir_x,(int)(value*100.f+100.f),200,1,1);
+      }
+      else if(entry->e.usr==ENTRY_LIGHT_DIR_Y)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui_state.slider_light_dir_y,(int)(value*100.f+100.f),200,1,1);
+      }
+      else if(entry->e.usr==ENTRY_LIGHT_DIR_Z)
+      {
+         float value = strtof(entry->entry,NULL);
+         HLH_gui_slider_set(gui_state.slider_light_dir_z,(int)(value*100.f+100.f),200,1,1);
+      }
+   }
+
    return 0;
 }
 
@@ -879,8 +936,35 @@ static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, voi
 static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    HLH_gui_slider *s = (HLH_gui_slider *)e;
+   Project *p = gui_state.canvas->project;
+
    if(msg==HLH_GUI_MSG_SLIDER_VALUE_CHANGED)
    {
+      char buffer[512];
+      if(s->e.usr==SLIDER_OPACITY)
+      {
+         p->layers[p->layer_selected]->opacity = (float)s->value/100.f; 
+         snprintf(buffer,512,"%.2f",p->layers[p->layer_selected]->opacity);
+         HLH_gui_entry_set(gui_state.entry_opacity,buffer);
+      }
+      else if(s->e.usr==SLIDER_LIGHT_DIR_X)
+      {
+         p->layers[p->layer_selected]->light_dir_x = (float)s->value/100.f-1.f; 
+         snprintf(buffer,512,"%.2f",p->layers[p->layer_selected]->light_dir_x);
+         HLH_gui_entry_set(gui_state.entry_light_dir_x,buffer);
+      }
+      else if(s->e.usr==SLIDER_LIGHT_DIR_Y)
+      {
+         p->layers[p->layer_selected]->light_dir_y = (float)s->value/100.f-1.f; 
+         snprintf(buffer,512,"%.2f",p->layers[p->layer_selected]->light_dir_y);
+         HLH_gui_entry_set(gui_state.entry_light_dir_y,buffer);
+      }
+      else if(s->e.usr==SLIDER_LIGHT_DIR_Z)
+      {
+         p->layers[p->layer_selected]->light_dir_z = (float)s->value/100.f-1.f; 
+         snprintf(buffer,512,"%.2f",p->layers[p->layer_selected]->light_dir_z);
+         HLH_gui_entry_set(gui_state.entry_light_dir_z,buffer);
+      }
    }
 
    return 0;
@@ -901,6 +985,7 @@ static int rb_layer_type_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *
          char tmp[256];
          snprintf(tmp,256,"%s \x1f",((HLH_gui_radiobutton *)e)->text);
          HLH_gui_menubar_label_set(gui_state.bar_layer_type,tmp,0);
+         gui_state.canvas->project->layers[gui_state.canvas->project->layer_selected]->type = e->usr;
 
          HLH_gui_element_ignore(&gui_state.group_layer_settings[e->usr]->e,0);
          HLH_gui_element_layout(&e->window->e, e->window->e.bounds);
