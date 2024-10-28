@@ -136,6 +136,7 @@ typedef struct
    //int32_t palette_colors;
 
    Image32 *combined;
+   Image8 *combined8;
 
    int num_layers;
    Layer **layers;

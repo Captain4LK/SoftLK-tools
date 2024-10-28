@@ -16,6 +16,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Internal includes
 #include "layer.h"
 #include "canvas.h"
+#include "shared/color.h"
+#include "palette.h"
 #include "undo.h"
 //-------------------------------------
 
@@ -52,6 +54,42 @@ void layer_free(Layer *layer)
 void layer_copy(Layer *dst, const Layer *src, size_t size)
 {
    memcpy(dst,src,size);
+}
+
+void layer_update_settings(Layer *layer, const Settings *settings)
+{
+   float s0 = layer->opacity;
+   float s1 = 1.f-layer->opacity;
+
+   if(layer->type==LAYER_BLEND)
+   {
+      for(int c0 = 0;c0<256;c0++)
+      {
+         float cr0 = (float)color32_r(settings->palette[c0]);
+         float cg0 = (float)color32_g(settings->palette[c0]);
+         float cb0 = (float)color32_b(settings->palette[c0]);
+
+         for(int c1 = 0;c1<256;c1++)
+         {
+            float cr1 = (float)color32_r(settings->palette[c1]);
+            float cg1 = (float)color32_g(settings->palette[c1]);
+            float cb1 = (float)color32_b(settings->palette[c1]);
+
+            if(c1==0)
+               layer->lut[c0][c1] = c0;
+            else
+               layer->lut[c0][c1] = palette_closest(settings,color32((uint8_t)(cr0*s0+cr1*s1),(uint8_t)(cg0*s0+cg1*s1),(uint8_t)(cb0*s0+cb1*s1),255));
+         }
+      }
+
+      return;
+   }
+}
+
+void layer_update_contents(Layer *layer)
+{
+   if(layer->type==LAYER_BLEND)
+      return;
 }
 
 GUI_layer *gui_layer_create(HLH_gui_element *parent, uint64_t flags, GUI_canvas *canvas, int layer_num)

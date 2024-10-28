@@ -53,7 +53,12 @@ Project *project_new(int32_t width, int32_t height, const Settings *settings)
    undo_init(p);
    undo_reset(p);
 
-   p->combined = project_to_image32(p,settings);
+   layer_update_settings(p->layers[0],settings);
+   layer_update_settings(p->layers[1],settings);
+
+   p->combined = image32_new(p->width,p->height);
+   p->combined8 = image8_new(p->width,p->height);
+   project_update_full(p,settings);
 
    return p;
 }
@@ -81,35 +86,7 @@ Image32 *project_to_image32(const Project *project, const Settings *settings)
    if(project==NULL)
       return NULL;
 
-   Image32 *img = image32_new(project->width,project->height);
-   if(img==NULL)
-      return NULL;
-
-   int first = 1;
-   for(int i = 0;i<project->num_layers;i++)
-   {
-      if(project->layers[i]->hidden)
-         continue;
-
-      if(first)
-      {
-         first = 0;
-         for(int j = 0;j<project->width*project->height;j++)
-         {
-            img->data[j] = settings->palette[project->layers[i]->data[j]];
-         }
-      }
-      else
-      {
-         for(int j = 0;j<project->width*project->height;j++)
-         {
-            if(project->layers[i]->data[j])
-               img->data[j] = settings->palette[project->layers[i]->data[j]];
-         }
-      }
-   }
-
-   return img;
+   return image32_dup(project->combined);
 }
 
 Image8 *project_to_image8(const Project *project, const Settings *settings)
@@ -117,37 +94,7 @@ Image8 *project_to_image8(const Project *project, const Settings *settings)
    if(project==NULL)
       return NULL;
 
-   Image8 *img = image8_new(project->width,project->height);
-   if(img==NULL)
-      return NULL;
-
-   memcpy(img->palette,settings->palette,sizeof(settings->palette));
-
-   int first = 1;
-   for(int i = 0;i<project->num_layers;i++)
-   {
-      if(project->layers[i]->hidden)
-         continue;
-
-      if(first)
-      {
-         first = 0;
-         for(int j = 0;j<project->width*project->height;j++)
-         {
-            img->data[j] = project->layers[i]->data[j];
-         }
-      }
-      else
-      {
-         for(int j = 0;j<project->width*project->height;j++)
-         {
-            if(project->layers[i]->data[j])
-               img->data[j] = project->layers[i]->data[j];
-         }
-      }
-   }
-
-   return img;
+   return image8_dup(project->combined8);
 }
 
 void project_update(Project *project, int x, int y, const Settings *settings)
@@ -162,12 +109,27 @@ void project_update(Project *project, int x, int y, const Settings *settings)
       {
          first = 0;
          project->combined->data[y*project->width+x] = settings->palette[project->layers[i]->data[y*project->width+x]];
+         project->combined8->data[y*project->width+x] = project->layers[i]->data[y*project->width+x];
+      }
+      else
+      {
+         if(project->layers[i]->type==LAYER_BLEND)
+         {
+            uint8_t blend = project->layers[i]->lut[project->combined8->data[y*project->width+x]][project->layers[i]->data[y*project->width+x]];
+            project->combined->data[y*project->width+x] = settings->palette[blend];
+            project->combined8->data[y*project->width+x] = blend;
+         }
+      }
+      /*if(first)
+      {
+         first = 0;
+         project->combined->data[y*project->width+x] = settings->palette[project->layers[i]->data[y*project->width+x]];
       }
       else
       {
          if(project->layers[i]->data[y*project->width+x])
             project->combined->data[y*project->width+x] = settings->palette[project->layers[i]->data[y*project->width+x]];
-      }
+      }*/
    }
 }
 
@@ -185,6 +147,25 @@ void project_update_full(Project *project, const Settings *settings)
          for(int j = 0;j<project->width*project->height;j++)
          {
             project->combined->data[j] = settings->palette[project->layers[i]->data[j]];
+            project->combined8->data[j] = project->layers[i]->data[j];
+         }
+      }
+      else
+      {
+         for(int j = 0;j<project->width*project->height;j++)
+         {
+            uint8_t blend = project->layers[i]->lut[project->combined8->data[j]][project->layers[i]->data[j]];
+            project->combined->data[j] = settings->palette[blend];
+            project->combined8->data[j] = blend;
+         }
+      }
+
+      /*if(first)
+      {
+         first = 0;
+         for(int j = 0;j<project->width*project->height;j++)
+         {
+            project->combined->data[j] = settings->palette[project->layers[i]->data[j]];
          }
       }
       else
@@ -194,7 +175,7 @@ void project_update_full(Project *project, const Settings *settings)
             if(project->layers[i]->data[j])
                project->combined->data[j] = settings->palette[project->layers[i]->data[j]];
          }
-      }
+      }*/
    }
 }
 

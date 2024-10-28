@@ -21,6 +21,12 @@ Layer *layer_new(size_t size);
 void layer_free(Layer *layer);
 void layer_copy(Layer *dst, const Layer *src, size_t size);
 
+//Call after updating
+//Call both after changing layer type
+//Call update_settings after changing palette
+void layer_update_settings(Layer *layer, const Settings *settings);
+void layer_update_contents(Layer *layer);
+
 GUI_layer *gui_layer_create(HLH_gui_element *parent, uint64_t flags, GUI_canvas *canvas, int layer_num);
 void gui_layer_set(GUI_layer *l, uint8_t button);
 
