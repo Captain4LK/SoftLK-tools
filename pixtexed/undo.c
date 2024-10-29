@@ -452,7 +452,7 @@ static void redo_layer_add(Project *p, GUI_state *gui, int pos, int endpos)
       redo_read8(p,tmp,pos);
       undo_write8(p,tmp);
 
-      project_layer_add(p,p->num_layers-1);
+      project_layer_add(p,gui->canvas->settings, p->num_layers-1);
       HLH_gui_element_ignore(&gui->layers[gui->canvas->project->num_layers-2]->e,0);
       HLH_gui_element_layout(&gui->canvas->e.window->e, gui->canvas->e.window->e.bounds);
       HLH_gui_element_redraw(&gui->canvas->e.window->e);
@@ -474,7 +474,7 @@ static void undo_layer_del(Project *p, GUI_state *gui, int pos, int endpos)
       undo_read32(p,layer,pos);
       redo_write32(p,layer);
 
-      project_layer_add(p,layer);
+      project_layer_add(p,gui->canvas->settings,layer);
       HLH_gui_element_ignore(&gui->layers[gui->canvas->project->num_layers-2]->e,0);
       HLH_gui_element_layout(&gui->canvas->e.window->e, gui->canvas->e.window->e.bounds);
       HLH_gui_element_redraw(&gui->canvas->e.window->e);

@@ -40,6 +40,9 @@ Layer *layer_new(size_t size)
 {
    Layer *l = calloc(1,sizeof(*l)+size);
 
+   l->type = LAYER_BLEND;
+   l->opacity = 1.f;
+
    return l;
 }
 
@@ -77,8 +80,10 @@ void layer_update_settings(Layer *layer, const Settings *settings)
 
             if(c1==0)
                layer->lut[c0][c1] = c0;
+            else if(c0==0)
+               layer->lut[c0][c1] = c1;
             else
-               layer->lut[c0][c1] = palette_closest(settings,color32((uint8_t)(cr0*s0+cr1*s1),(uint8_t)(cg0*s0+cg1*s1),(uint8_t)(cb0*s0+cb1*s1),255));
+               layer->lut[c0][c1] = palette_closest(settings,color32((uint8_t)(cr0*s1+cr1*s0),(uint8_t)(cg0*s1+cg1*s0),(uint8_t)(cb0*s1+cb1*s0),255));
          }
       }
 

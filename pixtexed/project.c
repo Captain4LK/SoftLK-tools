@@ -120,16 +120,6 @@ void project_update(Project *project, int x, int y, const Settings *settings)
             project->combined8->data[y*project->width+x] = blend;
          }
       }
-      /*if(first)
-      {
-         first = 0;
-         project->combined->data[y*project->width+x] = settings->palette[project->layers[i]->data[y*project->width+x]];
-      }
-      else
-      {
-         if(project->layers[i]->data[y*project->width+x])
-            project->combined->data[y*project->width+x] = settings->palette[project->layers[i]->data[y*project->width+x]];
-      }*/
    }
 }
 
@@ -159,23 +149,6 @@ void project_update_full(Project *project, const Settings *settings)
             project->combined8->data[j] = blend;
          }
       }
-
-      /*if(first)
-      {
-         first = 0;
-         for(int j = 0;j<project->width*project->height;j++)
-         {
-            project->combined->data[j] = settings->palette[project->layers[i]->data[j]];
-         }
-      }
-      else
-      {
-         for(int j = 0;j<project->width*project->height;j++)
-         {
-            if(project->layers[i]->data[j])
-               project->combined->data[j] = settings->palette[project->layers[i]->data[j]];
-         }
-      }*/
    }
 }
 
@@ -191,7 +164,7 @@ void project_free(Project *project)
    free(project);
 }
 
-void project_layer_add(Project *project, int pos)
+void project_layer_add(Project *project, const Settings *settings, int pos)
 {
    if(project==NULL)
       return;
@@ -201,6 +174,8 @@ void project_layer_add(Project *project, int pos)
    for(int i = project->num_layers-1;i>pos;i--)
       project->layers[i] = project->layers[i-1];
    project->layers[pos] = layer_new(project->width*project->height);
+
+   layer_update_settings(project->layers[pos],settings);
 }
 
 void project_layer_delete(Project *project, int pos)

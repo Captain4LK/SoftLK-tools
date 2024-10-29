@@ -178,7 +178,7 @@ void project_free(Project *project);
 Image32 *project_to_image32(const Project *project, const Settings *settings);
 Image8 *project_to_image8(const Project *project, const Settings *settings);
 
-void project_layer_add(Project *project, int pos);
+void project_layer_add(Project *project, const Settings *settings, int pos);
 void project_layer_delete(Project *project, int pos);
 
 void project_update(Project *project, int x, int y, const Settings *settings);

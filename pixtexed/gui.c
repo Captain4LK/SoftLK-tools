@@ -875,7 +875,7 @@ static int button_layer_control(HLH_gui_element *e, HLH_gui_msg msg, int di, voi
          if(gui_state.canvas->project->num_layers<17)
          {
             undo_track_layer_add(gui_state.canvas->project);
-            project_layer_add(gui_state.canvas->project,gui_state.canvas->project->num_layers-1);
+            project_layer_add(gui_state.canvas->project,gui_state.canvas->settings,gui_state.canvas->project->num_layers-1);
             HLH_gui_element_ignore(&gui_state.layers[gui_state.canvas->project->num_layers-2]->e,0);
             HLH_gui_element_layout(&e->window->e, e->window->e.bounds);
             HLH_gui_element_redraw(&e->window->e);
