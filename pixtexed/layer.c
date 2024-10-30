@@ -86,8 +86,29 @@ void layer_update_settings(Layer *layer, const Settings *settings)
                layer->lut[c0][c1] = palette_closest(settings,color32((uint8_t)(cr0*s1+cr1*s0),(uint8_t)(cg0*s1+cg1*s0),(uint8_t)(cb0*s1+cb1*s0),255));
          }
       }
+   }
+   else if(layer->type==LAYER_BUMP)
+   {
+      for(int c0 = 0;c0<256;c0++)
+      {
+         float cr0 = (float)color32_r(settings->palette[c0]);
+         float cg0 = (float)color32_g(settings->palette[c0]);
+         float cb0 = (float)color32_b(settings->palette[c0]);
 
-      return;
+         for(int c1 = 0;c1<256;c1++)
+         {
+            float cr1 = (float)color32_r(settings->palette[c1]);
+            float cg1 = (float)color32_g(settings->palette[c1]);
+            float cb1 = (float)color32_b(settings->palette[c1]);
+
+            if(c1==0)
+               layer->lut[c0][c1] = c0;
+            else if(c0==0)
+               layer->lut[c0][c1] = c1;
+            else
+               layer->lut[c0][c1] = palette_closest(settings,color32((uint8_t)(cr0*s1+cr1*s0),(uint8_t)(cg0*s1+cg1*s0),(uint8_t)(cb0*s1+cb1*s0),255));
+         }
+      }
    }
 }
 

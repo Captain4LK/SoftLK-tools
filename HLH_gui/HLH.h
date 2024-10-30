@@ -36,6 +36,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define HLH_min(a,b) ((a)<(b)?(a):(b))
 #define HLH_abs(a) ((a)<0?-(a):(a))
 #define HLH_non_zero(a) ((a)+((a)==0))
+#define HLH_wrap(a,n) (((a)%(n)+(n))%(n))
 //--------------------------------
 
 //Error checking

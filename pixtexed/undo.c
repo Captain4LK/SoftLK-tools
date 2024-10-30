@@ -270,6 +270,7 @@ static void undo_begin(Project *p, Ed_action action)
 {
    //map_modified = 1;
 
+   p->layer_changed = 1;
    p->redo_len = 0;
    p->redo_pos = 0;
    undo_write8(p,UNDO_RECORD);

@@ -15,6 +15,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Internal includes
 #include "brush.h"
+#include "shared/color.h"
 #include "undo.h"
 //-------------------------------------
 
@@ -83,15 +84,62 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
    const uint8_t *src = &brush->data[draw_start_x + draw_start_y * brush->width];
    int src_step = -(draw_end_x - draw_start_x) + brush->width;
 
-   for(int y1 = draw_start_y; y1<draw_end_y; y1++, src += src_step,y++)
+   if(project->layers[layer]->type==LAYER_BLEND)
    {
-      int dx = x;
-      for(int x1 = draw_start_x; x1<draw_end_x; x1++, src++,dx++)
+      for(int y1 = draw_start_y; y1<draw_end_y; y1++, src += src_step,y++)
       {
-         if(*src)
+         int dx = x;
+         for(int x1 = draw_start_x; x1<draw_end_x; x1++, src++,dx++)
          {
-            project->layers[layer]->data[(y)*project->width+dx] = color;
-            project_update(project,dx,y,settings);
+            if(*src)
+            {
+               project->layers[layer]->data[(y)*project->width+dx] = color;
+               project_update(project,dx,y,settings);
+            }
+         }
+      }
+   }
+   else if(project->layers[layer]->type==LAYER_BUMP)
+   {
+      for(int y1 = draw_start_y; y1<draw_end_y; y1++, src += src_step,y++)
+      {
+         int dx = x;
+         for(int x1 = draw_start_x; x1<draw_end_x; x1++, src++,dx++)
+         {
+            if(*src)
+            {
+               project->layers[layer]->data[(y)*project->width+dx] = color;
+               //project_update(project,dx,y,settings);
+            }
+         }
+      }
+
+      for(int y1 = draw_start_y; y1<draw_end_y+1; y1++,y++)
+      {
+         for(int x1 = draw_start_x; x1<draw_end_x+1; x1++)
+         {
+            int px = x1%project->width;
+            int py = y1%project->height;
+
+            uint32_t p0 = settings->palette[project->layers[layer]->data[py*project->width+px]];
+            uint32_t p1 = settings->palette[project->layers[layer]->data[HLH_wrap(py-1,project->height)*project->width+px]];
+            uint32_t p2 = settings->palette[project->layers[layer]->data[py*project->width+HLH_wrap(px-1,project->width)]];
+
+            float h0 = (float)(color32_r(p0)+color32_g(p0)+color32_b(p0))/3.f;
+            float h1 = (float)(color32_r(p1)+color32_g(p1)+color32_b(p1))/3.f;
+            float h2 = (float)(color32_r(p2)+color32_g(p2)+color32_b(p2))/3.f;
+
+            float nx = h0-h2;
+            float ny = h0-h1;
+            float nz = 0.1f;
+            float len = sqrtf(nx*nx+ny*ny+nz*nz);
+            nx/=len;
+            ny/=len;
+            nz/=len;
+
+            //int sx = HLH_wrap(px-1,project->width);
+            //int sy = HLH_wrap(py-1,project->height);
+
          }
       }
    }

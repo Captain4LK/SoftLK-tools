@@ -166,6 +166,7 @@ typedef struct
    int32_t redo_pos;
    uint32_t undo_entry_len;
    uint32_t redo_entry_len;
+   uint8_t layer_changed;
    //--------------------------------
 
    Draw_state state;
