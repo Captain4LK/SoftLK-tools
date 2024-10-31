@@ -86,48 +86,52 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
 
    if(project->layers[layer]->type==LAYER_BLEND)
    {
-      for(int y1 = draw_start_y; y1<draw_end_y; y1++, src += src_step,y++)
+      int dy = y;
+      for(int y1 = draw_start_y; y1<draw_end_y; y1++, src += src_step,dy++)
       {
          int dx = x;
          for(int x1 = draw_start_x; x1<draw_end_x; x1++, src++,dx++)
          {
             if(*src)
             {
-               project->layers[layer]->data[(y)*project->width+dx] = color;
-               project_update(project,dx,y,settings);
+               project->layers[layer]->data[(dy)*project->width+dx] = color;
+               project_update(project,dx,dy,settings);
             }
          }
       }
    }
    else if(project->layers[layer]->type==LAYER_BUMP)
    {
-      for(int y1 = draw_start_y; y1<draw_end_y; y1++, src += src_step,y++)
+      int dy = y;
+      for(int y1 = draw_start_y; y1<draw_end_y; y1++, src += src_step,dy++)
       {
          int dx = x;
          for(int x1 = draw_start_x; x1<draw_end_x; x1++, src++,dx++)
          {
             if(*src)
             {
-               project->layers[layer]->data[(y)*project->width+dx] = color;
+               project->layers[layer]->data[(dy)*project->width+dx] = color;
                //project_update(project,dx,y,settings);
             }
          }
       }
 
-      for(int y1 = draw_start_y; y1<draw_end_y+1; y1++,y++)
+      dy = y;
+      for(int y1 = draw_start_y; y1<draw_end_y+1; y1++,dy++)
       {
-         for(int x1 = draw_start_x; x1<draw_end_x+1; x1++)
+         int dx = x;
+         for(int x1 = draw_start_x; x1<draw_end_x+1; x1++,dx++)
          {
-            int px = x1%project->width;
-            int py = y1%project->height;
+            int px = dx%project->width;
+            int py = dy%project->height;
 
             uint32_t p0 = settings->palette[project->layers[layer]->data[py*project->width+px]];
             uint32_t p1 = settings->palette[project->layers[layer]->data[HLH_wrap(py-1,project->height)*project->width+px]];
             uint32_t p2 = settings->palette[project->layers[layer]->data[py*project->width+HLH_wrap(px-1,project->width)]];
 
-            float h0 = (float)(color32_r(p0)+color32_g(p0)+color32_b(p0))/3.f;
-            float h1 = (float)(color32_r(p1)+color32_g(p1)+color32_b(p1))/3.f;
-            float h2 = (float)(color32_r(p2)+color32_g(p2)+color32_b(p2))/3.f;
+            float h0 = (float)(color32_r(p0)+color32_g(p0)+color32_b(p0))/(3.f*256.f);
+            float h1 = (float)(color32_r(p1)+color32_g(p1)+color32_b(p1))/(3.f*256.f);
+            float h2 = (float)(color32_r(p2)+color32_g(p2)+color32_b(p2))/(3.f*256.f);
 
             float nx = h0-h2;
             float ny = h0-h1;
@@ -136,6 +140,13 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
             nx/=len;
             ny/=len;
             nz/=len;
+
+            float diff = nx*project->layers[layer]->light_dir_nx;
+            diff+=ny*project->layers[layer]->light_dir_ny;
+            diff+=nz*project->layers[layer]->light_dir_nz;
+
+            project->layers[layer]->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min((int)(diff*16.f),255));
+            //printf("%f\n",diff);
 
             //int sx = HLH_wrap(px-1,project->width);
             //int sy = HLH_wrap(py-1,project->height);

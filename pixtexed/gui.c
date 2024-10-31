@@ -410,11 +410,11 @@ static void ui_construct_layer_settings(int layer)
    HLH_gui_radiobutton *rb_types[2];
    HLH_gui_group *group_select = HLH_gui_group_create(&group_root->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
    HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_select->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Blend",NULL);
-   r->e.usr = 0;
+   r->e.usr = LAYER_BLEND;
    r->e.msg_usr = rb_layer_type_msg;
    rb_types[0] = r;
    r = HLH_gui_radiobutton_create(&group_select->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bump ",NULL);
-   r->e.usr = 1;
+   r->e.usr = LAYER_BUMP;
    r->e.msg_usr = rb_layer_type_msg;
    rb_types[1] = r;
    //HLH_gui_label_create(&group_type->e, HLH_GUI_LAYOUT_HORIZONTAL, "Layer type");
@@ -455,9 +455,13 @@ static void ui_construct_layer_settings(int layer)
       SLIDER(&gui_state.group_layer_settings[1]->e,light_dir_z,LIGHT_DIR_Z);
    }
 
-   HLH_gui_element_ignore(&gui_state.group_layer_settings[0]->e,1);
-   HLH_gui_element_ignore(&gui_state.group_layer_settings[1]->e,1);
+   if(p->layers[p->layer_selected]->type!=LAYER_BLEND)
+      HLH_gui_element_ignore(&gui_state.group_layer_settings[0]->e,1);
+   if(p->layers[p->layer_selected]->type!=LAYER_BUMP)
+      HLH_gui_element_ignore(&gui_state.group_layer_settings[1]->e,1);
 
+   //HLH_gui_radiobutton_set(rb_types[0],1,1);
+   //printf("%d\n",p->layers[p->layer_selected]->type);
    HLH_gui_radiobutton_set(rb_types[p->layers[p->layer_selected]->type],1,1);
 
    HLH_gui_slider_set(gui_state.slider_opacity,(int)(p->layers[p->layer_selected]->opacity*100),100,1,1);
@@ -952,6 +956,17 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(s->e.usr==SLIDER_LIGHT_DIR_X)
       {
          p->layers[p->layer_selected]->light_dir_x = (float)s->value/100.f-1.f; 
+
+         float len = 0.f;
+         len+=p->layers[p->layer_selected]->light_dir_x*p->layers[p->layer_selected]->light_dir_x;
+         len+=p->layers[p->layer_selected]->light_dir_y*p->layers[p->layer_selected]->light_dir_y;
+         len+=p->layers[p->layer_selected]->light_dir_z*p->layers[p->layer_selected]->light_dir_z;
+         len = sqrtf(len);
+         if(len<1e-9) len = 1.f;
+         p->layers[p->layer_selected]->light_dir_nx = p->layers[p->layer_selected]->light_dir_x/len;
+         p->layers[p->layer_selected]->light_dir_ny = p->layers[p->layer_selected]->light_dir_y/len;
+         p->layers[p->layer_selected]->light_dir_nz = p->layers[p->layer_selected]->light_dir_z/len;
+
          snprintf(buffer,512,"%.2f",p->layers[p->layer_selected]->light_dir_x);
          HLH_gui_entry_set(gui_state.entry_light_dir_x,buffer);
 
@@ -960,6 +975,17 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(s->e.usr==SLIDER_LIGHT_DIR_Y)
       {
          p->layers[p->layer_selected]->light_dir_y = (float)s->value/100.f-1.f; 
+
+         float len = 0.f;
+         len+=p->layers[p->layer_selected]->light_dir_x*p->layers[p->layer_selected]->light_dir_x;
+         len+=p->layers[p->layer_selected]->light_dir_y*p->layers[p->layer_selected]->light_dir_y;
+         len+=p->layers[p->layer_selected]->light_dir_z*p->layers[p->layer_selected]->light_dir_z;
+         len = sqrtf(len);
+         if(len<1e-9) len = 1.f;
+         p->layers[p->layer_selected]->light_dir_nx = p->layers[p->layer_selected]->light_dir_x/len;
+         p->layers[p->layer_selected]->light_dir_ny = p->layers[p->layer_selected]->light_dir_y/len;
+         p->layers[p->layer_selected]->light_dir_nz = p->layers[p->layer_selected]->light_dir_z/len;
+
          snprintf(buffer,512,"%.2f",p->layers[p->layer_selected]->light_dir_y);
          HLH_gui_entry_set(gui_state.entry_light_dir_y,buffer);
 
@@ -968,6 +994,17 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       else if(s->e.usr==SLIDER_LIGHT_DIR_Z)
       {
          p->layers[p->layer_selected]->light_dir_z = (float)s->value/100.f-1.f; 
+
+         float len = 0.f;
+         len+=p->layers[p->layer_selected]->light_dir_x*p->layers[p->layer_selected]->light_dir_x;
+         len+=p->layers[p->layer_selected]->light_dir_y*p->layers[p->layer_selected]->light_dir_y;
+         len+=p->layers[p->layer_selected]->light_dir_z*p->layers[p->layer_selected]->light_dir_z;
+         len = sqrtf(len);
+         if(len<1e-9) len = 1.f;
+         p->layers[p->layer_selected]->light_dir_nx = p->layers[p->layer_selected]->light_dir_x/len;
+         p->layers[p->layer_selected]->light_dir_ny = p->layers[p->layer_selected]->light_dir_y/len;
+         p->layers[p->layer_selected]->light_dir_nz = p->layers[p->layer_selected]->light_dir_z/len;
+
          snprintf(buffer,512,"%.2f",p->layers[p->layer_selected]->light_dir_z);
          HLH_gui_entry_set(gui_state.entry_light_dir_z,buffer);
 
@@ -990,6 +1027,8 @@ static int rb_layer_type_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *
       //Check
       else
       {
+         HLH_gui_element_ignore(&gui_state.group_layer_settings[e->usr]->e,0);
+
          char tmp[256];
          snprintf(tmp,256,"%s \x1f",((HLH_gui_radiobutton *)e)->text);
          HLH_gui_menubar_label_set(gui_state.bar_layer_type,tmp,0);
@@ -997,7 +1036,6 @@ static int rb_layer_type_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *
 
          layer_update_settings(gui_state.canvas->project->layers[gui_state.canvas->project->layer_selected],gui_state.canvas->settings);
 
-         HLH_gui_element_ignore(&gui_state.group_layer_settings[e->usr]->e,0);
          HLH_gui_element_layout(&e->window->e, e->window->e.bounds);
          HLH_gui_element_redraw(&e->window->e);
       }

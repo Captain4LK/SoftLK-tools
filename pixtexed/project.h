@@ -85,6 +85,9 @@ typedef struct
    float light_dir_x;
    float light_dir_y;
    float light_dir_z;
+   float light_dir_nx;
+   float light_dir_ny;
+   float light_dir_nz;
    //--------------------------------
 
    //LUT for blending with layer below

@@ -119,6 +119,12 @@ void project_update(Project *project, int x, int y, const Settings *settings)
             project->combined->data[y*project->width+x] = settings->palette[blend];
             project->combined8->data[y*project->width+x] = blend;
          }
+         else if(project->layers[i]->type==LAYER_BUMP)
+         {
+            uint8_t blend = project->layers[i]->lut[project->combined8->data[y*project->width+x]][project->layers[i]->data[project->height*project->width+y*project->width+x]];
+            project->combined->data[y*project->width+x] = settings->palette[blend];
+            project->combined8->data[y*project->width+x] = blend;
+         }
       }
    }
 }
