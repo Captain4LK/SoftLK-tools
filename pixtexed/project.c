@@ -53,8 +53,8 @@ Project *project_new(int32_t width, int32_t height, const Settings *settings)
    undo_init(p);
    undo_reset(p);
 
-   layer_update_settings(p->layers[0],settings);
-   layer_update_settings(p->layers[1],settings);
+   layer_update_settings(p,p->layers[0],settings);
+   layer_update_settings(p,p->layers[1],settings);
 
    p->combined = image32_new(p->width,p->height);
    p->combined8 = image8_new(p->width,p->height);
@@ -181,7 +181,7 @@ void project_layer_add(Project *project, const Settings *settings, int pos)
       project->layers[i] = project->layers[i-1];
    project->layers[pos] = layer_new(project->width*project->height);
 
-   layer_update_settings(project->layers[pos],settings);
+   layer_update_settings(project,project->layers[pos],settings);
 }
 
 void project_layer_delete(Project *project, int pos)

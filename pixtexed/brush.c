@@ -135,7 +135,7 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
 
             float nx = h0-h2;
             float ny = h0-h1;
-            float nz = 0.1f;
+            float nz = 0.01f;
             float len = sqrtf(nx*nx+ny*ny+nz*nz);
             nx/=len;
             ny/=len;
@@ -145,7 +145,8 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
             diff+=ny*project->layers[layer]->light_dir_ny;
             diff+=nz*project->layers[layer]->light_dir_nz;
 
-            project->layers[layer]->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min((int)(diff*16.f),255));
+            project->layers[layer]->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min((int)(diff*32.f),255));
+            project_update(project,px,py,settings);
             //printf("%f\n",diff);
 
             //int sx = HLH_wrap(px-1,project->width);

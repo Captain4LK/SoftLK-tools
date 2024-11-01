@@ -10,6 +10,12 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _COLOR_H_
 
+typedef struct
+{
+   float c[4];
+}colorf;
+
+
 uint64_t color32_to_64(uint32_t c);
 uint32_t color64_to_32(uint64_t c);
 
@@ -21,6 +27,11 @@ uint32_t color32_r(uint32_t c);
 uint32_t color32_g(uint32_t c);
 uint32_t color32_b(uint32_t c);
 uint32_t color32_a(uint32_t c);
+
+colorf lsrgb_from_color32(uint32_t c);
+uint32_t color32_from_lsrgb(colorf lsrgb);
+colorf oklab_from_lsrgb(colorf lsrgb);
+colorf lsrgb_from_oklab(colorf oklab);
 
 inline uint32_t color32(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { return ((uint32_t)r)|((uint32_t)g<<8)|((uint32_t)b<<16)|((uint32_t)a<<24); }
 

@@ -11,6 +11,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //External includes
 #include <stdlib.h>
 #include <string.h>
+
+#include "HLH.h"
 //-------------------------------------
 
 //Internal includes
@@ -59,7 +61,7 @@ void layer_copy(Layer *dst, const Layer *src, size_t size)
    memcpy(dst,src,size);
 }
 
-void layer_update_settings(Layer *layer, const Settings *settings)
+void layer_update_settings(Project *project, Layer *layer, const Settings *settings)
 {
    float s0 = layer->opacity;
    float s1 = 1.f-layer->opacity;
@@ -89,20 +91,47 @@ void layer_update_settings(Layer *layer, const Settings *settings)
    }
    else if(layer->type==LAYER_BUMP)
    {
+      FILE *f = fopen("/tmp/out.ppm","w");
+      fprintf(f,"P3\n%d %d\n255\n",256,256);
       for(int c0 = 0;c0<256;c0++)
       {
          //float cr0 = (float)color32_r(settings->palette[c0]);
          //float cg0 = (float)color32_g(settings->palette[c0]);
          //float cb0 = (float)color32_b(settings->palette[c0]);
-         float s = (float)c0/16.f;
+         float s = (float)c0/32.f;
 
          for(int c1 = 0;c1<256;c1++)
          {
             float cr1 = (float)color32_r(settings->palette[c1]);
             float cg1 = (float)color32_g(settings->palette[c1]);
             float cb1 = (float)color32_b(settings->palette[c1]);
+            cr1 = HLH_min(cr1*s,255.f);
+            cg1 = HLH_min(cg1*s,255.f);
+            cb1 = HLH_min(cb1*s,255.f);
 
-            layer->lut[c1][c0] = palette_closest(settings,color32((uint8_t)(cr1*s),(uint8_t)(cg1*s),(uint8_t)(cb1*s),255));
+            layer->lut[c1][c0] = palette_closest(settings,color32((uint8_t)(cr1),(uint8_t)(cg1),(uint8_t)(cb1),255));
+
+            //colorf lab = oklab_from_lsrgb(lsrgb_from_color32(settings->palette[c1]));
+            //lab.c[3] = 1.f;
+            //lab.c[0]*=s*0.5f;
+            //layer->lut[c1][c0] = palette_closest(settings,color32_from_lsrgb(lsrgb_from_oklab(lab)));
+
+            //colorf lab = (lsrgb_from_color32(settings->palette[c1]));
+            //lab.c[3] = 1.f;
+            //lab.c[0]*=s;
+            //lab.c[1]*=s;
+            //lab.c[2]*=s;
+            //layer->lut[c1][c0] = palette_closest(settings,color32_from_lsrgb((lab)));
+
+            //colorf lsrgb_from_color32(uint32_t c);
+            //uint32_t color32_from_lsrgb(colorf lsrgb);
+            //colorf oklab_from_lsrgb(colorf lsrgb);
+            //colorf lsrgb_from_oklab(colorf oklab);
+
+
+            uint32_t c = settings->palette[layer->lut[c1][c0]];
+            fprintf(f,"%d %d %d\n",color32_r(c),color32_g(c),color32_b(c));
+            //layer->lut[c1][c0] = palette_closest(settings,color32((uint8_t)(cr1*s),(uint8_t)(cg1*s),(uint8_t)(cb1*s),255));
             //if(c1==0)
                //layer->lut[c0][c1] = c0;
             //else if(c0==0)
@@ -111,6 +140,52 @@ void layer_update_settings(Layer *layer, const Settings *settings)
                //layer->lut[c0][c1] = palette_closest(settings,color32((uint8_t)(cr0*s1+cr1*s0),(uint8_t)(cg0*s1+cg1*s0),(uint8_t)(cb0*s1+cb1*s0),255));
          }
       }
+
+      fclose(f);
+
+      //FILE *f = fopen("/tmp/out.ppm","w");
+      //fprintf(f,"P3\n%d %d\n255\n",project->width,project->height);
+
+      for(int y = 0; y<project->height; y++)
+      {
+         for(int x = 0; x<project->width; x++)
+         {
+            int px = x%project->width;
+            int py = y%project->height;
+
+            uint32_t p0 = layer->data[py*project->width+px];
+            uint32_t p1 = layer->data[HLH_wrap(py-1,project->height)*project->width+px];
+            uint32_t p2 = layer->data[py*project->width+HLH_wrap(px-1,project->width)];
+
+            float h0 = (float)(color32_r(p0)+color32_g(p0)+color32_b(p0))/(3.f*256.f);
+            float h1 = (float)(color32_r(p1)+color32_g(p1)+color32_b(p1))/(3.f*256.f);
+            float h2 = (float)(color32_r(p2)+color32_g(p2)+color32_b(p2))/(3.f*256.f);
+
+            float nx = h0-h2;
+            float ny = h0-h1;
+            float nz = 0.01f;
+            float len = sqrtf(nx*nx+ny*ny+nz*nz);
+            nx/=len;
+            ny/=len;
+            nz/=len;
+            //fprintf(f,"%d %d 0\n",HLH_max(0,HLH_min(255,(int)(nx*128.f+128.f))),HLH_max(0,HLH_min(255,(int)(ny*128.f+128.f))));
+
+            float diff = nx*layer->light_dir_nx;
+            diff+=ny*layer->light_dir_ny;
+            diff+=nz*layer->light_dir_nz;
+            //fprintf(f,"%d %d 0\n",HLH_max(0,HLH_min(255,(int)(diff*128.f))),0);
+
+            layer->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min((int)(diff*32.f),255));
+            project_update(project,x,y,settings);
+            //printf("%f\n",diff);
+
+            //int sx = HLH_wrap(px-1,project->width);
+            //int sy = HLH_wrap(py-1,project->height);
+
+         }
+      }
+
+      //fclose(f);
    }
 }
 

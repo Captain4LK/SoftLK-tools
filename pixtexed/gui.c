@@ -951,7 +951,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          snprintf(buffer,512,"%.2f",p->layers[p->layer_selected]->opacity);
          HLH_gui_entry_set(gui_state.entry_opacity,buffer);
 
-         layer_update_settings(p->layers[p->layer_selected],gui_state.canvas->settings);
+         layer_update_settings(p,p->layers[p->layer_selected],gui_state.canvas->settings);
       }
       else if(s->e.usr==SLIDER_LIGHT_DIR_X)
       {
@@ -970,7 +970,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          snprintf(buffer,512,"%.2f",p->layers[p->layer_selected]->light_dir_x);
          HLH_gui_entry_set(gui_state.entry_light_dir_x,buffer);
 
-         layer_update_settings(p->layers[p->layer_selected],gui_state.canvas->settings);
+         layer_update_settings(p,p->layers[p->layer_selected],gui_state.canvas->settings);
       }
       else if(s->e.usr==SLIDER_LIGHT_DIR_Y)
       {
@@ -989,7 +989,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          snprintf(buffer,512,"%.2f",p->layers[p->layer_selected]->light_dir_y);
          HLH_gui_entry_set(gui_state.entry_light_dir_y,buffer);
 
-         layer_update_settings(p->layers[p->layer_selected],gui_state.canvas->settings);
+         layer_update_settings(p,p->layers[p->layer_selected],gui_state.canvas->settings);
       }
       else if(s->e.usr==SLIDER_LIGHT_DIR_Z)
       {
@@ -1008,7 +1008,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          snprintf(buffer,512,"%.2f",p->layers[p->layer_selected]->light_dir_z);
          HLH_gui_entry_set(gui_state.entry_light_dir_z,buffer);
 
-         layer_update_settings(p->layers[p->layer_selected],gui_state.canvas->settings);
+         layer_update_settings(p,p->layers[p->layer_selected],gui_state.canvas->settings);
       }
    }
 
@@ -1034,7 +1034,7 @@ static int rb_layer_type_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *
          HLH_gui_menubar_label_set(gui_state.bar_layer_type,tmp,0);
          gui_state.canvas->project->layers[gui_state.canvas->project->layer_selected]->type = e->usr;
 
-         layer_update_settings(gui_state.canvas->project->layers[gui_state.canvas->project->layer_selected],gui_state.canvas->settings);
+         layer_update_settings(gui_state.canvas->project,gui_state.canvas->project->layers[gui_state.canvas->project->layer_selected],gui_state.canvas->settings);
 
          HLH_gui_element_layout(&e->window->e, e->window->e.bounds);
          HLH_gui_element_redraw(&e->window->e);
