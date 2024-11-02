@@ -98,7 +98,7 @@ void layer_update_settings(Project *project, Layer *layer, const Settings *setti
          //float cr0 = (float)color32_r(settings->palette[c0]);
          //float cg0 = (float)color32_g(settings->palette[c0]);
          //float cb0 = (float)color32_b(settings->palette[c0]);
-         float s = (float)c0/32.f;
+         float s = (float)c0/8.f;
 
          for(int c1 = 0;c1<256;c1++)
          {
@@ -154,8 +154,8 @@ void layer_update_settings(Project *project, Layer *layer, const Settings *setti
             int py = y%project->height;
 
             uint32_t p0 = layer->data[py*project->width+px];
-            uint32_t p1 = layer->data[HLH_wrap(py-1,project->height)*project->width+px];
-            uint32_t p2 = layer->data[py*project->width+HLH_wrap(px-1,project->width)];
+            uint32_t p1 = layer->data[HLH_wrap(py+1,project->height)*project->width+px];
+            uint32_t p2 = layer->data[py*project->width+HLH_wrap(px+1,project->width)];
 
             float h0 = (float)(color32_r(p0)+color32_g(p0)+color32_b(p0))/(3.f*256.f);
             float h1 = (float)(color32_r(p1)+color32_g(p1)+color32_b(p1))/(3.f*256.f);
@@ -163,7 +163,7 @@ void layer_update_settings(Project *project, Layer *layer, const Settings *setti
 
             float nx = h0-h2;
             float ny = h0-h1;
-            float nz = 0.01f;
+            float nz = 1.f;
             float len = sqrtf(nx*nx+ny*ny+nz*nz);
             nx/=len;
             ny/=len;
@@ -173,9 +173,19 @@ void layer_update_settings(Project *project, Layer *layer, const Settings *setti
             float diff = nx*layer->light_dir_nx;
             diff+=ny*layer->light_dir_ny;
             diff+=nz*layer->light_dir_nz;
+
+            int idiff = 0;
+            if(fabsf(diff-1.f)<1e-2)
+               idiff = 8;
+            else if(diff<1.f)
+               idiff = (int)floorf(diff*8.f);
+            else
+               idiff = (int)ceil(diff*8.f);
+            //int idiff = (int)floorf((diff-1.0f)*16.f);
             //fprintf(f,"%d %d 0\n",HLH_max(0,HLH_min(255,(int)(diff*128.f))),0);
 
-            layer->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min((int)(diff*32.f),255));
+            layer->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min(idiff,255));
+            //layer->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min((int)(diff*32.f),255));
             project_update(project,x,y,settings);
             //printf("%f\n",diff);
 

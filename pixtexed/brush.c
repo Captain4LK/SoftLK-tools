@@ -116,18 +116,23 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
          }
       }
 
-      dy = y;
-      for(int y1 = draw_start_y; y1<draw_end_y+1; y1++,dy++)
+      //Ambient light, so that flat areas stay original color
+      float base = 1.f-project->layers[layer]->light_dir_nz;
+
+      dy = y-1;
+      for(int y1 = draw_start_y-1; y1<draw_end_y; y1++,dy++)
       {
-         int dx = x;
-         for(int x1 = draw_start_x; x1<draw_end_x+1; x1++,dx++)
+         int dx = x-1;
+         for(int x1 = draw_start_x-1; x1<draw_end_x; x1++,dx++)
          {
-            int px = dx%project->width;
-            int py = dy%project->height;
+            int px = HLH_wrap(dx,project->width);
+            int py = HLH_wrap(dy,project->height);
+            //int px = dx%project->width;
+            //int py = dy%project->height;
 
             uint32_t p0 = settings->palette[project->layers[layer]->data[py*project->width+px]];
-            uint32_t p1 = settings->palette[project->layers[layer]->data[HLH_wrap(py-1,project->height)*project->width+px]];
-            uint32_t p2 = settings->palette[project->layers[layer]->data[py*project->width+HLH_wrap(px-1,project->width)]];
+            uint32_t p1 = settings->palette[project->layers[layer]->data[HLH_wrap(py+1,project->height)*project->width+px]];
+            uint32_t p2 = settings->palette[project->layers[layer]->data[py*project->width+HLH_wrap(px+1,project->width)]];
 
             float h0 = (float)(color32_r(p0)+color32_g(p0)+color32_b(p0))/(3.f*256.f);
             float h1 = (float)(color32_r(p1)+color32_g(p1)+color32_b(p1))/(3.f*256.f);
@@ -135,7 +140,7 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
 
             float nx = h0-h2;
             float ny = h0-h1;
-            float nz = 0.01f;
+            float nz = 1.f;
             float len = sqrtf(nx*nx+ny*ny+nz*nz);
             nx/=len;
             ny/=len;
@@ -145,7 +150,18 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
             diff+=ny*project->layers[layer]->light_dir_ny;
             diff+=nz*project->layers[layer]->light_dir_nz;
 
-            project->layers[layer]->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min((int)(diff*32.f),255));
+            diff+=base;
+
+            int idiff = 0;
+            if(fabsf(diff-1.f)<1e-2)
+               idiff = 8;
+            else if(diff<1.f)
+               idiff = (int)floorf(diff*8.f);
+            else
+               idiff = (int)ceil(diff*8.f);
+
+            project->layers[layer]->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min(idiff,255));
+            //project->layers[layer]->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min((int)(diff*32.f),255));
             project_update(project,px,py,settings);
             //printf("%f\n",diff);
 

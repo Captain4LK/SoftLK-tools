@@ -148,12 +148,32 @@ void project_update_full(Project *project, const Settings *settings)
       }
       else
       {
+         if(project->layers[i]->type==LAYER_BLEND)
+         {
+            for(int j = 0;j<project->width*project->height;j++)
+            {
+               uint8_t blend = project->layers[i]->lut[project->combined8->data[j]][project->layers[i]->data[j]];
+               project->combined->data[j] = settings->palette[blend];
+               project->combined8->data[j] = blend;
+            }
+         }
+         else if(project->layers[i]->type==LAYER_BUMP)
+         {
+            for(int j = 0;j<project->width*project->height;j++)
+            {
+               uint8_t blend = project->layers[i]->lut[project->combined8->data[j]][project->layers[i]->data[project->height*project->width+j]];
+               project->combined->data[j] = settings->palette[blend];
+               project->combined8->data[j] = blend;
+            }
+         }
+/*
          for(int j = 0;j<project->width*project->height;j++)
          {
             uint8_t blend = project->layers[i]->lut[project->combined8->data[j]][project->layers[i]->data[j]];
             project->combined->data[j] = settings->palette[blend];
             project->combined8->data[j] = blend;
          }
+         */
       }
    }
 }
