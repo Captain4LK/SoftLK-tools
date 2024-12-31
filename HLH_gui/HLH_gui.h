@@ -295,6 +295,13 @@ typedef struct
    int slider; //Value from 0 to 2048
    SDL_Texture *img0;
    SDL_Texture *img1;
+
+   float x;
+   float y;
+   float ox;
+   float oy;
+   float scale;
+   float scale1;
 }HLH_gui_imgcmp;
 
 typedef struct

@@ -127,19 +127,19 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
          {
             int px = HLH_wrap(dx,project->width);
             int py = HLH_wrap(dy,project->height);
-            //int px = dx%project->width;
-            //int py = dy%project->height;
 
             uint32_t p0 = settings->palette[project->layers[layer]->data[py*project->width+px]];
             uint32_t p1 = settings->palette[project->layers[layer]->data[HLH_wrap(py+1,project->height)*project->width+px]];
             uint32_t p2 = settings->palette[project->layers[layer]->data[py*project->width+HLH_wrap(px+1,project->width)]];
+            uint32_t p3 = settings->palette[project->layers[layer]->data[HLH_wrap(py+1,project->height)*project->width+HLH_wrap(px+1,project->width)]];
 
             float h0 = (float)(color32_r(p0)+color32_g(p0)+color32_b(p0))/(3.f*256.f);
             float h1 = (float)(color32_r(p1)+color32_g(p1)+color32_b(p1))/(3.f*256.f);
             float h2 = (float)(color32_r(p2)+color32_g(p2)+color32_b(p2))/(3.f*256.f);
+            float h3 = (float)(color32_r(p3)+color32_g(p3)+color32_b(p3))/(3.f*256.f);
 
-            float nx = h0-h2;
-            float ny = h0-h1;
+            float nx = ((h0-h2)+(h0-h3))/2.f;
+            float ny = ((h0-h1)+(h0-h3))/2.f;
             float nz = 1.f;
             float len = sqrtf(nx*nx+ny*ny+nz*nz);
             nx/=len;
@@ -161,13 +161,7 @@ int brush_place(Project *project, const Settings *settings, const Brush *brush, 
                idiff = (int)ceil(diff*8.f);
 
             project->layers[layer]->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min(idiff,255));
-            //project->layers[layer]->data[project->height*project->width+py*project->width+px] = (uint8_t)HLH_max(0,HLH_min((int)(diff*32.f),255));
             project_update(project,px,py,settings);
-            //printf("%f\n",diff);
-
-            //int sx = HLH_wrap(px-1,project->width);
-            //int sy = HLH_wrap(py-1,project->height);
-
          }
       }
    }

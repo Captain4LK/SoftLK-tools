@@ -1624,7 +1624,7 @@ void gui_load_preset(FILE *f)
       dither_config.alpha_threshold = 128;
       dither_config.dither_amount = 0.2f;
       //dither_config.use_median = 0;
-      dither_config.dither_mode = SLK_DITHER_BAYER4X4;
+      dither_config.dither_mode = SLK_DITHER_NONE;
       dither_config.color_dist = SLK_RGB_REDMEAN;
       dither_config.target_colors = 8;
 

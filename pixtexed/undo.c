@@ -112,6 +112,8 @@ void undo_reset(Project *p)
 
 void undo(Project *p, const Settings *settings, GUI_state *gui)
 {
+   p->layer_changed = -1;
+
    int pos = p->undo_pos;
    uint32_t len = 0;
    Ed_action action;
@@ -149,11 +151,19 @@ void undo(Project *p, const Settings *settings, GUI_state *gui)
    p->undo_pos = WRAP(p->undo_pos-len-7);
    p->undo_buffer[p->undo_pos] = JUNK_RECORD;
 
+   if(p->layer_changed!=-1)
+//void layer_update_settings(Project *project, Layer *layer, const Settings *settings)
+   {
+      layer_update_settings(p,p->layers[p->layer_changed],settings);
+   }
+
    project_update_full(p,settings);
 }
 
 void redo(Project *p, const Settings *settings, GUI_state *gui)
 {
+   p->layer_changed = -1;
+
    int pos = p->redo_pos;
    uint32_t len = 0;
    Ed_action action;
@@ -270,7 +280,6 @@ static void undo_begin(Project *p, Ed_action action)
 {
    //map_modified = 1;
 
-   p->layer_changed = 1;
    p->redo_len = 0;
    p->redo_pos = 0;
    undo_write8(p,UNDO_RECORD);
@@ -345,6 +354,7 @@ static void undo_layer_chunk(Project *p, GUI_state *gui, int pos, int endpos)
       int32_t x;
       int32_t y;
       int32_t layer;
+      p->layer_changed = layer;
       undo_read32(p,layer,pos);
       undo_read32(p,y,pos);
       undo_read32(p,x,pos);
@@ -389,6 +399,7 @@ static void redo_layer_chunk(Project *p, GUI_state *gui, int pos, int endpos)
       int32_t x;
       int32_t y;
       int32_t layer;
+      p->layer_changed = layer;
       redo_read32(p,layer,pos);
       redo_read32(p,y,pos);
       redo_read32(p,x,pos);

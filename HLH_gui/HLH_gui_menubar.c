@@ -100,7 +100,7 @@ static int dropdown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       int state_old = drop->state;
       HLH_gui_element *hit = NULL;
 
-      if(!drop->state)
+      if(drop->state == 0)
       {
          if(HLH_gui_rect_inside(drop->e.bounds, m->pos)&&m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE))
          {
@@ -128,48 +128,91 @@ static int dropdown_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
             drop->state = 1;
          }
       }
-      else
+      else if(drop->state == 1)
       {
-         if(!HLH_gui_rect_inside(drop->e.bounds, m->pos))
+         if(HLH_gui_rect_inside(drop->drop->bounds, m->pos))
          {
-            int pass = 0;
-            if(drop->side==HLH_GUI_LAYOUT_VERTICAL) pass = m->pos.y>=drop->e.bounds.maxy;
-            else if(drop->side==HLH_GUI_LAYOUT_HORIZONTAL) pass = m->pos.x>=drop->e.bounds.maxx;
+            hit = drop->drop;
+         }
 
-            if(pass)
+         if(!(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE)))
+         {
+            if(HLH_gui_rect_inside(drop->drop->bounds, m->pos))
             {
                hit = drop->drop;
-               if(!(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE)))
-                  drop->state = 0;
+
+               drop->state = 0;
+
+               HLH_gui_element_invisible(drop->drop, 1);
+               hit = drop->drop;
+
+               HLH_gui_element_redraw(&drop->e.window->e);
+               HLH_gui_overlay_clear(&drop->e);
+            }
+            else if(HLH_gui_rect_inside(drop->e.bounds, m->pos))
+            {
+               drop->state = 2;
             }
             else
             {
                drop->state = 0;
+
+               HLH_gui_element_invisible(drop->drop, 1);
+               hit = drop->drop;
+
+               HLH_gui_element_redraw(&drop->e.window->e);
+               HLH_gui_overlay_clear(&drop->e);
             }
          }
-         else if(!(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE)))
-         {
-            drop->state = 0;
-         }
-         else
+      }
+      else if(drop->state == 2)
+      {
+         if(HLH_gui_rect_inside(drop->drop->bounds, m->pos))
          {
             hit = drop->drop;
          }
-
-         if(!drop->state)
+         if((m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE)))
          {
-            HLH_gui_element_invisible(drop->drop, 1);
+            drop->state = 3;
+         }
+      }
+      else if(drop->state == 3)
+      {
+         if(HLH_gui_rect_inside(drop->drop->bounds, m->pos))
+         {
             hit = drop->drop;
+         }
+         if(!(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE)))
+         {
+            if(HLH_gui_rect_inside(drop->drop->bounds, m->pos))
+            {
+               hit = drop->drop;
+               drop->state = 0;
 
-            HLH_gui_element_redraw(&drop->e.window->e);
-            HLH_gui_overlay_clear(&drop->e);
+               HLH_gui_element_invisible(drop->drop, 1);
+               hit = drop->drop;
+
+               HLH_gui_element_redraw(&drop->e.window->e);
+               HLH_gui_overlay_clear(&drop->e);
+            }
+            else
+            {
+               drop->state = 0;
+
+               HLH_gui_element_invisible(drop->drop, 1);
+
+               HLH_gui_element_redraw(&drop->e.window->e);
+               HLH_gui_overlay_clear(&drop->e);
+            }
          }
       }
 
       if(drop->state!=state_old)
          HLH_gui_element_redraw(&drop->e);
       if(hit!=NULL)
+      {
          HLH_gui_handle_mouse(hit, *m);
+      }
 
       return !!drop->state;
    }
