@@ -37,4 +37,4 @@ gcc -MM -MT "main/main.o" "main/main.c" $CFLAGS
 gcc -MM -MT "main/main_cmd.o" "main/main_cmd.c" $CFLAGS
 
 printf "img2pix_cmd: \$(obj) main/main_cmd.o\n\tgcc -o ../bin/SLK_img2pix_cmd $^ $CFLAGS -lSDL2\n"
-printf "img2pix: \$(obj) main/main.o\n\tgcc -o ../bin/SLK_img2pix $^ $CFLAGS -lSDL2\nclean:\n\trm -f \$(obj) ../bin/SLK_img2pix ../bin/SLK_img2pix_cmd \n"
+printf "img2pix: \$(obj) main/main.o\n\tgcc -o ../bin/SLK_img2pix $^ $CFLAGS -lSDL2\nclean:\n\trm -f \$(obj) main/*.o ../bin/SLK_img2pix ../bin/SLK_img2pix_cmd \n"

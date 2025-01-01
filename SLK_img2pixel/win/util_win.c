@@ -23,7 +23,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "HLH_gui.h"
 #include "HLH_json.h"
 
-#define FOPEN_UTF8_IMPLEMENTATION
 #include "../external/fopen_utf8.h"
 #include "../external/nfd.h"
 //-------------------------------------
@@ -159,7 +158,8 @@ FILE *preset_load_select()
 }
 
 //const char *image_save_select()
-FILE *image_save_select(char ext[512])
+//FILE *image_save_select(char ext[512])
+void image_save_select(char path[1024], char ext[512])
 {
    NFD_Init();
    
@@ -169,10 +169,12 @@ FILE *image_save_select(char ext[512])
    //const char *filter_patterns[3] = {"*.png","*.bmp","*.tga"};
    //const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,3,filter_patterns,NULL);
 
+   path[0] = '\0';
+   ext[0] = '\0';
    if(result!=NFD_OKAY)
    {
       NFD_Quit();
-      return NULL;
+      //return NULL;
    }
 
    FILE *f = NULL;
@@ -182,14 +184,16 @@ FILE *image_save_select(char ext[512])
       //strncpy(path_image_save,file_path,511);
       path_pop(file_path,path_image_save,NULL);
       path_image_save[511] = '\0';
-      f = fopen_utf8(file_path,"wb");
+      strncpy(path,file_path,1023);
+      path[1023] = '\0';
+      //f = fopen_utf8(file_path,"wb");
       //strncpy(path_image,file_path,511);
    }
 
    NFD_FreePathU8(file_path);
    NFD_Quit();
 
-   return f;
+   //return f;
 }
 
 FILE *palette_save_select(char ext[512])

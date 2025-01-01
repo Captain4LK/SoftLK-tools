@@ -23,6 +23,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "HLH_rw.h"
 #define HLH_JSON_IMPLEMENTATION
 #include "HLH_json.h"
+#define FOPEN_UTF8_IMPLEMENTATION
+#include "../../external/fopen_utf8.h"
 #define CUTE_FILES_IMPLEMENTATION
 #include "cute_files.h"
 

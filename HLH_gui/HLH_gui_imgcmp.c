@@ -132,8 +132,6 @@ static void imgcmp_update_view(HLH_gui_imgcmp *img, int reset)
    img->oy = (float)(height - view_height)/2 - (float)view_y;
    img->ox /= sc0;
    img->oy /= sc0;
-
-   printf("%f %f %f %f %f %f %d\n",img->x, img->y, img->ox, img->oy, img->scale, img->scale1, reset);
 }
 
 static int imgcmp_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)

@@ -273,6 +273,10 @@ int cf_match_ext(cf_file_t* file, const char* ext)
 }
 
 #if CUTE_FILES_PLATFORM == CUTE_FILES_WINDOWS
+   static int convert_wchar_to_utf8(char *buffer, size_t bufferlen, const wchar_t* input)
+{
+      return WideCharToMultiByte(65001 /* UTF8 */, 0, input, -1, buffer, (int) bufferlen, NULL, NULL);
+}
 
 	int cf_read_file(cf_dir_t* dir, cf_file_t* file)
 	{
@@ -286,7 +290,7 @@ int cf_match_ext(cf_file_t* file, const char* ext)
 		n = cf_safe_strcpy(fpath, "/", n - 1, CUTE_FILES_MAX_PATH);
 
       char buffer[512];
-      stbi_convert_wchar_to_utf8(buffer,512,dir->fdata.cFileName);
+      convert_wchar_to_utf8(buffer,512,dir->fdata.cFileName);
 		//char* dname = dir->fdata.cFileName;
 		char* fname = file->name;
 

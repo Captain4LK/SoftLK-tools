@@ -9,6 +9,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //External includes
 #include "HLH_gui.h"
 #include "HLH.h"
+#include <math.h>
 //-------------------------------------
 
 //Internal includes

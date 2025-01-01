@@ -1,39 +1,54 @@
+
 #!/bin/sh
+set -e
 
-flags="-I../external/ -Wall -Wextra -Wno-unused -Wshadow"
-sources="color.c tint.c blur.c kmeans.c image.c sharp.c sample.c hscb.c pcx.c gamma.c postprocess.c dither.c palette.c"
-object_files="color.o tint.o blur.o kmeans.o image.o sharp.o sample.o hscb.o pcx.o gamma.o postprocess.o dither.o palette.o"
-options="-O3 -flto -fopenmp -s"
-
-CPP="/mnt/sdb1/apps/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin/x86_64-w64-mingw32-g++"
+CXX="/mnt/sdb1/apps/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin/x86_64-w64-mingw32-g++"
 CC="/mnt/sdb1/apps/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin/x86_64-w64-mingw32-gcc"
+CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -L."
+CPPFLAGS="-Wall -Wextra -Wshadow -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -luuid -lcomdlg32 -lole32 -lmingw32 -mwindows -Wall -Wno-sign-compare -Wno-unused-parameter -static-libgcc -static-libstdc++ -L. -lSDL2main -lSDL2"
+LDFLAGS="-static-libgcc -static-libstdc++ -L. -luuid -lcomdlg32 -lole32 -lmingw32 -lSDL2main -lSDL2 -Wall -Wno-sign-compare -Wno-unused-parameter -mwindows"
+printf "
+.POSIX:
+CC      = $CC
+CXX     = $CXX
+CFLAGS  = %s
+CPPFLAGS = $CPPFLAGS
+LDFLAGS = $LDFLAGS
+LDLIBS  = 
+all: img2pix img2pix_cmd
+" "$CFLAGS"
 
-if [ $# -lt 1 ]; then
-   echo "unspecified target, need either gui, gui_hlh, cmd or video"
-   exit 0 
-fi
+obj=""
 
-if [ $1 = "gui" ]; then
-   sources="$sources main.c gui.c ../HLH_gui/HLH_gui_all.c win/util_win.c"
-   object_files="$object_files main.o gui.o HLH_gui_all.o util_win.o nfd_win.o"
+function add_file
+{
+   $CC -MM -MT "${1%%.c}.o" "$1" $CFLAGS
+   obj="$obj ${1%%.c}.o"
+}
 
-   rm *.a
-   #ln -s `x86_64-w64-mingw32-g++ --print-file-name=libgomp.a`
-   $CPP -c ../external/nfd_win.cpp -luuid -lcomdlg32 -lole32 -lmingw32 -mwindows -Wall -Wno-sign-compare -Wno-unused-parameter -static-libgcc -static-libstdc++ -L. $options $flags
-   $CC -c $sources $flags -lSDL2 -I../HLH_gui -static-libgcc -static-libstdc++ -L. $options
-   $CPP -o ../bin/SLK_img2pix $object_files -static-libgcc -static-libstdc++ -L. -luuid -lcomdlg32 -lole32 -lmingw32 -lSDL2main -lSDL2 -Wall -Wno-sign-compare -Wno-unused-parameter -mwindows $options $flags
+function add_file_cpp
+{
+   $CXX -MM -MT "${1%%.c}.o" "$1" $CPPFLAGS
+   obj="$obj ${1%%.cpp}.o"
+}
 
+for src in $(find ./ -maxdepth 1 -name "*.c"); do
+   add_file "$src"
+done
 
-elif [ $1 = "cmd" ]; then
-   sources="$sources main_cmd.c ../HLH_gui/HLH_gui_all.c"
+for src in $(find ../shared -name "*.c"); do
+   add_file "$src"
+done
 
-   rm *.a
-   #ln -s `$CPP --print-file-name=libgomp.a`
-   #x86_64-w64-mingw32-gcc -o ../bin/SLK_img2pix_cmd $sources $flags -I../HLH_gui -static-libgcc -static-libstdc++ -L. $options
-   $CC -o ../bin/SLK_img2pix_cmd $sources $flags -std=c99 -Wall -Wextra -lm -O3 -s -static-libgcc -static-libstdc++ -flto=auto -lmingw32 -fopenmp -lSDL2main -lSDL2 -L. -I../HLH_gui
+#add_file "../external/tinyfiledialogs.c"
+add_file "../HLH_gui/HLH_gui_all.c"
+add_file "win/util_win.c"
+add_file_cpp "../external/nfd_win.cpp"
 
-else
+echo "obj= $obj"
 
-   echo "unknown target, need either gui, cmd or video"
+$CC -MM -MT "main/main.o" "main/main.c" $CFLAGS
+$CC -MM -MT "main/main_cmd.o" "main/main_cmd.c" $CFLAGS
 
-fi
+printf "img2pix_cmd: \$(obj) main/main_cmd.o\n\t$CXX -o ../bin/SLK_img2pix_cmd $^ $CFLAGS $LDFLAGS\n"
+printf "img2pix: \$(obj) main/main.o\n\t$CXX -o ../bin/SLK_img2pix $^ $CPPFLAGS $LDFLAGS\nclean:\n\trm -f \$(obj) main/*.o ../bin/SLK_img2pix.exe ../bin/SLK_img2pix_cmd.exe \n"
