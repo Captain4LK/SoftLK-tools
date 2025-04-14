@@ -102,11 +102,11 @@ static int slk_palette_size = 0;
 //-------------------------------------
 
 //Function prototypes
-static Image8 *slk_dither_closest(Image64 *img, const SLK_dither_config *config);
-static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config);
+static SLK_img8and32 slk_dither_closest(Image64 *img, const SLK_dither_config *config);
+static SLK_img8and32 slk_assign_median(Image64 *img, const SLK_dither_config *config);
 static void slk_dither_threshold_apply(Image64 *img, int dim, const float *threshold, const SLK_dither_config *config);
-static Image8 *slk_dither_floyd(Image64 *img, const SLK_dither_config *config);
-static Image8 *slk_dither_floyd2(Image64 *img, const SLK_dither_config *config);
+static SLK_img8and32 slk_dither_floyd(Image64 *img, const SLK_dither_config *config);
+static SLK_img8and32 slk_dither_floyd2(Image64 *img, const SLK_dither_config *config);
 static void slk_floyd_apply_error(Image64 *img, float er, float eg, float eb, int x, int y);
 
 static void slk_color32_to_lab(uint32_t c, float *l0, float *l1, float *l2);
@@ -140,7 +140,7 @@ static int color_cmp_b(const void *a, const void *b);
 
 //Function implementations
 
-Image8 *image64_dither(Image64 *img, const SLK_dither_config *config)
+SLK_img8and32 image64_dither(Image64 *img, const SLK_dither_config *config)
 {
    //Convert palette to desired format
    switch(config->color_dist)
@@ -189,9 +189,10 @@ Image8 *image64_dither(Image64 *img, const SLK_dither_config *config)
    return slk_dither_closest(img,config);
 }
 
-static Image8 *slk_dither_closest(Image64 *img, const SLK_dither_config *config)
+static SLK_img8and32 slk_dither_closest(Image64 *img, const SLK_dither_config *config)
 {
    Image8 *out = image8_new(img->width,img->height);
+   Image32 *out32 = image32_new(img->width,img->height);
    out->color_count = config->palette_colors;
    for(int i = 0;i<config->palette_colors;i++)
       out->palette[i] = config->palette[i];
@@ -204,18 +205,20 @@ static Image8 *slk_dither_closest(Image64 *img, const SLK_dither_config *config)
          uint64_t p = img->data[y*img->width+x];
          if((int)(color64_a(p)/128)<config->alpha_threshold)
          {
+            out32->data[y*img->width+x] = 0;
             out->data[y*img->width+x] = 0;
             continue;
          }
 
          out->data[y*img->width+x] = slk_color_closest(p,config);
+         out32->data[y*img->width+x] = out->palette[out->data[y * img->width +x]];
       }
    }
 
-   return out;
+   return (SLK_img8and32){out, out32};
 }
 
-static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
+static SLK_img8and32 slk_assign_median(Image64 *img, const SLK_dither_config *config)
 {
    int target = HLH_max(1,HLH_min(config->target_colors,config->palette_colors));
 
@@ -428,6 +431,7 @@ static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
    uint8_t *assign_lowest = kuhn_match(box_count,config->palette_colors,errors);
    free(errors);
    Image8 *out = image8_new(img->width,img->height);
+   Image32 *out32 = image32_new(img->width,img->height);
    out->color_count = config->palette_colors;
    for(int i = 0;i<config->palette_colors;i++)
       out->palette[i] = config->palette[i];
@@ -438,9 +442,15 @@ static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
          uint32_t index = colors[2*(boxes[i].start+j)+1];
          uint32_t color = colors[2*(boxes[i].start+j)];
          if(color32_a(color)<config->alpha_threshold)
+         {
             out->data[index] = 0;
+            out32->data[index] = 0;
+         }
          else
+         {
             out->data[index] = assign_lowest[i];
+            out32->data[index] = out->palette[out->data[index]];
+         }
       }
    }
 
@@ -448,7 +458,7 @@ static Image8 *slk_assign_median(Image64 *img, const SLK_dither_config *config)
    free(boxes);
    free(assign_lowest);
 
-   return out;
+   return (SLK_img8and32){out, out32};
 }
 
 static void slk_dither_threshold_apply(Image64 *img, int dim, const float *threshold, const SLK_dither_config *config)
@@ -470,9 +480,10 @@ static void slk_dither_threshold_apply(Image64 *img, int dim, const float *thres
    }
 }
 
-static Image8 *slk_dither_floyd(Image64 *img, const SLK_dither_config *config)
+static SLK_img8and32 slk_dither_floyd(Image64 *img, const SLK_dither_config *config)
 {
    Image8 *out = image8_new(img->width,img->height);
+   Image32 *out32 = image32_new(img->width,img->height);
    out->color_count = config->palette_colors;
    for(int i = 0;i<config->palette_colors;i++)
       out->palette[i] = config->palette[i];
@@ -485,6 +496,7 @@ static Image8 *slk_dither_floyd(Image64 *img, const SLK_dither_config *config)
          if((int)(color64_a(p)/128)<config->alpha_threshold)
          {
             out->data[y*img->width+x] = 0;
+            out32->data[y*img->width+x] = 0;
             continue;
          }
 
@@ -498,15 +510,17 @@ static Image8 *slk_dither_floyd(Image64 *img, const SLK_dither_config *config)
          slk_floyd_apply_error(img,(error_r*1.f)/16.f,(error_g*1.f)/16.f,(error_b*1.f)/16.f,x+1,y+1);
 
          out->data[y*img->width+x] = c;
+         out32->data[y * img->width + x] = out->palette[out->data[y * img->width +x]];
       }
    }
 
-   return out;
+   return (SLK_img8and32){out, out32};
 }
 
-static Image8 *slk_dither_floyd2(Image64 *img, const SLK_dither_config *config)
+static SLK_img8and32 slk_dither_floyd2(Image64 *img, const SLK_dither_config *config)
 {
    Image8 *out = image8_new(img->width,img->height);
+   Image32 *out32 = image32_new(img->width,img->height);
    out->color_count = config->palette_colors;
    for(int i = 0;i<config->palette_colors;i++)
       out->palette[i] = config->palette[i];
@@ -519,6 +533,7 @@ static Image8 *slk_dither_floyd2(Image64 *img, const SLK_dither_config *config)
          if((int)(color64_a(p)/128)<config->alpha_threshold)
          {
             out->data[y*img->width+x] = 0;
+            out32->data[y*img->width+x] = 0;
             continue;
          }
 
@@ -533,10 +548,11 @@ static Image8 *slk_dither_floyd2(Image64 *img, const SLK_dither_config *config)
          slk_floyd_apply_error(img,(error*1.f)/16.f,(error*1.f)/16.f,(error*1.f)/16.f,x+1,y+1);
 
          out->data[y*img->width+x] = c;
+         out32->data[y*img->width+x] = out->palette[out->data[y * img->width + x]];
       }
    }
 
-   return out;
+   return (SLK_img8and32){out, out32};
 }
 
 static void slk_floyd_apply_error(Image64 *img, float er, float eg, float eb, int x, int y)

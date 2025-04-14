@@ -289,7 +289,8 @@ int main(int argc, char **argv)
       }
    }
 
-   Image8 *out = image64_dither(sampled,&dither_config);
+   SLK_img8and32 output = image64_dither(sampled, &dither_config);
+   //Image8 *out = image64_dither(sampled,&dither_config);
 
    /*f = fopen(path_out,"wb");
    if(f==NULL)
@@ -301,7 +302,20 @@ int main(int argc, char **argv)
    char ext[512];
    slk_path_pop_ext(path_out,NULL,ext);
 
-   image8_save(out,path_out,ext);
+   if(strcmp(ext, "PCX") == 0 || strcmp(ext, "pcx") == 0)
+   {
+      image8_save(output.img8,path_out,ext);
+   }
+   else
+   {
+      FILE *fp = fopen(path_out, "wb");
+      if(fp != NULL)
+      {
+         HLH_gui_image_save(fp, output.img32->data, output.img32->width, output.img32->height, ext);
+         fclose(fp);
+      }
+      //HLH
+   }
    //TODO(Captain4LK): readd image saving, using image8_write
    //HLH_gui_image_save(f,out->data,out->w,out->h,ext);
    //if(strcmp(ext,"pcx")==0||strcmp(ext,"PCX")==0)

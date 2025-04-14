@@ -147,6 +147,7 @@ static HLH_gui_group *gui_groups_left[4];
 static Image32 *gui_input = NULL;
 //static Image32 *gui_output = NULL;
 static Image8 *gui_output = NULL;
+static Image32 *gui_output32 = NULL;
 
 static HLH_gui_group *gui_bar_sample;
 static HLH_gui_group *gui_bar_type;
@@ -809,8 +810,19 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          char path[1024] = {0};
          image_save_select(path,ext);
 
-         //TODO(Captain4LK): restore saving, use image8_save
-         image8_save(gui_output,path,ext);
+         if(strcmp(ext, "PCX") == 0 || strcmp(ext, "pcx") == 0)
+         {
+            image8_save(gui_output,path,ext);
+         }
+         else
+         {
+            FILE *fp = fopen(path, "wb");
+            if(fp != NULL)
+            {
+               HLH_gui_image_save(fp, gui_output32->data, gui_output32->width, gui_output32->height, ext);
+               fclose(fp);
+            }
+         }
 //int image8_save(const Image8 *img, const char *path, const char *ext);
          //HLH_gui_image_save(f,gui_output->data,gui_output->width,gui_output->height,ext);
          //if(strcmp(ext,"pcx")==0||strcmp(ext,"PCX")==0)
@@ -1488,7 +1500,9 @@ static void gui_process(int from)
    if(gui_output!=NULL)
    {
       free(gui_output);
+      free(gui_output32);
       gui_output = NULL;
+      gui_output32 = NULL;
    }
 
    if(from<=0||cache_sample==NULL)
@@ -1546,14 +1560,17 @@ static void gui_process(int from)
    }
 
    Image64 *dither_input = image64_dup(cache_tint);
-   gui_output = image64_dither(dither_input,&dither_config);
+   SLK_img8and32 output = image64_dither(dither_input, &dither_config);
+   gui_output = output.img8;
+   gui_output32 = output.img32;
+   //gui_output = image64_dither(dither_input,&dither_config);
    free(dither_input);
 
    if(gui_output!=NULL)
    {
-      Image32 *output32 = image8to32(gui_output);
-      HLH_gui_imgcmp_update1(gui_imgcmp,output32->data,output32->width,output32->height,1);
-      free(output32);
+      //Image32 *output32 = image8to32(gui_output);
+      HLH_gui_imgcmp_update1(gui_imgcmp,gui_output32->data,gui_output32->width,gui_output32->height,1);
+      //free(output32);
    }
 }
 
@@ -1932,7 +1949,7 @@ static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *d
                image64_hscb(sample64,hue,saturation,contrast,brightness);
                image64_gamma(sample64,gamma);
                image64_tint(sample64,tint_red,tint_green,tint_blue);
-               Image8 *output = image64_dither(sample64,&dither_config);
+               SLK_img8and32 output = image64_dither(sample64,&dither_config);
                free(sample64);
 
                char noext[512];
@@ -1941,15 +1958,21 @@ static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *d
                if(batch_type==0)
                {
                   snprintf(tmp,1028,"%s/%s.png",batch_output,noext);
-                  image8_save(output,tmp,"png");
+                  FILE *fp = fopen(tmp, "wb");
+                  if(fp != NULL)
+                  {
+                     HLH_gui_image_save(fp, output.img32->data,output.img32->width, output.img32->height, "png");
+                     fclose(fp);
+                  }
                }
                else
                {
                   snprintf(tmp,1028,"%s/%s.pcx",batch_output,noext);
-                  image8_save(output,tmp,"pcx");
+                  image8_save(output.img8,tmp,"pcx");
                }
 
-               free(output);
+               free(output.img8);
+               free(output.img32);
             }
 
             if(current%5==0)

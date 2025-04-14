@@ -52,6 +52,12 @@ typedef struct
    int target_colors;
 }SLK_dither_config;
 
+typedef struct
+{
+   Image8 *img8;
+   Image32 *img32;
+}SLK_img8and32;
+
 //Max 256
 void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *ext);
 void SLK_palette_save(FILE *f, uint32_t *colors, int color_count, const char *ext);
@@ -66,6 +72,6 @@ void image64_tint(Image64 *img, uint8_t tint_r, uint8_t tint_g, uint8_t tint_b);
 Image32 *image32_postprocess(Image32 *img, uint32_t *color_inline, uint32_t *color_outline);
 Image64 *image64_sample(const Image64 *img, int width, int height, int sample_mode, float x_off, float y_off);
 //modifies input image!
-Image8 *image64_dither(Image64 *img, const SLK_dither_config *config);
+SLK_img8and32 image64_dither(Image64 *img, const SLK_dither_config *config);
 
 #endif
