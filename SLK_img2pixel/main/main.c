@@ -56,6 +56,7 @@ int main(int argc, char **argv)
    HLH_gui_init();
 
    settings_load("settings.json");
+   puts("HERE");
    atexit(settings_save);
 
    gui_construct();

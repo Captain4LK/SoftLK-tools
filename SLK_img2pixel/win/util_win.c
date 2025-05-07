@@ -271,6 +271,7 @@ void dir_input_select(char path[512])
    nfdu8char_t *path_dir = NULL;
    nfdresult_t result = NFD_PickFolderU8(&path_dir,path_dir_input);
 
+   puts(path_dir);
    if(result!=NFD_OKAY)
    {
       path[0] = '\0';
@@ -283,7 +284,7 @@ void dir_input_select(char path[512])
       path_dir_input[511] = '\0';
       //strncpy(path_dir_input,path,512);
       //convert_utf8_to_wchar(input_dir,512,path);
-      NFD_FreePathU8(path);
+      NFD_FreePathU8(path_dir);
    }
 
    NFD_Quit();
@@ -308,7 +309,7 @@ void dir_output_select(char path[512])
       path_dir_output[511] = '\0';
       //strncpy(path_dir_input,path,512);
       //convert_utf8_to_wchar(input_dir,512,path);
-      NFD_FreePathU8(path);
+      NFD_FreePathU8(path_dir);
    }
 
    NFD_Quit();
