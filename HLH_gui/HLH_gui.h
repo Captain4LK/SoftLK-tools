@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024,2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -13,7 +13,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #define _HLH_GUI_H_
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <stdio.h>
 
 #define HLH_GUI_GLYPH_WIDTH (9)
@@ -30,7 +30,7 @@ typedef enum
    HLH_GUI_MSG_DRAW = 1,
    HLH_GUI_MSG_GET_WIDTH = 2,
    HLH_GUI_MSG_GET_HEIGHT = 3,
-   HLH_GUI_MSG_GET_CHILD_SPACE = 4,
+   HLH_GUI_MSG_GET_CHILD_PAD = 4,
    HLH_GUI_MSG_NO_BLOCK_END = 5,
    HLH_GUI_MSG_CLICK = 6,
    HLH_GUI_MSG_CLICK_MENU = 7,
@@ -44,7 +44,12 @@ typedef enum
    HLH_GUI_MSG_TEXTINPUT_END = 15,
    HLH_GUI_MSG_MOUSE_LEAVE = 16,
    HLH_GUI_MSG_DRAGNDROP = 17,
-   HLH_GUI_MSG_USER_START = 18,
+
+   HLH_GUI_MSG_OPENFILE = 18,
+   HLH_GUI_MSG_SAVEFILE = 19,
+   HLH_GUI_MSG_OPENFOLDER = 20,
+
+   HLH_GUI_MSG_USER_START = 21,
 }HLH_gui_msg;
 
 typedef struct
@@ -62,10 +67,34 @@ typedef struct
 typedef struct
 {
    uint8_t button;
-   int wheel;
-   HLH_gui_point pos;
-   HLH_gui_point rel;
+   float wheel;
+   float pos[2];
+   float rel[2];
+   bool handled;
 }HLH_gui_mouse;
+
+typedef struct
+{
+   int32_t ident;
+   const char **file_list;
+   size_t file_list_size;
+   int32_t filter;
+}HLH_gui_open_file_msg;
+
+typedef struct
+{
+   int32_t ident;
+   const char **file_list;
+   size_t file_list_size;
+   int32_t filter;
+}HLH_gui_save_file_msg;
+
+typedef struct
+{
+   int32_t ident;
+   const char **folder_list;
+   size_t folder_list_size;
+}HLH_gui_open_folder_msg;
 
 typedef enum
 {
@@ -86,10 +115,13 @@ typedef enum
    HLH_GUI_USER, //choose user type relative to this enum: type = HLH_GUI_USER+X
 }HLH_gui_type;
 
-#define HLH_GUI_MOUSE_LEFT      (UINT8_C(0x1))
-#define HLH_GUI_MOUSE_RIGHT     (UINT8_C(0x2))
-#define HLH_GUI_MOUSE_MIDDLE    (UINT8_C(0x4))
-#define HLH_GUI_MOUSE_DBLE      (UINT8_C(0x8))
+#define HLH_GUI_MOUSE_LEFT       (UINT8_C(0x01))
+#define HLH_GUI_MOUSE_RIGHT      (UINT8_C(0x02))
+#define HLH_GUI_MOUSE_MIDDLE     (UINT8_C(0x04))
+#define HLH_GUI_MOUSE_X1         (UINT8_C(0x08))
+#define HLH_GUI_MOUSE_X2         (UINT8_C(0x10))
+#define HLH_GUI_MOUSE_DBLE_LEFT  (UINT8_C(0x20))
+#define HLH_GUI_MOUSE_DBLE_RIGHT (UINT8_C(0x40))
 
 //Flags (not enum because enums are int, we need u64)
 //-------------------------------------
@@ -132,38 +164,44 @@ typedef enum
 
 #define HLH_gui_flag_set(var,flag,value) do { uint64_t val = (!!value)*flag; var&=~(uint64_t)flag; var|=val; } while(0)
 
-typedef int (*HLH_gui_msg_handler)(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+typedef int64_t (*HLH_gui_msg_handler)(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 
 struct HLH_gui_element
 {
    //Public
-   HLH_gui_point pad_in;
-   HLH_gui_point pad_out;
-   uint32_t usr;
-   void *usr_ptr;
-   HLH_gui_msg_handler msg_usr;
-
    //Private -- do not modify
+
+   int32_t pad[2][2];
+   int32_t child_gap;
+   uint64_t usr;
+   void *usr_ptr;
+
    uint64_t flags;
    uint64_t id;
 
-   HLH_gui_window *window;
-
-   int needs_redraw;
-
-   HLH_gui_rect bounds;
-   HLH_gui_point size_required;
-   HLH_gui_point child_size_required;
-   SDL_TimerID timer;
-   int timer_interval;
-
-   HLH_gui_type type;
-
-   HLH_gui_element *last_mouse;
    HLH_gui_element *parent;
+   HLH_gui_window *window;
+   HLH_gui_element *last_mouse;
    HLH_gui_element **children;
    int child_count;
 
+   // Timer
+   SDL_TimerID timer;
+   uint64_t timer_interval;
+
+   // Layouting
+   int32_t size[2];
+   int32_t size_min[2];
+   int32_t size_children[2];
+
+   HLH_gui_rect bounds;
+   int32_t translate[2];
+
+   bool needs_redraw;
+
+   HLH_gui_type type;
+
+   HLH_gui_msg_handler msg_usr;
    HLH_gui_msg_handler msg_base;
 };
 
@@ -171,23 +209,25 @@ struct HLH_gui_window
 {
    HLH_gui_element e;
 
-   int width;
-   int height;
-
-   int mouse_x;
-   int mouse_y;
-
    HLH_gui_element *keyboard;
    HLH_gui_window *blocking;
 
-   HLH_gui_element **redraw;
+   int width;
+   int height;
 
-   SDL_Window *window;
-   SDL_Renderer *renderer;
-   SDL_Texture *target;
-   SDL_Texture *overlay;
-   SDL_Texture *font;
-   SDL_Texture *icons;
+   HLH_gui_rect clip;
+   int32_t translation[2];
+
+   bool redraw;
+
+   bool mouse_move_no_skip;
+
+   SDL_Window *sdl_window;
+   SDL_Renderer *sdl_renderer;
+   SDL_Texture *sdl_target;
+   SDL_Texture *sdl_overlay;
+   SDL_Texture *sdl_font;
+   SDL_Texture *sdl_icons;
 };
 
 typedef struct
