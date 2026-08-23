@@ -4,7 +4,7 @@ set -e
 
 CXX="/mnt/sdb1/apps/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin/x86_64-w64-mingw32-g++"
 CC="/mnt/sdb1/apps/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin/x86_64-w64-mingw32-gcc"
-CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -L."
+CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -L. -DLUA_USE_WINDOWS"
 CPPFLAGS="-Wall -Wextra -Wshadow -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -luuid -lcomdlg32 -lole32 -lmingw32 -Wall -Wno-sign-compare -Wno-unused-parameter -static-libgcc -static-libstdc++ -L. -lSDL2main -lSDL2 -mwindows"
 LDFLAGS="-static-libgcc -static-libstdc++ -L. -luuid -lcomdlg32 -lole32 -lmingw32 -lSDL2main -lSDL2 -Wall -Wno-sign-compare -Wno-unused-parameter -mwindows"
 printf "
@@ -37,6 +37,10 @@ for src in $(find ./ -maxdepth 1 -name "*.c"); do
 done
 
 for src in $(find ../shared -name "*.c"); do
+   add_file "$src"
+done
+
+for src in $(find ../external/lua -maxdepth 1 -name "*.c"); do
    add_file "$src"
 done
 

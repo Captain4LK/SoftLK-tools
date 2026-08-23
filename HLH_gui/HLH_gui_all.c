@@ -31,6 +31,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //Function implementations
 
 //Base
+#include "HLH_gui_theme.c"
 #include "HLH_gui_core.c"
 #include "HLH_gui_element.c"
 #include "HLH_gui_rect.c"

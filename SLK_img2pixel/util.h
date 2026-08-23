@@ -19,6 +19,15 @@ FILE *preset_load_select();
 void dir_input_select(char path[512]);
 void dir_output_select(char path[512]);
 
+//Returns a path to a chosen .lua file, or NULL if the dialog was
+//cancelled. The returned pointer is valid until the next call.
+const char *script_load_select(void);
+
+//Full path of the last file chosen via image_load_select(), or an empty
+//string if none has been chosen yet. Valid until the next image_load_select()
+//call.
+const char *image_load_select_last_path(void);
+
 //Close with fclose() when done
 void image_save_select(char path[1024], char ext[512]);
 FILE *palette_save_select(char ext[512]);

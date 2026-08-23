@@ -97,11 +97,11 @@ static void image_draw(HLH_gui_image *img)
    HLH_gui_rect bounds = img->e.bounds;
    int scale = HLH_gui_get_scale();
 
-   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), 0xff323232);
-   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), 0xff323232);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_dark);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_dark);
 
-   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), 0xffc8c8c8);
-   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), 0xffc8c8c8);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_light);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_light);
 
    int view_x;
    int view_y;

@@ -42,6 +42,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //Variables
 static char path_image_load[512] = {0};
+static char path_image_load_full[512] = {0};
 static char path_palette_load[512] = {0};
 static char path_preset_load[512] = {0};
 static char path_image_save[512] = {0};
@@ -80,6 +81,8 @@ FILE *image_load_select()
    FILE *f = NULL;
    if(file_path!=NULL)
    {
+      strncpy(path_image_load_full,file_path,511);
+      path_image_load_full[511] = '\0';
       path_pop(file_path,path_image_load,NULL);
       path_image_load[511] = '\0';
       f = fopen_utf8(file_path,"rb");
@@ -89,6 +92,11 @@ FILE *image_load_select()
    NFD_Quit();
 
    return f;
+}
+
+const char *image_load_select_last_path(void)
+{
+   return path_image_load_full;
 }
 
 FILE *palette_load_select(char ext[512])
@@ -157,15 +165,39 @@ FILE *preset_load_select()
    return f;
 }
 
+static char path_script_load_full[512] = {0};
+
+const char *script_load_select(void)
+{
+   NFD_Init();
+
+   nfdu8filteritem_t filter_item[1] = {{"Lua scripts", "lua"}};
+   nfdu8char_t *file_path = NULL;
+   nfdresult_t result = NFD_OpenDialogU8(&file_path,filter_item,1,path_script_load_full);
+
+   const char *ret = NULL;
+   if(result==NFD_OKAY&&file_path!=NULL)
+   {
+      strncpy(path_script_load_full,file_path,511);
+      path_script_load_full[511] = '\0';
+      ret = path_script_load_full;
+   }
+
+   NFD_FreePathU8(file_path);
+   NFD_Quit();
+
+   return ret;
+}
+
 //const char *image_save_select()
 //FILE *image_save_select(char ext[512])
 void image_save_select(char path[1024], char ext[512])
 {
    NFD_Init();
    
-   nfdu8filteritem_t filter_item[] = {{"PNG", "png"}, {"BMP", "bmp"},{"TGA","tga"},{"PCX","pcx"}};
+   nfdu8filteritem_t filter_item[] = {{"PNG", "png"}, {"BMP", "bmp"},{"TGA","tga"},{"PCX","pcx"},{"GIF","gif"}};
    nfdu8char_t *file_path = NULL;
-   nfdresult_t result = NFD_SaveDialogU8(&file_path,filter_item,4,path_image_save,"untitled.png");
+   nfdresult_t result = NFD_SaveDialogU8(&file_path,filter_item,5,path_image_save,"untitled.png");
    //const char *filter_patterns[3] = {"*.png","*.bmp","*.tga"};
    //const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,3,filter_patterns,NULL);
 
@@ -332,6 +364,11 @@ void settings_load(const char *path)
    strncpy(path_dir_input,HLH_json_get_object_string(&root->root,"path_dir_input",""),511);
    strncpy(path_dir_output,HLH_json_get_object_string(&root->root,"path_dir_output",""),511);
    gui_scale = HLH_json_get_object_integer(&root->root,"gui_scale",1);
+   HLH_gui_theme_current.bg = (uint32_t)HLH_json_get_object_integer(&root->root,"theme_bg",(int64_t)HLH_gui_theme_current.bg);
+   HLH_gui_theme_current.border = (uint32_t)HLH_json_get_object_integer(&root->root,"theme_border",(int64_t)HLH_gui_theme_current.border);
+   HLH_gui_theme_current.bevel_dark = (uint32_t)HLH_json_get_object_integer(&root->root,"theme_bevel_dark",(int64_t)HLH_gui_theme_current.bevel_dark);
+   HLH_gui_theme_current.bevel_light = (uint32_t)HLH_json_get_object_integer(&root->root,"theme_bevel_light",(int64_t)HLH_gui_theme_current.bevel_light);
+   HLH_gui_theme_current.text = (uint32_t)HLH_json_get_object_integer(&root->root,"theme_text",(int64_t)HLH_gui_theme_current.text);
    path_image_load[511] = '\0';
    path_palette_load[511] = '\0';
    path_preset_load[511] = '\0';
@@ -362,6 +399,11 @@ void settings_save()
    HLH_json_object_add_string(&root->root,"path_dir_input",path_dir_input);
    HLH_json_object_add_string(&root->root,"path_dir_output",path_dir_output);
    HLH_json_object_add_integer(&root->root,"gui_scale",gui_scale);
+   HLH_json_object_add_integer(&root->root,"theme_bg",(int64_t)HLH_gui_theme_current.bg);
+   HLH_json_object_add_integer(&root->root,"theme_border",(int64_t)HLH_gui_theme_current.border);
+   HLH_json_object_add_integer(&root->root,"theme_bevel_dark",(int64_t)HLH_gui_theme_current.bevel_dark);
+   HLH_json_object_add_integer(&root->root,"theme_bevel_light",(int64_t)HLH_gui_theme_current.bevel_light);
+   HLH_json_object_add_integer(&root->root,"theme_text",(int64_t)HLH_gui_theme_current.text);
 
    HLH_json_write_file(f,&root->root);
    HLH_json_free(root);

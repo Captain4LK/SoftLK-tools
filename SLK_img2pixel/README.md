@@ -12,6 +12,11 @@ A tool for transforming images into pixel art.
 
 Here is a link to the SLK_img2pixel Discord. Feel free to pop in and make suggestions or ask questions: https://discord.gg/Nch8hjdZ2V
 
+# Documentation
+
+* [MANUAL.md](MANUAL.md) - full usage guide, covers every tab and setting
+* [LUA_SCRIPTING.md](LUA_SCRIPTING.md) - scripting reference, for batch conversions and automation
+
 # Building from source
 
 * First, clone this repository: ``https://github.com/Captain4LK/SoftLK-tools.git``
@@ -25,7 +30,7 @@ In general, I try to keep the amount of external dependencies as low as possible
 ## Building
 
 * cd into SLK_img2pixels directory: ``cd SLK_img2pixel``
-* there are multiple build scripts in the folder (linux.sh, win_cross.sh), running these generates a makefile for building the program, to build, pipe the output into make: ``sh linux.sh | make -f -``
+* there are multiple build scripts in the folder (linux.sh, win_cross.sh, mac.sh), running these generates a makefile for building the program, to build, pipe the output into make: ``sh linux.sh | make -f -``
 * alternatively, there is a pre-generated makefile for the linux version, to compile, simply run ``make``
 * The binary can be found at the top level of the repo in the ``bin/`` directory
 
@@ -35,17 +40,18 @@ In general, I try to keep the amount of external dependencies as low as possible
 
 # Changelog
 
-Current development version: SLK_img2pixel 1.5.1-dev
+Current development version: SLK_img2pixel 1.6
 
 ----------------------------------------
-Version:                SLK_img2pixel 1.5.1 (TBA)
+Version:                SLK_img2pixel 1.6
 ----------------------------------------
 
 CHANGES:
 
-* palette generation for cmd version
-* pcx export for cmd version
-* crash fixes
+* new dither modes: bayer 3x3, bayer 5x5, stucki, burkes, sierra, sierra two-row, sierra lite, picocad
+* gif import/export (all frames), gui and cmd version
+* customizable gui color theme, with default/dark/light/pink presets
+* lua scripting support (--script for cmd version, "run script" tool for gui)
 
 ----------------------------------------
 Version:                SLK_img2pixel 1.5 (26.04.2024)
