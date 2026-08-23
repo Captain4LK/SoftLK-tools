@@ -16,6 +16,8 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <SDL2/SDL.h>
 #include <stdio.h>
 
+#include "HLH_gui_theme.h"
+
 #define HLH_GUI_GLYPH_WIDTH (9)
 #define HLH_GUI_GLYPH_HEIGHT (16)
 

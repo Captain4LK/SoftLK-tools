@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I."
+CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -DLUA_USE_POSIX"
 printf "
 .POSIX:
 CC      = gcc
@@ -24,6 +24,10 @@ for src in $(find ./ -maxdepth 1 -name "*.c"); do
 done
 
 for src in $(find ../shared -name "*.c"); do
+   add_file "$src"
+done
+
+for src in $(find ../external/lua -maxdepth 1 -name "*.c"); do
    add_file "$src"
 done
 

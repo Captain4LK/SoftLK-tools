@@ -153,24 +153,24 @@ static void entry_draw(HLH_gui_entry *e)
    HLH_gui_rect bounds = e->e.bounds;
 
    //Infill
-   HLH_gui_draw_rectangle_fill(&e->e, bounds, 0xff5a5a5a);
+   HLH_gui_draw_rectangle_fill(&e->e, bounds, HLH_gui_theme_current.bg);
 
 
    //Border
-   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 1 * scale), 0xffc8c8c8);
-   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), 0xffc8c8c8);
+   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_light);
+   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_light);
 
-   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), 0xff323232);
-   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), 0xff323232);
+   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_dark);
+   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_dark);
 
    HLH_gui_rect text = e->e.bounds;
    text.minx+=scale*3;
-   HLH_gui_draw_string(&e->e, text, e->entry, e->len, 0xff000000, 0);
+   HLH_gui_draw_string(&e->e, text, e->entry, e->len, HLH_gui_theme_current.text, 0);
 
    if(e->active)
    {
       text.minx+=HLH_GUI_GLYPH_WIDTH*scale*e->len;
-      HLH_gui_draw_string(&e->e, text, "\x16", 1, 0x1f1f1f, 0);
+      HLH_gui_draw_string(&e->e, text, "\x16", 1, HLH_gui_theme_current.text, 0);
    }
 }
 //-------------------------------------

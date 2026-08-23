@@ -5,7 +5,7 @@ set -e
 CC="${CC:-cc}"
 CPPFLAGS="-I/opt/homebrew/opt/libomp/include -I/opt/homebrew/include -D_THREAD_SAFE ${CPPFLAGS:-}"
 LDFLAGS="-L/opt/homebrew/opt/libomp/lib -L/opt/homebrew/lib ${LDFLAGS:-}"
-CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -DNFD_MACOS_ALLOWEDCONTENTTYPES=0 -I../HLH_gui/ -I../3rd/ -I../ -lm -I. -Xpreprocessor -fopenmp $CPPFLAGS"
+CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -DNFD_MACOS_ALLOWEDCONTENTTYPES=0 -I../HLH_gui/ -I../3rd/ -I../ -lm -I. -Xpreprocessor -fopenmp -DLUA_USE_POSIX $CPPFLAGS"
 LDLIBS="-lomp -lSDL2 -framework AppKit -framework Foundation"
 printf "
 .POSIX:
@@ -35,6 +35,10 @@ for src in $(find ./ -maxdepth 1 -name "*.c"); do
 done
 
 for src in $(find ../shared -name "*.c"); do
+	add_file "$src"
+done
+
+for src in $(find ../external/lua -maxdepth 1 -name "*.c"); do
 	add_file "$src"
 done
 

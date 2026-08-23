@@ -38,6 +38,9 @@ blur.o: blur.c ../HLH_gui/HLH.h img2pixel.h ../shared/image.h
  ../HLH_gui/HLH.h ../shared/color.h
 ../external/tinyfiledialogs.o: ../external/tinyfiledialogs.c \
  ../external/tinyfiledialogs.h
+../shared/gif.o: ../shared/gif.c ../shared/gif.h
+../shared/gif_read.o: ../shared/gif_read.c ../shared/gif_read.h \
+ ../shared/image.h ../external/stb_image.h
 ../HLH_gui/HLH_gui_all.o: ../HLH_gui/HLH_gui_all.c ../HLH_gui/HLH_gui.h \
  ../HLH_gui/HLH_gui_core.c ../HLH_gui/stb_image.h \
  ../HLH_gui/stb_image_write.h ../HLH_gui/HLH.h \
@@ -53,7 +56,12 @@ blur.o: blur.c ../HLH_gui/HLH.h img2pixel.h ../shared/image.h
 unix/util_unix.o: unix/util_unix.c ../HLH_gui/HLH_gui.h \
  ../HLH_gui/HLH_json.h unix/../../external/tinyfiledialogs.h \
  unix/../img2pixel.h ../shared/image.h unix/../util.h
-obj=  ./tint.o ./sharp.o ./sample.o ./postprocess.o ./palette.o ./kmeans.o ./hscb.o ./gui.o ./gamma.o ./dither.o ./blur.o ../shared/rand.o ../shared/png.o ../shared/pcx.o ../shared/image.o ../shared/color.o ../external/tinyfiledialogs.o ../HLH_gui/HLH_gui_all.o unix/util_unix.o
+obj=  ./tint.o ./sharp.o ./sample.o ./postprocess.o ./palette.o ./kmeans.o ./hscb.o ./gui.o ./gamma.o ./dither.o ./blur.o ../shared/rand.o ../shared/png.o ../shared/pcx.o ../shared/image.o ../shared/color.o ../shared/gif.o ../shared/gif_read.o ../external/tinyfiledialogs.o ../HLH_gui/HLH_gui_all.o unix/util_unix.o
+luaobj= ../external/lua/lapi.o ../external/lua/lauxlib.o ../external/lua/lbaselib.o ../external/lua/lcode.o ../external/lua/lcorolib.o ../external/lua/lctype.o ../external/lua/ldblib.o ../external/lua/ldebug.o ../external/lua/ldo.o ../external/lua/ldump.o ../external/lua/lfunc.o ../external/lua/lgc.o ../external/lua/linit.o ../external/lua/liolib.o ../external/lua/llex.o ../external/lua/lmathlib.o ../external/lua/lmem.o ../external/lua/loadlib.o ../external/lua/lobject.o ../external/lua/lopcodes.o ../external/lua/loslib.o ../external/lua/lparser.o ../external/lua/lstate.o ../external/lua/lstring.o ../external/lua/lstrlib.o ../external/lua/ltable.o ../external/lua/ltablib.o ../external/lua/ltm.o ../external/lua/lundump.o ../external/lua/lutf8lib.o ../external/lua/lvm.o ../external/lua/lzio.o
+
+../external/lua/%.o: ../external/lua/%.c
+	gcc -c $< -o $@ -O2 -std=c99 -DLUA_USE_POSIX
+
 main/main.o: main/main.c ../HLH_gui/HLH.h ../HLH_gui/HLH_path.h \
  ../HLH_gui/HLH_rw.h ../HLH_gui/HLH_json.h \
  main/../../external/fopen_utf8.h ../3rd/cute_files.h \
@@ -62,9 +70,9 @@ main/main_cmd.o: main/main_cmd.c ../HLH_gui/HLH.h ../HLH_gui/HLH_path.h \
  ../HLH_gui/HLH_rw.h ../HLH_gui/HLH_json.h ../3rd/optparse.h \
  main/../../external/fopen_utf8.h ../3rd/cute_files.h \
  ../HLH_gui/HLH_gui.h img2pixel.h ../shared/image.h
-img2pix_cmd: $(obj) main/main_cmd.o
+img2pix_cmd: $(obj) $(luaobj) main/main_cmd.o
 	gcc -o ../bin/SLK_img2pix_cmd $^ -Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -lSDL2
-img2pix: $(obj) main/main.o
+img2pix: $(obj) $(luaobj) main/main.o
 	gcc -o ../bin/SLK_img2pix $^ -Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -lSDL2
 clean:
 	rm -f $(obj) main/*.o ../bin/SLK_img2pix ../bin/SLK_img2pix_cmd 

@@ -23,9 +23,17 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "HLH_json.h"
 //-------------------------------------
 
+//Lua
+#include "external/lua/lua.h"
+#include "external/lua/lauxlib.h"
+#include "external/lua/lualib.h"
+//-------------------------------------
+
 //Internal includes
 #include "shared/color.h"
 #include "shared/image.h"
+#include "shared/gif.h"
+#include "shared/gif_read.h"
 #include "img2pixel.h"
 #include "util.h"
 #include "gui.h"
@@ -130,6 +138,11 @@ typedef enum
    ENTRY_SATURATION,
    ENTRY_HUE,
    ENTRY_GAMMA,
+   ENTRY_THEME_BG,
+   ENTRY_THEME_BORDER,
+   ENTRY_THEME_BEVEL_DARK,
+   ENTRY_THEME_BEVEL_LIGHT,
+   ENTRY_THEME_TEXT,
 }Entry_id;
 
 typedef enum
@@ -142,12 +155,20 @@ typedef enum
 //Variables
 static HLH_gui_imgcmp *gui_imgcmp;
 
-static HLH_gui_group *gui_groups_left[4];
+static HLH_gui_group *gui_groups_left[5];
 
 static Image32 *gui_input = NULL;
 //static Image32 *gui_output = NULL;
 static Image8 *gui_output = NULL;
 static Image32 *gui_output32 = NULL;
+
+//If the current gui_input came from a (possibly animated) GIF, these hold
+//every decoded frame (frame 0 is a duplicate of gui_input) and their
+//delays, so "Save > Image" can write an animated GIF back out. NULL/1 if
+//the current input isn't a GIF, or is a single-frame one.
+static Image32 **gui_input_gif_frames = NULL;
+static int gui_input_gif_frame_count = 1;
+static int *gui_input_gif_delays_cs = NULL;
 
 static HLH_gui_group *gui_bar_sample;
 static HLH_gui_group *gui_bar_type;
@@ -207,11 +228,17 @@ static struct
    HLH_gui_entry *entry_hue;
    HLH_gui_entry *entry_gamma;
 
+   HLH_gui_entry *entry_theme_bg;
+   HLH_gui_entry *entry_theme_border;
+   HLH_gui_entry *entry_theme_bevel_dark;
+   HLH_gui_entry *entry_theme_bevel_light;
+   HLH_gui_entry *entry_theme_text;
+
    HLH_gui_group *group_palette;
 
    HLH_gui_radiobutton *sample_sample_mode[5];
    HLH_gui_radiobutton *sample_scale_mode[2];
-   HLH_gui_radiobutton *dither_dither_mode[9];
+   HLH_gui_radiobutton *dither_dither_mode[17];
    HLH_gui_radiobutton *dither_color_dist[6];
    HLH_gui_radiobutton *palette_colors[256];
 
@@ -226,6 +253,12 @@ static int batch_type;
 static char batch_input[512];
 static char batch_output[512];
 static HLH_gui_label *batch_progress;
+
+//script window
+#define SCRIPT_OUTPUT_LINES 12
+static char script_selected_path[1024] = {0};
+static HLH_gui_label *script_path_label = NULL;
+static HLH_gui_label *script_output_lines[SCRIPT_OUTPUT_LINES];
 
 //img2pixel
 static int block_process = 0;
@@ -269,10 +302,102 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+//Formats an HLH_gui_theme color as a 6-digit hex string (alpha dropped -
+//theme colors are always fully opaque). 'out' must have room for 7 bytes.
+static void gui_theme_to_hex(uint32_t color, char *out)
+{
+   snprintf(out,7,"%02x%02x%02x",(unsigned)(color&0xff),(unsigned)((color>>8)&0xff),(unsigned)((color>>16)&0xff));
+}
+
+//Parses a "RRGGBB" (optionally "#RRGGBB") hex string into an opaque
+//HLH_gui theme color. Returns 1 and writes *out on success, 0 (leaving
+//*out untouched) if 's' isn't a valid 6-digit hex string.
+static int gui_theme_from_hex(const char *s, uint32_t *out)
+{
+   if(s==NULL)
+      return 0;
+   if(s[0]=='#')
+      s++;
+
+   int len = 0;
+   while(s[len]!='\0')
+      len++;
+   if(len!=6)
+      return 0;
+
+   unsigned r,g,b;
+   if(sscanf(s,"%02x%02x%02x",&r,&g,&b)!=3)
+      return 0;
+
+   *out = 0xff000000u|r|(g<<8)|(b<<16);
+   return 1;
+}
+
+//Refreshes every theme entry field's displayed text from
+//HLH_gui_theme_current - used after a preset button changes all 5 at once.
+static void gui_theme_refresh_entries(void)
+{
+   char hex[7];
+
+   gui_theme_to_hex(HLH_gui_theme_current.bg,hex);
+   HLH_gui_entry_set(gui.entry_theme_bg,hex);
+   gui_theme_to_hex(HLH_gui_theme_current.border,hex);
+   HLH_gui_entry_set(gui.entry_theme_border,hex);
+   gui_theme_to_hex(HLH_gui_theme_current.bevel_dark,hex);
+   HLH_gui_entry_set(gui.entry_theme_bevel_dark,hex);
+   gui_theme_to_hex(HLH_gui_theme_current.bevel_light,hex);
+   HLH_gui_entry_set(gui.entry_theme_bevel_light,hex);
+   gui_theme_to_hex(HLH_gui_theme_current.text,hex);
+   HLH_gui_entry_set(gui.entry_theme_text,hex);
+}
+
+static int button_theme_preset_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      //usr: 0 = default (original look), 1 = dark, 2 = light, 3 = pink
+      if(e->usr==0)
+      {
+         HLH_gui_theme_set_default();
+      }
+      else if(e->usr==1)
+      {
+         HLH_gui_theme_current.bg = 0xff2b2b2b;
+         HLH_gui_theme_current.border = 0xff000000;
+         HLH_gui_theme_current.bevel_dark = 0xff1a1a1a;
+         HLH_gui_theme_current.bevel_light = 0xff474747;
+         HLH_gui_theme_current.text = 0xffe0e0e0;
+      }
+      else if(e->usr==2)
+      {
+         HLH_gui_theme_current.bg = 0xffd8d8d8;
+         HLH_gui_theme_current.border = 0xff000000;
+         HLH_gui_theme_current.bevel_dark = 0xffa0a0a0;
+         HLH_gui_theme_current.bevel_light = 0xfff5f5f5;
+         HLH_gui_theme_current.text = 0xff000000;
+      }
+      else if(e->usr==3)
+      {
+         HLH_gui_theme_current.bg = 0xff9933ff;
+         HLH_gui_theme_current.border = 0xffcc33aa;
+         HLH_gui_theme_current.bevel_dark = 0xff9900cc;
+         HLH_gui_theme_current.bevel_light = 0xffff99ff;
+         HLH_gui_theme_current.text = 0xff000000;
+      }
+
+      gui_theme_refresh_entries();
+      HLH_gui_element_layout(&e->window->e,e->window->e.bounds);
+      HLH_gui_element_redraw(&e->window->e);
+   }
+
+   return 0;
+}
+
 static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int menu_tools_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int button_script_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int checkbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
 static int radiobutton_distance_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
@@ -282,6 +407,8 @@ static void radiobutton_palette_draw(HLH_gui_radiobutton *r);
 static void ui_construct_batch();
 
 static void gui_process(int from);
+static void gui_refresh_settings_widgets(void);
+static void ui_construct_script(void);
 //-------------------------------------
 
 //Function implementations
@@ -309,12 +436,13 @@ void gui_construct(void)
    const char *menu2[] = 
    {
       "Batch",
+      "Run script...",
       "File watch",
    };
    HLH_gui_element *menus[3];
    menus[0] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu0,3,menu_load_msg);
    menus[1] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu1,3,menu_save_msg);
-   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,1,menu_tools_msg);
+   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,2,menu_tools_msg);
 
    const char *menubar[] = 
    {
@@ -509,6 +637,38 @@ void gui_construct(void)
       r->e.usr = 8;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[8] = r;
+      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bayer 5x5        ",NULL);
+      r->e.usr = 9;
+      r->e.msg_usr = radiobutton_dither_msg;
+      gui.dither_dither_mode[9] = r;
+      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bayer 3x3        ",NULL);
+      r->e.usr = 10;
+      r->e.msg_usr = radiobutton_dither_msg;
+      gui.dither_dither_mode[10] = r;
+      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Stucki           ",NULL);
+      r->e.usr = 11;
+      r->e.msg_usr = radiobutton_dither_msg;
+      gui.dither_dither_mode[11] = r;
+      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Burkes           ",NULL);
+      r->e.usr = 12;
+      r->e.msg_usr = radiobutton_dither_msg;
+      gui.dither_dither_mode[12] = r;
+      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Sierra           ",NULL);
+      r->e.usr = 13;
+      r->e.msg_usr = radiobutton_dither_msg;
+      gui.dither_dither_mode[13] = r;
+      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Sierra Two-Row   ",NULL);
+      r->e.usr = 14;
+      r->e.msg_usr = radiobutton_dither_msg;
+      gui.dither_dither_mode[14] = r;
+      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Sierra Lite      ",NULL);
+      r->e.usr = 15;
+      r->e.msg_usr = radiobutton_dither_msg;
+      gui.dither_dither_mode[15] = r;
+      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"PicoCAD          ",NULL);
+      r->e.usr = 16;
+      r->e.msg_usr = radiobutton_dither_msg;
+      gui.dither_dither_mode[16] = r;
       const char *bar_dither[1] = {"Bayer 4x4         \x1f"};
       gui_bar_dither = HLH_gui_menubar_create(&gui_groups_left[1]->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_dither,(HLH_gui_element **)&group_dither,1,NULL);
       
@@ -621,11 +781,58 @@ void gui_construct(void)
    }
    //-------------------------------------
 
-   //Post process
+   //Theme
    //-------------------------------------
    {
-      //gui_groups_left[4] = HLH_gui_group_create(&group_left->e,HLH_GUI_FILL);
-      //HLH_gui_label_create(&gui_groups_left[4]->e,0,"                                ");
+      gui_groups_left[4] = HLH_gui_group_create(&group_left->e,HLH_GUI_FILL);
+
+      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Presets");
+      HLH_gui_group *group_theme_presets = HLH_gui_group_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X);
+      HLH_gui_button *btn_theme_default = HLH_gui_button_create(&group_theme_presets->e,HLH_GUI_LAYOUT_HORIZONTAL,"Default",NULL);
+      btn_theme_default->e.usr = 0;
+      btn_theme_default->e.msg_usr = button_theme_preset_msg;
+      HLH_gui_button *btn_theme_dark = HLH_gui_button_create(&group_theme_presets->e,HLH_GUI_LAYOUT_HORIZONTAL,"Dark",NULL);
+      btn_theme_dark->e.usr = 1;
+      btn_theme_dark->e.msg_usr = button_theme_preset_msg;
+      HLH_gui_button *btn_theme_light = HLH_gui_button_create(&group_theme_presets->e,HLH_GUI_LAYOUT_HORIZONTAL,"Light",NULL);
+      btn_theme_light->e.usr = 2;
+      btn_theme_light->e.msg_usr = button_theme_preset_msg;
+      HLH_gui_button *btn_theme_pink = HLH_gui_button_create(&group_theme_presets->e,HLH_GUI_LAYOUT_HORIZONTAL,"Pink",NULL);
+      btn_theme_pink->e.usr = 3;
+      btn_theme_pink->e.msg_usr = button_theme_preset_msg;
+
+      HLH_gui_label_create(&gui_groups_left[4]->e,0,"                                ");
+      HLH_gui_separator_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,0);
+      HLH_gui_label_create(&gui_groups_left[4]->e,0,"                                ");
+
+      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Custom colors (hex RRGGBB)");
+
+      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Background");
+      gui.entry_theme_bg = HLH_gui_entry_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,6);
+      gui.entry_theme_bg->e.usr = ENTRY_THEME_BG;
+      gui.entry_theme_bg->e.msg_usr = entry_msg;
+
+      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Border/shadow");
+      gui.entry_theme_border = HLH_gui_entry_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,6);
+      gui.entry_theme_border->e.usr = ENTRY_THEME_BORDER;
+      gui.entry_theme_border->e.msg_usr = entry_msg;
+
+      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Bevel (dark)");
+      gui.entry_theme_bevel_dark = HLH_gui_entry_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,6);
+      gui.entry_theme_bevel_dark->e.usr = ENTRY_THEME_BEVEL_DARK;
+      gui.entry_theme_bevel_dark->e.msg_usr = entry_msg;
+
+      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Bevel (light)");
+      gui.entry_theme_bevel_light = HLH_gui_entry_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,6);
+      gui.entry_theme_bevel_light->e.usr = ENTRY_THEME_BEVEL_LIGHT;
+      gui.entry_theme_bevel_light->e.msg_usr = entry_msg;
+
+      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Text");
+      gui.entry_theme_text = HLH_gui_entry_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,6);
+      gui.entry_theme_text->e.usr = ENTRY_THEME_TEXT;
+      gui.entry_theme_text->e.msg_usr = entry_msg;
+
+      gui_theme_refresh_entries();
    }
    //-------------------------------------
 
@@ -633,7 +840,7 @@ void gui_construct(void)
    HLH_gui_element_ignore(&gui_groups_left[1]->e,1);
    HLH_gui_element_ignore(&gui_groups_left[2]->e,1);
    HLH_gui_element_ignore(&gui_groups_left[3]->e,1);
-   //HLH_gui_element_ignore(&gui_groups_left[4]->e,1);
+   HLH_gui_element_ignore(&gui_groups_left[4]->e,1);
 
    //Right bar: settings tabs
    HLH_gui_radiobutton *rb = NULL;
@@ -649,6 +856,9 @@ void gui_construct(void)
    rb->e.msg_usr = rb_radiobutton_msg;
    rb = HLH_gui_radiobutton_create(&group_right->e,HLH_GUI_STYLE_02|HLH_GUI_FILL_X,"Colors",NULL);
    rb->e.usr = 3;
+   rb->e.msg_usr = rb_radiobutton_msg;
+   rb = HLH_gui_radiobutton_create(&group_right->e,HLH_GUI_STYLE_02|HLH_GUI_FILL_X,"Theme",NULL);
+   rb->e.usr = 4;
    rb->e.msg_usr = rb_radiobutton_msg;
 
    HLH_gui_radiobutton_set(sample,1,1);
@@ -721,6 +931,111 @@ static int radiobutton_scale_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, vo
    return 0;
 }
 
+//Case-insensitive extension check, so "gif"/"GIF"/"Gif" all match
+static int slk_ext_is(const char *ext, const char *name)
+{
+   if(ext==NULL||name==NULL)
+      return 0;
+
+   size_t i = 0;
+   for(;ext[i]!='\0'&&name[i]!='\0';i++)
+   {
+      char a = ext[i];
+      char b = name[i];
+      if(a>='A'&&a<='Z') a = (char)(a-'A'+'a');
+      if(b>='A'&&b<='Z') b = (char)(b-'A'+'a');
+      if(a!=b)
+         return 0;
+   }
+
+   return ext[i]=='\0'&&name[i]=='\0';
+}
+
+static void gui_input_gif_free(void)
+{
+   if(gui_input_gif_frames!=NULL)
+   {
+      for(int i = 0;i<gui_input_gif_frame_count;i++)
+         free(gui_input_gif_frames[i]);
+      free(gui_input_gif_frames);
+      gui_input_gif_frames = NULL;
+   }
+   if(gui_input_gif_delays_cs!=NULL)
+   {
+      free(gui_input_gif_delays_cs);
+      gui_input_gif_delays_cs = NULL;
+   }
+   gui_input_gif_frame_count = 1;
+}
+
+//Shared by "Load > Image" and drag&drop - decodes every frame if it's a GIF
+static void gui_set_input_path(const char *path)
+{
+   if(path==NULL)
+      return;
+
+   char ext[512] = {0};
+   char *dot = strrchr(path,'.');
+   if(dot!=NULL)
+   {
+      strncpy(ext,dot+1,511);
+      ext[511] = '\0';
+   }
+
+   Image32 *img = NULL;
+   int is_gif = slk_ext_is(ext,"gif");
+
+   if(is_gif)
+   {
+      Image32 **frames = NULL;
+      int frame_count = 1;
+      int *delays_cs = NULL;
+
+      if(!SLK_gif_read_all_frames(path,&frames,&frame_count,&delays_cs))
+         return;
+
+      gui_input_gif_free();
+      gui_input_gif_frames = frames;
+      gui_input_gif_frame_count = frame_count;
+      gui_input_gif_delays_cs = delays_cs;
+
+      img = image32_dup(frames[0]);
+   }
+   else
+   {
+      FILE *f = fopen(path,"rb");
+      if(f==NULL)
+         return;
+
+      int width,height;
+      uint32_t *data = HLH_gui_image_load(f,&width,&height);
+      if(data!=NULL&&width>0&&height>0)
+      {
+         img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
+         img->width = width;
+         img->height = height;
+         memcpy(img->data,data,sizeof(*img->data)*width*height);
+      }
+      HLH_gui_image_free(data);
+      fclose(f);
+
+      if(img==NULL)
+         return;
+
+      gui_input_gif_free();
+   }
+
+   HLH_gui_imgcmp_update0(gui_imgcmp,img->data,img->width,img->height,1);
+   if(gui_input!=NULL)
+   {
+      free(gui_input);
+      gui_input = NULL;
+   }
+   gui_input = img;
+
+   gui_process(0);
+}
+
 static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 {
    HLH_gui_menubutton *m = (HLH_gui_menubutton *)e;
@@ -730,35 +1045,11 @@ static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       //Image
       if(m->index==0)
       {
-         Image32 *img = NULL;
          FILE *f = image_load_select();
          if(f!=NULL)
          {
-            int width,height;
-            uint32_t *data = HLH_gui_image_load(f,&width,&height);
-            if(data!=NULL&&width>0&&height>0)
-            {
-               img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
-               img->width = width;
-               img->height = height;
-               memcpy(img->data,data,sizeof(*img->data)*width*height);
-            }
-            HLH_gui_image_free(data);
             fclose(f);
-         }
-
-         if(img!=NULL)
-         {
-            HLH_gui_imgcmp_update0(gui_imgcmp,img->data,img->width,img->height,1);
-            if(gui_input!=NULL)
-            {
-               free(gui_input);
-               gui_input = NULL;
-            }
-            gui_input = image32_dup(img);
-            free(img);
-
-            gui_process(0);
+            gui_set_input_path(image_load_select_last_path());
          }
       }
       //Preset
@@ -814,6 +1105,60 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          {
             image8_save(gui_output,path,ext);
          }
+         else if(strcmp(ext,"GIF")==0||strcmp(ext,"gif")==0)
+         {
+            int frame_count = gui_input_gif_frame_count;
+            uint8_t **gif_frames = malloc(sizeof(*gif_frames)*(size_t)frame_count);
+            int *gif_delays = malloc(sizeof(*gif_delays)*(size_t)frame_count);
+            size_t frame_bytes = (size_t)gui_output->width*(size_t)gui_output->height;
+
+            //Frame 0 is whatever's currently in the live-preview output
+            gif_frames[0] = malloc(frame_bytes);
+            memcpy(gif_frames[0],gui_output->data,frame_bytes);
+            gif_delays[0] = (frame_count>1&&gui_input_gif_delays_cs!=NULL)?gui_input_gif_delays_cs[0]:10;
+
+            //Same target size gui_process() computes for the live preview
+            int out_width,out_height;
+            if(scale_relative)
+            {
+               out_width = gui_input->width/HLH_non_zero(size_relative_x);
+               out_height = gui_input->height/HLH_non_zero(size_relative_y);
+            }
+            else
+            {
+               out_width = size_absolute_x;
+               out_height = size_absolute_y;
+            }
+
+            for(int fidx = 1;fidx<frame_count;fidx++)
+            {
+               Image64 *img64 = image32to64(gui_input_gif_frames[fidx]);
+               image64_blur(img64,blur_amount);
+               Image64 *sampled = image64_sample(img64,out_width,out_height,sample_mode,x_offset,y_offset);
+               free(img64);
+               image64_sharpen(sampled,sharp_amount);
+               image64_hscb(sampled,hue,saturation,contrast,brightness);
+               image64_gamma(sampled,gamma);
+               image64_tint(sampled,tint_red,tint_green,tint_blue);
+
+               SLK_img8and32 foutput = image64_dither(sampled,&dither_config);
+               free(sampled);
+
+               gif_frames[fidx] = malloc(frame_bytes);
+               memcpy(gif_frames[fidx],foutput.img8->data,frame_bytes);
+               gif_delays[fidx] = gui_input_gif_delays_cs[fidx];
+
+               free(foutput.img8);
+               free(foutput.img32);
+            }
+
+            SLK_gif_write(path,gui_output->width,gui_output->height,dither_config.palette,dither_config.palette_colors,gif_frames,frame_count,gif_delays,1,0);
+
+            for(int fidx = 0;fidx<frame_count;fidx++)
+               free(gif_frames[fidx]);
+            free(gif_frames);
+            free(gif_delays);
+         }
          else
          {
             FILE *fp = fopen(path, "wb");
@@ -823,18 +1168,6 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
                fclose(fp);
             }
          }
-//int image8_save(const Image8 *img, const char *path, const char *ext);
-         //HLH_gui_image_save(f,gui_output->data,gui_output->width,gui_output->height,ext);
-         //if(strcmp(ext,"pcx")==0||strcmp(ext,"PCX")==0)
-            //image32_write_pcx(f,gui_output,dither_config.palette,dither_config.palette_colors);
-         //else
-            //HLH_gui_image_save(f,gui_output->data,gui_output->width,gui_output->height,ext);
-
-         //if(f!=NULL)
-            //fclose(f);
-
-         //const char *image = image_save_select();
-         //HLH_gui_image_save(image,gui_output->data,gui_output->w,gui_output->h);
       }
       //Preset
       else if(m->index==1)
@@ -1214,6 +1547,33 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          float value = strtof(entry->entry,NULL);
          HLH_gui_slider_set(gui.slider_gamma,(int)(value*100.f),500,1,1);
       }
+      else if(entry->e.usr==ENTRY_THEME_BG||entry->e.usr==ENTRY_THEME_BORDER||
+              entry->e.usr==ENTRY_THEME_BEVEL_DARK||entry->e.usr==ENTRY_THEME_BEVEL_LIGHT||
+              entry->e.usr==ENTRY_THEME_TEXT)
+      {
+         uint32_t color;
+         if(gui_theme_from_hex(entry->entry,&color))
+         {
+            if(entry->e.usr==ENTRY_THEME_BG)
+               HLH_gui_theme_current.bg = color;
+            else if(entry->e.usr==ENTRY_THEME_BORDER)
+               HLH_gui_theme_current.border = color;
+            else if(entry->e.usr==ENTRY_THEME_BEVEL_DARK)
+               HLH_gui_theme_current.bevel_dark = color;
+            else if(entry->e.usr==ENTRY_THEME_BEVEL_LIGHT)
+               HLH_gui_theme_current.bevel_light = color;
+            else if(entry->e.usr==ENTRY_THEME_TEXT)
+               HLH_gui_theme_current.text = color;
+         }
+
+         //Re-sync the field with the actual current value - either the
+         //newly parsed color, or (if what was typed wasn't valid hex) the
+         //previous value, so the box never shows something that wasn't
+         //actually applied.
+         gui_theme_refresh_entries();
+         HLH_gui_element_layout(&e->window->e,e->window->e.bounds);
+         HLH_gui_element_redraw(&e->window->e);
+      }
    }
 
    return 0;
@@ -1367,11 +1727,19 @@ static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
          case SLK_DITHER_BAYER2X2:
          case SLK_DITHER_CLUSTER8X8:
          case SLK_DITHER_CLUSTER4X4:
+         case SLK_DITHER_BAYER5X5:
+         case SLK_DITHER_BAYER3X3:
             HLH_gui_element_ignore(&gui_groups_dither[1]->e,0);
             break;
          case SLK_DITHER_NONE:
          case SLK_DITHER_FLOYD:
          case SLK_DITHER_FLOYD2:
+         case SLK_DITHER_STUCKI:
+         case SLK_DITHER_BURKES:
+         case SLK_DITHER_SIERRA:
+         case SLK_DITHER_SIERRA_TWOROW:
+         case SLK_DITHER_SIERRA_LITE:
+         case SLK_DITHER_PICOCAD:
             HLH_gui_element_ignore(&gui_groups_dither[0]->e,0);
             break;
          case SLK_DITHER_MEDIAN_CUT:
@@ -1681,6 +2049,14 @@ void gui_load_preset(FILE *f)
       dither_config.palette[31] = 0xff306f8a;
    }
 
+   gui_refresh_settings_widgets();
+
+   block_process = 0;
+   gui_process(0);
+}
+
+static void gui_refresh_settings_widgets(void)
+{
    HLH_gui_slider_set(gui.slider_blur,(int)(blur_amount*16.f),512,1,1);
    HLH_gui_slider_set(gui.slider_x_off,(int)(x_offset*500.f),500,1,1);
    HLH_gui_slider_set(gui.slider_y_off,(int)(y_offset*500.f),500,1,1);
@@ -1710,9 +2086,6 @@ void gui_load_preset(FILE *f)
 
    //HLH_gui_checkbutton_set(gui.dither_median,dither_config.use_median,1,1);
    HLH_gui_checkbutton_set(gui.palette_kmeanspp,kmeanspp,1,1);
-
-   block_process = 0;
-   gui_process(0);
 }
 
 static int main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
@@ -1720,42 +2093,530 @@ static int main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
    if(msg==HLH_GUI_MSG_DRAGNDROP)
    {
       const char *path = dp;
-      if(path==NULL)
-         return 0;
-
-      FILE *f = fopen(path,"rb");
-      if(f==NULL)
-         return 0;
-
-      Image32 *img = NULL;
-      int width,height;
-      uint32_t *data = HLH_gui_image_load(f,&width,&height);
-      if(data!=NULL&&width>0&&height>0)
-      {
-         img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
-         img->width = width;
-         img->height = height;
-         memcpy(img->data,data,sizeof(*img->data)*width*height);
-      }
-      HLH_gui_image_free(data);
-      fclose(f);
-
-      if(img==NULL)
-         return 0;
-
-      HLH_gui_imgcmp_update0(gui_imgcmp,img->data,img->width,img->height,1);
-      if(gui_input!=NULL)
-      {
-         free(gui_input);
-         gui_input = NULL;
-      }
-      gui_input = image32_dup(img);
-      free(img);
-
-      gui_process(0);
+      gui_set_input_path(path);
    }
 
    return 0;
+}
+
+//Lua scripting
+//-------------------------------------
+
+//Runs the pipeline on an arbitrary in/out pair, independent of the live preview
+static int gui_script_process(const char *path_in, const char *path_out)
+{
+   char ext_in[512] = {0};
+   {
+      char *dot = strrchr(path_in,'.');
+      if(dot!=NULL)
+      {
+         strncpy(ext_in,dot+1,511);
+         ext_in[511] = '\0';
+      }
+   }
+   int in_is_gif = slk_ext_is(ext_in,"gif");
+
+   Image32 **gif_in_frames = NULL;
+   int *gif_in_delays_cs = NULL;
+   int frame_count = 1;
+   Image32 *img = NULL;
+
+   if(in_is_gif)
+   {
+      if(!SLK_gif_read_all_frames(path_in,&gif_in_frames,&frame_count,&gif_in_delays_cs))
+         return -1;
+      img = image32_dup(gif_in_frames[0]);
+   }
+   else
+   {
+      FILE *f = fopen(path_in,"rb");
+      if(f==NULL)
+         return -1;
+
+      int width,height;
+      uint32_t *data = HLH_gui_image_load(f,&width,&height);
+      fclose(f);
+      if(data==NULL||width<=0||height<=0)
+      {
+         HLH_gui_image_free(data);
+         return -1;
+      }
+
+      img = malloc(sizeof(*img)+sizeof(*img->data)*width*height);
+      img->width = width;
+      img->height = height;
+      memcpy(img->data,data,sizeof(*img->data)*width*height);
+      HLH_gui_image_free(data);
+   }
+
+   int width,height;
+   if(scale_relative)
+   {
+      width = img->width/HLH_non_zero(size_relative_x);
+      height = img->height/HLH_non_zero(size_relative_y);
+   }
+   else
+   {
+      width = size_absolute_x;
+      height = size_absolute_y;
+   }
+
+   char ext_out[512] = {0};
+   {
+      char *dot = strrchr(path_out,'.');
+      if(dot!=NULL)
+      {
+         strncpy(ext_out,dot+1,511);
+         ext_out[511] = '\0';
+      }
+   }
+   int out_is_gif = slk_ext_is(ext_out,"gif");
+
+   Image64 *img64 = image32to64(img);
+   free(img);
+   image64_blur(img64,blur_amount);
+   Image64 *sampled = image64_sample(img64,width,height,sample_mode,x_offset,y_offset);
+   free(img64);
+   image64_sharpen(sampled,sharp_amount);
+   image64_hscb(sampled,hue,saturation,contrast,brightness);
+   image64_gamma(sampled,gamma);
+   image64_tint(sampled,tint_red,tint_green,tint_blue);
+
+   SLK_img8and32 output = image64_dither(sampled,&dither_config);
+   free(sampled);
+
+   int ok = 1;
+
+   if(out_is_gif||frame_count>1)
+   {
+      uint8_t **gif_out_frames = malloc(sizeof(*gif_out_frames)*(size_t)frame_count);
+      int *gif_out_delays = malloc(sizeof(*gif_out_delays)*(size_t)frame_count);
+      size_t frame_bytes = (size_t)output.img8->width*(size_t)output.img8->height;
+
+      gif_out_frames[0] = malloc(frame_bytes);
+      memcpy(gif_out_frames[0],output.img8->data,frame_bytes);
+      gif_out_delays[0] = (frame_count>1&&gif_in_delays_cs!=NULL)?gif_in_delays_cs[0]:10;
+
+      for(int fidx = 1;fidx<frame_count;fidx++)
+      {
+         Image64 *fimg64 = image32to64(gif_in_frames[fidx]);
+         image64_blur(fimg64,blur_amount);
+         Image64 *fsampled = image64_sample(fimg64,width,height,sample_mode,x_offset,y_offset);
+         free(fimg64);
+         image64_sharpen(fsampled,sharp_amount);
+         image64_hscb(fsampled,hue,saturation,contrast,brightness);
+         image64_gamma(fsampled,gamma);
+         image64_tint(fsampled,tint_red,tint_green,tint_blue);
+
+         SLK_img8and32 foutput = image64_dither(fsampled,&dither_config);
+         free(fsampled);
+
+         gif_out_frames[fidx] = malloc(frame_bytes);
+         memcpy(gif_out_frames[fidx],foutput.img8->data,frame_bytes);
+         gif_out_delays[fidx] = gif_in_delays_cs[fidx];
+
+         free(foutput.img8);
+         free(foutput.img32);
+      }
+
+      if(out_is_gif)
+         ok = SLK_gif_write(path_out,width,height,dither_config.palette,dither_config.palette_colors,gif_out_frames,frame_count,gif_out_delays,1,0);
+
+      for(int fidx = 0;fidx<frame_count;fidx++)
+         free(gif_out_frames[fidx]);
+      free(gif_out_frames);
+      free(gif_out_delays);
+   }
+
+   if(!out_is_gif)
+   {
+      if(strcmp(ext_out,"PCX")==0||strcmp(ext_out,"pcx")==0)
+      {
+         image8_save(output.img8,path_out,ext_out);
+      }
+      else
+      {
+         FILE *fp = fopen(path_out,"wb");
+         if(fp!=NULL)
+         {
+            HLH_gui_image_save(fp,output.img32->data,output.img32->width,output.img32->height,ext_out);
+            fclose(fp);
+         }
+         else
+         {
+            ok = 0;
+         }
+      }
+   }
+
+   free(output.img8);
+   free(output.img32);
+
+   if(gif_in_frames!=NULL)
+   {
+      for(int fidx = 0;fidx<frame_count;fidx++)
+         free(gif_in_frames[fidx]);
+      free(gif_in_frames);
+   }
+   if(gif_in_delays_cs!=NULL)
+      free(gif_in_delays_cs);
+
+   return ok?0:-1;
+}
+
+//Captures a script's print() output for the Script window (no console in the GUI)
+static char script_output[8192] = {0};
+
+static void script_output_append(const char *s)
+{
+   size_t used = strlen(script_output);
+   size_t room = sizeof(script_output)-used-1;
+   if(room==0)
+      return;
+   strncat(script_output,s,room);
+}
+
+static int lua_img2pixel_process(lua_State *L)
+{
+   const char *in = luaL_checkstring(L,1);
+   const char *out = luaL_checkstring(L,2);
+   lua_pushboolean(L,gui_script_process(in,out)==0);
+   return 1;
+}
+
+static int lua_img2pixel_load_preset(lua_State *L)
+{
+   const char *path = luaL_checkstring(L,1);
+   FILE *f = fopen(path,"r");
+   if(f==NULL)
+   {
+      lua_pushboolean(L,0);
+      return 1;
+   }
+   gui_load_preset(f);
+   fclose(f);
+   lua_pushboolean(L,1);
+   return 1;
+}
+
+static int lua_img2pixel_get_palette_color(lua_State *L)
+{
+   lua_Integer index = luaL_checkinteger(L,1);
+   if(index<0||index>=256)
+      return luaL_error(L,"palette index out of range (0-255): %d",(int)index);
+   lua_pushinteger(L,(lua_Integer)(dither_config.palette[index]&0xffffff));
+   return 1;
+}
+
+static int lua_img2pixel_set_palette_color(lua_State *L)
+{
+   lua_Integer index = luaL_checkinteger(L,1);
+   lua_Integer rgb = luaL_checkinteger(L,2);
+   if(index<0||index>=256)
+      return luaL_error(L,"palette index out of range (0-255): %d",(int)index);
+   dither_config.palette[index] = 0xff000000u|((uint32_t)rgb&0xffffff);
+   return 0;
+}
+
+static int lua_img2pixel_print(lua_State *L)
+{
+   int n = lua_gettop(L);
+   for(int i = 1;i<=n;i++)
+   {
+      if(i>1)
+         script_output_append("\t");
+      script_output_append(luaL_tolstring(L,i,NULL));
+      lua_pop(L,1);
+   }
+   script_output_append("\n");
+   return 0;
+}
+
+typedef enum
+{
+   LUA_FIELD_FLOAT,
+   LUA_FIELD_INT,
+   LUA_FIELD_BOOL,
+   LUA_FIELD_U8,
+}Lua_field_type;
+
+typedef struct
+{
+   const char *name;
+   void *ptr;
+   Lua_field_type type;
+}Lua_field;
+
+static Lua_field lua_fields[] =
+{
+   {"blur_amount",&blur_amount,LUA_FIELD_FLOAT},
+   {"sample_mode",&sample_mode,LUA_FIELD_INT},
+   {"x_offset",&x_offset,LUA_FIELD_FLOAT},
+   {"y_offset",&y_offset,LUA_FIELD_FLOAT},
+   {"scale_relative",&scale_relative,LUA_FIELD_BOOL},
+   {"size_relative_x",&size_relative_x,LUA_FIELD_INT},
+   {"size_relative_y",&size_relative_y,LUA_FIELD_INT},
+   {"size_absolute_x",&size_absolute_x,LUA_FIELD_INT},
+   {"size_absolute_y",&size_absolute_y,LUA_FIELD_INT},
+   {"sharp_amount",&sharp_amount,LUA_FIELD_FLOAT},
+   {"brightness",&brightness,LUA_FIELD_FLOAT},
+   {"contrast",&contrast,LUA_FIELD_FLOAT},
+   {"saturation",&saturation,LUA_FIELD_FLOAT},
+   {"hue",&hue,LUA_FIELD_FLOAT},
+   {"gamma",&gamma,LUA_FIELD_FLOAT},
+   {"kmeanspp",&kmeanspp,LUA_FIELD_BOOL},
+   {"tint_red",&tint_red,LUA_FIELD_U8},
+   {"tint_green",&tint_green,LUA_FIELD_U8},
+   {"tint_blue",&tint_blue,LUA_FIELD_U8},
+   {"dither_alpha_threshold",&dither_config.alpha_threshold,LUA_FIELD_INT},
+   {"dither_amount",&dither_config.dither_amount,LUA_FIELD_FLOAT},
+   {"target_colors",&dither_config.target_colors,LUA_FIELD_INT},
+   {"dither_mode",&dither_config.dither_mode,LUA_FIELD_INT},
+   {"color_dist",&dither_config.color_dist,LUA_FIELD_INT},
+   {"palette_colors",&dither_config.palette_colors,LUA_FIELD_INT},
+};
+#define LUA_FIELD_COUNT (sizeof(lua_fields)/sizeof(lua_fields[0]))
+
+static Lua_field *lua_field_find(const char *name)
+{
+   for(size_t i = 0;i<LUA_FIELD_COUNT;i++)
+      if(strcmp(lua_fields[i].name,name)==0)
+         return &lua_fields[i];
+   return NULL;
+}
+
+static int lua_img2pixel_index(lua_State *L)
+{
+   const char *key = luaL_checkstring(L,2);
+   Lua_field *field = lua_field_find(key);
+   if(field==NULL)
+   {
+      lua_pushnil(L);
+      return 1;
+   }
+
+   switch(field->type)
+   {
+   case LUA_FIELD_FLOAT: lua_pushnumber(L,(double)(*(float *)field->ptr)); break;
+   case LUA_FIELD_INT: lua_pushinteger(L,*(int *)field->ptr); break;
+   case LUA_FIELD_BOOL: lua_pushboolean(L,*(int *)field->ptr); break;
+   case LUA_FIELD_U8: lua_pushinteger(L,*(uint8_t *)field->ptr); break;
+   }
+
+   return 1;
+}
+
+static int lua_img2pixel_newindex(lua_State *L)
+{
+   const char *key = luaL_checkstring(L,2);
+   Lua_field *field = lua_field_find(key);
+   if(field==NULL)
+      return luaL_error(L,"img2pixel has no setting named '%s'",key);
+
+   switch(field->type)
+   {
+   case LUA_FIELD_FLOAT: *(float *)field->ptr = (float)luaL_checknumber(L,3); break;
+   case LUA_FIELD_INT: *(int *)field->ptr = (int)luaL_checkinteger(L,3); break;
+   case LUA_FIELD_BOOL: *(int *)field->ptr = lua_toboolean(L,3); break;
+   case LUA_FIELD_U8: *(uint8_t *)field->ptr = (uint8_t)luaL_checkinteger(L,3); break;
+   }
+
+   return 0;
+}
+
+static void lua_push_dither_enum_table(lua_State *L)
+{
+   lua_newtable(L);
+#define ENUMVAL(name,value) lua_pushinteger(L,value); lua_setfield(L,-2,name)
+   ENUMVAL("NONE",SLK_DITHER_NONE);
+   ENUMVAL("BAYER8X8",SLK_DITHER_BAYER8X8);
+   ENUMVAL("BAYER4X4",SLK_DITHER_BAYER4X4);
+   ENUMVAL("BAYER2X2",SLK_DITHER_BAYER2X2);
+   ENUMVAL("CLUSTER8X8",SLK_DITHER_CLUSTER8X8);
+   ENUMVAL("CLUSTER4X4",SLK_DITHER_CLUSTER4X4);
+   ENUMVAL("FLOYD",SLK_DITHER_FLOYD);
+   ENUMVAL("FLOYD2",SLK_DITHER_FLOYD2);
+   ENUMVAL("MEDIAN_CUT",SLK_DITHER_MEDIAN_CUT);
+   ENUMVAL("BAYER5X5",SLK_DITHER_BAYER5X5);
+   ENUMVAL("BAYER3X3",SLK_DITHER_BAYER3X3);
+   ENUMVAL("STUCKI",SLK_DITHER_STUCKI);
+   ENUMVAL("BURKES",SLK_DITHER_BURKES);
+   ENUMVAL("SIERRA",SLK_DITHER_SIERRA);
+   ENUMVAL("SIERRA_TWOROW",SLK_DITHER_SIERRA_TWOROW);
+   ENUMVAL("SIERRA_LITE",SLK_DITHER_SIERRA_LITE);
+   ENUMVAL("PICOCAD",SLK_DITHER_PICOCAD);
+#undef ENUMVAL
+}
+
+static void lua_push_colordist_enum_table(lua_State *L)
+{
+   lua_newtable(L);
+#define ENUMVAL(name,value) lua_pushinteger(L,value); lua_setfield(L,-2,name)
+   ENUMVAL("RGB_EUCLIDIAN",SLK_RGB_EUCLIDIAN);
+   ENUMVAL("RGB_WEIGHTED",SLK_RGB_WEIGHTED);
+   ENUMVAL("RGB_REDMEAN",SLK_RGB_REDMEAN);
+   ENUMVAL("LAB_CIE76",SLK_LAB_CIE76);
+   ENUMVAL("LAB_CIE94",SLK_LAB_CIE94);
+   ENUMVAL("LAB_CIEDE2000",SLK_LAB_CIEDE2000);
+#undef ENUMVAL
+}
+
+//Runs a script and returns 1 on success, 0 on failure - either way,
+//script_output[] holds whatever the script print()ed, plus an error
+//message on failure, for the Script window to display.
+static int gui_run_script(const char *path)
+{
+   script_output[0] = '\0';
+
+   lua_State *L = luaL_newstate();
+   if(L==NULL)
+   {
+      script_output_append("Failed to create Lua state (out of memory)\n");
+      return 0;
+   }
+   luaL_openlibs(L);
+
+   lua_newtable(L);
+
+   lua_pushcfunction(L,lua_img2pixel_process);
+   lua_setfield(L,-2,"process");
+   lua_pushcfunction(L,lua_img2pixel_load_preset);
+   lua_setfield(L,-2,"load_preset");
+   lua_pushcfunction(L,lua_img2pixel_get_palette_color);
+   lua_setfield(L,-2,"get_palette_color");
+   lua_pushcfunction(L,lua_img2pixel_set_palette_color);
+   lua_setfield(L,-2,"set_palette_color");
+
+   lua_push_dither_enum_table(L);
+   lua_setfield(L,-2,"DITHER");
+   lua_push_colordist_enum_table(L);
+   lua_setfield(L,-2,"COLORDIST");
+
+   lua_newtable(L);
+   lua_pushcfunction(L,lua_img2pixel_index);
+   lua_setfield(L,-2,"__index");
+   lua_pushcfunction(L,lua_img2pixel_newindex);
+   lua_setfield(L,-2,"__newindex");
+   lua_setmetatable(L,-2);
+
+   lua_setglobal(L,"img2pixel");
+
+   lua_register(L,"print",lua_img2pixel_print);
+
+   int ok = 1;
+   if(luaL_dofile(L,path)!=LUA_OK)
+   {
+      script_output_append("Error: ");
+      script_output_append(lua_tostring(L,-1));
+      script_output_append("\n");
+      ok = 0;
+   }
+
+   lua_close(L);
+
+   //Reflect any settings the script changed in the main window's widgets
+   block_process = 1;
+   gui_refresh_settings_widgets();
+   block_process = 0;
+   gui_process(0);
+
+   return ok;
+}
+//-------------------------------------
+
+static void script_output_display(void)
+{
+   char buf[8192];
+   strncpy(buf,script_output,sizeof(buf)-1);
+   buf[sizeof(buf)-1] = '\0';
+
+   int line = 0;
+   char *saveptr = NULL;
+   char *tok = strtok_r(buf,"\n",&saveptr);
+   while(tok!=NULL&&line<SCRIPT_OUTPUT_LINES)
+   {
+      char trimmed[80];
+      strncpy(trimmed,tok,sizeof(trimmed)-1);
+      trimmed[sizeof(trimmed)-1] = '\0';
+      HLH_gui_label_set(script_output_lines[line],trimmed);
+      line++;
+      tok = strtok_r(NULL,"\n",&saveptr);
+   }
+   for(;line<SCRIPT_OUTPUT_LINES;line++)
+      HLH_gui_label_set(script_output_lines[line],"");
+}
+
+static int button_script_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+{
+   if(msg==HLH_GUI_MSG_CLICK)
+   {
+      //Select script
+      if(e->usr==0)
+      {
+         const char *path = script_load_select();
+         if(path!=NULL)
+         {
+            strncpy(script_selected_path,path,sizeof(script_selected_path)-1);
+            script_selected_path[sizeof(script_selected_path)-1] = '\0';
+            HLH_gui_label_set(script_path_label,script_selected_path);
+            HLH_gui_element_redraw((HLH_gui_element *)script_path_label);
+         }
+      }
+      //Run
+      else if(e->usr==1)
+      {
+         if(script_selected_path[0]!='\0')
+         {
+            gui_run_script(script_selected_path);
+            script_output_display();
+            HLH_gui_element_layout(&e->window->e,e->window->e.bounds);
+            HLH_gui_element_redraw(&e->window->e);
+         }
+      }
+      //Exit
+      else if(e->usr==2)
+      {
+         HLH_gui_window_close(e->window);
+      }
+   }
+
+   return 0;
+}
+
+static void ui_construct_script(void)
+{
+   script_selected_path[0] = '\0';
+   script_output[0] = '\0';
+
+   HLH_gui_window *win = HLH_gui_window_create("Run Lua script",560,420,NULL);
+   HLH_gui_window_block(window_root,win);
+   HLH_gui_group *group_root = HLH_gui_group_create(&win->e,HLH_GUI_FILL);
+   HLH_gui_button *b = NULL;
+
+   {
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL_X);
+      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Select...",NULL);
+      b->e.usr = 0;
+      b->e.msg_usr = button_script_msg;
+      script_path_label = HLH_gui_label_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FILL_X,"(no script selected)");
+   }
+   {
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL_X);
+      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Run",NULL);
+      b->e.usr = 1;
+      b->e.msg_usr = button_script_msg;
+      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Exit",NULL);
+      b->e.usr = 2;
+      b->e.msg_usr = button_script_msg;
+   }
+
+   HLH_gui_separator_create(&group_root->e,HLH_GUI_FILL_X,0);
+   HLH_gui_label_create(&group_root->e,0,"Output:");
+   {
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL);
+      for(int i = 0;i<SCRIPT_OUTPUT_LINES;i++)
+         script_output_lines[i] = HLH_gui_label_create(&group->e,HLH_GUI_FILL_X,"");
+   }
 }
 
 static void ui_construct_batch()
@@ -1825,6 +2686,11 @@ static int menu_tools_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       if(m->index==0)
       {
          ui_construct_batch();
+      }
+      //Run script...
+      else if(m->index==1)
+      {
+         ui_construct_script();
       }
    }
 

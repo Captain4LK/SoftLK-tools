@@ -60,8 +60,8 @@ static int slk_path_pop_ext(const char *path, char *out, char *ext);
 //SLK_image32 *image_select()
 FILE *image_load_select()
 {
-   const char *filter_patterns[2] = {"*.png"};
-   const char *file_path = tinyfd_openFileDialog("Select a file",path_image_load,0,filter_patterns,NULL,0);
+   const char *filter_patterns[6] = {"*.png","*.gif","*.bmp","*.tga","*.jpg","*.jpeg"};
+   const char *file_path = tinyfd_openFileDialog("Select a file",path_image_load,6,filter_patterns,"Image files",0);
 
    if(file_path!=NULL)
    {
@@ -84,6 +84,11 @@ FILE *image_load_select()
    HLH_gui_image_free(data);
 
    return img32;*/
+}
+
+const char *image_load_select_last_path(void)
+{
+   return path_image_load;
 }
 
 //const char *palette_load_select()
@@ -127,14 +132,31 @@ FILE *preset_load_select()
    //return path_preset;
 }
 
+static char path_script_load[512] = {0};
+
+const char *script_load_select(void)
+{
+   const char *filter_patterns[1] = {"*.lua"};
+   const char *file_path = tinyfd_openFileDialog("Select a Lua script",path_script_load,1,filter_patterns,"Lua scripts",0);
+
+   if(file_path!=NULL)
+   {
+      strncpy(path_script_load,file_path,511);
+      path_script_load[511] = '\0';
+      return path_script_load;
+   }
+
+   return NULL;
+}
+
 //const char *image_save_select()
 //FILE *image_save_select(char ext[512])
 void image_save_select(char path[1024], char ext[512])
 {
    path[0] = '\0';
 
-   const char *filter_patterns[4] = {"*.png","*.bmp","*.tga","*.pcx"};
-   const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,4,filter_patterns,NULL);
+   const char *filter_patterns[5] = {"*.png","*.bmp","*.tga","*.pcx","*.gif"};
+   const char *file_path = tinyfd_saveFileDialog("Save image",path_image_save,5,filter_patterns,NULL);
 
    memset(path_image,0,sizeof(path_image));
    if(file_path!=NULL)
@@ -209,6 +231,11 @@ void settings_load(const char *path)
    strncpy(path_dir_input,HLH_json_get_object_string(&root->root,"path_dir_input",""),511);
    strncpy(path_dir_output,HLH_json_get_object_string(&root->root,"path_dir_output",""),511);
    gui_scale = (int)HLH_json_get_object_integer(&root->root,"gui_scale",1);
+   HLH_gui_theme_current.bg = (uint32_t)HLH_json_get_object_integer(&root->root,"theme_bg",(int64_t)HLH_gui_theme_current.bg);
+   HLH_gui_theme_current.border = (uint32_t)HLH_json_get_object_integer(&root->root,"theme_border",(int64_t)HLH_gui_theme_current.border);
+   HLH_gui_theme_current.bevel_dark = (uint32_t)HLH_json_get_object_integer(&root->root,"theme_bevel_dark",(int64_t)HLH_gui_theme_current.bevel_dark);
+   HLH_gui_theme_current.bevel_light = (uint32_t)HLH_json_get_object_integer(&root->root,"theme_bevel_light",(int64_t)HLH_gui_theme_current.bevel_light);
+   HLH_gui_theme_current.text = (uint32_t)HLH_json_get_object_integer(&root->root,"theme_text",(int64_t)HLH_gui_theme_current.text);
    path_image_load[511] = '\0';
    path_palette_load[511] = '\0';
    path_preset_load[511] = '\0';
@@ -238,6 +265,11 @@ void settings_save()
    HLH_json_object_add_string(&root->root,"path_preset_save",path_preset_save);
    HLH_json_object_add_string(&root->root,"path_dir_input",path_dir_input);
    HLH_json_object_add_string(&root->root,"path_dir_output",path_dir_output);
+   HLH_json_object_add_integer(&root->root,"theme_bg",(int64_t)HLH_gui_theme_current.bg);
+   HLH_json_object_add_integer(&root->root,"theme_border",(int64_t)HLH_gui_theme_current.border);
+   HLH_json_object_add_integer(&root->root,"theme_bevel_dark",(int64_t)HLH_gui_theme_current.bevel_dark);
+   HLH_json_object_add_integer(&root->root,"theme_bevel_light",(int64_t)HLH_gui_theme_current.bevel_light);
+   HLH_json_object_add_integer(&root->root,"theme_text",(int64_t)HLH_gui_theme_current.text);
    HLH_json_object_add_integer(&root->root,"gui_scale",gui_scale);
 
    HLH_json_write_file(f,&root->root);

@@ -52,6 +52,12 @@ typedef struct
 }slk_median_box;
 
 typedef uint64_t rand_xor[2];
+
+typedef struct
+{
+   int8_t dx,dy;
+   float w; //weight; every kernel's weights sum to 1.0
+}slk_diffusion_kernel_entry;
 //-------------------------------------
 
 //Variables
@@ -96,6 +102,21 @@ static const float slk_dither_threshold_cluster4x4[16] =
    11.0f/16.0f,3.0f/16.0f,2.0f/16.0f,8.0f/16.0f,
    15.0f/16.0f,10.0f/16.0f,9.0f/16.0f,14.0f/16.0f,
 };
+//Non-power-of-two dispersed-dot threshold maps (generated, not recursive Bayer)
+static const float slk_dither_threshold_bayer3x3[9] = 
+{
+   1.0f/9.0f,3.0f/9.0f,7.0f/9.0f,
+   8.0f/9.0f,0.0f/9.0f,4.0f/9.0f,
+   6.0f/9.0f,5.0f/9.0f,2.0f/9.0f,
+};
+static const float slk_dither_threshold_bayer5x5[25] = 
+{
+   18.0f/25.0f, 4.0f/25.0f,12.0f/25.0f,20.0f/25.0f, 1.0f/25.0f,
+    7.0f/25.0f,19.0f/25.0f, 6.0f/25.0f,15.0f/25.0f,23.0f/25.0f,
+   21.0f/25.0f, 0.0f/25.0f,13.0f/25.0f,24.0f/25.0f, 3.0f/25.0f,
+   22.0f/25.0f,11.0f/25.0f,14.0f/25.0f, 8.0f/25.0f, 9.0f/25.0f,
+    5.0f/25.0f,16.0f/25.0f, 2.0f/25.0f,10.0f/25.0f,17.0f/25.0f,
+};
 
 static float slk_palette[256][3];
 static int slk_palette_size = 0;
@@ -104,10 +125,13 @@ static int slk_palette_size = 0;
 //Function prototypes
 static SLK_img8and32 slk_dither_closest(Image64 *img, const SLK_dither_config *config);
 static SLK_img8and32 slk_assign_median(Image64 *img, const SLK_dither_config *config);
-static void slk_dither_threshold_apply(Image64 *img, int dim, const float *threshold, const SLK_dither_config *config);
+static void slk_dither_threshold_apply(Image64 *img, int size, const float *threshold, const SLK_dither_config *config);
 static SLK_img8and32 slk_dither_floyd(Image64 *img, const SLK_dither_config *config);
 static SLK_img8and32 slk_dither_floyd2(Image64 *img, const SLK_dither_config *config);
 static void slk_floyd_apply_error(Image64 *img, float er, float eg, float eb, int x, int y);
+static SLK_img8and32 slk_dither_diffusion(Image64 *img, const SLK_dither_config *config, const slk_diffusion_kernel_entry *kernel, int kernel_count);
+static SLK_img8and32 slk_dither_picocad(Image64 *img, const SLK_dither_config *config);
+static void slk_color_closest_two(uint64_t c, const SLK_dither_config *config, uint8_t *index0, uint8_t *index1, float *t);
 
 static void slk_color32_to_lab(uint32_t c, float *l0, float *l1, float *l2);
 static void slk_color32_to_rgb(uint32_t c, float *l0, float *l1, float *l2);
@@ -163,11 +187,13 @@ SLK_img8and32 image64_dither(Image64 *img, const SLK_dither_config *config)
 
    switch(config->dither_mode)
    {
-   case SLK_DITHER_BAYER8X8: slk_dither_threshold_apply(img,3,slk_dither_threshold_bayer8x8,config); break;
-   case SLK_DITHER_BAYER4X4: slk_dither_threshold_apply(img,2,slk_dither_threshold_bayer4x4,config); break;
-   case SLK_DITHER_BAYER2X2: slk_dither_threshold_apply(img,1,slk_dither_threshold_bayer2x2,config); break;
-   case SLK_DITHER_CLUSTER8X8: slk_dither_threshold_apply(img,3,slk_dither_threshold_cluster8x8,config); break;
-   case SLK_DITHER_CLUSTER4X4: slk_dither_threshold_apply(img,2,slk_dither_threshold_cluster4x4,config); break;
+   case SLK_DITHER_BAYER8X8: slk_dither_threshold_apply(img,8,slk_dither_threshold_bayer8x8,config); break;
+   case SLK_DITHER_BAYER4X4: slk_dither_threshold_apply(img,4,slk_dither_threshold_bayer4x4,config); break;
+   case SLK_DITHER_BAYER2X2: slk_dither_threshold_apply(img,2,slk_dither_threshold_bayer2x2,config); break;
+   case SLK_DITHER_BAYER5X5: slk_dither_threshold_apply(img,5,slk_dither_threshold_bayer5x5,config); break;
+   case SLK_DITHER_BAYER3X3: slk_dither_threshold_apply(img,3,slk_dither_threshold_bayer3x3,config); break;
+   case SLK_DITHER_CLUSTER8X8: slk_dither_threshold_apply(img,8,slk_dither_threshold_cluster8x8,config); break;
+   case SLK_DITHER_CLUSTER4X4: slk_dither_threshold_apply(img,4,slk_dither_threshold_cluster4x4,config); break;
    default: break;
    }
 
@@ -177,6 +203,8 @@ SLK_img8and32 image64_dither(Image64 *img, const SLK_dither_config *config)
    case SLK_DITHER_BAYER8X8:
    case SLK_DITHER_BAYER4X4:
    case SLK_DITHER_BAYER2X2:
+   case SLK_DITHER_BAYER5X5:
+   case SLK_DITHER_BAYER3X3:
    case SLK_DITHER_CLUSTER8X8:
    case SLK_DITHER_CLUSTER4X4:
       return slk_dither_closest(img,config);
@@ -184,6 +212,55 @@ SLK_img8and32 image64_dither(Image64 *img, const SLK_dither_config *config)
    case SLK_DITHER_FLOYD2: return slk_dither_floyd2(img,config);
    case SLK_DITHER_MEDIAN_CUT:
       return slk_assign_median(img,config);
+   case SLK_DITHER_STUCKI:
+   {
+      static const slk_diffusion_kernel_entry kernel[12] = 
+      {
+                                       { 1,0,8.f/42.f},{ 2,0,4.f/42.f},
+         {-2,1,2.f/42.f},{-1,1,4.f/42.f},{0,1,8.f/42.f},{1,1,4.f/42.f},{2,1,2.f/42.f},
+         {-2,2,1.f/42.f},{-1,2,2.f/42.f},{0,2,4.f/42.f},{1,2,2.f/42.f},{2,2,1.f/42.f},
+      };
+      return slk_dither_diffusion(img,config,kernel,12);
+   }
+   case SLK_DITHER_BURKES:
+   {
+      static const slk_diffusion_kernel_entry kernel[7] = 
+      {
+                                       { 1,0,8.f/32.f},{ 2,0,4.f/32.f},
+         {-2,1,2.f/32.f},{-1,1,4.f/32.f},{0,1,8.f/32.f},{1,1,4.f/32.f},{2,1,2.f/32.f},
+      };
+      return slk_dither_diffusion(img,config,kernel,7);
+   }
+   case SLK_DITHER_SIERRA:
+   {
+      static const slk_diffusion_kernel_entry kernel[10] = 
+      {
+                                       { 1,0,5.f/32.f},{ 2,0,3.f/32.f},
+         {-2,1,2.f/32.f},{-1,1,4.f/32.f},{0,1,5.f/32.f},{1,1,4.f/32.f},{2,1,2.f/32.f},
+                          {-1,2,2.f/32.f},{0,2,3.f/32.f},{1,2,2.f/32.f},
+      };
+      return slk_dither_diffusion(img,config,kernel,10);
+   }
+   case SLK_DITHER_SIERRA_TWOROW:
+   {
+      static const slk_diffusion_kernel_entry kernel[7] = 
+      {
+                                       { 1,0,4.f/16.f},{ 2,0,3.f/16.f},
+         {-2,1,1.f/16.f},{-1,1,2.f/16.f},{0,1,3.f/16.f},{1,1,2.f/16.f},{2,1,1.f/16.f},
+      };
+      return slk_dither_diffusion(img,config,kernel,7);
+   }
+   case SLK_DITHER_SIERRA_LITE:
+   {
+      static const slk_diffusion_kernel_entry kernel[3] = 
+      {
+                          {1,0,2.f/4.f},
+         {-1,1,1.f/4.f},{0,1,1.f/4.f},
+      };
+      return slk_dither_diffusion(img,config,kernel,3);
+   }
+   case SLK_DITHER_PICOCAD:
+      return slk_dither_picocad(img,config);
    }
    
    return slk_dither_closest(img,config);
@@ -461,7 +538,8 @@ static SLK_img8and32 slk_assign_median(Image64 *img, const SLK_dither_config *co
    return (SLK_img8and32){out, out32};
 }
 
-static void slk_dither_threshold_apply(Image64 *img, int dim, const float *threshold, const SLK_dither_config *config)
+//'size' is the matrix width/height, works for any size now, not just power-of-two
+static void slk_dither_threshold_apply(Image64 *img, int size, const float *threshold, const SLK_dither_config *config)
 {
 #pragma omp parallel for
    for(int y = 0;y<img->height;y++)
@@ -469,8 +547,7 @@ static void slk_dither_threshold_apply(Image64 *img, int dim, const float *thres
       for(int x = 0;x<img->width;x++)
       {
          uint64_t p = img->data[y*img->width+x];
-         uint8_t mod = (uint8_t)((1<<dim)-1);
-         uint8_t threshold_id = (uint8_t)(((y&mod)<<dim)+(x&mod));
+         int threshold_id = (y%size)*size+(x%size);
          uint64_t r = HLH_max(0,HLH_min(0x7fff,(int64_t)color64_r(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
          uint64_t g = HLH_max(0,HLH_min(0x7fff,(int64_t)color64_g(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
          uint64_t b = HLH_max(0,HLH_min(0x7fff,(int64_t)color64_b(p)+(int64_t)(0x7fff*(config->dither_amount/8)*(threshold[threshold_id]-0.5f))));
@@ -567,6 +644,171 @@ static void slk_floyd_apply_error(Image64 *img, float er, float eg, float eb, in
    uint64_t a = color64_a(p);
 
    img->data[y*img->width+x] = (r)|(g<<16)|(b<<32)|(a<<48);
+}
+
+//Generic error-diffusion, kernel decides which algorithm (Stucki/Burkes/Sierra/...)
+static SLK_img8and32 slk_dither_diffusion(Image64 *img, const SLK_dither_config *config, const slk_diffusion_kernel_entry *kernel, int kernel_count)
+{
+   Image8 *out = image8_new(img->width,img->height);
+   Image32 *out32 = image32_new(img->width,img->height);
+   out->color_count = config->palette_colors;
+   for(int i = 0;i<config->palette_colors;i++)
+      out->palette[i] = config->palette[i];
+
+   for(int y = 0;y<img->height;y++)
+   {
+      for(int x = 0;x<img->width;x++)
+      {
+         uint64_t p = img->data[y*img->width+x];
+         if((int)(color64_a(p)/128)<config->alpha_threshold)
+         {
+            out->data[y*img->width+x] = 0;
+            out32->data[y*img->width+x] = 0;
+            continue;
+         }
+
+         uint8_t c = slk_color_closest(p,config);
+         float error_r = (float)color32_r(color64_to_32(p))-(float)color32_r(config->palette[c]);
+         float error_g = (float)color32_g(color64_to_32(p))-(float)color32_g(config->palette[c]);
+         float error_b = (float)color32_b(color64_to_32(p))-(float)color32_b(config->palette[c]);
+
+         for(int k = 0;k<kernel_count;k++)
+            slk_floyd_apply_error(img,error_r*kernel[k].w,error_g*kernel[k].w,error_b*kernel[k].w,x+kernel[k].dx,y+kernel[k].dy);
+
+         out->data[y*img->width+x] = c;
+         out32->data[y*img->width+x] = out->palette[out->data[y*img->width+x]];
+      }
+   }
+
+   return (SLK_img8and32){out, out32};
+}
+
+//Closest and second-closest palette colors + blend factor t, for picoCAD dither
+static void slk_color_closest_two(uint64_t c, const SLK_dither_config *config, uint8_t *index0, uint8_t *index1, float *t)
+{
+   float best0 = 1e12f;
+   float best1 = 1e12f;
+   uint8_t i0 = 0;
+   uint8_t i1 = 0;
+
+   float c0 = 0.f;
+   float c1 = 0.f;
+   float c2 = 0.f;
+   switch(config->color_dist)
+   {
+   case SLK_RGB_EUCLIDIAN:
+   case SLK_RGB_WEIGHTED:
+   case SLK_RGB_REDMEAN:
+      slk_color32_to_rgb(color64_to_32(c),&c0,&c1,&c2);
+      break;
+   case SLK_LAB_CIE76:
+   case SLK_LAB_CIE94:
+   case SLK_LAB_CIEDE2000:
+      slk_color32_to_lab(color64_to_32(c),&c0,&c1,&c2);
+      break;
+   }
+
+   for(int i = 0;i<slk_palette_size;i++)
+   {
+      float dist = 0.f;
+
+      switch(config->color_dist)
+      {
+      case SLK_RGB_EUCLIDIAN:
+         dist = slk_dist_rgb_euclidian(c0,c1,c2, slk_palette[i][0],slk_palette[i][1],slk_palette[i][2]);
+         break;
+      case SLK_RGB_WEIGHTED:
+         dist = slk_dist_rgb_weighted(c0,c1,c2, slk_palette[i][0],slk_palette[i][1],slk_palette[i][2]);
+         break;
+      case SLK_RGB_REDMEAN:
+         dist = slk_dist_rgb_redmean(c0,c1,c2, slk_palette[i][0],slk_palette[i][1],slk_palette[i][2]);
+         break;
+      case SLK_LAB_CIE76:
+         dist = slk_dist_cie76(c0,c1,c2, slk_palette[i][0],slk_palette[i][1],slk_palette[i][2]);
+         break;
+      case SLK_LAB_CIE94:
+         dist = slk_dist_cie94(c0,c1,c2, slk_palette[i][0],slk_palette[i][1],slk_palette[i][2]);
+         break;
+      case SLK_LAB_CIEDE2000:
+         dist = slk_dist_ciede2000(c0,c1,c2, slk_palette[i][0],slk_palette[i][1],slk_palette[i][2]);
+         break;
+      }
+
+      if(dist<best0)
+      {
+         best1 = best0;
+         i1 = i0;
+         best0 = dist;
+         i0 = (uint8_t)i;
+      }
+      else if(dist<best1)
+      {
+         best1 = dist;
+         i1 = (uint8_t)i;
+      }
+   }
+
+   *index0 = i0;
+   *index1 = i1;
+
+   //Project the color onto the line between the two palette entries (in
+   //linear RGB) to see how far along it sits; this is only used to decide
+   //whether picoCAD's single checker pattern should kick in at all.
+   float p0r,p0g,p0b,p1r,p1g,p1b,cr,cg,cb;
+   slk_color32_to_rgb(config->palette[i0],&p0r,&p0g,&p0b);
+   slk_color32_to_rgb(config->palette[i1],&p1r,&p1g,&p1b);
+   slk_color32_to_rgb(color64_to_32(c),&cr,&cg,&cb);
+
+   float dr = p1r-p0r;
+   float dg = p1g-p0g;
+   float db = p1b-p0b;
+   float len2 = dr*dr+dg*dg+db*db;
+   if(len2<1e-6f)
+      *t = 0.f;
+   else
+      *t = HLH_max(0.f,HLH_min(1.f,((cr-p0r)*dr+(cg-p0g)*dg+(cb-p0b)*db)/len2));
+}
+
+//picoCAD-style dither: just one fixed checker pattern between the 2 closest colors
+static SLK_img8and32 slk_dither_picocad(Image64 *img, const SLK_dither_config *config)
+{
+   Image8 *out = image8_new(img->width,img->height);
+   Image32 *out32 = image32_new(img->width,img->height);
+   out->color_count = config->palette_colors;
+   for(int i = 0;i<config->palette_colors;i++)
+      out->palette[i] = config->palette[i];
+
+#pragma omp parallel for
+   for(int y = 0;y<img->height;y++)
+   {
+      for(int x = 0;x<img->width;x++)
+      {
+         uint64_t p = img->data[y*img->width+x];
+         if((int)(color64_a(p)/128)<config->alpha_threshold)
+         {
+            out32->data[y*img->width+x] = 0;
+            out->data[y*img->width+x] = 0;
+            continue;
+         }
+
+         uint8_t index0,index1;
+         float t;
+         slk_color_closest_two(p,config,&index0,&index1,&t);
+
+         uint8_t chosen;
+         if(t<=1.f/3.f)
+            chosen = index0;
+         else if(t>=2.f/3.f)
+            chosen = index1;
+         else
+            chosen = (uint8_t)(((x^y)&1)?index1:index0);
+
+         out->data[y*img->width+x] = chosen;
+         out32->data[y*img->width+x] = out->palette[chosen];
+      }
+   }
+
+   return (SLK_img8and32){out, out32};
 }
 
 static void slk_color32_to_rgb(uint32_t c, float *l0, float *l1, float *l2)
