@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024,2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -26,7 +26,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static int imgcmp_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int64_t imgcmp_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static void imgcmp_draw(HLH_gui_imgcmp *img);
 
 static void imgcmp_update_view(HLH_gui_imgcmp *img, int reset);
@@ -34,7 +34,7 @@ static void imgcmp_update_view(HLH_gui_imgcmp *img, int reset);
 
 //Function implementations
 
-HLH_gui_imgcmp *HLH_gui_imgcmp_create(HLH_gui_element *parent, uint64_t flags, uint32_t *pix0, int width0, int height0, uint32_t *pix1, int width1, int height1)
+HLH_gui_imgcmp *HLH_gui_imgcmp_create(HLH_gui_element *parent, HLH_gui_flags flags, uint32_t *pix0, int width0, int height0, uint32_t *pix1, int width1, int height1)
 {
    HLH_gui_imgcmp *img = (HLH_gui_imgcmp *) HLH_gui_element_create(sizeof(*img), parent, flags, imgcmp_msg);
    img->e.type = HLH_GUI_IMGCMP;
@@ -89,8 +89,8 @@ static void imgcmp_update_view(HLH_gui_imgcmp *img, int reset)
    int view_y;
    int view_width;
    int view_height;
-   int width = bounds.maxx - bounds.minx - scale * 6;
-   int height = bounds.maxy - bounds.miny - scale * 6;
+   int width = bounds.max[0] - bounds.min[0] - scale * 6;
+   int height = bounds.max[1] - bounds.min[1] - scale * 6;
 
    //Img1
    if(width * img->height0>img->width0 * height)
@@ -134,17 +134,17 @@ static void imgcmp_update_view(HLH_gui_imgcmp *img, int reset)
    img->oy /= sc0;
 }
 
-static int imgcmp_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t imgcmp_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_imgcmp *img = (HLH_gui_imgcmp *)e;
 
    if(msg==HLH_GUI_MSG_GET_WIDTH)
    {
-      return img->width0 + 6 * HLH_gui_get_scale();
+      return 6 * HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {
-      return img->height0 + 6 * HLH_gui_get_scale();
+      return 6 * HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_MOUSE)
    {
@@ -156,8 +156,8 @@ static int imgcmp_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          HLH_gui_rect bounds = img->e.bounds;
          int scale = HLH_gui_get_scale();
 
-         int mx = m->pos.x - (bounds.minx+3*scale);
-         int value = (mx * 2048) / (bounds.maxx-bounds.minx-6*scale);
+         int mx = m->pos[0] - (bounds.min[0]+3*scale);
+         int value = (mx * 2048) / (bounds.max[0]-bounds.min[0]-6*scale);
          if(value<0) value = 0;
          if(value>2048) value = 2048;
 
@@ -167,39 +167,44 @@ static int imgcmp_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
             HLH_gui_element_redraw(&img->e);
          }
 
+         m->handled = true;
+
          return 1;
       }
 
       if(m->wheel>0&&img->scale<=64.f)
       {
-         float mx = (float)(m->pos.x-img->e.bounds.minx);
-         float my = (float)(m->pos.y-img->e.bounds.miny);
+         float mx = (float)(m->pos[0]-img->e.bounds.min[0]);
+         float my = (float)(m->pos[1]-img->e.bounds.min[1]);
          float x = (mx-img->x)/img->scale;
          float y = (my-img->y)/img->scale;
          float scale_change = -img->scale*0.15f;
          img->x+=x*scale_change;
          img->y+=y*scale_change;
          img->scale+=img->scale*0.15f;
+         m->handled = true;
          redraw = 1;
       }
       else if(m->wheel<0&&img->scale>=0.1f)
       {
-         float mx = (float)(m->pos.x-img->e.bounds.minx);
-         float my = (float)(m->pos.y-img->e.bounds.miny);
+         float mx = (float)(m->pos[0]-img->e.bounds.min[0]);
+         float my = (float)(m->pos[1]-img->e.bounds.min[1]);
          float x = (mx-img->x)/img->scale;
          float y = (my-img->y)/img->scale;
          float scale_change = img->scale*0.15f;
          img->x+=x*scale_change;
          img->y+=y*scale_change;
          img->scale-=img->scale*0.15f;
+         m->handled = true;
          redraw = 1;
       }
 
-      if(m->button&HLH_GUI_MOUSE_MIDDLE&&(m->rel.x!=0||m->rel.y!=0))
+      if(m->button&HLH_GUI_MOUSE_MIDDLE&&(m->rel[0]!=0||m->rel[1]!=0))
       {
-         img->x+=(float)m->rel.x;
-         img->y+=(float)m->rel.y;
+         img->x+=(float)m->rel[0];
+         img->y+=(float)m->rel[1];
          HLH_gui_element_redraw(&img->e);
+         m->handled = true;
 
          return 1;
       }
@@ -240,44 +245,44 @@ static void imgcmp_draw(HLH_gui_imgcmp *img)
    int scale = HLH_gui_get_scale();
 
    HLH_gui_draw_rectangle_fill(&img->e, bounds, HLH_gui_theme_current.bg);
-   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_dark);
-   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_dark);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_dark);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_dark);
 
-   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_light);
-   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_light);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_light);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_light);
 
-   int middle = ((bounds.maxx-bounds.minx-6*scale)* img->slider) / 2048 + bounds.minx+3*scale;
+   int middle = ((bounds.max[0]-bounds.min[0]-6*scale)* img->slider) / 2048 + bounds.min[0]+3*scale;
    SDL_Rect clip = {0};
-   SDL_Rect dst = {0};
-   dst.x = (int)img->x + bounds.minx;
-   dst.y = (int)img->y + bounds.miny;
+   SDL_FRect dst = {0};
+   dst.x = (int)img->x + bounds.min[0];
+   dst.y = (int)img->y + bounds.min[1];
    dst.w = (int)((float)img->width0 * img->scale);
    dst.h = (int)((float)img->height0 * img->scale);
-   clip.x = bounds.minx + 3 * scale;
-   clip.y = bounds.miny + 3 * scale;
-   clip.w = middle-(bounds.minx + 6 * scale);
+   clip.x = bounds.min[0] + 3 * scale;
+   clip.y = bounds.min[1] + 3 * scale;
+   clip.w = middle-(bounds.min[0] + 6 * scale);
    if(clip.w<=0) clip.w = 1;
-   clip.h = bounds.maxy - bounds.miny - 6 * scale;
-   SDL_RenderSetClipRect(img->e.window->renderer, &clip);
-   SDL_RenderCopy(img->e.window->renderer, img->img0, NULL, &dst);
-   SDL_RenderSetClipRect(img->e.window->renderer, NULL);
+   clip.h = bounds.max[1] - bounds.min[1] - 6 * scale;
+   SDL_SetRenderClipRect(img->e.window->sdl_renderer, &clip);
+   SDL_RenderTexture(img->e.window->sdl_renderer, img->img0, NULL, &dst);
+   SDL_SetRenderClipRect(img->e.window->sdl_renderer, NULL);
 
    clip.x = middle;
-   clip.y = bounds.miny + 3 * scale;
-   clip.w = bounds.maxx- middle - 3 * scale;
+   clip.y = bounds.min[1] + 3 * scale;
+   clip.w = bounds.max[0]- middle - 3 * scale;
    if(clip.w<=0)
       clip.w = 1;
-   clip.h = bounds.maxy - bounds.miny - 6 * scale;
-   dst.x = (int)(img->x + img->ox * img->scale) + bounds.minx;
-   dst.y = (int)(img->y + img->oy * img->scale) + bounds.miny;
+   clip.h = bounds.max[1] - bounds.min[1] - 6 * scale;
+   dst.x = (int)(img->x + img->ox * img->scale) + bounds.min[0];
+   dst.y = (int)(img->y + img->oy * img->scale) + bounds.min[1];
    dst.w = (int)((float)img->width1 * img->scale1 * img->scale);
    dst.h = (int)((float)img->height1 * img->scale1 * img->scale);
-   SDL_RenderSetClipRect(img->e.window->renderer, &clip);
-   SDL_RenderCopy(img->e.window->renderer, img->img1, NULL, &dst);
-   SDL_RenderSetClipRect(img->e.window->renderer, NULL);
+   SDL_SetRenderClipRect(img->e.window->sdl_renderer, &clip);
+   SDL_RenderTexture(img->e.window->sdl_renderer, img->img1, NULL, &dst);
+   SDL_SetRenderClipRect(img->e.window->sdl_renderer, NULL);
 
-   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(middle - scale, bounds.miny + 3 * scale, middle + scale, bounds.maxy - 3 * scale), HLH_gui_theme_current.bg);
-   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(middle - 2 * scale, bounds.miny + 3 * scale, middle - scale, bounds.maxy - 3 * scale), HLH_gui_theme_current.bevel_dark);
-   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(middle + scale, bounds.miny + 3 * scale, middle + 2 * scale, bounds.maxy - 3 * scale), HLH_gui_theme_current.bevel_light);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(middle - scale, bounds.min[1] + 3 * scale, middle + scale, bounds.max[1] - 3 * scale), HLH_gui_theme_current.bg);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(middle - 2 * scale, bounds.min[1] + 3 * scale, middle - scale, bounds.max[1] - 3 * scale), HLH_gui_theme_current.bevel_dark);
+   HLH_gui_draw_rectangle_fill(&img->e, HLH_gui_rect_make(middle + scale, bounds.min[1] + 3 * scale, middle + 2 * scale, bounds.max[1] - 3 * scale), HLH_gui_theme_current.bevel_light);
 }
 //-------------------------------------

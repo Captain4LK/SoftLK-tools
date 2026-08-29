@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -25,12 +25,12 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static int label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int64_t label_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, uint64_t flags, const char *text)
+HLH_gui_label *HLH_gui_label_create(HLH_gui_element *parent, HLH_gui_flags flags, const char *text)
 {
    HLH_gui_label *label = (HLH_gui_label *) HLH_gui_element_create(sizeof(*label), parent, flags, label_msg);
    label->e.type = HLH_GUI_LABEL;
@@ -51,7 +51,7 @@ void HLH_gui_label_set(HLH_gui_label *label, const char *txt)
    strcpy(label->text, txt);
 }
 
-static int label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t label_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_label *label = (HLH_gui_label *)e;
 
@@ -63,8 +63,6 @@ static int label_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    {
       return HLH_GUI_GLYPH_HEIGHT * HLH_gui_get_scale() + 2 * HLH_gui_get_scale();
    }
-   else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
-   {}
    else if(msg==HLH_GUI_MSG_DRAW)
    {
       HLH_gui_draw_rectangle_fill(e, e->bounds, HLH_gui_theme_current.bg);

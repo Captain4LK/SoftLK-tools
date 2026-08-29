@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024,2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -44,6 +44,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "HLH_gui_button.c"
 #include "HLH_gui_checkbutton.c"
 #include "HLH_gui_radiobutton.c"
+#include "HLH_gui_layout.c"
 #include "HLH_gui_menu.c"
 #include "HLH_gui_menubar.c"
 #include "HLH_gui_separator.c"

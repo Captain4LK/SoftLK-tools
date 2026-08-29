@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023, 2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -25,13 +25,13 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int64_t button_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static void button_draw(HLH_gui_button *t);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds)
+HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, HLH_gui_flags flags, const char *text, HLH_gui_rect *icon_bounds)
 {
    HLH_gui_button *button = (HLH_gui_button *) HLH_gui_element_create(sizeof(*button), parent, flags, button_msg);
    button->e.type = HLH_GUI_BUTTON;
@@ -51,21 +51,21 @@ HLH_gui_button *HLH_gui_button_create(HLH_gui_element *parent, uint64_t flags, c
    return button;
 }
 
-static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t button_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_button *button = (HLH_gui_button *)e;
 
    if(msg==HLH_GUI_MSG_GET_WIDTH)
    {
       if(button->is_icon)
-         return (button->icon_bounds.maxx - button->icon_bounds.minx) + 6 * HLH_gui_get_scale();
+         return (button->icon_bounds.max[0] - button->icon_bounds.min[0]) + 6 * HLH_gui_get_scale();
       else
          return button->text_len * HLH_GUI_GLYPH_WIDTH * HLH_gui_get_scale() + 10 * HLH_gui_get_scale();
    }
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {
       if(button->is_icon)
-         return (button->icon_bounds.maxy - button->icon_bounds.miny) + 6 * HLH_gui_get_scale();
+         return (button->icon_bounds.max[1] - button->icon_bounds.min[1]) + 6 * HLH_gui_get_scale();
       else
          return HLH_GUI_GLYPH_HEIGHT * HLH_gui_get_scale() + 8 * HLH_gui_get_scale();
    }
@@ -73,8 +73,6 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    {
       button_draw(button);
    }
-   else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
-   {}
    else if(msg==HLH_GUI_MSG_MOUSE_LEAVE)
    {
       int state_old = button->state;
@@ -86,11 +84,17 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    {
       HLH_gui_mouse *m = dp;
 
+      if(button->state)
+      {
+         m->handled = true;
+      }
+
       int click = 0;
       int state_old = button->state;
       if(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE))
       {
          button->state = 1;
+         m->handled = true;
       }
       else
       {
@@ -118,7 +122,7 @@ static int button_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
 
 static void button_draw(HLH_gui_button *t)
 {
-   uint64_t style = t->e.flags & HLH_GUI_STYLE;
+   uint64_t style = t->e.flags.style;
 
    if(t->is_icon)
    {
@@ -126,7 +130,7 @@ static void button_draw(HLH_gui_button *t)
       HLH_gui_rect bounds = t->e.bounds;
 
       //Infill
-      HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + scale, bounds.miny + scale, bounds.maxx - scale, bounds.maxy - scale), HLH_gui_theme_current.bg);
+      HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + scale, bounds.min[1] + scale, bounds.max[0] - scale, bounds.max[1] - scale), HLH_gui_theme_current.bg);
 
       //Outline
       HLH_gui_draw_rectangle(&t->e, bounds, HLH_gui_theme_current.border);
@@ -134,37 +138,37 @@ static void button_draw(HLH_gui_button *t)
       //Border
       if(t->state)
       {
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.border);
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.border);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.border);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.border);
 
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_dark);
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_dark);
       }
       else
       {
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_dark);
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_dark);
 
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_light);
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_light);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_light);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_light);
       }
 
-      int width = t->icon_bounds.maxx - t->icon_bounds.minx;
-      int height = t->icon_bounds.maxy - t->icon_bounds.miny;
-      SDL_Rect src = {.x = t->icon_bounds.minx, .y = t->icon_bounds.miny, .w = width, .h = height};
-      SDL_Rect dst = {.x = bounds.minx + 3 * scale, .y = bounds.miny + 3 * scale, .w = width, .h = height};
-      SDL_RenderCopy(t->e.window->renderer, t->e.window->icons, &src, &dst);
+      int width = t->icon_bounds.max[0] - t->icon_bounds.min[0];
+      int height = t->icon_bounds.max[1] - t->icon_bounds.min[1];
+      SDL_FRect src = {.x = t->icon_bounds.min[0], .y = t->icon_bounds.min[1], .w = width, .h = height};
+      SDL_FRect dst = {.x = bounds.min[0] + 3 * scale, .y = bounds.min[1] + 3 * scale, .w = width, .h = height};
+      SDL_RenderTexture(t->e.window->sdl_renderer, t->e.window->sdl_icons, &src, &dst);
 
       return;
    }
 
-   if(style==HLH_GUI_STYLE_00)
+   if(style==0)
    {
       int scale = HLH_gui_get_scale();
       HLH_gui_rect bounds = t->e.bounds;
 
       //Infill
-      HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + scale, bounds.miny + scale, bounds.maxx - scale, bounds.maxy - scale), HLH_gui_theme_current.bg);
+      HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + scale, bounds.min[1] + scale, bounds.max[0] - scale, bounds.max[1] - scale), HLH_gui_theme_current.bg);
 
       //Outline
       HLH_gui_draw_rectangle(&t->e, bounds, HLH_gui_theme_current.border);
@@ -172,24 +176,24 @@ static void button_draw(HLH_gui_button *t)
       //Border
       if(t->state)
       {
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.border);
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.border);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.border);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.border);
 
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_dark);
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_dark);
       }
       else
       {
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_dark);
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_dark);
 
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_light);
-         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_light);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_light);
+         HLH_gui_draw_rectangle_fill(&t->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_light);
       }
 
       HLH_gui_draw_string(&t->e, bounds, t->text, t->text_len, HLH_gui_theme_current.text, 1);
    }
-   else if(style==HLH_GUI_STYLE_01)
+   else if(style==1)
    {
       HLH_gui_rect bounds = t->e.bounds;
 

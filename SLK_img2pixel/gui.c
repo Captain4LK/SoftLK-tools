@@ -1,7 +1,7 @@
 /*
 SLK_img2pixel - a tool for converting images to pixelart
 
-Written in 2023,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2024,2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -15,7 +15,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <string.h>
 #include <time.h>
 
-#include "cute_files.h"
+#include "external/cute_files.h"
 
 #include "HLH_gui.h"
 #include "HLH.h"
@@ -41,19 +41,19 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 //#defines
 #define SLIDER(root_group,type,type_enum) \
-   group = HLH_gui_group_create(root_group,HLH_GUI_FILL_X); \
-   slider = HLH_gui_slider_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FILL_X,0); \
+   group = HLH_gui_group_create(root_group,(HLH_gui_flags){.fill_x = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL}); \
+   slider = HLH_gui_slider_create(&group->e,(HLH_gui_flags){.fill_x = true},0); \
    HLH_gui_slider_set(slider,-1,1,0,0); \
    slider->e.msg_usr = slider_msg; \
    slider->e.usr = SLIDER_##type_enum; \
    gui.slider_##type = slider; \
-   b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"\x11",NULL); \
+   b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"\x11",NULL); \
    b->e.msg_usr = button_sub_msg; \
    b->e.usr = BUTTON_##type_enum; \
-   b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"\x10",NULL); \
+   b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"\x10",NULL); \
    b->e.msg_usr = button_add_msg; \
    b->e.usr = BUTTON_##type_enum; \
-   gui.entry_##type = HLH_gui_entry_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,5); \
+   gui.entry_##type = HLH_gui_entry_create(&group->e,(HLH_gui_flags){},5); \
    gui.entry_##type->e.msg_usr = entry_msg; \
    gui.entry_##type->e.usr = ENTRY_##type_enum;
 //-------------------------------------
@@ -291,17 +291,17 @@ static Image64 *cache_tint;
 //-------------------------------------
 
 //Function prototypes
-static int main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int rb_radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int radiobutton_sample_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int radiobutton_scale_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int radiobutton_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int64_t main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t rb_radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t radiobutton_sample_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t radiobutton_scale_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t radiobutton_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 //Formats an HLH_gui_theme color as a 6-digit hex string (alpha dropped -
 //theme colors are always fully opaque). 'out' must have room for 7 bytes.
 static void gui_theme_to_hex(uint32_t color, char *out)
@@ -351,7 +351,7 @@ static void gui_theme_refresh_entries(void)
    HLH_gui_entry_set(gui.entry_theme_text,hex);
 }
 
-static int button_theme_preset_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t button_theme_preset_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {
@@ -393,15 +393,15 @@ static int button_theme_preset_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
    return 0;
 }
 
-static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int menu_tools_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int button_script_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int checkbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int radiobutton_distance_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
-static int button_palette_gen_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int64_t menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t menu_tools_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t button_script_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t checkbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t radiobutton_distance_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t button_palette_gen_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static void radiobutton_palette_draw(HLH_gui_radiobutton *r);
 
 static void ui_construct_batch();
@@ -439,10 +439,14 @@ void gui_construct(void)
       "Run script...",
       "File watch",
    };
+
    HLH_gui_element *menus[3];
-   menus[0] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu0,3,menu_load_msg);
-   menus[1] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu1,3,menu_save_msg);
-   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,HLH_GUI_STYLE_01|HLH_GUI_NO_PARENT,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,menu2,2,menu_tools_msg);
+   menus[0] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,(HLH_gui_flags){.style = 1, .overlay = true, .no_parent = true},
+                                                     (HLH_gui_flags){.fill_x = true, .style = 1},menu0,3,menu_load_msg);
+   menus[1] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,(HLH_gui_flags){.style = 1, .overlay = true, .no_parent = true},
+                                                     (HLH_gui_flags){.fill_x = true, .style = 1},menu1,3,menu_save_msg);
+   menus[2] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,(HLH_gui_flags){.style = 1, .overlay = true, .no_parent = true},
+                                                     (HLH_gui_flags){.fill_x = true, .style = 1},menu2,2,menu_tools_msg);
 
    const char *menubar[] = 
    {
@@ -451,17 +455,22 @@ void gui_construct(void)
       "Tools",
    };
 
-   HLH_gui_group *root_group = HLH_gui_group_create(&win->e,HLH_GUI_FILL);
-   HLH_gui_menubar_create(&root_group->e,HLH_GUI_FILL_X,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_STYLE_01,menubar,menus,3,NULL);
-   HLH_gui_separator_create(&root_group->e,HLH_GUI_FILL_X,0);
+   HLH_gui_group *root_group = HLH_gui_group_create(&win->e,(HLH_gui_flags){.fill_x = true,
+                                                    .fill_y = true, .layout = HLH_GUI_LAYOUT_VERTICAL});
+   HLH_gui_menubar_create(&root_group->e,(HLH_gui_flags){.fill_x = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL},
+                          (HLH_gui_flags){.style = 1}, menubar,menus,3,NULL);
+   HLH_gui_separator_create(&root_group->e,(HLH_gui_flags){.fill_x =  true},0);
    //-------------------------------------
-
-   HLH_gui_group *group_left = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_Y|HLH_GUI_LAYOUT_HORIZONTAL);
-   HLH_gui_group *group_middle = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL|HLH_GUI_LAYOUT_HORIZONTAL);
-   HLH_gui_group *group_right = HLH_gui_group_create(&root_group->e,HLH_GUI_FILL_Y|HLH_GUI_LAYOUT_HORIZONTAL);
+   HLH_gui_group *group_content = HLH_gui_group_create(&root_group->e, (HLH_gui_flags){
+      .fill_x = true, .fill_y = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL});
+   HLH_gui_group *group_left = HLH_gui_group_create(&group_content->e,(HLH_gui_flags){.fill_y = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL});
+   HLH_gui_group *group_middle = HLH_gui_group_create(&group_content->e,
+                                    (HLH_gui_flags){.fill_x = true, .fill_y = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL});
+   HLH_gui_group *group_right = HLH_gui_group_create(&group_content->e,(HLH_gui_flags){.fill_y = true, .layout = HLH_GUI_LAYOUT_VERTICAL});
 
    //Left bar: settings
    //n subgroups --> marked as ignored by tabs on right
+   #if 1
 
    //Sample
    //-------------------------------------
@@ -470,82 +479,86 @@ void gui_construct(void)
       HLH_gui_slider *slider = NULL;
       HLH_gui_group *group = NULL;
 
-      gui_groups_left[0] = HLH_gui_group_create(&group_left->e,HLH_GUI_FILL);
-      HLH_gui_group *group_relative = HLH_gui_group_create(&gui_groups_left[0]->e,0);
+      gui_groups_left[0] = HLH_gui_group_create(&group_left->e,(HLH_gui_flags)
+      {.fill_x = true, .fill_y = true, .layout = HLH_GUI_LAYOUT_VERTICAL});
 
-      gui_groups_sample[0] = HLH_gui_group_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X);
-      HLH_gui_label_create(&gui_groups_sample[0]->e,0,"Width");
+      HLH_gui_group *group_relative = HLH_gui_group_create(&gui_groups_left[0]->e,(HLH_gui_flags)
+         {.center_x = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL});
+      gui_groups_sample[0] = HLH_gui_group_create(&gui_groups_left[0]->e,(HLH_gui_flags){.fill_x = true});
+      HLH_gui_label_create(&gui_groups_sample[0]->e,(HLH_gui_flags){.fill_x = true},"Width");
       SLIDER(&gui_groups_sample[0]->e,width,WIDTH)
-      HLH_gui_label_create(&gui_groups_sample[0]->e,0,"Height");
+      HLH_gui_label_create(&gui_groups_sample[0]->e,(HLH_gui_flags){.fill_x = true},"Height");
       SLIDER(&gui_groups_sample[0]->e,height,HEIGHT)
 
 
-      gui_groups_sample[1] = HLH_gui_group_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X);
-      HLH_gui_label_create(&gui_groups_sample[1]->e,0,"Scale X");
+      gui_groups_sample[1] = HLH_gui_group_create(&gui_groups_left[0]->e,(HLH_gui_flags){.fill_x = true});
+      HLH_gui_label_create(&gui_groups_sample[1]->e,(HLH_gui_flags){.fill_x = true},"Scale X");
       SLIDER(&gui_groups_sample[1]->e,scale_x,SCALE_X);
-      HLH_gui_label_create(&gui_groups_sample[1]->e,0,"Scale Y");
+      HLH_gui_label_create(&gui_groups_sample[1]->e,(HLH_gui_flags){.fill_x = true},"Scale Y");
       SLIDER(&gui_groups_sample[1]->e,scale_y,SCALE_Y);
 
-      HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_relative->e,HLH_GUI_LAYOUT_HORIZONTAL,"Absolute",NULL);
+      HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_relative->e,(HLH_gui_flags){},"Absolute",NULL);
       r->e.usr = 0;
       r->e.msg_usr = radiobutton_scale_msg;
       gui.sample_scale_mode[0] = r;
       HLH_gui_radiobutton *r_first = r;
-      r = HLH_gui_radiobutton_create(&group_relative->e,HLH_GUI_LAYOUT_HORIZONTAL,"Relative",NULL);
+      r = HLH_gui_radiobutton_create(&group_relative->e,(HLH_gui_flags){},"Relative",NULL);
       r->e.usr = 1;
       r->e.msg_usr = radiobutton_scale_msg;
       gui.sample_scale_mode[1] = r;
       HLH_gui_radiobutton_set(r_first,1,1);
 
-      HLH_gui_label_create(&gui_groups_left[0]->e,0,"                                ");
-      HLH_gui_separator_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_label_create(&gui_groups_left[0]->e,0,"                                ");
+      HLH_gui_label_create(&gui_groups_left[0]->e,(HLH_gui_flags){},"                                ");
+      HLH_gui_separator_create(&gui_groups_left[0]->e,(HLH_gui_flags){.fill_x = true},0);
+      HLH_gui_label_create(&gui_groups_left[0]->e,(HLH_gui_flags){},"                                ");
 
-      HLH_gui_label_create(&gui_groups_left[0]->e,0,"Sample mode");
+      HLH_gui_label_create(&gui_groups_left[0]->e,(HLH_gui_flags){.fill_x = true},"Sample mode");
 
-      HLH_gui_group *group_sample = HLH_gui_group_create(&gui_groups_left[0]->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
-      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Nearest ",NULL);
+      HLH_gui_group *group_sample = HLH_gui_group_create(&gui_groups_left[0]->e.window->e,
+                                    (HLH_gui_flags){.no_parent = true, .overlay = true, .style = 1});
+      r = HLH_gui_radiobutton_create(&group_sample->e,(HLH_gui_flags){.fill_x = true, .style = 1},"Nearest ",NULL);
       r->e.usr = 0;
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[0] = r;
       HLH_gui_radiobutton *first = r;
-      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bilinear",NULL);
+      r = HLH_gui_radiobutton_create(&group_sample->e,(HLH_gui_flags){.fill_x = true, .style = 1},"Bilinear",NULL);
       r->e.usr = 1;
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[1] = r;
-      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bicubic ",NULL);
+      r = HLH_gui_radiobutton_create(&group_sample->e,(HLH_gui_flags){.fill_x = true, .style = 1},"Bicubic ",NULL);
       r->e.usr = 2;
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[2] = r;
-      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Lanczos ",NULL);
+      r = HLH_gui_radiobutton_create(&group_sample->e,(HLH_gui_flags){.fill_x = true, .style = 1},"Lanczos ",NULL);
       r->e.usr = 3;
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[3] = r;
-      r = HLH_gui_radiobutton_create(&group_sample->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Cluster",NULL);
+      r = HLH_gui_radiobutton_create(&group_sample->e,(HLH_gui_flags){.fill_x = true, .style = 1},"Cluster",NULL);
       r->e.usr = 4;
       r->e.msg_usr = radiobutton_sample_msg;
       gui.sample_sample_mode[4] = r;
       HLH_gui_radiobutton_set(first,1,1);
       const char *bar_sample[1] = {"Nearest  \x1f"};
-      gui_bar_sample = HLH_gui_menubar_create(&gui_groups_left[0]->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_sample,(HLH_gui_element **)&group_sample,1,NULL);
+      gui_bar_sample = HLH_gui_menubar_create(&gui_groups_left[0]->e,(HLH_gui_flags){.center_x= true, .layout = HLH_GUI_LAYOUT_HORIZONTAL},
+                                              (HLH_gui_flags){},bar_sample,(HLH_gui_element **)&group_sample,1,NULL);
 
-      HLH_gui_label_create(&gui_groups_left[0]->e,0,"Sample x offset");
+      HLH_gui_label_create(&gui_groups_left[0]->e,(HLH_gui_flags){.fill_x = true},"Sample x offset");
       SLIDER(&gui_groups_left[0]->e,x_off,X_OFF)
-      HLH_gui_label_create(&gui_groups_left[0]->e,0,"Sample y offset");
+      HLH_gui_label_create(&gui_groups_left[0]->e,(HLH_gui_flags){.fill_x = true},"Sample y offset");
       SLIDER(&gui_groups_left[0]->e,y_off,Y_OFF)
 
-      HLH_gui_label_create(&gui_groups_left[0]->e,0,"                                ");
-      HLH_gui_separator_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_label_create(&gui_groups_left[0]->e,0,"                                ");
+      HLH_gui_label_create(&gui_groups_left[0]->e,(HLH_gui_flags){},"                                ");
+      HLH_gui_separator_create(&gui_groups_left[0]->e,(HLH_gui_flags){.fill_x = true},0);
+      HLH_gui_label_create(&gui_groups_left[0]->e,(HLH_gui_flags){},"                                ");
 
-      HLH_gui_label_create(&gui_groups_left[0]->e,0,"Blur amount");
+      HLH_gui_label_create(&gui_groups_left[0]->e,(HLH_gui_flags){.fill_x = true},"Blur amount");
       SLIDER(&gui_groups_left[0]->e,blur,BLUR)
 
-      HLH_gui_label_create(&gui_groups_left[0]->e,0,"                                ");
-      HLH_gui_separator_create(&gui_groups_left[0]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_label_create(&gui_groups_left[0]->e,0,"                                ");
+      HLH_gui_label_create(&gui_groups_left[0]->e,(HLH_gui_flags){},"                                ");
+      HLH_gui_separator_create(&gui_groups_left[0]->e,(HLH_gui_flags){.fill_x = true},0);
+      HLH_gui_label_create(&gui_groups_left[0]->e,(HLH_gui_flags){},"                                ");
 
-      HLH_gui_label_create(&gui_groups_left[0]->e,0,"Sharpen amount");
+      HLH_gui_label_create(&gui_groups_left[0]->e,(HLH_gui_flags){.fill_x = true},"Sharpen amount");
       SLIDER(&gui_groups_left[0]->e,sharp,SHARP)
    }
    //-------------------------------------
@@ -556,135 +569,167 @@ void gui_construct(void)
       HLH_gui_button *b = NULL;
       HLH_gui_slider *slider = NULL;
       HLH_gui_group *group = NULL;
-      gui_groups_left[1] = HLH_gui_group_create(&group_left->e,HLH_GUI_FILL);
+      gui_groups_left[1] = HLH_gui_group_create(&group_left->e,(HLH_gui_flags)
+      {.fill_x = true, .fill_y = true, .layout = HLH_GUI_LAYOUT_VERTICAL});
 
-      HLH_gui_label_create(&gui_groups_left[1]->e,0,"Alpha threshold");
+      HLH_gui_label_create(&gui_groups_left[1]->e,(HLH_gui_flags){.fill_x = true},"Alpha threshold");
       SLIDER(&gui_groups_left[1]->e,alpha_threshold,ALPHA_THRESHOLD)
 
-      HLH_gui_label_create(&gui_groups_left[1]->e,0,"                                ");
-      HLH_gui_separator_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_label_create(&gui_groups_left[1]->e,0,"                                ");
+      HLH_gui_label_create(&gui_groups_left[1]->e,(HLH_gui_flags){},"                                ");
+      HLH_gui_separator_create(&gui_groups_left[1]->e,(HLH_gui_flags){.fill_x = true},0);
+      HLH_gui_label_create(&gui_groups_left[1]->e,(HLH_gui_flags){},"                                ");
 
-      HLH_gui_label_create(&gui_groups_left[1]->e,0,"Distance metric");
+      HLH_gui_label_create(&gui_groups_left[1]->e,(HLH_gui_flags){.fill_x = true},"Distance metric");
 
-      HLH_gui_group *group_distance = HLH_gui_group_create(&gui_groups_left[1]->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
-      HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"RGB euclidian",NULL);
+      HLH_gui_group *group_distance = HLH_gui_group_create(&gui_groups_left[1]->e.window->e,
+                                      (HLH_gui_flags){.no_parent = true, .overlay = true, .style = 1});
+      HLH_gui_radiobutton *r = HLH_gui_radiobutton_create(&group_distance->e,
+                               (HLH_gui_flags){.style = 1, .fill_x = true},"RGB euclidian",NULL);
       r->e.usr = 0;
       r->e.msg_usr = radiobutton_distance_msg;
       HLH_gui_radiobutton *first = r;
       gui.dither_color_dist[0] = r;
-      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"RGB weighted ",NULL);
+      r = HLH_gui_radiobutton_create(&group_distance->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"RGB weighted ",NULL);
       r->e.usr = 1;
       r->e.msg_usr = radiobutton_distance_msg;
       gui.dither_color_dist[1] = r;
-      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"RGB redmean  ",NULL);
+      r = HLH_gui_radiobutton_create(&group_distance->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"RGB redmean  ",NULL);
       r->e.usr = 2;
       r->e.msg_usr = radiobutton_distance_msg;
       gui.dither_color_dist[2] = r;
-      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"CIE76        ",NULL);
+      r = HLH_gui_radiobutton_create(&group_distance->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"CIE76        ",NULL);
       r->e.usr = 3;
       r->e.msg_usr = radiobutton_distance_msg;
       gui.dither_color_dist[3] = r;
-      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"CIE94        ",NULL);
+      r = HLH_gui_radiobutton_create(&group_distance->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"CIE94        ",NULL);
       r->e.usr = 4;
       r->e.msg_usr = radiobutton_distance_msg;
       gui.dither_color_dist[4] = r;
-      r = HLH_gui_radiobutton_create(&group_distance->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"CIEDE2000    ",NULL);
+      r = HLH_gui_radiobutton_create(&group_distance->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"CIEDE2000    ",NULL);
       r->e.usr = 5;
       r->e.msg_usr = radiobutton_distance_msg;
       gui.dither_color_dist[5] = r;
       HLH_gui_radiobutton_set(first,1,1);
       const char *bar_distance[1] = {"RGB Euclidian \x1f"};
-      gui_bar_distance = HLH_gui_menubar_create(&gui_groups_left[1]->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_distance,(HLH_gui_element **)&group_distance,1,NULL);
+      gui_bar_distance = HLH_gui_menubar_create(&gui_groups_left[1]->e,
+                            (HLH_gui_flags){.center_x = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL},
+                            (HLH_gui_flags){},bar_distance,(HLH_gui_element **)&group_distance,1,NULL);
 
-      HLH_gui_label_create(&gui_groups_left[1]->e,0,"Dither/Assignment mode");
+      HLH_gui_label_create(&gui_groups_left[1]->e,(HLH_gui_flags){.fill_x = true},"Dither/Assignment mode");
 
-      HLH_gui_group *group_dither = HLH_gui_group_create(&gui_groups_left[1]->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"None             ",NULL);
+      HLH_gui_group *group_dither = HLH_gui_group_create(&gui_groups_left[1]->e.window->e,
+                                       (HLH_gui_flags){.no_parent = true, .overlay = true, .style = 1});
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"None             ",NULL);
       r->e.usr = 0;
       r->e.msg_usr = radiobutton_dither_msg;
       first = r;
       gui.dither_dither_mode[0] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bayer 8x8        ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Bayer 8x8        ",NULL);
       r->e.usr = 1;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[1] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bayer 4x4        ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Bayer 4x4        ",NULL);
       r->e.usr = 2;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[2] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bayer 2x2        ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Bayer 2x2        ",NULL);
       r->e.usr = 3;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[3] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Cluster 8x8      ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Cluster 8x8      ",NULL);
       r->e.usr = 4;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[4] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Cluster 4x4      ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Cluster 4x4      ",NULL);
       r->e.usr = 5;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[5] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Floyd-Steinberg  ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Floyd-Steinberg  ",NULL);
       r->e.usr = 6;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[6] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Floyd-Steinberg 2",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Floyd-Steinberg 2",NULL);
       r->e.usr = 7;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[7] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Median-Cut       ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Median-Cut       ",NULL);
       r->e.usr = 8;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[8] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bayer 5x5        ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Bayer 5x5        ",NULL);
       r->e.usr = 9;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[9] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Bayer 3x3        ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Bayer 3x3        ",NULL);
       r->e.usr = 10;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[10] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Stucki           ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Stucki           ",NULL);
       r->e.usr = 11;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[11] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Burkes           ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Burkes           ",NULL);
       r->e.usr = 12;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[12] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Sierra           ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Sierra           ",NULL);
       r->e.usr = 13;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[13] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Sierra Two-Row   ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Sierra Two-Row   ",NULL);
       r->e.usr = 14;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[14] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"Sierra Lite      ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"Sierra Lite      ",NULL);
       r->e.usr = 15;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[15] = r;
-      r = HLH_gui_radiobutton_create(&group_dither->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"PicoCAD          ",NULL);
+      r = HLH_gui_radiobutton_create(&group_dither->e,
+                                     (HLH_gui_flags){.style = 1, .fill_x = true},"PicoCAD          ",NULL);
       r->e.usr = 16;
       r->e.msg_usr = radiobutton_dither_msg;
       gui.dither_dither_mode[16] = r;
       const char *bar_dither[1] = {"Bayer 4x4         \x1f"};
-      gui_bar_dither = HLH_gui_menubar_create(&gui_groups_left[1]->e,0,HLH_GUI_LAYOUT_HORIZONTAL,bar_dither,(HLH_gui_element **)&group_dither,1,NULL);
+      gui_bar_dither = HLH_gui_menubar_create(&gui_groups_left[1]->e,
+                       (HLH_gui_flags){.center_x = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL},
+                       (HLH_gui_flags){},bar_dither,(HLH_gui_element **)&group_dither,1,NULL);
       
-      gui_groups_dither[0] = HLH_gui_group_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X);
-      gui_groups_dither[1] = HLH_gui_group_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X);
-      gui_groups_dither[2] = HLH_gui_group_create(&gui_groups_left[1]->e,HLH_GUI_FILL_X);
+      gui_groups_dither[0] = HLH_gui_group_create(&gui_groups_left[1]->e,(HLH_gui_flags){.fill_x = true});
+      gui_groups_dither[1] = HLH_gui_group_create(&gui_groups_left[1]->e,(HLH_gui_flags){.fill_x = true});
+      gui_groups_dither[2] = HLH_gui_group_create(&gui_groups_left[1]->e,(HLH_gui_flags){.fill_x = true});
 
-      HLH_gui_label_create(&gui_groups_dither[1]->e,0,"Dither amount");
+      HLH_gui_label_create(&gui_groups_dither[1]->e,(HLH_gui_flags){.fill_x = true},"Dither amount");
       SLIDER(&gui_groups_dither[1]->e,dither_amount,DITHER_AMOUNT)
 
-      HLH_gui_label_create(&gui_groups_dither[2]->e,0,"Target colors");
+      HLH_gui_label_create(&gui_groups_dither[2]->e,(HLH_gui_flags){.fill_x = true},"Target colors");
       SLIDER(&gui_groups_dither[2]->e,target_colors,TARGET_COLORS)
 
+      /*
       HLH_gui_element_ignore(&gui_groups_dither[0]->e,1);
       HLH_gui_element_ignore(&gui_groups_dither[1]->e,1);
       HLH_gui_element_ignore(&gui_groups_dither[2]->e,1);
+      */
 
       HLH_gui_radiobutton_set(first,1,1);
    }
@@ -696,15 +741,28 @@ void gui_construct(void)
       HLH_gui_button *b = NULL;
       HLH_gui_slider *slider = NULL;
       HLH_gui_group *group = NULL;
-      gui_groups_left[2] = HLH_gui_group_create(&group_left->e,HLH_GUI_FILL);
+      gui_groups_left[2] = HLH_gui_group_create(&group_left->e,(HLH_gui_flags)
+      {.fill_x = true, .fill_y = true, .layout = HLH_GUI_LAYOUT_VERTICAL});
 
       //Palette buttons
-      HLH_gui_group *group_pal = HLH_gui_group_create(&gui_groups_left[2]->e,0);
+      HLH_gui_group *group_pal = HLH_gui_group_create(&gui_groups_left[2]->e,
+                                 (HLH_gui_flags){.layout = HLH_GUI_LAYOUT_WRAP, .center_x = true
+                                 });
+      group_pal->e.size_min[0] = 256 * HLH_gui_get_scale();
       gui.group_palette = group_pal;
+      for(int i = 0; i < 256; i += 1)
+      {
+         HLH_gui_radiobutton *r = NULL;
+         r = HLH_gui_radiobutton_create(&group_pal->e,(HLH_gui_flags){},"",NULL);
+         gui.palette_colors[i] = r;
+         r->e.usr_ptr = &dither_config.palette[i];
+         r->e.usr = i;
+         r->e.msg_usr = radiobutton_palette_msg;
+      }
+      /*
       int color = 0;
       for(int i = 0;i<16;i++)
       {
-         HLH_gui_radiobutton *r = NULL;
          for(int j = 0;j<15;j++)
          {
             r = HLH_gui_radiobutton_create(&group_pal->e,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_NO_CENTER_X|HLH_GUI_NO_CENTER_Y,"",NULL);
@@ -719,24 +777,25 @@ void gui_construct(void)
          r->e.usr = color++;
          r->e.msg_usr = radiobutton_palette_msg;
       }
+      */
 
-      HLH_gui_label_create(&gui_groups_left[2]->e,0,"Red");
+      HLH_gui_label_create(&gui_groups_left[2]->e,(HLH_gui_flags){.fill_x = true},"Red");
       SLIDER(&gui_groups_left[2]->e,color_red,COLOR_RED);
-      HLH_gui_label_create(&gui_groups_left[2]->e,0,"Green");
+      HLH_gui_label_create(&gui_groups_left[2]->e,(HLH_gui_flags){.fill_x = true},"Green");
       SLIDER(&gui_groups_left[2]->e,color_green,COLOR_GREEN);
-      HLH_gui_label_create(&gui_groups_left[2]->e,0,"Blue");
+      HLH_gui_label_create(&gui_groups_left[2]->e,(HLH_gui_flags){.fill_x = true},"Blue");
       SLIDER(&gui_groups_left[2]->e,color_blue,COLOR_BLUE);
 
-      HLH_gui_label_create(&gui_groups_left[2]->e,0,"Color count");
+      HLH_gui_label_create(&gui_groups_left[2]->e,(HLH_gui_flags){.fill_x = true},"Color count");
       SLIDER(&gui_groups_left[2]->e,color_count,COLOR_COUNT);
 
-      HLH_gui_label_create(&gui_groups_left[2]->e,0,"                                ");
-      HLH_gui_separator_create(&gui_groups_left[2]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_label_create(&gui_groups_left[2]->e,0,"                                ");
+      HLH_gui_label_create(&gui_groups_left[2]->e,(HLH_gui_flags){},"                                ");
+      HLH_gui_separator_create(&gui_groups_left[2]->e,(HLH_gui_flags){.fill_x = true},0);
+      HLH_gui_label_create(&gui_groups_left[2]->e,(HLH_gui_flags){},"                                ");
 
-      b = HLH_gui_button_create(&gui_groups_left[2]->e,0,"Generate palette",NULL);
+      b = HLH_gui_button_create(&gui_groups_left[2]->e,(HLH_gui_flags){.center_x = true},"Generate palette",NULL);
       b->e.msg_usr = button_palette_gen_msg;
-      HLH_gui_checkbutton *c = HLH_gui_checkbutton_create(&gui_groups_left[2]->e,0,"k-means++",NULL);
+      HLH_gui_checkbutton *c = HLH_gui_checkbutton_create(&gui_groups_left[2]->e,(HLH_gui_flags){.center_x = true},"k-means++",NULL);
       c->e.usr = CHECKBUTTON_KMEANSPP;
       c->e.msg_usr = checkbutton_msg;
       gui.palette_kmeanspp = c;
@@ -749,34 +808,35 @@ void gui_construct(void)
       HLH_gui_button *b = NULL;
       HLH_gui_slider *slider = NULL;
       HLH_gui_group *group = NULL;
-      gui_groups_left[3] = HLH_gui_group_create(&group_left->e,HLH_GUI_FILL);
+      gui_groups_left[3] = HLH_gui_group_create(&group_left->e,(HLH_gui_flags)
+                              {.fill_x = true, .fill_y = true, .layout = HLH_GUI_LAYOUT_VERTICAL});
 
-      HLH_gui_label_create(&gui_groups_left[3]->e,0,"Brightness");
+      HLH_gui_label_create(&gui_groups_left[3]->e,(HLH_gui_flags){.fill_x = true},"Brightness");
       SLIDER(&gui_groups_left[3]->e,brightness,BRIGHTNESS)
 
-      HLH_gui_label_create(&gui_groups_left[3]->e,0,"Contrast");
+      HLH_gui_label_create(&gui_groups_left[3]->e,(HLH_gui_flags){.fill_x = true},"Contrast");
       SLIDER(&gui_groups_left[3]->e,contrast,CONTRAST)
 
-      HLH_gui_label_create(&gui_groups_left[3]->e,0,"Saturation");
+      HLH_gui_label_create(&gui_groups_left[3]->e,(HLH_gui_flags){.fill_x = true},"Saturation");
       SLIDER(&gui_groups_left[3]->e,saturation,SATURATION)
 
-      HLH_gui_label_create(&gui_groups_left[3]->e,0,"Hue");
+      HLH_gui_label_create(&gui_groups_left[3]->e,(HLH_gui_flags){.fill_x = true},"Hue");
       SLIDER(&gui_groups_left[3]->e,hue,HUE)
 
-      HLH_gui_label_create(&gui_groups_left[3]->e,0,"Gamma");
+      HLH_gui_label_create(&gui_groups_left[3]->e,(HLH_gui_flags){.fill_x = true},"Gamma");
       SLIDER(&gui_groups_left[3]->e,gamma,GAMMA)
 
-      HLH_gui_label_create(&gui_groups_left[3]->e,0,"                                ");
-      HLH_gui_separator_create(&gui_groups_left[3]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_label_create(&gui_groups_left[3]->e,0,"                                ");
+      HLH_gui_label_create(&gui_groups_left[3]->e,(HLH_gui_flags){},"                                ");
+      HLH_gui_separator_create(&gui_groups_left[3]->e,(HLH_gui_flags){.fill_x = true},0);
+      HLH_gui_label_create(&gui_groups_left[3]->e,(HLH_gui_flags){},"                                ");
 
-      HLH_gui_label_create(&gui_groups_left[3]->e,0,"Tint red");
+      HLH_gui_label_create(&gui_groups_left[3]->e,(HLH_gui_flags){.fill_x = true},"Tint red");
       SLIDER(&gui_groups_left[3]->e,tint_red,TINT_RED)
 
-      HLH_gui_label_create(&gui_groups_left[3]->e,0,"Tint green");
+      HLH_gui_label_create(&gui_groups_left[3]->e,(HLH_gui_flags){.fill_x = true},"Tint green");
       SLIDER(&gui_groups_left[3]->e,tint_green,TINT_GREEN)
 
-      HLH_gui_label_create(&gui_groups_left[3]->e,0,"Tint blue");
+      HLH_gui_label_create(&gui_groups_left[3]->e,(HLH_gui_flags){.fill_x = true},"Tint blue");
       SLIDER(&gui_groups_left[3]->e,tint_blue,TINT_BLUE)
    }
    //-------------------------------------
@@ -784,51 +844,53 @@ void gui_construct(void)
    //Theme
    //-------------------------------------
    {
-      gui_groups_left[4] = HLH_gui_group_create(&group_left->e,HLH_GUI_FILL);
+      gui_groups_left[4] = HLH_gui_group_create(&group_left->e,(HLH_gui_flags)
+                              {.fill_x = true, .fill_y = true, .layout = HLH_GUI_LAYOUT_VERTICAL});
 
-      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Presets");
-      HLH_gui_group *group_theme_presets = HLH_gui_group_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X);
-      HLH_gui_button *btn_theme_default = HLH_gui_button_create(&group_theme_presets->e,HLH_GUI_LAYOUT_HORIZONTAL,"Default",NULL);
+      HLH_gui_label_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},"Presets");
+      HLH_gui_group *group_theme_presets = HLH_gui_group_create(&gui_groups_left[4]->e,
+                                              (HLH_gui_flags){.fill_x = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL});
+      HLH_gui_button *btn_theme_default = HLH_gui_button_create(&group_theme_presets->e,(HLH_gui_flags){},"Default",NULL);
       btn_theme_default->e.usr = 0;
       btn_theme_default->e.msg_usr = button_theme_preset_msg;
-      HLH_gui_button *btn_theme_dark = HLH_gui_button_create(&group_theme_presets->e,HLH_GUI_LAYOUT_HORIZONTAL,"Dark",NULL);
+      HLH_gui_button *btn_theme_dark = HLH_gui_button_create(&group_theme_presets->e,(HLH_gui_flags){},"Dark",NULL);
       btn_theme_dark->e.usr = 1;
       btn_theme_dark->e.msg_usr = button_theme_preset_msg;
-      HLH_gui_button *btn_theme_light = HLH_gui_button_create(&group_theme_presets->e,HLH_GUI_LAYOUT_HORIZONTAL,"Light",NULL);
+      HLH_gui_button *btn_theme_light = HLH_gui_button_create(&group_theme_presets->e,(HLH_gui_flags){},"Light",NULL);
       btn_theme_light->e.usr = 2;
       btn_theme_light->e.msg_usr = button_theme_preset_msg;
-      HLH_gui_button *btn_theme_pink = HLH_gui_button_create(&group_theme_presets->e,HLH_GUI_LAYOUT_HORIZONTAL,"Pink",NULL);
+      HLH_gui_button *btn_theme_pink = HLH_gui_button_create(&group_theme_presets->e,(HLH_gui_flags){},"Pink",NULL);
       btn_theme_pink->e.usr = 3;
       btn_theme_pink->e.msg_usr = button_theme_preset_msg;
 
-      HLH_gui_label_create(&gui_groups_left[4]->e,0,"                                ");
-      HLH_gui_separator_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,0);
-      HLH_gui_label_create(&gui_groups_left[4]->e,0,"                                ");
+      HLH_gui_label_create(&gui_groups_left[4]->e,(HLH_gui_flags){},"                                ");
+      HLH_gui_separator_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},0);
+      HLH_gui_label_create(&gui_groups_left[4]->e,(HLH_gui_flags){},"                                ");
 
-      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Custom colors (hex RRGGBB)");
+      HLH_gui_label_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},"Custom colors (hex RRGGBB)");
 
-      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Background");
-      gui.entry_theme_bg = HLH_gui_entry_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,6);
+      HLH_gui_label_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},"Background");
+      gui.entry_theme_bg = HLH_gui_entry_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},6);
       gui.entry_theme_bg->e.usr = ENTRY_THEME_BG;
       gui.entry_theme_bg->e.msg_usr = entry_msg;
 
-      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Border/shadow");
-      gui.entry_theme_border = HLH_gui_entry_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,6);
+      HLH_gui_label_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},"Border/shadow");
+      gui.entry_theme_border = HLH_gui_entry_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},6);
       gui.entry_theme_border->e.usr = ENTRY_THEME_BORDER;
       gui.entry_theme_border->e.msg_usr = entry_msg;
 
-      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Bevel (dark)");
-      gui.entry_theme_bevel_dark = HLH_gui_entry_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,6);
+      HLH_gui_label_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},"Bevel (dark)");
+      gui.entry_theme_bevel_dark = HLH_gui_entry_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},6);
       gui.entry_theme_bevel_dark->e.usr = ENTRY_THEME_BEVEL_DARK;
       gui.entry_theme_bevel_dark->e.msg_usr = entry_msg;
 
-      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Bevel (light)");
-      gui.entry_theme_bevel_light = HLH_gui_entry_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,6);
+      HLH_gui_label_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},"Bevel (light)");
+      gui.entry_theme_bevel_light = HLH_gui_entry_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},6);
       gui.entry_theme_bevel_light->e.usr = ENTRY_THEME_BEVEL_LIGHT;
       gui.entry_theme_bevel_light->e.msg_usr = entry_msg;
 
-      HLH_gui_label_create(&gui_groups_left[4]->e,0,"Text");
-      gui.entry_theme_text = HLH_gui_entry_create(&gui_groups_left[4]->e,HLH_GUI_FILL_X,6);
+      HLH_gui_label_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},"Text");
+      gui.entry_theme_text = HLH_gui_entry_create(&gui_groups_left[4]->e,(HLH_gui_flags){.fill_x = true},6);
       gui.entry_theme_text->e.usr = ENTRY_THEME_TEXT;
       gui.entry_theme_text->e.msg_usr = entry_msg;
 
@@ -836,52 +898,54 @@ void gui_construct(void)
    }
    //-------------------------------------
 
-   HLH_gui_element_ignore(&gui_groups_left[0]->e,1);
-   HLH_gui_element_ignore(&gui_groups_left[1]->e,1);
-   HLH_gui_element_ignore(&gui_groups_left[2]->e,1);
-   HLH_gui_element_ignore(&gui_groups_left[3]->e,1);
-   HLH_gui_element_ignore(&gui_groups_left[4]->e,1);
+   gui_groups_left[0]->e.flags.ignore = true;
+   gui_groups_left[1]->e.flags.ignore = true;
+   gui_groups_left[2]->e.flags.ignore = true;
+   gui_groups_left[3]->e.flags.ignore = true;
+   gui_groups_left[4]->e.flags.ignore = true;
+
+   //Middle: preview
+   uint32_t pix = 0;
+   HLH_gui_imgcmp *imgcmp = HLH_gui_imgcmp_create(&group_middle->e,(HLH_gui_flags){.fill_x = true, .fill_y = true},&pix,1,1,&pix,1,1);
+   gui_imgcmp = imgcmp;
 
    //Right bar: settings tabs
    HLH_gui_radiobutton *rb = NULL;
    HLH_gui_radiobutton *sample = NULL;
-   sample = rb = HLH_gui_radiobutton_create(&group_right->e,HLH_GUI_STYLE_02|HLH_GUI_FILL_X,"Sample",NULL);
+   sample = rb = HLH_gui_radiobutton_create(&group_right->e,(HLH_gui_flags){.fill_x = true, .style = 2},"Sample",NULL);
    rb->e.usr = 0;
    rb->e.msg_usr = rb_radiobutton_msg;
-   rb = HLH_gui_radiobutton_create(&group_right->e,HLH_GUI_STYLE_02|HLH_GUI_FILL_X,"Dither",NULL);
+   rb = HLH_gui_radiobutton_create(&group_right->e,(HLH_gui_flags){.fill_x = true, .style = 2},"Dither",NULL);
    rb->e.usr = 1;
    rb->e.msg_usr = rb_radiobutton_msg;
-   rb = HLH_gui_radiobutton_create(&group_right->e,HLH_GUI_STYLE_02|HLH_GUI_FILL_X,"Palette",NULL);
+   rb = HLH_gui_radiobutton_create(&group_right->e,(HLH_gui_flags){.fill_x = true, .style = 2},"Palette",NULL);
    rb->e.usr = 2;
    rb->e.msg_usr = rb_radiobutton_msg;
-   rb = HLH_gui_radiobutton_create(&group_right->e,HLH_GUI_STYLE_02|HLH_GUI_FILL_X,"Colors",NULL);
+   rb = HLH_gui_radiobutton_create(&group_right->e,(HLH_gui_flags){.fill_x = true, .style = 2},"Colors",NULL);
    rb->e.usr = 3;
    rb->e.msg_usr = rb_radiobutton_msg;
-   rb = HLH_gui_radiobutton_create(&group_right->e,HLH_GUI_STYLE_02|HLH_GUI_FILL_X,"Theme",NULL);
+   rb = HLH_gui_radiobutton_create(&group_right->e,(HLH_gui_flags){.fill_x = true, .style = 2},"Theme",NULL);
    rb->e.usr = 4;
    rb->e.msg_usr = rb_radiobutton_msg;
 
    HLH_gui_radiobutton_set(sample,1,1);
 
-   //Middle: preview
-   uint32_t pix = 0;
-   HLH_gui_imgcmp *imgcmp = HLH_gui_imgcmp_create(&group_middle->e,HLH_GUI_FILL,&pix,1,1,&pix,1,1);
-   gui_imgcmp = imgcmp;
+#endif
 }
 
-static int rb_radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t rb_radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {
       //Uncheck
       if(di==0)
       {
-         HLH_gui_element_ignore(&gui_groups_left[e->usr]->e,1);
+         gui_groups_left[e->usr]->e.flags.ignore = true;
       }
       //Check
       else if(di==1)
       {
-         HLH_gui_element_ignore(&gui_groups_left[e->usr]->e,0);
+         gui_groups_left[e->usr]->e.flags.ignore = false;
          HLH_gui_element_layout(&e->window->e, e->window->e.bounds);
          HLH_gui_element_redraw(&e->window->e);
       }
@@ -890,7 +954,7 @@ static int rb_radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void 
    return 0;
 }
 
-static int radiobutton_sample_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t radiobutton_sample_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_radiobutton *r = (HLH_gui_radiobutton *)e;
    if(msg==HLH_GUI_MSG_CLICK)
@@ -908,19 +972,19 @@ static int radiobutton_sample_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
    return 0;
 }
 
-static int radiobutton_scale_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t radiobutton_scale_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {
       //Uncheck
       if(di==0)
       {
-         HLH_gui_element_ignore(&gui_groups_sample[e->usr]->e,1);
+         gui_groups_sample[e->usr]->e.flags.ignore = true;
       }
       //Check
       else if(di==1)
       {
-         HLH_gui_element_ignore(&gui_groups_sample[e->usr]->e,0);
+      gui_groups_sample[e->usr]->e.flags.ignore = false;
          HLH_gui_element_layout(&e->window->e, e->window->e.bounds);
          HLH_gui_element_redraw(&e->window->e);
          scale_relative = e->usr;
@@ -1036,7 +1100,7 @@ static void gui_set_input_path(const char *path)
    gui_process(0);
 }
 
-static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_menubutton *m = (HLH_gui_menubutton *)e;
 
@@ -1085,7 +1149,7 @@ static int menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    return 0;
 }
 
-static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_menubutton *m = (HLH_gui_menubutton *)e;
 
@@ -1231,12 +1295,12 @@ static int menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    return 0;
 }
 
-static int menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t menu_help_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    return 0;
 }
 
-static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_slider *s = (HLH_gui_slider *)e;
    if(msg==HLH_GUI_MSG_SLIDER_VALUE_CHANGED)
@@ -1427,7 +1491,7 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    return 0;
 }
 
-static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_entry *entry = (HLH_gui_entry *)e;
    if(msg==HLH_GUI_MSG_TEXTINPUT_END)
@@ -1579,7 +1643,7 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    return 0;
 }
 
-static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_button *button = (HLH_gui_button *)e;
    if(msg==HLH_GUI_MSG_CLICK)
@@ -1635,7 +1699,7 @@ static int button_add_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    return 0;
 }
 
-static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_button *button = (HLH_gui_button *)e;
    if(msg==HLH_GUI_MSG_CLICK)
@@ -1691,7 +1755,7 @@ static int button_sub_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    return 0;
 }
 
-static int checkbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t checkbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {
@@ -1704,7 +1768,7 @@ static int checkbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
    return 0;
 }
 
-static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_radiobutton *r = (HLH_gui_radiobutton *)e;
    if(msg==HLH_GUI_MSG_CLICK)
@@ -1716,9 +1780,9 @@ static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
          snprintf(tmp,256,"%s \x1f",r->text);
          HLH_gui_menubar_label_set(gui_bar_dither,tmp,0);
 
-         HLH_gui_element_ignore(&gui_groups_dither[0]->e,1);
-         HLH_gui_element_ignore(&gui_groups_dither[1]->e,1);
-         HLH_gui_element_ignore(&gui_groups_dither[2]->e,1);
+         gui_groups_dither[0]->e.flags.ignore = true;
+         gui_groups_dither[1]->e.flags.ignore = true;
+         gui_groups_dither[2]->e.flags.ignore = true;
          
          switch(dither_config.dither_mode)
          {
@@ -1729,7 +1793,7 @@ static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
          case SLK_DITHER_CLUSTER4X4:
          case SLK_DITHER_BAYER5X5:
          case SLK_DITHER_BAYER3X3:
-            HLH_gui_element_ignore(&gui_groups_dither[1]->e,0);
+            gui_groups_dither[1]->e.flags.ignore = false;
             break;
          case SLK_DITHER_NONE:
          case SLK_DITHER_FLOYD:
@@ -1740,10 +1804,10 @@ static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
          case SLK_DITHER_SIERRA_TWOROW:
          case SLK_DITHER_SIERRA_LITE:
          case SLK_DITHER_PICOCAD:
-            HLH_gui_element_ignore(&gui_groups_dither[0]->e,0);
+            gui_groups_dither[0]->e.flags.ignore = false;
             break;
          case SLK_DITHER_MEDIAN_CUT:
-            HLH_gui_element_ignore(&gui_groups_dither[2]->e,0);
+            gui_groups_dither[2]->e.flags.ignore = false;
             break;
          }
 
@@ -1757,7 +1821,7 @@ static int radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, v
    return 0;
 }
 
-static int radiobutton_distance_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t radiobutton_distance_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_radiobutton *r = (HLH_gui_radiobutton *)e;
    if(msg==HLH_GUI_MSG_CLICK)
@@ -1776,7 +1840,7 @@ static int radiobutton_distance_msg(HLH_gui_element *e, HLH_gui_msg msg, int di,
    return 0;
 }
 
-static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_radiobutton *r = (HLH_gui_radiobutton *)e;
 
@@ -1791,27 +1855,27 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
       uint32_t color = *((uint32_t *)r->e.usr_ptr);
 
       //Infill
-      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx, bounds.miny, bounds.maxx, bounds.maxy),color);
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0], bounds.min[1], bounds.max[0], bounds.max[1]),color);
 
       //Border
       if(r->state||r->checked)
       {
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 0 * scale, bounds.miny + 1 * scale, bounds.minx + 1 * scale, bounds.maxy - 1 * scale), 0xff000000);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 0 * scale, bounds.maxy - 1 * scale, bounds.maxx - 1 * scale, bounds.maxy - 0 * scale), 0xff000000);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 0 * scale, bounds.min[1] + 1 * scale, bounds.min[0] + 1 * scale, bounds.max[1] - 1 * scale), 0xff000000);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 0 * scale, bounds.max[1] - 1 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 0 * scale), 0xff000000);
 
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.maxx - 1 * scale, bounds.miny + 1 * scale, bounds.maxx - 0 * scale, bounds.maxy - 1 * scale), 0xff323232);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 0 * scale, bounds.maxx - 0 * scale, bounds.miny + 1 * scale), 0xff323232);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.max[0] - 1 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 0 * scale, bounds.max[1] - 1 * scale), 0xff323232);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 0 * scale, bounds.max[0] - 0 * scale, bounds.min[1] + 1 * scale), 0xff323232);
       }
       else
       {
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 0 * scale, bounds.miny + 1 * scale, bounds.minx + 1 * scale, bounds.maxy - 0 * scale), 0xff323232);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 0 * scale, bounds.maxy - 1 * scale, bounds.maxx - 1 * scale, bounds.maxy - 0 * scale), 0xff323232);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 0 * scale, bounds.min[1] + 1 * scale, bounds.min[0] + 1 * scale, bounds.max[1] - 0 * scale), 0xff323232);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 0 * scale, bounds.max[1] - 1 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 0 * scale), 0xff323232);
 
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.maxx - 1 * scale, bounds.miny + 1 * scale, bounds.maxx - 0 * scale, bounds.maxy - 1 * scale), 0xffc8c8c8);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 0 * scale, bounds.maxx - 0 * scale, bounds.miny + 1 * scale), 0xffc8c8c8);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.max[0] - 1 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 0 * scale, bounds.max[1] - 1 * scale), 0xffc8c8c8);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 0 * scale, bounds.max[0] - 0 * scale, bounds.min[1] + 1 * scale), 0xffc8c8c8);
       }
 
-      int height = (bounds.maxy - bounds.miny);
+      int height = (bounds.max[1] - bounds.min[1]);
       int dim = (HLH_GUI_GLYPH_HEIGHT)*HLH_gui_get_scale();
       int offset = (height - dim) / 2;
       if(r->checked)
@@ -1819,7 +1883,7 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
          uint32_t box_color = 0xff000000;
          if(color32_r(color)<128&&color32_g(color)<128&&color32_b(color)<128)
             box_color = 0xffffffff;
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + offset + 5 * scale, bounds.miny + offset + 4 * scale, bounds.minx + dim + offset - 4 * scale, bounds.miny + offset - 5 * scale + dim), box_color);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + offset + 5 * scale, bounds.min[1] + offset + 4 * scale, bounds.min[0] + dim + offset - 4 * scale, bounds.min[1] + offset - 5 * scale + dim), box_color);
       }
 
       return 1;
@@ -1847,7 +1911,7 @@ static int radiobutton_palette_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, 
    return 0;
 }
 
-static int button_palette_gen_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t button_palette_gen_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {
@@ -2088,7 +2152,7 @@ static void gui_refresh_settings_widgets(void)
    HLH_gui_checkbutton_set(gui.palette_kmeanspp,kmeanspp,1,1);
 }
 
-static int main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    if(msg==HLH_GUI_MSG_DRAGNDROP)
    {
@@ -2546,7 +2610,7 @@ static void script_output_display(void)
       HLH_gui_label_set(script_output_lines[line],"");
 }
 
-static int button_script_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t button_script_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {
@@ -2590,32 +2654,34 @@ static void ui_construct_script(void)
 
    HLH_gui_window *win = HLH_gui_window_create("Run Lua script",560,420,NULL);
    HLH_gui_window_block(window_root,win);
-   HLH_gui_group *group_root = HLH_gui_group_create(&win->e,HLH_GUI_FILL);
+   HLH_gui_group *group_root = HLH_gui_group_create(&win->e,(HLH_gui_flags){.fill_x = true, .fill_y = true});
    HLH_gui_button *b = NULL;
 
    {
-      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL_X);
-      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Select...",NULL);
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,
+                                (HLH_gui_flags){.fill_x = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL});
+      b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"Select...",NULL);
       b->e.usr = 0;
       b->e.msg_usr = button_script_msg;
-      script_path_label = HLH_gui_label_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FILL_X,"(no script selected)");
+      script_path_label = HLH_gui_label_create(&group->e,(HLH_gui_flags){.fill_x = true},"(no script selected)");
    }
    {
-      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL_X);
-      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Run",NULL);
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,
+                                (HLH_gui_flags){.fill_x = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL});
+      b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"Run",NULL);
       b->e.usr = 1;
       b->e.msg_usr = button_script_msg;
-      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Exit",NULL);
+      b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"Exit",NULL);
       b->e.usr = 2;
       b->e.msg_usr = button_script_msg;
    }
 
-   HLH_gui_separator_create(&group_root->e,HLH_GUI_FILL_X,0);
-   HLH_gui_label_create(&group_root->e,0,"Output:");
+   HLH_gui_separator_create(&group_root->e,(HLH_gui_flags){.fill_x = true},0);
+   HLH_gui_label_create(&group_root->e,(HLH_gui_flags){},"Output:");
    {
-      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL);
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,(HLH_gui_flags){.fill_x = true});
       for(int i = 0;i<SCRIPT_OUTPUT_LINES;i++)
-         script_output_lines[i] = HLH_gui_label_create(&group->e,HLH_GUI_FILL_X,"");
+         script_output_lines[i] = HLH_gui_label_create(&group->e,(HLH_gui_flags){.fill_x = true},"");
    }
 }
 
@@ -2627,56 +2693,60 @@ static void ui_construct_batch()
 
    HLH_gui_window *win = HLH_gui_window_create("Batch processing", 500, 100, NULL);
    HLH_gui_window_block(window_root, win);
-   HLH_gui_group *group_root = HLH_gui_group_create(&win->e, HLH_GUI_FILL);
-   HLH_gui_group_create(&group_root->e, HLH_GUI_FILL);
+   HLH_gui_group *group_root = HLH_gui_group_create(&win->e,
+                                  (HLH_gui_flags){.fill_x  =true, .fill_y = true});
+   HLH_gui_group_create(&group_root->e, (HLH_gui_flags){.fill_x  =true, .fill_y = true});
    HLH_gui_button *b = NULL;
 
    {
-      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL_X);
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,(HLH_gui_flags){.fill_x = true});
 
-      HLH_gui_group *group_type = HLH_gui_group_create(&group->e.window->e,HLH_GUI_NO_PARENT|HLH_GUI_STYLE_01);
+      HLH_gui_group *group_type = HLH_gui_group_create(&group->e.window->e,
+                                     (HLH_gui_flags){.no_parent = true, .overlay = true, .style = 1});
       HLH_gui_radiobutton *r = NULL;
       HLH_gui_radiobutton *first = NULL;
-      r = HLH_gui_radiobutton_create(&group_type->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"png",NULL);
+      r = HLH_gui_radiobutton_create(&group_type->e,(HLH_gui_flags){.fill_x = true, .style = 1},"png",NULL);
       first = r;
       r->e.usr = 0;
       r->e.msg_usr = radiobutton_batch_msg;
-      r = HLH_gui_radiobutton_create(&group_type->e,HLH_GUI_FILL_X|HLH_GUI_STYLE_01,"pcx",NULL);
+      r = HLH_gui_radiobutton_create(&group_type->e,(HLH_gui_flags){.fill_x = true, .style = 1},"pcx",NULL);
       r->e.usr = 1;
       r->e.msg_usr = radiobutton_batch_msg;
       const char *bar_type[1] = {"png  \x1f"};
-      gui_bar_type = HLH_gui_menubar_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,HLH_GUI_LAYOUT_HORIZONTAL,bar_type,(HLH_gui_element **)&group_type,1,NULL);
+      gui_bar_type = HLH_gui_menubar_create(&group->e,(HLH_gui_flags){.layout = HLH_GUI_LAYOUT_HORIZONTAL},
+                                            (HLH_gui_flags){.layout = HLH_GUI_LAYOUT_HORIZONTAL},bar_type,(HLH_gui_element **)&group_type,1,NULL);
       HLH_gui_radiobutton_set(first,1,1);
 
-      batch_progress = HLH_gui_label_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FILL_X, "Progress    0/   0");
+      batch_progress = HLH_gui_label_create(&group->e, (HLH_gui_flags){.fill_x = true, .style = 1}, "Progress    0/   0");
    }
    {
-      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL_X);
-      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Input ",NULL);
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,(HLH_gui_flags){.fill_x = true});
+      b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"Input ",NULL);
       b->e.usr = 0;
       b->e.msg_usr = button_batch_msg;
-      b->e.usr_ptr = HLH_gui_label_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FILL_X, batch_input);
+      b->e.usr_ptr = HLH_gui_label_create(&group->e, (HLH_gui_flags){.fill_x = true, .style = 1}, batch_input);
    }
    {
-      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,HLH_GUI_FILL_X);
-      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Output",NULL);
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,
+                                (HLH_gui_flags){.fill_x = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL});
+      b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"Output",NULL);
       b->e.usr = 1;
       b->e.msg_usr = button_batch_msg;
-      b->e.usr_ptr = HLH_gui_label_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL|HLH_GUI_FILL_X, batch_output);
+      b->e.usr_ptr = HLH_gui_label_create(&group->e, (HLH_gui_flags){.fill_x = true, .style = 1}, batch_output);
    }
    {
-      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,0);
-      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Exit",NULL);
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,(HLH_gui_flags){.layout = HLH_GUI_LAYOUT_HORIZONTAL});
+      b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"Exit",NULL);
       b->e.usr = 2;
       b->e.msg_usr = button_batch_msg;
-      HLH_gui_label_create(&group->e, HLH_GUI_LAYOUT_HORIZONTAL, "     ");
-      b = HLH_gui_button_create(&group->e,HLH_GUI_LAYOUT_HORIZONTAL,"Run ",NULL);
+      HLH_gui_label_create(&group->e, (HLH_gui_flags){}, "     ");
+      b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"Run ",NULL);
       b->e.usr = 3;
       b->e.msg_usr = button_batch_msg;
    }
 }
 
-static int menu_tools_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t menu_tools_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_menubutton *m = (HLH_gui_menubutton *)e;
 
@@ -2697,7 +2767,7 @@ static int menu_tools_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    return 0;
 }
 
-static int radiobutton_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t radiobutton_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_radiobutton *r = (HLH_gui_radiobutton *)e;
 
@@ -2715,7 +2785,7 @@ static int radiobutton_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, vo
    return 0;
 }
 
-static int button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    if(msg==HLH_GUI_MSG_CLICK)
    {

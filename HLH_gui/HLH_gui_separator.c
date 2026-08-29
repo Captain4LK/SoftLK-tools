@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -25,13 +25,13 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static int separator_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int64_t separator_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static void separator_draw(HLH_gui_separator *s);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_separator *HLH_gui_separator_create(HLH_gui_element *parent, uint64_t flags, int direction)
+HLH_gui_separator *HLH_gui_separator_create(HLH_gui_element *parent, HLH_gui_flags flags, int direction)
 {
    HLH_gui_separator *separator = (HLH_gui_separator *) HLH_gui_element_create(sizeof(*separator), parent, flags, separator_msg);
    separator->e.type = HLH_GUI_SEPARATOR;
@@ -40,7 +40,7 @@ HLH_gui_separator *HLH_gui_separator_create(HLH_gui_element *parent, uint64_t fl
    return separator;
 }
 
-static int separator_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t separator_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_separator *separator = (HLH_gui_separator *)e;
 
@@ -56,8 +56,6 @@ static int separator_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          return 0;
       return HLH_gui_get_scale();
    }
-   else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
-   {}
    else if(msg==HLH_GUI_MSG_DRAW)
    {
       separator_draw(separator);

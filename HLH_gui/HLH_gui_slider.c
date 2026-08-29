@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -27,13 +27,13 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int64_t slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static void slider_draw(HLH_gui_slider *s);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_slider *HLH_gui_slider_create(HLH_gui_element *parent, uint64_t flags, int direction)
+HLH_gui_slider *HLH_gui_slider_create(HLH_gui_element *parent, HLH_gui_flags flags, int direction)
 {
    HLH_gui_slider *slider = (HLH_gui_slider *) HLH_gui_element_create(sizeof(*slider), parent, flags, slider_msg);
    slider->e.type = HLH_GUI_SLIDER;
@@ -61,7 +61,7 @@ void HLH_gui_slider_set(HLH_gui_slider *slider, int value, int range, int trigge
    }
 }
 
-static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_slider *slider = (HLH_gui_slider *)e;
 
@@ -73,8 +73,6 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
    {
       return HLH_GUI_GLYPH_HEIGHT * HLH_gui_get_scale() + 8 * HLH_gui_get_scale();
    }
-   else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
-   {}
    else if(msg==HLH_GUI_MSG_DRAW)
    {
       slider_draw(slider);
@@ -84,10 +82,12 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       HLH_gui_mouse *m = dp;
       if(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE))
       {
+         m->handled = true;
+
          if(slider->direction==0)
          {
-            int mx = m->pos.x - slider->e.bounds.minx;
-            int width = slider->e.bounds.maxx - slider->e.bounds.minx - HLH_gui_get_scale() * 6;
+            int mx = m->pos[0] - slider->e.bounds.min[0];
+            int width = slider->e.bounds.max[0] - slider->e.bounds.min[0] - HLH_gui_get_scale() * 6;
             int value = (mx * slider->range) / width;
             if(value<0) value = 0;
             if (value>slider->range) value = slider->range;
@@ -101,8 +101,8 @@ static int slider_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
          }
          else
          {
-            int my = slider->e.bounds.maxy - m->pos.y;
-            int height = slider->e.bounds.maxy - slider->e.bounds.miny - HLH_gui_get_scale() * 6;
+            int my = slider->e.bounds.max[1] - m->pos[1];
+            int height = slider->e.bounds.max[1] - slider->e.bounds.min[1] - HLH_gui_get_scale() * 6;
             int value = (my * slider->range) / height;
             if(value<0) value = 0;
             if(value>slider->range) value = slider->range;
@@ -133,14 +133,14 @@ static void slider_draw(HLH_gui_slider *s)
 
       HLH_gui_draw_rectangle_fill(&s->e, bounds, HLH_gui_theme_current.bg);
 
-      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_dark);
-      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_dark);
+      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_dark);
+      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_dark);
 
-      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_light);
-      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_light);
+      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_light);
+      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_light);
 
-      int width = (s->value * (bounds.maxx - bounds.minx - scale * 6)) / s->range;
-      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.minx + 3 * scale, bounds.miny + 3 * scale, bounds.minx + 3 * scale + width, bounds.maxy - 3 * scale), HLH_gui_theme_current.bevel_dark);
+      int width = (s->value * (bounds.max[0] - bounds.min[0] - scale * 6)) / s->range;
+      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.min[0] + 3 * scale, bounds.min[1] + 3 * scale, bounds.min[0] + 3 * scale + width, bounds.max[1] - 3 * scale), HLH_gui_theme_current.bevel_dark);
    }
    else
    {
@@ -149,14 +149,14 @@ static void slider_draw(HLH_gui_slider *s)
 
       HLH_gui_draw_rectangle_fill(&s->e, bounds, HLH_gui_theme_current.bg);
 
-      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_dark);
-      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_dark);
+      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_dark);
+      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_dark);
 
-      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_light);
-      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_light);
+      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_light);
+      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_light);
 
-      int height = (s->value * (bounds.maxy - bounds.miny - scale * 6)) / s->range;
-      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.minx + 3 * scale, bounds.maxy - 3 * scale - height, bounds.maxx - 3 * scale, bounds.maxy - 3 * scale), HLH_gui_theme_current.bevel_dark);
+      int height = (s->value * (bounds.max[1] - bounds.min[1] - scale * 6)) / s->range;
+      HLH_gui_draw_rectangle_fill(&s->e, HLH_gui_rect_make(bounds.min[0] + 3 * scale, bounds.max[1] - 3 * scale - height, bounds.max[0] - 3 * scale, bounds.max[1] - 3 * scale), HLH_gui_theme_current.bevel_dark);
    }
 }
 

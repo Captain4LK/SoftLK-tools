@@ -32,16 +32,16 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 HLH_gui_rect HLH_gui_rect_make(int minx, int miny, int maxx, int maxy)
 {
    return (HLH_gui_rect){
-             .minx = minx, .miny = miny, .maxx = maxx, .maxy = maxy
+             .min[0] = minx, .min[1] = miny, .max[0] = maxx, .max[1] = maxy
    };
 }
 
 int HLH_gui_rect_inside(HLH_gui_rect r, HLH_gui_point p)
 {
-   if(p.x<r.minx||p.y<r.miny)
+   if(p.x<r.min[0]||p.y<r.min[1])
       return 0;
 
-   if(p.x>r.maxx||p.y>r.maxy)
+   if(p.x>r.max[0]||p.y>r.max[1])
       return 0;
 
    return 1;

@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2023 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2023,2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -26,13 +26,13 @@ static const char *radiobutton_type = "radiobutton";
 //-------------------------------------
 
 //Function prototypes
-static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int64_t radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static void radiobutton_draw(HLH_gui_radiobutton *r);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, uint64_t flags, const char *text, HLH_gui_rect *icon_bounds)
+HLH_gui_radiobutton *HLH_gui_radiobutton_create(HLH_gui_element *parent, HLH_gui_flags flags, const char *text, HLH_gui_rect *icon_bounds)
 {
    HLH_gui_radiobutton *button = (HLH_gui_radiobutton *) HLH_gui_element_create(sizeof(*button), parent, flags, radiobutton_msg);
    button->e.type = HLH_GUI_RADIOBUTTON;
@@ -91,14 +91,14 @@ void HLH_gui_radiobutton_set(HLH_gui_radiobutton *r, int trigger_msg, int redraw
       HLH_gui_element_msg(&r->e, HLH_GUI_MSG_CLICK, 1, NULL);
 }
 
-static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_radiobutton *button = (HLH_gui_radiobutton *)e;
 
    if(msg==HLH_GUI_MSG_GET_WIDTH)
    {
       if(button->is_icon)
-         return (button->icon_bounds.maxx - button->icon_bounds.minx) + 6 * HLH_gui_get_scale();
+         return (button->icon_bounds.max[0] - button->icon_bounds.min[0]) + 6 * HLH_gui_get_scale();
       else if(button->text_len>0)
          return (HLH_GUI_GLYPH_HEIGHT + 8) * HLH_gui_get_scale() + button->text_len * HLH_GUI_GLYPH_WIDTH * HLH_gui_get_scale() + 10 * HLH_gui_get_scale();
       else
@@ -107,7 +107,7 @@ static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
    else if(msg==HLH_GUI_MSG_GET_HEIGHT)
    {
       if(button->is_icon)
-         return (button->icon_bounds.maxy - button->icon_bounds.miny) + 6 * HLH_gui_get_scale();
+         return (button->icon_bounds.max[1] - button->icon_bounds.min[1]) + 6 * HLH_gui_get_scale();
       else
          return HLH_GUI_GLYPH_HEIGHT * HLH_gui_get_scale() + 8 * HLH_gui_get_scale();
    }
@@ -115,12 +115,10 @@ static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
    {
       radiobutton_draw(button);
    }
-   else if(msg==HLH_GUI_MSG_GET_CHILD_SPACE)
-   {}
    else if(msg==HLH_GUI_MSG_MOUSE_LEAVE)
    {
-      int state_old = button->state;
-      button->state = 0;
+      bool state_old = button->state;
+      button->state = false;
       if(state_old!=button->state)
          HLH_gui_element_redraw(e);
    }
@@ -128,22 +126,28 @@ static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
    {
       HLH_gui_mouse *m = dp;
 
-      int click = 0;
-      int state_old = button->state;
+      if(button->state)
+      {
+         m->handled = true;
+      }
+
+      bool click = false;
+      bool state_old = button->state;
       if(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE))
       {
-         button->state = 1;
+         button->state = true;
+         m->handled = true;
       }
       else
       {
-         click = button->state==1;
-         button->state = 0;
+         click = button->state;
+         button->state = false;
       }
 
       if(click)
       {
          HLH_gui_radiobutton_set(button, 1, 1);
-         button->state = 0;
+         button->state = false;
       }
 
       if(click||state_old!=button->state)
@@ -159,7 +163,7 @@ static int radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp
 
 static void radiobutton_draw(HLH_gui_radiobutton *r)
 {
-   uint64_t style = r->e.flags & HLH_GUI_STYLE;
+   uint64_t style = r->e.flags.style;
 
    if(r->is_icon)
    {
@@ -167,7 +171,7 @@ static void radiobutton_draw(HLH_gui_radiobutton *r)
       HLH_gui_rect bounds = r->e.bounds;
 
       //Infill
-      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + scale, bounds.miny + scale, bounds.maxx - scale, bounds.maxy - scale), HLH_gui_theme_current.bg);
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + scale, bounds.min[1] + scale, bounds.max[0] - scale, bounds.max[1] - scale), HLH_gui_theme_current.bg);
 
       //Outline
       HLH_gui_draw_rectangle(&r->e, bounds, HLH_gui_theme_current.border);
@@ -175,37 +179,37 @@ static void radiobutton_draw(HLH_gui_radiobutton *r)
       //Border
       if(r->state||r->checked)
       {
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.border);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.border);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.border);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.border);
 
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_dark);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_dark);
       }
       else
       {
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_dark);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_dark);
 
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_light);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_light);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_light);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_light);
       }
 
-      int width = r->icon_bounds.maxx - r->icon_bounds.minx;
-      int height = r->icon_bounds.maxy - r->icon_bounds.miny;
-      SDL_Rect src = {.x = r->icon_bounds.minx, .y = r->icon_bounds.miny, .w = width, .h = height};
-      SDL_Rect dst = {.x = bounds.minx + 3 * scale, .y = bounds.miny + 3 * scale, .w = width, .h = height};
-      SDL_RenderCopy(r->e.window->renderer, r->e.window->icons, &src, &dst);
+      int width = r->icon_bounds.max[0] - r->icon_bounds.min[0];
+      int height = r->icon_bounds.max[1] - r->icon_bounds.min[1];
+      SDL_FRect src = {.x = r->icon_bounds.min[0], .y = r->icon_bounds.min[1], .w = width, .h = height};
+      SDL_FRect dst = {.x = bounds.min[0] + 3 * scale, .y = bounds.min[1] + 3 * scale, .w = width, .h = height};
+      SDL_RenderTexture(r->e.window->sdl_renderer, r->e.window->sdl_icons, &src, &dst);
 
       return;
    }
 
-   if(style==HLH_GUI_STYLE_00)
+   if(style==0)
    {
       int scale = HLH_gui_get_scale();
       HLH_gui_rect bounds = r->e.bounds;
 
       //Infill
-      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + HLH_gui_get_scale(), bounds.miny + HLH_gui_get_scale(), bounds.maxx - HLH_gui_get_scale(), bounds.maxy - HLH_gui_get_scale()), HLH_gui_theme_current.bg);
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + HLH_gui_get_scale(), bounds.min[1] + HLH_gui_get_scale(), bounds.max[0] - HLH_gui_get_scale(), bounds.max[1] - HLH_gui_get_scale()), HLH_gui_theme_current.bg);
 
       //Outline
       HLH_gui_draw_rectangle(&r->e, bounds, HLH_gui_theme_current.border);
@@ -213,37 +217,37 @@ static void radiobutton_draw(HLH_gui_radiobutton *r)
       //Border
       if(r->state)
       {
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.border);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.border);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.border);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.border);
 
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_dark);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_dark);
       }
       else
       {
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_dark);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_dark);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_dark);
 
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_light);
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_light);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_light);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_light);
       }
 
       //Checkbox
-      int height = (bounds.maxy - bounds.miny);
+      int height = (bounds.max[1] - bounds.min[1]);
       int dim = (HLH_GUI_GLYPH_HEIGHT)*HLH_gui_get_scale();
       int offset = (height - dim) / 2;
-      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + offset + 1 * scale, bounds.miny + offset + scale, bounds.minx + offset + 2 * scale, bounds.maxy - offset), HLH_gui_theme_current.bevel_light);
-      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + offset + 1 * scale, bounds.maxy - offset - scale, bounds.minx + offset + dim, bounds.maxy - offset), HLH_gui_theme_current.bevel_light);
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + offset + 1 * scale, bounds.min[1] + offset + scale, bounds.min[0] + offset + 2 * scale, bounds.max[1] - offset), HLH_gui_theme_current.bevel_light);
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + offset + 1 * scale, bounds.max[1] - offset - scale, bounds.min[0] + offset + dim, bounds.max[1] - offset), HLH_gui_theme_current.bevel_light);
 
-      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + offset + 2 * scale, bounds.miny + offset, bounds.minx + offset + dim + 1 * scale, bounds.miny + offset + scale), HLH_gui_theme_current.bevel_dark);
-      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + dim + offset + 0 * scale, bounds.miny + offset + scale, bounds.minx + dim + offset + 1 * scale, bounds.maxy - offset - scale), HLH_gui_theme_current.bevel_dark);
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + offset + 2 * scale, bounds.min[1] + offset, bounds.min[0] + offset + dim + 1 * scale, bounds.min[1] + offset + scale), HLH_gui_theme_current.bevel_dark);
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + dim + offset + 0 * scale, bounds.min[1] + offset + scale, bounds.min[0] + dim + offset + 1 * scale, bounds.max[1] - offset - scale), HLH_gui_theme_current.bevel_dark);
 
-      HLH_gui_draw_string(&r->e, HLH_gui_rect_make(bounds.minx + dim + 2 * scale, bounds.miny, bounds.maxx, bounds.maxy), r->text, r->text_len, HLH_gui_theme_current.text, 1);
+      HLH_gui_draw_string(&r->e, HLH_gui_rect_make(bounds.min[0] + dim + 2 * scale, bounds.min[1], bounds.max[0], bounds.max[1]), r->text, r->text_len, HLH_gui_theme_current.text, 1);
 
       if(r->checked)
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + offset + 4 * scale, bounds.miny + offset + 3 * scale, bounds.minx + dim + offset - 2 * scale, bounds.miny + offset - 3 * scale + dim), HLH_gui_theme_current.border);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + offset + 4 * scale, bounds.min[1] + offset + 3 * scale, bounds.min[0] + dim + offset - 2 * scale, bounds.min[1] + offset - 3 * scale + dim), HLH_gui_theme_current.border);
    }
-   else if(style==HLH_GUI_STYLE_01)
+   else if(style==1)
    {
       int scale = HLH_gui_get_scale();
       HLH_gui_rect bounds = r->e.bounds;
@@ -254,21 +258,21 @@ static void radiobutton_draw(HLH_gui_radiobutton *r)
          HLH_gui_draw_rectangle_fill(&r->e, bounds, HLH_gui_theme_current.bg);
 
       //Checkbox
-      int height = (bounds.maxy - bounds.miny);
+      int height = (bounds.max[1] - bounds.min[1]);
       int dim = (HLH_GUI_GLYPH_HEIGHT)*HLH_gui_get_scale();
       int offset = (height - dim) / 2;
-      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + offset + 1 * scale, bounds.miny + offset + scale, bounds.minx + offset + 2 * scale, bounds.maxy - offset), HLH_gui_theme_current.bevel_light);
-      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + offset + 1 * scale, bounds.maxy - offset - scale, bounds.minx + offset + dim, bounds.maxy - offset), HLH_gui_theme_current.bevel_light);
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + offset + 1 * scale, bounds.min[1] + offset + scale, bounds.min[0] + offset + 2 * scale, bounds.max[1] - offset), HLH_gui_theme_current.bevel_light);
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + offset + 1 * scale, bounds.max[1] - offset - scale, bounds.min[0] + offset + dim, bounds.max[1] - offset), HLH_gui_theme_current.bevel_light);
 
-      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + offset + 2 * scale, bounds.miny + offset, bounds.minx + offset + dim + 1 * scale, bounds.miny + offset + scale), HLH_gui_theme_current.bevel_dark);
-      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + dim + offset + 0 * scale, bounds.miny + offset + scale, bounds.minx + dim + offset + 1 * scale, bounds.maxy - offset - scale), HLH_gui_theme_current.bevel_dark);
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + offset + 2 * scale, bounds.min[1] + offset, bounds.min[0] + offset + dim + 1 * scale, bounds.min[1] + offset + scale), HLH_gui_theme_current.bevel_dark);
+      HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + dim + offset + 0 * scale, bounds.min[1] + offset + scale, bounds.min[0] + dim + offset + 1 * scale, bounds.max[1] - offset - scale), HLH_gui_theme_current.bevel_dark);
 
-      HLH_gui_draw_string(&r->e, HLH_gui_rect_make(bounds.minx + dim + 2 * scale, bounds.miny, bounds.maxx, bounds.maxy), r->text, r->text_len, HLH_gui_theme_current.text, 1);
+      HLH_gui_draw_string(&r->e, HLH_gui_rect_make(bounds.min[0] + dim + 2 * scale, bounds.min[1], bounds.max[0], bounds.max[1]), r->text, r->text_len, HLH_gui_theme_current.text, 1);
 
       if(r->checked)
-         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.minx + offset + 4 * scale, bounds.miny + offset + 3 * scale, bounds.minx + dim + offset - 2 * scale, bounds.miny + offset - 3 * scale + dim), HLH_gui_theme_current.border);
+         HLH_gui_draw_rectangle_fill(&r->e, HLH_gui_rect_make(bounds.min[0] + offset + 4 * scale, bounds.min[1] + offset + 3 * scale, bounds.min[0] + dim + offset - 2 * scale, bounds.min[1] + offset - 3 * scale + dim), HLH_gui_theme_current.border);
    }
-   else if(style==HLH_GUI_STYLE_02)
+   else if(style==2)
    {
       int scale = HLH_gui_get_scale();
       HLH_gui_rect bounds = r->e.bounds;
@@ -278,9 +282,9 @@ static void radiobutton_draw(HLH_gui_radiobutton *r)
       else
          HLH_gui_draw_rectangle_fill(&r->e, bounds, HLH_gui_theme_current.bg);
 
-      //int height = (bounds.maxy - bounds.miny);
+      //int height = (bounds.max[1] - bounds.min[1]);
       int dim = (HLH_GUI_GLYPH_HEIGHT)*HLH_gui_get_scale();
-      HLH_gui_draw_string(&r->e, HLH_gui_rect_make(bounds.minx + dim + 2 * scale, bounds.miny, bounds.maxx, bounds.maxy), r->text, r->text_len, HLH_gui_theme_current.text, 1);
+      HLH_gui_draw_string(&r->e, HLH_gui_rect_make(bounds.min[0] + dim + 2 * scale, bounds.min[1], bounds.max[0], bounds.max[1]), r->text, r->text_len, HLH_gui_theme_current.text, 1);
    }
 }
 //-------------------------------------

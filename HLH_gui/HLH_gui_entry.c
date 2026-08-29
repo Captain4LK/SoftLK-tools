@@ -1,7 +1,7 @@
 /*
 HLH_gui - gui framework
 
-Written in 2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2024,2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -25,13 +25,13 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //-------------------------------------
 
 //Function prototypes
-static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp);
+static int64_t entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static void entry_draw(HLH_gui_entry *e);
 //-------------------------------------
 
 //Function implementations
 
-HLH_gui_entry *HLH_gui_entry_create(HLH_gui_element *parent, uint64_t flags, int max_len)
+HLH_gui_entry *HLH_gui_entry_create(HLH_gui_element *parent, HLH_gui_flags flags, int max_len)
 {
    HLH_gui_entry *entry = (HLH_gui_entry *) HLH_gui_element_create(sizeof(*entry), parent, flags, entry_msg);
 
@@ -60,7 +60,7 @@ void HLH_gui_entry_set(HLH_gui_entry *entry, char *text)
    HLH_gui_element_redraw(&entry->e);
 }
 
-static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
+static int64_t entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
 {
    HLH_gui_entry *entry = (HLH_gui_entry *)e;
 
@@ -93,10 +93,12 @@ static int entry_msg(HLH_gui_element *e, HLH_gui_msg msg, int di, void *dp)
       if(m->button & (HLH_GUI_MOUSE_LEFT | HLH_GUI_MOUSE_RIGHT | HLH_GUI_MOUSE_MIDDLE))
       {
          entry->state = 1;
+         m->handled = true;
       }
       else if(entry->state)
       {
          HLH_gui_textinput_start(&entry->e);
+         m->handled = true;
          entry->state = 0;
          entry->active = 1;
          HLH_gui_element_redraw(&entry->e);
@@ -157,19 +159,19 @@ static void entry_draw(HLH_gui_entry *e)
 
 
    //Border
-   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.miny + 2 * scale, bounds.minx + 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_light);
-   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.minx + 1 * scale, bounds.maxy - 2 * scale, bounds.maxx - 2 * scale, bounds.maxy - 1 * scale), HLH_gui_theme_current.bevel_light);
+   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.min[1] + 2 * scale, bounds.min[0] + 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_light);
+   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.min[0] + 1 * scale, bounds.max[1] - 2 * scale, bounds.max[0] - 2 * scale, bounds.max[1] - 1 * scale), HLH_gui_theme_current.bevel_light);
 
-   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.maxx - 2 * scale, bounds.miny + 2 * scale, bounds.maxx - 1 * scale, bounds.maxy - 2 * scale), HLH_gui_theme_current.bevel_dark);
-   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.minx + 2 * scale, bounds.miny + 1 * scale, bounds.maxx - 1 * scale, bounds.miny + 2 * scale), HLH_gui_theme_current.bevel_dark);
+   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.max[0] - 2 * scale, bounds.min[1] + 2 * scale, bounds.max[0] - 1 * scale, bounds.max[1] - 2 * scale), HLH_gui_theme_current.bevel_dark);
+   HLH_gui_draw_rectangle_fill(&e->e, HLH_gui_rect_make(bounds.min[0] + 2 * scale, bounds.min[1] + 1 * scale, bounds.max[0] - 1 * scale, bounds.min[1] + 2 * scale), HLH_gui_theme_current.bevel_dark);
 
    HLH_gui_rect text = e->e.bounds;
-   text.minx+=scale*3;
+   text.min[0]+=scale*3;
    HLH_gui_draw_string(&e->e, text, e->entry, e->len, HLH_gui_theme_current.text, 0);
 
    if(e->active)
    {
-      text.minx+=HLH_GUI_GLYPH_WIDTH*scale*e->len;
+      text.min[0]+=HLH_GUI_GLYPH_WIDTH*scale*e->len;
       HLH_gui_draw_string(&e->e, text, "\x16", 1, HLH_gui_theme_current.text, 0);
    }
 }
