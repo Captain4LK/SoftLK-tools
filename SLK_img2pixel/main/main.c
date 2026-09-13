@@ -21,14 +21,15 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "HLH_path.h"
 #define HLH_RW_IMPLEMENTATION
 #include "HLH_rw.h"
-#define HLH_JSON_IMPLEMENTATION
-#include "HLH_json.h"
 #define FOPEN_UTF8_IMPLEMENTATION
 #include "../../external/fopen_utf8.h"
 #define CUTE_FILES_IMPLEMENTATION
 #include "cute_files.h"
+#include <stdbool.h>
 
+#include "HLH/HLH_base.h"
 #include "HLH_gui.h"
+#include "HLH/HLH_path.h"
 //-------------------------------------
 
 //Internal includes
@@ -54,6 +55,29 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 int main(int argc, char **argv)
 {
    HLH_gui_init();
+
+   HLH_string dir;
+   HLH_string filename;
+   HLH_path_split(HLH_string_lit("a.out"), &dir, &filename);
+   HLH_path_split(HLH_string_lit("./a.out"), &dir, &filename);
+   HLH_path_split(HLH_string_lit("/a.out"), &dir, &filename);
+   HLH_path_split(HLH_string_lit("/tmp/a.out"), &dir, &filename);
+   HLH_path_split(HLH_string_lit("/tmp/"), &dir, &filename);
+   HLH_path_split(HLH_string_lit("/"), &dir, &filename);
+   HLH_path_split(HLH_string_lit(""), &dir, &filename);
+   HLH_string ext;
+   ext = HLH_path_ext(HLH_string_lit("/tmp/a.out"));
+   ext = HLH_path_ext(HLH_string_lit("a.out"));
+   ext = HLH_path_ext(HLH_string_lit("/tmp/.out"));
+   ext = HLH_path_ext(HLH_string_lit(".out"));
+   ext = HLH_path_ext(HLH_string_lit("out"));
+
+   HLH_string stem;
+   stem = HLH_path_stem(HLH_string_lit("/tmp/a.out"));
+   stem = HLH_path_stem(HLH_string_lit("ab.out"));
+   stem = HLH_path_stem(HLH_string_lit("/tmp/.out"));
+   stem = HLH_path_stem(HLH_string_lit(".out"));
+   stem = HLH_path_stem(HLH_string_lit("out"));
 
    settings_load("settings.json");
    atexit(settings_save);

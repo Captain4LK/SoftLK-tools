@@ -9,7 +9,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 //External includes
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 
+#include "HLH/HLH_base.h"
 #include "HLH_gui.h"
 
 #define RPNG_IMPLEMENTATION

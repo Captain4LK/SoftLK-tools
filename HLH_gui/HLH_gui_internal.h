@@ -27,8 +27,8 @@ SDL_Texture *HLH_gui_texture_from_data(HLH_gui_window *win, uint32_t *pix, int w
 char *HLH_gui_strdup(const char *str);
 
 uint32_t core_timer_callback(void *userdata, SDL_TimerID timer_id, uint32_t interval);
-void core_open_file_callback(void *userdata, const char **filelist, int32_t filter);
-void core_save_file_callback(void *userdata, const char **filelist, int32_t filter);
-void core_open_folder_callback(void *userdata, const char **folderlist, int32_t filter);
+void core_open_file_callback(void *userdata, const char * const *filelist, int filter);
+void core_save_file_callback(void *userdata, const char * const *filelist, int filter);
+void core_open_folder_callback(void *userdata, const char * const *folderlist, int filter);
 
 #endif

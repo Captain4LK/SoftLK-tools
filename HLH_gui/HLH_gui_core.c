@@ -193,24 +193,23 @@ HLH_gui_window *HLH_gui_window_create(const char *title, int width, int height, 
       }
    }
 
-#if 0
    //Send fake resize event
+   // Need this, since child elements don't exist at this
+   // TODO: using a custom event for this purpose would be better
    SDL_Event e;
-   e.type = SDL_WINDOWEVENT;
+   e.type = SDL_EVENT_WINDOW_RESIZED;
 
-   e.window.windowID = SDL_GetWindowID(window->window);
+   e.window.windowID = SDL_GetWindowID(window->sdl_window);
    if(e.window.windowID==0)
       fprintf(stderr, "SDL_GetWindowID(): %s\n", SDL_GetError());
 
    e.window.data1 = window->width;
    e.window.data2 = window->height;
-   e.window.event = SDL_WINDOWEVENT_SIZE_CHANGED;
    window->width = -1;
    window->height = -1;
 
-   if(SDL_PushEvent(&e)<0)
+   if(!SDL_PushEvent(&e))
       fprintf(stderr, "SDL_PushEvent(): %s\n", SDL_GetError());
-#endif
 
    return window;
 }
@@ -628,6 +627,64 @@ int HLH_gui_message_loop(void)
          break;
       }
 
+      if(event.type == ctx.open_file_event)
+      {
+         win = core_find_window(SDL_GetWindowFromID(event.user.windowID));
+         if(win != NULL)
+         {
+            HLH_gui_element_msg(&win->e, HLH_GUI_MSG_OPENFILE, 0, event.user.data1);
+         }
+
+         // delete msg context
+         HLH_gui_open_file_msg *msg = event.user.data1;
+         for(size_t i = 0; i < msg->file_list_size; i += 1)
+         {
+            free((void *)msg->file_list[i]);
+         }
+         free(msg->file_list);
+         free(msg);
+
+         win = core_find_window(SDL_GetWindowFromID(event.user.windowID));
+      }
+      else if(event.type == ctx.save_file_event)
+      {
+         win = core_find_window(SDL_GetWindowFromID(event.user.windowID));
+         if(win != NULL)
+         {
+            HLH_gui_element_msg(&win->e, HLH_GUI_MSG_SAVEFILE, 0, event.user.data1);
+         }
+
+         // delete msg context
+         HLH_gui_save_file_msg *msg = event.user.data1;
+         for(size_t i = 0; i < msg->file_list_size; i += 1)
+         {
+            free((void *)msg->file_list[i]);
+         }
+         free(msg->file_list);
+         free(msg);
+
+         win = core_find_window(SDL_GetWindowFromID(event.user.windowID));
+      }
+      else if(event.type == ctx.open_folder_event)
+      {
+         win = core_find_window(SDL_GetWindowFromID(event.user.windowID));
+         if(win != NULL)
+         {
+            HLH_gui_element_msg(&win->e, HLH_GUI_MSG_OPENFOLDER, 0, event.user.data1);
+         }
+
+         // delete msg context
+         HLH_gui_open_folder_msg *msg = event.user.data1;
+         for(size_t i = 0; i < msg->folder_list_size; i += 1)
+         {
+            free((void *)msg->folder_list[i]);
+         }
+         free(msg->folder_list);
+         free(msg);
+
+         win = core_find_window(SDL_GetWindowFromID(event.user.windowID));
+      }
+
       if(win != NULL && win->redraw)
       {
          if(!SDL_SetRenderTarget(win->sdl_renderer, win->sdl_target))
@@ -954,7 +1011,7 @@ char *HLH_gui_strdup(const char *str)
    return str_new;
 }
 
-void core_open_file_callback(void *userdata, const char **filelist, int32_t filter)
+void core_open_file_callback(void *userdata, const char * const *filelist, int filter)
 {
    HLH_gui_dialog_internal_ctx *dialog_ctx = userdata;
 
@@ -993,7 +1050,7 @@ void core_open_file_callback(void *userdata, const char **filelist, int32_t filt
    free(dialog_ctx);
 }
 
-void core_save_file_callback(void *userdata, const char **filelist, int32_t filter)
+void core_save_file_callback(void *userdata, const char * const *filelist, int filter)
 {
    HLH_gui_dialog_internal_ctx *dialog_ctx = userdata;
 
@@ -1032,7 +1089,7 @@ void core_save_file_callback(void *userdata, const char **filelist, int32_t filt
    free(dialog_ctx);
 }
 
-void core_open_folder_callback(void *userdata, const char **folderlist, int32_t filter)
+void core_open_folder_callback(void *userdata, const char * const *folderlist, int filter)
 {
    HLH_gui_dialog_internal_ctx *dialog_ctx = userdata;
 
@@ -1056,7 +1113,7 @@ void core_open_folder_callback(void *userdata, const char **folderlist, int32_t 
    }
 
    SDL_Event event;
-   event.type = ctx.save_file_event;
+   event.type = ctx.open_folder_event;
    event.user.windowID = SDL_GetWindowID(dialog_ctx->window->sdl_window);
    event.user.data1 = msg;
    SDL_PushEvent(&event);

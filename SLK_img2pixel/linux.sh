@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -DLUA_USE_POSIX"
+CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O0 -g3 -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -DLUA_USE_POSIX"
 printf "
 .POSIX:
 CC      = gcc
@@ -31,9 +31,8 @@ for src in $(find ../external/lua -maxdepth 1 -name "*.c"); do
    add_file "$src"
 done
 
-add_file "../external/tinyfiledialogs.c"
 add_file "../HLH_gui/HLH_gui_all.c"
-add_file "unix/util_unix.c"
+add_file "../HLH/HLH_base_all.c"
 
 echo "obj= $obj"
 

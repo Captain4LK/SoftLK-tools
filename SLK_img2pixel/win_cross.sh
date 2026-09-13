@@ -5,8 +5,8 @@ set -e
 CXX="/mnt/sdb1/apps/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin/x86_64-w64-mingw32-g++"
 CC="/mnt/sdb1/apps/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin/x86_64-w64-mingw32-gcc"
 CFLAGS="-Wall -Wextra -Wshadow -std=c99 -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -L. -DLUA_USE_WINDOWS"
-CPPFLAGS="-Wall -Wextra -Wshadow -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -luuid -lcomdlg32 -lole32 -lmingw32 -Wall -Wno-sign-compare -Wno-unused-parameter -static-libgcc -static-libstdc++ -L. -lSDL2main -lSDL2 -mwindows"
-LDFLAGS="-static-libgcc -static-libstdc++ -L. -luuid -lcomdlg32 -lole32 -lmingw32 -lSDL2main -lSDL2 -Wall -Wno-sign-compare -Wno-unused-parameter -mwindows"
+CPPFLAGS="-Wall -Wextra -Wshadow -Wno-sign-compare -Wconversion -Wno-sign-conversion -Wno-unused -O3 -g -fno-omit-frame-pointer -I../HLH_gui/ -I../3rd/ -I../ -lm -fopenmp -I. -luuid -lcomdlg32 -lole32 -lmingw32 -Wall -Wno-sign-compare -Wno-unused-parameter -static-libgcc -static-libstdc++ -L. -lSDL3main -lSDL3 -mwindows"
+LDFLAGS="-static-libgcc -static-libstdc++ -L. -luuid -lcomdlg32 -lole32 -lmingw32 -lSDL3main -lSDL3 -Wall -Wno-sign-compare -Wno-unused-parameter -mwindows"
 printf "
 .POSIX:
 CC      = $CC
@@ -46,8 +46,7 @@ done
 
 #add_file "../external/tinyfiledialogs.c"
 add_file "../HLH_gui/HLH_gui_all.c"
-add_file "win/util_win.c"
-add_file_cpp "../external/nfd_win.cpp"
+add_file "../HLH/HLH_base_all.c"
 
 echo "obj= $obj"
 

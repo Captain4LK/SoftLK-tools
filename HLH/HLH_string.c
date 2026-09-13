@@ -9,6 +9,7 @@
  */
 
 //External includes
+#include <stdbool.h>
 //-------------------------------------
 
 //Internal includes
@@ -66,6 +67,11 @@ HLH_string HLH_string_clone(HLH_string str_src)
    return str;
 }
 
+HLH_string HLH_string_clone_cstring(const char *cstr)
+{
+   return HLH_string_clone(HLH_string_from_cstring(cstr));
+}
+
 void HLH_string_delete(HLH_string *str)
 {
    free((void *)str->str);
@@ -79,5 +85,15 @@ char *HLH_string_clone_to_cstring(HLH_string str_src)
    memcpy(str, str_src.str, str_src.size);
 
    return str;
+}
+
+bool HLH_string_equal(HLH_string a, HLH_string b)
+{
+   if(a.size != b.size)
+   {
+      return false;
+   }
+
+   return memcmp(a.str, b.str, a.size) == 0;
 }
 //-------------------------------------

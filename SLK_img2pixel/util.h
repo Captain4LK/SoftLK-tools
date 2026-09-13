@@ -1,7 +1,7 @@
 /*
 SLK_img2pixel - a tool for converting images to pixelart
 
-Written in 2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2024,2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -11,27 +11,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #ifndef _UTIL_H_
 
 #define _UTIL_H_
-
-//Close with fclose() when done
-FILE *image_load_select();
-FILE *palette_load_select(char ext[512]);
-FILE *preset_load_select();
-void dir_input_select(char path[512]);
-void dir_output_select(char path[512]);
-
-//Returns a path to a chosen .lua file, or NULL if the dialog was
-//cancelled. The returned pointer is valid until the next call.
-const char *script_load_select(void);
-
-//Full path of the last file chosen via image_load_select(), or an empty
-//string if none has been chosen yet. Valid until the next image_load_select()
-//call.
-const char *image_load_select_last_path(void);
-
-//Close with fclose() when done
-void image_save_select(char path[1024], char ext[512]);
-FILE *palette_save_select(char ext[512]);
-FILE *preset_save_select();
 
 void settings_load(const char *path);
 void settings_save();

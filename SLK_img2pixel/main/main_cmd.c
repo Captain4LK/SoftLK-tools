@@ -15,6 +15,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <string.h>
 #include <time.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #define HLH_IMPLEMENTATION
 #include "HLH.h"
@@ -22,8 +23,6 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include "HLH_path.h"
 #define HLH_RW_IMPLEMENTATION
 #include "HLH_rw.h"
-#define HLH_JSON_IMPLEMENTATION
-#include "HLH_json.h"
 #define OPTPARSE_IMPLEMENTATION
 #include "optparse.h"
 #define FOPEN_UTF8_IMPLEMENTATION
@@ -31,7 +30,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #define CUTE_FILES_IMPLEMENTATION
 #include "cute_files.h"
 
+#include "HLH/HLH_base.h"
 #include "HLH_gui.h"
+#include "HLH/HLH_json.h"
 //-------------------------------------
 
 //Lua
@@ -217,32 +218,32 @@ static int slk_load_preset(const char *path)
    HLH_json5 fallback = {0};
    HLH_json5_root *root = HLH_json_parse_file_stream(f);
 
-   blur_amount = HLH_json_get_object_real(&root->root,"blur_amount",0.);
-   sample_mode = HLH_json_get_object_integer(&root->root,"sample_mode",0);
-   x_offset = HLH_json_get_object_real(&root->root,"x_offset",0.f);
-   y_offset = HLH_json_get_object_real(&root->root,"y_offset",0.f);
-   scale_relative = HLH_json_get_object_boolean(&root->root,"scale_relative",0);
-   size_relative_x = HLH_json_get_object_integer(&root->root,"size_relative_x",2);
-   size_relative_y = HLH_json_get_object_integer(&root->root,"size_relative_y",2);
-   size_absolute_x = HLH_json_get_object_integer(&root->root,"size_absolute_x",64);
-   size_absolute_y = HLH_json_get_object_integer(&root->root,"size_absolute_y",64);
-   sharp_amount = HLH_json_get_object_real(&root->root,"sharp_amount",0.f);
-   brightness = HLH_json_get_object_real(&root->root,"brightness",0.f);
-   contrast = HLH_json_get_object_real(&root->root,"contrast",1.f);
-   saturation = HLH_json_get_object_real(&root->root,"saturation",1.f);
-   hue = HLH_json_get_object_real(&root->root,"hue",0.f);
-   gamma = HLH_json_get_object_real(&root->root,"gamma",1.f);
-   kmeanspp = HLH_json_get_object_boolean(&root->root,"kmeanspp",1);
-   tint_red = HLH_json_get_object_integer(&root->root,"tint_red",255);
-   tint_green = HLH_json_get_object_integer(&root->root,"tint_green",255);
-   tint_blue = HLH_json_get_object_integer(&root->root,"tint_blue",255);
-   dither_config.alpha_threshold = HLH_json_get_object_integer(&root->root,"dither_alpha_threshold",128);
-   dither_config.dither_amount = HLH_json_get_object_real(&root->root,"dither_dither_amount",0.2f);
-   dither_config.target_colors = HLH_json_get_object_integer(&root->root,"dither_target_colors",8);
-   dither_config.dither_mode = HLH_json_get_object_integer(&root->root,"dither_dither_mode",2);
-   dither_config.color_dist = HLH_json_get_object_integer(&root->root,"dither_color_dist",2);
-   dither_config.palette_colors = HLH_json_get_object_integer(&root->root,"dither_palette_colors",2);
-   HLH_json5 *array = HLH_json_get_object_array(&root->root,"dither_palette",&fallback);
+   blur_amount = HLH_json_get_object_real(&root->root,HLH_string_lit("blur_amount"),0.);
+   sample_mode = HLH_json_get_object_integer(&root->root,HLH_string_lit("sample_mode"),0);
+   x_offset = HLH_json_get_object_real(&root->root,HLH_string_lit("x_offset"),0.f);
+   y_offset = HLH_json_get_object_real(&root->root,HLH_string_lit("y_offset"),0.f);
+   scale_relative = HLH_json_get_object_boolean(&root->root,HLH_string_lit("scale_relative"),0);
+   size_relative_x = HLH_json_get_object_integer(&root->root,HLH_string_lit("size_relative_x"),2);
+   size_relative_y = HLH_json_get_object_integer(&root->root,HLH_string_lit("size_relative_y"),2);
+   size_absolute_x = HLH_json_get_object_integer(&root->root,HLH_string_lit("size_absolute_x"),64);
+   size_absolute_y = HLH_json_get_object_integer(&root->root,HLH_string_lit("size_absolute_y"),64);
+   sharp_amount = HLH_json_get_object_real(&root->root,HLH_string_lit("sharp_amount"),0.f);
+   brightness = HLH_json_get_object_real(&root->root,HLH_string_lit("brightness"),0.f);
+   contrast = HLH_json_get_object_real(&root->root,HLH_string_lit("contrast"),1.f);
+   saturation = HLH_json_get_object_real(&root->root,HLH_string_lit("saturation"),1.f);
+   hue = HLH_json_get_object_real(&root->root,HLH_string_lit("hue"),0.f);
+   gamma = HLH_json_get_object_real(&root->root,HLH_string_lit("gamma"),1.f);
+   kmeanspp = HLH_json_get_object_boolean(&root->root,HLH_string_lit("kmeanspp"),1);
+   tint_red = HLH_json_get_object_integer(&root->root,HLH_string_lit("tint_red"),255);
+   tint_green = HLH_json_get_object_integer(&root->root,HLH_string_lit("tint_green"),255);
+   tint_blue = HLH_json_get_object_integer(&root->root,HLH_string_lit("tint_blue"),255);
+   dither_config.alpha_threshold = HLH_json_get_object_integer(&root->root,HLH_string_lit("dither_alpha_threshold"),128);
+   dither_config.dither_amount = HLH_json_get_object_real(&root->root,HLH_string_lit("dither_dither_amount"),0.2f);
+   dither_config.target_colors = HLH_json_get_object_integer(&root->root,HLH_string_lit("dither_target_colors"),8);
+   dither_config.dither_mode = HLH_json_get_object_integer(&root->root,HLH_string_lit("dither_dither_mode"),2);
+   dither_config.color_dist = HLH_json_get_object_integer(&root->root,HLH_string_lit("dither_color_dist"),2);
+   dither_config.palette_colors = HLH_json_get_object_integer(&root->root,HLH_string_lit("dither_palette_colors"),2);
+   HLH_json5 *array = HLH_json_get_object_array(&root->root,HLH_string_lit("dither_palette"),&fallback);
    for(int i = 0;i<256;i++)
       dither_config.palette[i] = HLH_json_get_array_integer(array,i,0);
 
@@ -465,35 +466,35 @@ static void print_help(int argc, char **argv)
 static void dump_defaults()
 {
    HLH_json5_root *root = HLH_json_create_root();
-   HLH_json_object_add_real(&root->root,"blur_amount",blur_amount);
-   HLH_json_object_add_integer(&root->root,"sample_mode",sample_mode);
-   HLH_json_object_add_real(&root->root,"x_offset",x_offset);
-   HLH_json_object_add_real(&root->root,"y_offset",y_offset);
-   HLH_json_object_add_boolean(&root->root,"scale_relative",scale_relative);
-   HLH_json_object_add_integer(&root->root,"size_relative_x",size_relative_x);
-   HLH_json_object_add_integer(&root->root,"size_relative_y",size_relative_y);
-   HLH_json_object_add_integer(&root->root,"size_absolute_x",size_absolute_x);
-   HLH_json_object_add_integer(&root->root,"size_absolute_y",size_absolute_y);
-   HLH_json_object_add_real(&root->root,"sharp_amount",sharp_amount);
-   HLH_json_object_add_real(&root->root,"brightness",brightness);
-   HLH_json_object_add_real(&root->root,"contrast",contrast);
-   HLH_json_object_add_real(&root->root,"saturation",saturation);
-   HLH_json_object_add_real(&root->root,"hue",hue);
-   HLH_json_object_add_real(&root->root,"gamma",gamma);
-   HLH_json_object_add_boolean(&root->root,"kmeanspp",kmeanspp);
-   HLH_json_object_add_integer(&root->root,"dither_alpha_threshold",dither_config.alpha_threshold);
-   HLH_json_object_add_real(&root->root,"dither_dither_amount",dither_config.dither_amount);
-   HLH_json_object_add_integer(&root->root,"dither_target_colors",dither_config.target_colors);
-   HLH_json_object_add_integer(&root->root,"dither_dither_mode",dither_config.dither_mode);
-   HLH_json_object_add_integer(&root->root,"dither_color_dist",dither_config.color_dist);
-   HLH_json_object_add_integer(&root->root,"tint_red",tint_red);
-   HLH_json_object_add_integer(&root->root,"tint_green",tint_green);
-   HLH_json_object_add_integer(&root->root,"tint_blue",tint_blue);
-   HLH_json_object_add_integer(&root->root,"dither_palette_colors",dither_config.palette_colors);
+   HLH_json_object_add_real(&root->root,HLH_string_lit("blur_amount"),blur_amount);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("sample_mode"),sample_mode);
+   HLH_json_object_add_real(&root->root,HLH_string_lit("x_offset"),x_offset);
+   HLH_json_object_add_real(&root->root,HLH_string_lit("y_offset"),y_offset);
+   HLH_json_object_add_boolean(&root->root,HLH_string_lit("scale_relative"),scale_relative);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("size_relative_x"),size_relative_x);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("size_relative_y"),size_relative_y);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("size_absolute_x"),size_absolute_x);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("size_absolute_y"),size_absolute_y);
+   HLH_json_object_add_real(&root->root,HLH_string_lit("sharp_amount"),sharp_amount);
+   HLH_json_object_add_real(&root->root,HLH_string_lit("brightness"),brightness);
+   HLH_json_object_add_real(&root->root,HLH_string_lit("contrast"),contrast);
+   HLH_json_object_add_real(&root->root,HLH_string_lit("saturation"),saturation);
+   HLH_json_object_add_real(&root->root,HLH_string_lit("hue"),hue);
+   HLH_json_object_add_real(&root->root,HLH_string_lit("gamma"),gamma);
+   HLH_json_object_add_boolean(&root->root,HLH_string_lit("kmeanspp"),kmeanspp);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_alpha_threshold"),dither_config.alpha_threshold);
+   HLH_json_object_add_real(&root->root,HLH_string_lit("dither_dither_amount"),dither_config.dither_amount);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_target_colors"),dither_config.target_colors);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_dither_mode"),dither_config.dither_mode);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_color_dist"),dither_config.color_dist);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("tint_red"),tint_red);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("tint_green"),tint_green);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("tint_blue"),tint_blue);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_palette_colors"),dither_config.palette_colors);
    HLH_json5 array = HLH_json_create_array();
    for(int i = 0;i<256;i++)
       HLH_json_array_add_integer(&array,dither_config.palette[i]);
-   HLH_json_object_add_array(&root->root,"dither_palette",array);
+   HLH_json_object_add_array(&root->root,HLH_string_lit("dither_palette"),array);
 
    HLH_json_write_file(stdout,&root->root);
    HLH_json_free(root);

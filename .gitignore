@@ -15,3 +15,5 @@ bin/*.png
 bin/*.json
 bin/*.gif
 bin/SLK_img2pix*
+.kdev4
+*.kdev4

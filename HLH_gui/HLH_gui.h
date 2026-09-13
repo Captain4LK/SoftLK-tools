@@ -98,6 +98,12 @@ typedef struct
    size_t folder_list_size;
 }HLH_gui_open_folder_msg;
 
+typedef struct
+{
+   const char *name;
+   const char *pattern;
+}HLH_gui_file_filter;
+
 typedef enum
 {
    HLH_GUI_UNKNOWN = 0,
@@ -442,6 +448,13 @@ void HLH_gui_draw_set_clip_rect(HLH_gui_element *e, HLH_gui_rect rect);
 void HLH_gui_draw_rectangle(HLH_gui_element *e, HLH_gui_rect rect, uint32_t color_border);
 void HLH_gui_draw_rectangle_fill(HLH_gui_element *e, HLH_gui_rect rect, uint32_t color);
 void HLH_gui_draw_string(HLH_gui_element *e, HLH_gui_rect bounds, const char *text, int len, uint32_t color, int align_center);
+
+// File dialogs
+void HLH_gui_open_file_dialog(HLH_gui_window *win, int32_t ident, size_t filter_count,
+                              HLH_gui_file_filter filters[static filter_count], HLH_string default_location, bool allow_many);
+void HLH_gui_save_file_dialog(HLH_gui_window *win, int32_t ident, size_t filter_count,
+                              HLH_gui_file_filter filters[static filter_count], HLH_string default_location);
+void HLH_gui_open_folder_dialog(HLH_gui_window *win, int32_t ident, HLH_string default_location, bool allow_many);
 
 //Groups
 HLH_gui_group *HLH_gui_group_create(HLH_gui_element *parent, HLH_gui_flags flags);

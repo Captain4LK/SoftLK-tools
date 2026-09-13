@@ -1,7 +1,7 @@
 /*
 SLK_img2pixel - a tool for converting images to pixelart
 
-Written in 2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+Written in 2024, 2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
 To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
@@ -14,7 +14,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdbool.h>
 
+#include "HLH/HLH_base.h"
 #include "HLH_gui.h"
 #include "HLH.h"
 //-------------------------------------
@@ -47,7 +49,7 @@ void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *e
    if(f==NULL)
       return;
 
-   if(strcmp(ext,"pal")==0||strcmp(ext,"PAL")==0)
+   if(strcmp(ext,".pal")==0||strcmp(ext,".PAL")==0)
    {
       int color = 0;
       char buffer[512];
@@ -67,7 +69,7 @@ void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *e
 
       *color_count = color;
    }
-   else if(strcmp(ext,"hex")==0||strcmp(ext,"HEX")==0)
+   else if(strcmp(ext,".hex")==0||strcmp(ext,".HEX")==0)
    {
       char buffer[512];
       int color = 0;
@@ -83,7 +85,7 @@ void SLK_palette_load(FILE *f, uint32_t *colors, int *color_count, const char *e
 
       *color_count = color;
    }
-   else if(strcmp(ext,"gpl")==0||strcmp(ext,"GPL")==0)
+   else if(strcmp(ext,".gpl")==0||strcmp(ext,".GPL")==0)
    {
       char buffer[512];
       int color = 0;

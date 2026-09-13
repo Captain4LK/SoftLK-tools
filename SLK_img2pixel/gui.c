@@ -14,13 +14,16 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include <stdbool.h>
 
 #include "external/cute_files.h"
 
+#include "HLH/HLH_base.h"
+#include "HLH/HLH_path.h"
+#include "HLH/HLH_json.h"
 #include "HLH_gui.h"
 #include "HLH.h"
-#include "HLH_path.h"
-#include "HLH_json.h"
+//#include "HLH_path.h"
 //-------------------------------------
 
 //Lua
@@ -153,6 +156,8 @@ typedef enum
 //-------------------------------------
 
 //Variables
+static GuiSettings gui_settings;
+
 static HLH_gui_imgcmp *gui_imgcmp;
 
 static HLH_gui_group *gui_groups_left[5];
@@ -244,14 +249,19 @@ static struct
 
    HLH_gui_checkbutton *dither_median;
    HLH_gui_checkbutton *palette_kmeanspp;
+
+   bool dialog_open;
+   HLH_string watch_path;
+
+   // batch window
+   HLH_gui_label *label_batch_input;
+   HLH_gui_label *label_batch_output;
 }gui;
 
 static HLH_gui_window *window_root;
 
 //batch
 static int batch_type;
-static char batch_input[512];
-static char batch_output[512];
 static HLH_gui_label *batch_progress;
 
 //script window
@@ -292,6 +302,8 @@ static Image64 *cache_tint;
 
 //Function prototypes
 static int64_t main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t batch_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t script_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static int64_t rb_radiobutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static int64_t radiobutton_sample_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static int64_t radiobutton_scale_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
@@ -1109,40 +1121,23 @@ static int64_t menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, vo
       //Image
       if(m->index==0)
       {
-         FILE *f = image_load_select();
-         if(f!=NULL)
-         {
-            fclose(f);
-            gui_set_input_path(image_load_select_last_path());
-         }
+         HLH_gui_file_filter filters[] = {{"Image files", "png;gif;bmp;tga;jpg;jpeg"}};
+         HLH_gui_open_file_dialog(e->window, 0, 1, filters, gui_settings.path_image_input, false);
+         gui.dialog_open = true;
       }
       //Preset
       else if(m->index==1)
       {
-         FILE *f = preset_load_select();
-         if(f!=NULL)
-         {
-            gui_load_preset(f);
-            fclose(f);
-         }
+         HLH_gui_file_filter filters[] = {{"JSON", "json"}};
+         HLH_gui_open_file_dialog(e->window, 1, 1, filters, gui_settings.path_preset_input, false);
+         gui.dialog_open = true;
       }
       //Palette
       else if(m->index==2)
       {
-         char ext[512] = {0};
-         FILE *f = palette_load_select(ext);
-         if(f!=NULL)
-         {
-            SLK_palette_load(f,dither_config.palette,&dither_config.palette_colors,ext);
-            fclose(f);
-            block_process = 1;
-            HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-1,255,1,1);
-            HLH_gui_slider_set(gui.slider_color_red,color32_r(dither_config.palette[color_selected]),255,1,1);
-            HLH_gui_slider_set(gui.slider_color_green,color32_g(dither_config.palette[color_selected]),255,1,1);
-            HLH_gui_slider_set(gui.slider_color_blue,color32_b(dither_config.palette[color_selected]),255,1,1);
-            block_process = 0;
-            gui_process(3);
-         }
+         HLH_gui_file_filter filters[] = {{"Colour Palette", "pal;hex;gpl;png"}};
+         HLH_gui_open_file_dialog(e->window, 2, 1, filters, gui_settings.path_preset_input, false);
+         gui.dialog_open = true;
       }
    }
 
@@ -1158,6 +1153,15 @@ static int64_t menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, vo
       //Image
       if(m->index==0)
       {
+         if(gui_output==NULL)
+            return 0;
+
+         HLH_gui_file_filter filters[] = {{"PNG", "png"}, {"TARGA", "tga"},
+         {"QOI", "qoi"}, {"BMP", "bmp"}, {"pcx", "pcx"}};
+         HLH_gui_save_file_dialog(e->window, 0, 5, filters, gui_settings.path_image_output);
+         gui.dialog_open = true;
+
+#if 0
          if(gui_output==NULL)
             return 0;
 
@@ -1232,10 +1236,15 @@ static int64_t menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, vo
                fclose(fp);
             }
          }
+#endif
       }
       //Preset
       else if(m->index==1)
       {
+         HLH_gui_file_filter filters[] = {{"JSON", "json"}};
+         HLH_gui_save_file_dialog(e->window, 1, 1, filters, gui_settings.path_preset_output);
+         gui.dialog_open = true;
+#if 0
          FILE *f = preset_save_select();
          //const char *preset = preset_save_select();
          //FILE *f = fopen(preset,"w");
@@ -1243,45 +1252,51 @@ static int64_t menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, vo
             //return 0;
 
          HLH_json5_root *root = HLH_json_create_root();
-         HLH_json_object_add_real(&root->root,"blur_amount",blur_amount);
-         HLH_json_object_add_integer(&root->root,"sample_mode",sample_mode);
-         HLH_json_object_add_real(&root->root,"x_offset",x_offset);
-         HLH_json_object_add_real(&root->root,"y_offset",y_offset);
-         HLH_json_object_add_boolean(&root->root,"scale_relative",scale_relative);
-         HLH_json_object_add_integer(&root->root,"size_relative_x",size_relative_x);
-         HLH_json_object_add_integer(&root->root,"size_relative_y",size_relative_y);
-         HLH_json_object_add_integer(&root->root,"size_absolute_x",size_absolute_x);
-         HLH_json_object_add_integer(&root->root,"size_absolute_y",size_absolute_y);
-         HLH_json_object_add_real(&root->root,"sharp_amount",sharp_amount);
-         HLH_json_object_add_real(&root->root,"brightness",brightness);
-         HLH_json_object_add_real(&root->root,"contrast",contrast);
-         HLH_json_object_add_real(&root->root,"saturation",saturation);
-         HLH_json_object_add_real(&root->root,"hue",hue);
-         HLH_json_object_add_real(&root->root,"gamma",gamma);
-         HLH_json_object_add_boolean(&root->root,"kmeanspp",kmeanspp);
-         HLH_json_object_add_integer(&root->root,"dither_alpha_threshold",dither_config.alpha_threshold);
-         HLH_json_object_add_real(&root->root,"dither_dither_amount",dither_config.dither_amount);
-         HLH_json_object_add_integer(&root->root,"dither_target_colors",dither_config.target_colors);
-         HLH_json_object_add_integer(&root->root,"dither_dither_mode",dither_config.dither_mode);
-         HLH_json_object_add_integer(&root->root,"dither_color_dist",dither_config.color_dist);
-         HLH_json_object_add_integer(&root->root,"tint_red",tint_red);
-         HLH_json_object_add_integer(&root->root,"tint_green",tint_green);
-         HLH_json_object_add_integer(&root->root,"tint_blue",tint_blue);
-         HLH_json_object_add_integer(&root->root,"dither_palette_colors",dither_config.palette_colors);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("blur_amount"),blur_amount);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("sample_mode"),sample_mode);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("x_offset"),x_offset);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("y_offset"),y_offset);
+         HLH_json_object_add_boolean(&root->root,HLH_string_lit("scale_relative"),scale_relative);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("size_relative_x"),size_relative_x);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("size_relative_y"),size_relative_y);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("size_absolute_x"),size_absolute_x);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("size_absolute_y"),size_absolute_y);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("sharp_amount"),sharp_amount);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("brightness"),brightness);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("contrast"),contrast);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("saturation"),saturation);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("hue"),hue);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("gamma"),gamma);
+         HLH_json_object_add_boolean(&root->root,HLH_string_lit("kmeanspp"),kmeanspp);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_alpha_threshold"),dither_config.alpha_threshold);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("dither_dither_amount"),dither_config.dither_amount);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_target_colors"),dither_config.target_colors);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_dither_mode"),dither_config.dither_mode);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_color_dist"),dither_config.color_dist);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("tint_red"),tint_red);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("tint_green"),tint_green);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("tint_blue"),tint_blue);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_palette_colors"),dither_config.palette_colors);
          HLH_json5 array = HLH_json_create_array();
          for(int i = 0;i<256;i++)
             HLH_json_array_add_integer(&array,dither_config.palette[i]);
-         HLH_json_object_add_array(&root->root,"dither_palette",array);
+         HLH_json_object_add_array(&root->root,HLH_string_lit("dither_palette"),array);
 
          HLH_json_write_file(f,&root->root);
          HLH_json_free(root);
 
          if(f!=NULL)
             fclose(f);
+#endif
       }
       //Palette
       else if(m->index==2)
       {
+         HLH_gui_file_filter filters[] = {{"jasc-pal", "pal"}, {"hex", "hex"},
+         {"gpl", "gpl"}};
+         HLH_gui_save_file_dialog(e->window, 2, 3, filters, gui_settings.path_preset_output);
+         gui.dialog_open = true;
+#if 0
          char ext[512] = {0};
          FILE *f = palette_save_select(ext);
          //const char *palette = palette_save_select();
@@ -1289,6 +1304,7 @@ static int64_t menu_save_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, vo
          SLK_palette_save(f,dither_config.palette,dither_config.palette_colors,ext);
          if(f!=NULL)
             fclose(f);
+#endif
       }
    }
 
@@ -2014,33 +2030,33 @@ void gui_load_preset(FILE *f)
       HLH_json5 fallback = {0};
       HLH_json5_root *root = HLH_json_parse_file_stream(f);
 
-      blur_amount = (float)HLH_json_get_object_real(&root->root,"blur_amount",0.);
-      sample_mode = (int)HLH_json_get_object_integer(&root->root,"sample_mode",0);
-      x_offset = (float)HLH_json_get_object_real(&root->root,"x_offset",0.f);
-      y_offset = (float)HLH_json_get_object_real(&root->root,"y_offset",0.f);
-      scale_relative = HLH_json_get_object_boolean(&root->root,"scale_relative",0);
-      size_relative_x = (int)HLH_json_get_object_integer(&root->root,"size_relative_x",2);
-      size_relative_y = (int)HLH_json_get_object_integer(&root->root,"size_relative_y",2);
-      size_absolute_x = (int)HLH_json_get_object_integer(&root->root,"size_absolute_x",64);
-      size_absolute_y = (int)HLH_json_get_object_integer(&root->root,"size_absolute_y",64);
-      sharp_amount = (float)HLH_json_get_object_real(&root->root,"sharp_amount",0.f);
-      brightness = (float)HLH_json_get_object_real(&root->root,"brightness",0.f);
-      contrast = (float)HLH_json_get_object_real(&root->root,"contrast",1.f);
-      saturation = (float)HLH_json_get_object_real(&root->root,"saturation",1.f);
-      hue = (float)HLH_json_get_object_real(&root->root,"hue",0.f);
-      gamma = (float)HLH_json_get_object_real(&root->root,"gamma",1.f);
-      kmeanspp = HLH_json_get_object_boolean(&root->root,"kmeanspp",1);
-      tint_red = (uint8_t)HLH_json_get_object_integer(&root->root,"tint_red",255);
-      tint_green = (uint8_t)HLH_json_get_object_integer(&root->root,"tint_green",255);
-      tint_blue = (uint8_t)HLH_json_get_object_integer(&root->root,"tint_blue",255);
-      dither_config.alpha_threshold = (int)HLH_json_get_object_integer(&root->root,"dither_alpha_threshold",128);
-      dither_config.dither_amount = (float)HLH_json_get_object_real(&root->root,"dither_dither_amount",0.2f);
-      dither_config.target_colors = (int)HLH_json_get_object_integer(&root->root,"dither_target_colors",8);
-      //dither_config.use_median = HLH_json_get_object_boolean(&root->root,"dither_use_median",0);
-      dither_config.dither_mode = (int)HLH_json_get_object_integer(&root->root,"dither_dither_mode",2);
-      dither_config.color_dist = (int)HLH_json_get_object_integer(&root->root,"dither_color_dist",2);
-      dither_config.palette_colors = (int)HLH_json_get_object_integer(&root->root,"dither_palette_colors",2);
-      HLH_json5 *array = HLH_json_get_object_array(&root->root,"dither_palette",&fallback);
+      blur_amount = (float)HLH_json_get_object_real(&root->root,HLH_string_lit("blur_amount"),0.);
+      sample_mode = (int)HLH_json_get_object_integer(&root->root,HLH_string_lit("sample_mode"),0);
+      x_offset = (float)HLH_json_get_object_real(&root->root,HLH_string_lit("x_offset"),0.f);
+      y_offset = (float)HLH_json_get_object_real(&root->root,HLH_string_lit("y_offset"),0.f);
+      scale_relative = HLH_json_get_object_boolean(&root->root,HLH_string_lit("scale_relative"),0);
+      size_relative_x = (int)HLH_json_get_object_integer(&root->root,HLH_string_lit("size_relative_x"),2);
+      size_relative_y = (int)HLH_json_get_object_integer(&root->root,HLH_string_lit("size_relative_y"),2);
+      size_absolute_x = (int)HLH_json_get_object_integer(&root->root,HLH_string_lit("size_absolute_x"),64);
+      size_absolute_y = (int)HLH_json_get_object_integer(&root->root,HLH_string_lit("size_absolute_y"),64);
+      sharp_amount = (float)HLH_json_get_object_real(&root->root,HLH_string_lit("sharp_amount"),0.f);
+      brightness = (float)HLH_json_get_object_real(&root->root,HLH_string_lit("brightness"),0.f);
+      contrast = (float)HLH_json_get_object_real(&root->root,HLH_string_lit("contrast"),1.f);
+      saturation = (float)HLH_json_get_object_real(&root->root,HLH_string_lit("saturation"),1.f);
+      hue = (float)HLH_json_get_object_real(&root->root,HLH_string_lit("hue"),0.f);
+      gamma = (float)HLH_json_get_object_real(&root->root,HLH_string_lit("gamma"),1.f);
+      kmeanspp = HLH_json_get_object_boolean(&root->root,HLH_string_lit("kmeanspp"),1);
+      tint_red = (uint8_t)HLH_json_get_object_integer(&root->root,HLH_string_lit("tint_red"),255);
+      tint_green = (uint8_t)HLH_json_get_object_integer(&root->root,HLH_string_lit("tint_green"),255);
+      tint_blue = (uint8_t)HLH_json_get_object_integer(&root->root,HLH_string_lit("tint_blue"),255);
+      dither_config.alpha_threshold = (int)HLH_json_get_object_integer(&root->root,HLH_string_lit("dither_alpha_threshold"),128);
+      dither_config.dither_amount = (float)HLH_json_get_object_real(&root->root,HLH_string_lit("dither_dither_amount"),0.2f);
+      dither_config.target_colors = (int)HLH_json_get_object_integer(&root->root,HLH_string_lit("dither_target_colors"),8);
+      //dither_config.use_median = HLH_json_get_object_boolean(&root->root,HLH_string_lit("dither_use_median"),0);
+      dither_config.dither_mode = (int)HLH_json_get_object_integer(&root->root,HLH_string_lit("dither_dither_mode"),2);
+      dither_config.color_dist = (int)HLH_json_get_object_integer(&root->root,HLH_string_lit("dither_color_dist"),2);
+      dither_config.palette_colors = (int)HLH_json_get_object_integer(&root->root,HLH_string_lit("dither_palette_colors"),2);
+      HLH_json5 *array = HLH_json_get_object_array(&root->root,HLH_string_lit("dither_palette"),&fallback);
       for(int i = 0;i<256;i++)
          dither_config.palette[i] = (uint32_t)HLH_json_get_array_integer(array,i,0);
 
@@ -2158,6 +2174,239 @@ static int64_t main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, 
    {
       const char *path = dp;
       gui_set_input_path(path);
+   }
+   else if(msg == HLH_GUI_MSG_OPENFILE)
+   {
+      HLH_gui_open_file_msg *msg_ctx = dp;
+      if(msg_ctx->ident == 0) // Load image
+      {
+         if(msg_ctx->file_list_size != 1)
+         {
+            return 0;
+         }
+
+         HLH_string_delete(&gui_settings.path_image_input);
+         gui_settings.path_image_input = HLH_string_clone(
+            HLH_path_base(HLH_string_from_cstring(msg_ctx->file_list[0])));
+         HLH_string_delete(&gui.watch_path);
+         gui.watch_path = HLH_string_clone_cstring(msg_ctx->file_list[0]);
+
+         // TODO: filewatch
+         /*
+         time, err_mtbp := os.modification_time_by_path(gui_ctx.watch_path)
+         if err_mtbp == nil
+         {
+            gui_ctx.watch_modtime = time
+         }
+         */
+
+         gui_set_input_path(msg_ctx->file_list[0]);
+      }
+      else if(msg_ctx->ident == 1) // Load preset
+      {
+         if(msg_ctx->file_list_size != 1)
+         {
+            return 0;
+         }
+
+         HLH_string_delete(&gui_settings.path_preset_input);
+         gui_settings.path_preset_input = HLH_string_clone(
+            HLH_path_base(HLH_string_from_cstring(msg_ctx->file_list[0])));
+         FILE *f = HLH_fopen(msg_ctx->file_list[0], "r");
+         if(f!= NULL)
+         {
+            gui_load_preset(f);
+            fclose(f);
+         }
+      }
+      else if(msg_ctx->ident == 2) // Load palette
+      {
+         if(msg_ctx->file_list_size != 1)
+         {
+            return 0;
+         }
+
+         HLH_string_delete(&gui_settings.path_palette_input);
+         gui_settings.path_palette_input = HLH_string_clone(
+            HLH_path_base(HLH_string_from_cstring(msg_ctx->file_list[0])));
+
+         char *ext = HLH_string_clone_to_cstring(
+            HLH_path_ext(HLH_string_from_cstring(msg_ctx->file_list[0])));
+         FILE *f = HLH_fopen(msg_ctx->file_list[0], "r");
+         if(f!= NULL)
+         {
+            SLK_palette_load(f,dither_config.palette,&dither_config.palette_colors,ext);
+            fclose(f);
+            block_process = 1;
+            HLH_gui_slider_set(gui.slider_color_count,dither_config.palette_colors-1,255,1,1);
+            HLH_gui_slider_set(gui.slider_color_red,color32_r(dither_config.palette[color_selected]),255,1,1);
+            HLH_gui_slider_set(gui.slider_color_green,color32_g(dither_config.palette[color_selected]),255,1,1);
+            HLH_gui_slider_set(gui.slider_color_blue,color32_b(dither_config.palette[color_selected]),255,1,1);
+            block_process = 0;
+            gui_process(3);
+         }
+         free(ext);
+      }
+   }
+   else if(msg == HLH_GUI_MSG_SAVEFILE)
+   {
+      HLH_gui_open_file_msg *msg_ctx = dp;
+      if(msg_ctx->ident == 0) // Save image
+      {
+         if(msg_ctx->file_list_size != 1)
+         {
+            return 0;
+         }
+
+         HLH_string_delete(&gui_settings.path_image_output);
+         gui_settings.path_image_output = HLH_string_clone(
+            HLH_path_base(HLH_string_from_cstring(msg_ctx->file_list[0])));
+         HLH_string ext = HLH_path_ext(HLH_string_from_cstring(msg_ctx->file_list[0]));
+         char *cext = HLH_string_clone_to_cstring(ext);
+         const char *path = msg_ctx->file_list[0];
+
+         if(HLH_string_equal(ext, HLH_string_lit("PCX")) ||
+            HLH_string_equal(ext, HLH_string_lit("pcx")))
+         {
+            image8_save(gui_output, path, cext);
+         }
+         else if(HLH_string_equal(ext, HLH_string_lit("GIF")) ||
+            HLH_string_equal(ext, HLH_string_lit("gif")))
+         {
+            int frame_count = gui_input_gif_frame_count;
+            uint8_t **gif_frames = malloc(sizeof(*gif_frames)*(size_t)frame_count);
+            int *gif_delays = malloc(sizeof(*gif_delays)*(size_t)frame_count);
+            size_t frame_bytes = (size_t)gui_output->width*(size_t)gui_output->height;
+
+            //Frame 0 is whatever's currently in the live-preview output
+            gif_frames[0] = malloc(frame_bytes);
+            memcpy(gif_frames[0],gui_output->data,frame_bytes);
+            gif_delays[0] = (frame_count>1&&gui_input_gif_delays_cs!=NULL)?gui_input_gif_delays_cs[0]:10;
+
+            //Same target size gui_process() computes for the live preview
+            int out_width,out_height;
+            if(scale_relative)
+            {
+               out_width = gui_input->width/HLH_non_zero(size_relative_x);
+               out_height = gui_input->height/HLH_non_zero(size_relative_y);
+            }
+            else
+            {
+               out_width = size_absolute_x;
+               out_height = size_absolute_y;
+            }
+
+            for(int fidx = 1;fidx<frame_count;fidx++)
+            {
+               Image64 *img64 = image32to64(gui_input_gif_frames[fidx]);
+               image64_blur(img64,blur_amount);
+               Image64 *sampled = image64_sample(img64,out_width,out_height,sample_mode,x_offset,y_offset);
+               free(img64);
+               image64_sharpen(sampled,sharp_amount);
+               image64_hscb(sampled,hue,saturation,contrast,brightness);
+               image64_gamma(sampled,gamma);
+               image64_tint(sampled,tint_red,tint_green,tint_blue);
+
+               SLK_img8and32 foutput = image64_dither(sampled,&dither_config);
+               free(sampled);
+
+               gif_frames[fidx] = malloc(frame_bytes);
+               memcpy(gif_frames[fidx],foutput.img8->data,frame_bytes);
+               gif_delays[fidx] = gui_input_gif_delays_cs[fidx];
+
+               free(foutput.img8);
+               free(foutput.img32);
+            }
+
+            SLK_gif_write(path,gui_output->width,gui_output->height,dither_config.palette,dither_config.palette_colors,gif_frames,frame_count,gif_delays,1,0);
+
+            for(int fidx = 0;fidx<frame_count;fidx++)
+               free(gif_frames[fidx]);
+            free(gif_frames);
+            free(gif_delays);
+         }
+         else
+         {
+            FILE *fp = HLH_fopen(path, "wb");
+            if(fp != NULL)
+            {
+               HLH_gui_image_save(fp, gui_output32->data, gui_output32->width, gui_output32->height, cext);
+               fclose(fp);
+            }
+         }
+
+         free(cext);
+      }
+      else if(msg_ctx->ident == 1) // Save preset
+      {
+         if(msg_ctx->file_list_size != 1)
+         {
+            return 0;
+         }
+
+         HLH_string_delete(&gui_settings.path_preset_output);
+         gui_settings.path_preset_output = HLH_string_clone(
+            HLH_path_base(HLH_string_from_cstring(msg_ctx->file_list[0])));
+
+         FILE *f = HLH_fopen(msg_ctx->file_list[0], "w");
+
+         HLH_json5_root *root = HLH_json_create_root();
+         HLH_json_object_add_real(&root->root,HLH_string_lit("blur_amount"),blur_amount);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("sample_mode"),sample_mode);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("x_offset"),x_offset);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("y_offset"),y_offset);
+         HLH_json_object_add_boolean(&root->root,HLH_string_lit("scale_relative"),scale_relative);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("size_relative_x"),size_relative_x);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("size_relative_y"),size_relative_y);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("size_absolute_x"),size_absolute_x);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("size_absolute_y"),size_absolute_y);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("sharp_amount"),sharp_amount);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("brightness"),brightness);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("contrast"),contrast);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("saturation"),saturation);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("hue"),hue);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("gamma"),gamma);
+         HLH_json_object_add_boolean(&root->root,HLH_string_lit("kmeanspp"),kmeanspp);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_alpha_threshold"),dither_config.alpha_threshold);
+         HLH_json_object_add_real(&root->root,HLH_string_lit("dither_dither_amount"),dither_config.dither_amount);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_target_colors"),dither_config.target_colors);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_dither_mode"),dither_config.dither_mode);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_color_dist"),dither_config.color_dist);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("tint_red"),tint_red);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("tint_green"),tint_green);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("tint_blue"),tint_blue);
+         HLH_json_object_add_integer(&root->root,HLH_string_lit("dither_palette_colors"),dither_config.palette_colors);
+         HLH_json5 array = HLH_json_create_array();
+         for(int i = 0;i<256;i++)
+            HLH_json_array_add_integer(&array,dither_config.palette[i]);
+         HLH_json_object_add_array(&root->root,HLH_string_lit("dither_palette"),array);
+
+         HLH_json_write_file(f,&root->root);
+         HLH_json_free(root);
+
+         if(f!=NULL)
+            fclose(f);
+      }
+      else if(msg_ctx->ident == 2) // Save palette
+      {
+         if(msg_ctx->file_list_size != 1)
+         {
+            return 0;
+         }
+
+         HLH_string_delete(&gui_settings.path_palette_output);
+         gui_settings.path_palette_output = HLH_string_clone(
+            HLH_path_base(HLH_string_from_cstring(msg_ctx->file_list[0])));
+
+         HLH_string ext = HLH_path_ext(HLH_string_from_cstring(msg_ctx->file_list[0]));
+         char *cext = HLH_string_clone_to_cstring(ext);
+
+         FILE *f = HLH_fopen(msg_ctx->file_list[0], "w");
+         SLK_palette_save(f,dither_config.palette,dither_config.palette_colors,cext);
+         if(f!=NULL)
+            fclose(f);
+         free(cext);
+      }
    }
 
    return 0;
@@ -2617,6 +2866,10 @@ static int64_t button_script_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di
       //Select script
       if(e->usr==0)
       {
+         HLH_gui_file_filter filters[] = {{"Lua script", "lua"}};
+         HLH_gui_open_file_dialog(e->window, 0, 1, filters, gui_settings.path_script, false);
+         gui.dialog_open = true;
+         /*
          const char *path = script_load_select();
          if(path!=NULL)
          {
@@ -2625,6 +2878,7 @@ static int64_t button_script_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di
             HLH_gui_label_set(script_path_label,script_selected_path);
             HLH_gui_element_redraw((HLH_gui_element *)script_path_label);
          }
+         */
       }
       //Run
       else if(e->usr==1)
@@ -2653,6 +2907,7 @@ static void ui_construct_script(void)
    script_output[0] = '\0';
 
    HLH_gui_window *win = HLH_gui_window_create("Run Lua script",560,420,NULL);
+   win->e.msg_usr = script_window_msg;
    HLH_gui_window_block(window_root,win);
    HLH_gui_group *group_root = HLH_gui_group_create(&win->e,(HLH_gui_flags){.fill_x = true, .fill_y = true});
    HLH_gui_button *b = NULL;
@@ -2685,6 +2940,31 @@ static void ui_construct_script(void)
    }
 }
 
+static int64_t script_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
+{
+   if(msg == HLH_GUI_MSG_OPENFILE)
+   {
+      HLH_gui_open_file_msg *msg_ctx = dp;
+      if(msg_ctx->ident == 0) // Script file
+      {
+         if(msg_ctx->file_list_size != 1)
+         {
+            return 0;
+         }
+
+         HLH_string_delete(&gui_settings.path_script);
+         gui_settings.path_script = HLH_string_clone(
+            HLH_path_directory(HLH_string_from_cstring(msg_ctx->file_list[0])));
+         strncpy(script_selected_path,msg_ctx->file_list[0],sizeof(script_selected_path)-1);
+         script_selected_path[sizeof(script_selected_path)-1] = '\0';
+         HLH_gui_label_set(script_path_label,script_selected_path);
+         HLH_gui_element_redraw((HLH_gui_element *)script_path_label);
+      }
+   }
+
+   return 0;
+}
+
 static void ui_construct_batch()
 {
    batch_type = 0;
@@ -2692,6 +2972,7 @@ static void ui_construct_batch()
    //batch_output[0] = '\0';
 
    HLH_gui_window *win = HLH_gui_window_create("Batch processing", 500, 100, NULL);
+   win->e.msg_usr = batch_window_msg;
    HLH_gui_window_block(window_root, win);
    HLH_gui_group *group_root = HLH_gui_group_create(&win->e,
                                   (HLH_gui_flags){.fill_x  =true, .fill_y = true});
@@ -2699,7 +2980,7 @@ static void ui_construct_batch()
    HLH_gui_button *b = NULL;
 
    {
-      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,(HLH_gui_flags){.fill_x = true});
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,(HLH_gui_flags){.fill_x = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL});
 
       HLH_gui_group *group_type = HLH_gui_group_create(&group->e.window->e,
                                      (HLH_gui_flags){.no_parent = true, .overlay = true, .style = 1});
@@ -2720,11 +3001,14 @@ static void ui_construct_batch()
       batch_progress = HLH_gui_label_create(&group->e, (HLH_gui_flags){.fill_x = true, .style = 1}, "Progress    0/   0");
    }
    {
-      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,(HLH_gui_flags){.fill_x = true});
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,
+                                (HLH_gui_flags){.fill_x = true,.layout = HLH_GUI_LAYOUT_HORIZONTAL});
       b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"Input ",NULL);
       b->e.usr = 0;
       b->e.msg_usr = button_batch_msg;
-      b->e.usr_ptr = HLH_gui_label_create(&group->e, (HLH_gui_flags){.fill_x = true, .style = 1}, batch_input);
+      char *batch_input = HLH_string_clone_to_cstring(gui_settings.path_batch_input);
+      gui.label_batch_input = HLH_gui_label_create(&group->e, (HLH_gui_flags){.fill_x = true, .style = 1}, batch_input);
+      free(batch_input);
    }
    {
       HLH_gui_group *group = HLH_gui_group_create(&group_root->e,
@@ -2732,10 +3016,12 @@ static void ui_construct_batch()
       b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"Output",NULL);
       b->e.usr = 1;
       b->e.msg_usr = button_batch_msg;
-      b->e.usr_ptr = HLH_gui_label_create(&group->e, (HLH_gui_flags){.fill_x = true, .style = 1}, batch_output);
+      char *batch_output = HLH_string_clone_to_cstring(gui_settings.path_batch_output);
+      gui.label_batch_output = HLH_gui_label_create(&group->e, (HLH_gui_flags){.fill_x = true, .style = 1}, batch_output);
+      free(batch_output);
    }
    {
-      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,(HLH_gui_flags){.layout = HLH_GUI_LAYOUT_HORIZONTAL});
+      HLH_gui_group *group = HLH_gui_group_create(&group_root->e,(HLH_gui_flags){.center_x = true, .layout = HLH_GUI_LAYOUT_HORIZONTAL});
       b = HLH_gui_button_create(&group->e,(HLH_gui_flags){},"Exit",NULL);
       b->e.usr = 2;
       b->e.msg_usr = button_batch_msg;
@@ -2744,6 +3030,46 @@ static void ui_construct_batch()
       b->e.usr = 3;
       b->e.msg_usr = button_batch_msg;
    }
+}
+
+static int64_t batch_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
+{
+   if(msg == HLH_GUI_MSG_OPENFOLDER)
+   {
+      HLH_gui_open_folder_msg *msg_ctx = dp;
+      if(msg_ctx->ident == 0) // Input directory
+      {
+         if(msg_ctx->folder_list_size != 1)
+         {
+            return 0;
+         }
+
+         HLH_string_delete(&gui_settings.path_batch_input);
+         gui_settings.path_batch_input = HLH_string_clone(
+            HLH_path_directory(HLH_string_from_cstring(msg_ctx->folder_list[0])));
+         char *batch_input = HLH_string_clone_to_cstring(gui_settings.path_batch_input);
+         HLH_gui_label_set(gui.label_batch_input, batch_input);
+         free(batch_input);
+         HLH_gui_element_redraw(&gui.label_batch_input->e);
+      }
+      else if(msg_ctx->ident == 1) // Output directory
+      {
+         if(msg_ctx->folder_list_size != 1)
+         {
+            return 0;
+         }
+
+         HLH_string_delete(&gui_settings.path_batch_output);
+         gui_settings.path_batch_output = HLH_string_clone(
+            HLH_path_directory(HLH_string_from_cstring(msg_ctx->folder_list[0])));
+         char *batch_output = HLH_string_clone_to_cstring(gui_settings.path_batch_output);
+         HLH_gui_label_set(gui.label_batch_output,batch_output);
+         free(batch_output);
+         HLH_gui_element_redraw(&gui.label_batch_output->e);
+      }
+   }
+
+   return 0;
 }
 
 static int64_t menu_tools_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
@@ -2792,17 +3118,12 @@ static int64_t button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di,
       //Input select
       if(e->usr==0)
       {
-         dir_input_select(batch_input);
-         HLH_gui_label_set((HLH_gui_label *)e->usr_ptr,batch_input);
-         HLH_gui_element_redraw((HLH_gui_element *)e->usr_ptr);
+         HLH_gui_open_folder_dialog(e->window, 0, gui_settings.path_batch_input, false);
       }
       //Output select
       else if(e->usr==1)
       {
-         dir_output_select(batch_output);
-         HLH_gui_label_set((HLH_gui_label *)e->usr_ptr,batch_output);
-         HLH_gui_element_redraw((HLH_gui_element *)e->usr_ptr);
-         //HLH_gui_element_redraw(&e->window->e);
+         HLH_gui_open_folder_dialog(e->window, 1, gui_settings.path_batch_output, false);
       }
       //Exit
       else if(e->usr==2)
@@ -2814,6 +3135,8 @@ static int64_t button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di,
       {
          int files = 0;
          cf_dir_t dir;
+         char *batch_input = HLH_string_clone_to_cstring(gui_settings.path_batch_input);
+         char *batch_output = HLH_string_clone_to_cstring(gui_settings.path_batch_output);
          cf_dir_open(&dir,batch_input);
          while (dir.has_next)
          {
@@ -2888,12 +3211,13 @@ static int64_t button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di,
                SLK_img8and32 output = image64_dither(sample64,&dither_config);
                free(sample64);
 
-               char noext[512];
-               HLH_path_pop_ext(file.name,noext,NULL);
+               HLH_string stem = HLH_path_stem(HLH_string_from_cstring(file.name));
+               //char noext[512];
+               //HLH_path_pop_ext(file.name,noext,NULL);
 
                if(batch_type==0)
                {
-                  snprintf(tmp,1028,"%s/%s.png",batch_output,noext);
+                  snprintf(tmp,1028,"%s/%.*s.png",batch_output,(int)stem.size, stem.str);
                   FILE *fp = fopen(tmp, "wb");
                   if(fp != NULL)
                   {
@@ -2903,7 +3227,7 @@ static int64_t button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di,
                }
                else
                {
-                  snprintf(tmp,1028,"%s/%s.pcx",batch_output,noext);
+                  snprintf(tmp,1028,"%s/%.*s.pcx",batch_output,(int)stem.size, stem.str);
                   image8_save(output.img8,tmp,"pcx");
                }
 
@@ -2929,10 +3253,86 @@ static int64_t button_batch_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di,
          HLH_gui_element_redraw_now(&batch_progress->e);
 
          cf_dir_close(&dir);
-         //HLH_gui_window_close(e->window);
+         free(batch_input);
+         free(batch_output);
       }
    }
 
    return 0;
+}
+
+
+void settings_load(const char *path)
+{
+   FILE *f = fopen(path,"r");
+   if(f==NULL)
+      return;
+
+   HLH_json5_root *root = HLH_json_parse_file_stream(f);
+
+   gui_settings.path_image_input = HLH_string_clone(
+      HLH_json_get_object_string(&root->root,HLH_string_lit("path_image_load"),HLH_string_lit("")));
+   gui_settings.path_palette_input = HLH_string_clone(
+      HLH_json_get_object_string(&root->root,HLH_string_lit("path_palette_load"),HLH_string_lit("")));
+   gui_settings.path_preset_input = HLH_string_clone(
+      HLH_json_get_object_string(&root->root,HLH_string_lit("path_preset_load"),HLH_string_lit("")));
+   gui_settings.path_image_output = HLH_string_clone(
+      HLH_json_get_object_string(&root->root,HLH_string_lit("path_image_save"),HLH_string_lit("")));
+   gui_settings.path_palette_output = HLH_string_clone(
+      HLH_json_get_object_string(&root->root,HLH_string_lit("path_palette_save"),HLH_string_lit("")));
+   gui_settings.path_preset_output = HLH_string_clone(
+      HLH_json_get_object_string(&root->root,HLH_string_lit("path_preset_save"),HLH_string_lit("")));
+   gui_settings.path_batch_input = HLH_string_clone(
+      HLH_json_get_object_string(&root->root,HLH_string_lit("path_dir_input"),HLH_string_lit("")));
+   gui_settings.path_batch_output = HLH_string_clone(
+      HLH_json_get_object_string(&root->root,HLH_string_lit("path_dir_output"),HLH_string_lit("")));
+   gui_settings.path_script = HLH_string_clone(
+      HLH_json_get_object_string(&root->root,HLH_string_lit("path_script"),HLH_string_lit("")));
+
+   gui_settings.gui_scale = (int)HLH_json_get_object_integer(&root->root,
+                                    HLH_string_lit("gui_scale"),1);
+   HLH_gui_theme_current.bg = (uint32_t)HLH_json_get_object_integer(&root->root,
+                                           HLH_string_lit("theme_bg"),(int64_t)HLH_gui_theme_current.bg);
+   HLH_gui_theme_current.border = (uint32_t)HLH_json_get_object_integer(&root->root,
+                                             HLH_string_lit("theme_border"),(int64_t)HLH_gui_theme_current.border);
+   HLH_gui_theme_current.bevel_dark = (uint32_t)HLH_json_get_object_integer(&root->root,
+                                                   HLH_string_lit("theme_bevel_dark"),(int64_t)HLH_gui_theme_current.bevel_dark);
+   HLH_gui_theme_current.bevel_light = (uint32_t)HLH_json_get_object_integer(&root->root,
+                                                    HLH_string_lit("theme_bevel_light"),(int64_t)HLH_gui_theme_current.bevel_light);
+   HLH_gui_theme_current.text = (uint32_t)HLH_json_get_object_integer(&root->root,
+                                             HLH_string_lit("theme_text"),(int64_t)HLH_gui_theme_current.text);
+   HLH_gui_set_scale(gui_settings.gui_scale);
+
+   HLH_json_free(root);
+   fclose(f);
+}
+
+void settings_save()
+{
+   FILE *f = fopen("settings.json","w");
+   if(f==NULL)
+      return;
+
+   HLH_json5_root *root = HLH_json_create_root();
+   HLH_json_object_add_string(&root->root,HLH_string_lit("path_image_load"),gui_settings.path_image_input);
+   HLH_json_object_add_string(&root->root,HLH_string_lit("path_palette_load"),gui_settings.path_palette_input);
+   HLH_json_object_add_string(&root->root,HLH_string_lit("path_preset_load"),gui_settings.path_preset_input);
+   HLH_json_object_add_string(&root->root,HLH_string_lit("path_image_save"),gui_settings.path_image_output);
+   HLH_json_object_add_string(&root->root,HLH_string_lit("path_palette_save"),gui_settings.path_palette_output);
+   HLH_json_object_add_string(&root->root,HLH_string_lit("path_preset_save"),gui_settings.path_preset_output);
+   HLH_json_object_add_string(&root->root,HLH_string_lit("path_dir_input"),gui_settings.path_batch_input);
+   HLH_json_object_add_string(&root->root,HLH_string_lit("path_dir_output"),gui_settings.path_batch_output);
+   HLH_json_object_add_string(&root->root,HLH_string_lit("path_script"),gui_settings.path_script);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("theme_bg"),(int64_t)HLH_gui_theme_current.bg);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("theme_border"),(int64_t)HLH_gui_theme_current.border);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("theme_bevel_dark"),(int64_t)HLH_gui_theme_current.bevel_dark);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("theme_bevel_light"),(int64_t)HLH_gui_theme_current.bevel_light);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("theme_text"),(int64_t)HLH_gui_theme_current.text);
+   HLH_json_object_add_integer(&root->root,HLH_string_lit("gui_scale"),gui_settings.gui_scale);
+
+   HLH_json_write_file(f,&root->root);
+   HLH_json_free(root);
+
+   fclose(f);
 }
 //-------------------------------------

@@ -12,10 +12,13 @@
 //-------------------------------------
 
 //Internal includes
-#include "HLH_base.h"
 //-------------------------------------
 
 //#defines
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 //-------------------------------------
 
 //Typedefs
@@ -29,7 +32,26 @@
 
 //Function implementations
 
-//Base
-#include "HLH_string.c"
+FILE *HLH_fopen(const char *path, const char *mode)
+{
+#ifdef _WIN32
+   int size_wpath = MultiByteToWideChar(CP_UTF8, 0, path, -1, NULL, 0);
+   wchar_t *wpath = calloc(size_wpath, sizeof(*wpath));
+   MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath, size_wpath);
+
+   int size_wmode = MultiByteToWideChar(CP_UTF8, 0, mode, -1, NULL, 0);
+   wchar_t *wmode = calloc(size_wmode, sizeof(*wmode));
+   MultiByteToWideChar(CP_UTF8, 0, mode, -1, wmode, size_wmode);
+
+   FILE *f = _wfopen(wpath, wmode);
+
+   free(wmode);
+   free(wpath);
+
+   return f;
+#else
+   return fopen(path, mode);
+#endif
+}
 //-------------------------------------
 

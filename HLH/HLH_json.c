@@ -1,139 +1,42 @@
 /*
-JSON parser
+ HLH - base layer - json parser
 
-Written in 2021,2024 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
+ Written in 2026 by Lukas Holzbeierlein (Captain4LK) email: captain4lk [at] tutanota [dot] com
 
-To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
+ To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 
-You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
+ You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
-//Based on tinyjson5 by r-yleh (https://github.com/r-lyeh/tinybits/blob/master/tinyjson5.c)
 
-#ifndef _HLH_JSON_H_
-	
-#define _HLH_JSON_H_
-
-typedef enum HLH_json5_type 
-{
-   HLH_json5_undefined,
-   HLH_json5_null,
-   HLH_json5_bool,
-   HLH_json5_object,
-   HLH_json5_string,
-   HLH_json5_array,
-   HLH_json5_integer,
-   HLH_json5_real,
-}HLH_json5_type;
-
-typedef struct HLH_json5 HLH_json5;
-
-typedef struct 
-{
-   uint32_t used;
-   uint32_t size;
-   HLH_json5 *data;
-}HLH_json5_dyn_array;
-
-typedef struct HLH_json5
-{
-   char *name;
-   unsigned type:3;
-   unsigned count:29;
-   union 
-   {
-      HLH_json5_dyn_array array;
-      HLH_json5_dyn_array nodes;
-      int64_t integer;
-      double real;
-      char *string;
-      int boolean;
-   };
-}HLH_json5;
-
-typedef struct
-{
-   char *data;
-   size_t data_size;
-   HLH_json5 root;
-}HLH_json5_root;
-
-HLH_json5_root *HLH_json_parse_file(const char *path);
-HLH_json5_root *HLH_json_parse_file_stream(FILE *f);
-HLH_json5_root *HLH_json_parse_char_buffer(const char *buffer, size_t size); //buffer must be allocated by user
-void            HLH_json_write_file(FILE *f, HLH_json5 *j);
-void            HLH_json_free(HLH_json5_root *r);
-
-//JSON file creation
-//ALL char * MUST be persistend until HLH_json_write_file function call
-HLH_json5_root *HLH_json_create_root();
-HLH_json5       HLH_json_create_object();
-HLH_json5       HLH_json_create_array();
-void            HLH_json_object_add_string(HLH_json5 *j, char *name, char *value);
-void            HLH_json_object_add_real(HLH_json5 *j, char *name, double value);
-void            HLH_json_object_add_integer(HLH_json5 *j, char *name, int64_t value);
-void            HLH_json_object_add_boolean(HLH_json5 *j, char *name, int value);
-void            HLH_json_object_add_object(HLH_json5 *j, char *name, HLH_json5 o); 
-void            HLH_json_object_add_array(HLH_json5 *j, char *name, HLH_json5 a); 
-void            HLH_json_array_add_string(HLH_json5 *a, char *value);
-void            HLH_json_array_add_real(HLH_json5 *a, double value);
-void            HLH_json_array_add_integer(HLH_json5 *a, int64_t value);
-void            HLH_json_array_add_boolean(HLH_json5 *a, int value);
-void            HLH_json_array_add_object(HLH_json5 *a, HLH_json5 o); 
-void            HLH_json_array_add_array(HLH_json5 *a, HLH_json5 ar); 
-
-HLH_json5      *HLH_json_get_object(HLH_json5 *json, const char *name);
-HLH_json5      *HLH_json_get_array_item(HLH_json5 *json, int index);
-int             HLH_json_get_array_size(const HLH_json5 *json);
-
-//Save access methods
-//Returns the value of the variable if it exists
-//If the variable does not exist or is of a different type, 
-//the function will return the fallback value
-//If you request an integer/real and the variable is of type real/integer
-//the value will be converted
-char           *HLH_json_get_object_string(HLH_json5 *json, const char *name, char *fallback);
-double          HLH_json_get_object_real(HLH_json5 *json, const char *name, double fallback);
-int64_t         HLH_json_get_object_integer(HLH_json5 *json, const char *name, int64_t fallback);
-int             HLH_json_get_object_boolean(HLH_json5 *json, const char *name, int fallback);
-HLH_json5      *HLH_json_get_object_object(HLH_json5 *json, const char *name, HLH_json5 *fallback);
-HLH_json5      *HLH_json_get_object_array(HLH_json5 *json, const char *name, HLH_json5 *fallback);
-char           *HLH_json_get_array_string(HLH_json5 *json, int index, char *fallback);
-double          HLH_json_get_array_real(HLH_json5 *json, int index, double fallback);
-int64_t         HLH_json_get_array_integer(HLH_json5 *json, int index, int64_t fallback);
-int             HLH_json_get_array_boolean(HLH_json5 *json, int index, int fallback);
-HLH_json5      *HLH_json_get_array_object(HLH_json5 *json, int index, HLH_json5 *fallback);
-
- #endif
-
-#ifdef HLH_JSON_IMPLEMENTATION
-#ifndef HLH_JSON_IMPLEMENTATION_ONCE
-#define HLH_JSON_IMPLEMENTATION_ONCE
-
+//External includes
 #include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
+#include <stdint.h>
 #include <assert.h>
-#include <string.h>
-#include <math.h>
+#include <ctype.h>
 #include <inttypes.h>
+#include <math.h>
+//-------------------------------------
 
-#ifndef HLH_JSON_MALLOC
-#define HLH_JSON_MALLOC malloc
-#endif
+//Internal includes
+#include "HLH_base.h"
+#include "HLH_json.h"
+//-------------------------------------
 
-#ifndef HLH_JSON_FREE
-#define HLH_JSON_FREE free
-#endif
-
-#ifndef HLH_JSON_REALLOC
-#define HLH_JSON_REALLOC realloc
-#endif
-
-#ifndef JSON5_ASSERT
+//#defines
 #define JSON5_ASSERT do { printf("JSON5: Error L%d while parsing '%c' in '%.16s'\n", __LINE__, p[0], p); assert(0); } while(0)
-#endif
+#define HLH_JSON_MALLOC malloc
+#define HLH_JSON_FREE free
+#define HLH_JSON_REALLOC realloc
+//-------------------------------------
 
+//Typedefs
+//-------------------------------------
+
+//Variables
+//-------------------------------------
+
+//Function prototypes
 static void json5_push(HLH_json5_dyn_array *array, HLH_json5 ob);
 static void json5_array_free(HLH_json5_dyn_array *array);
 static char *json5_parse(HLH_json5 *root, char *source, int flags);
@@ -143,6 +46,9 @@ static char *json5__parse_value(HLH_json5 *obj, char *p, char **err_code);
 static char *json5__trim(char *p);
 static char *json5__parse_string(HLH_json5 *obj, char *p, char **err_code);
 static char *json5__parse_object(HLH_json5 *obj, char *p, char **err_code);
+//-------------------------------------
+
+//Function implementations
 
 HLH_json5_root *HLH_json_parse_file(const char *path)
 {
@@ -217,7 +123,7 @@ HLH_json5_root *HLH_json_create_root()
    HLH_json5_root *r = HLH_JSON_MALLOC(sizeof(*r));
    r->data = NULL;
    r->data_size = 0;
-   r->root.name = NULL;
+   r->root.name = (HLH_string){};
    r->root.type = HLH_json5_object;
    r->root.count = 0;
    r->root.nodes.data = NULL;
@@ -227,7 +133,7 @@ HLH_json5_root *HLH_json_create_root()
 
 HLH_json5 HLH_json_create_object()
 {
-   HLH_json5 j = {0}; 
+   HLH_json5 j = {0};
    j.type = HLH_json5_object;
    j.count = 0;
    j.nodes.data = NULL;
@@ -237,7 +143,7 @@ HLH_json5 HLH_json_create_object()
 
 HLH_json5 HLH_json_create_array()
 {
-   HLH_json5 j = {0}; 
+   HLH_json5 j = {0};
    j.type = HLH_json5_array;
    j.count = 0;
    j.array.data = NULL;
@@ -245,7 +151,7 @@ HLH_json5 HLH_json_create_array()
    return j;
 }
 
-void HLH_json_object_add_string(HLH_json5 *j, char *name, char *value)
+void HLH_json_object_add_string(HLH_json5 *j, HLH_string name, HLH_string value)
 {
    HLH_json5 node = {0};
    node.name = name;
@@ -256,7 +162,7 @@ void HLH_json_object_add_string(HLH_json5 *j, char *name, char *value)
    ++j->count;
 }
 
-void HLH_json_object_add_real(HLH_json5 *j, char *name, double value)
+void HLH_json_object_add_real(HLH_json5 *j, HLH_string name, double value)
 {
    HLH_json5 node = {0};
    node.name = name;
@@ -267,7 +173,7 @@ void HLH_json_object_add_real(HLH_json5 *j, char *name, double value)
    ++j->count;
 }
 
-void HLH_json_object_add_integer(HLH_json5 *j, char *name, int64_t value)
+void HLH_json_object_add_integer(HLH_json5 *j, HLH_string name, int64_t value)
 {
    HLH_json5 node = {0};
    node.name = name;
@@ -278,7 +184,7 @@ void HLH_json_object_add_integer(HLH_json5 *j, char *name, int64_t value)
    ++j->count;
 }
 
-void HLH_json_object_add_boolean(HLH_json5 *j, char *name, int value)
+void HLH_json_object_add_boolean(HLH_json5 *j, HLH_string name, int value)
 {
    HLH_json5 node = {0};
    node.name = name;
@@ -289,24 +195,24 @@ void HLH_json_object_add_boolean(HLH_json5 *j, char *name, int value)
    ++j->count;
 }
 
-void HLH_json_object_add_object(HLH_json5 *j, char *name, HLH_json5 o)
+void HLH_json_object_add_object(HLH_json5 *j, HLH_string name, HLH_json5 o)
 {
    o.name = name;
    json5_push(&j->nodes,o);
    ++j->count;
 }
 
-void HLH_json_object_add_array(HLH_json5 *j, char *name, HLH_json5 a)
+void HLH_json_object_add_array(HLH_json5 *j, HLH_string name, HLH_json5 a)
 {
    a.name = name;
    json5_push(&j->nodes,a);
    ++j->count;
 }
 
-void HLH_json_array_add_string(HLH_json5 *a, char *value)
+void HLH_json_array_add_string(HLH_json5 *a, HLH_string value)
 {
    HLH_json5 node = {0};
-   node.name = NULL;
+   node.name = (HLH_string){};
    node.type = HLH_json5_string;
    node.string = value;
 
@@ -317,7 +223,7 @@ void HLH_json_array_add_string(HLH_json5 *a, char *value)
 void HLH_json_array_add_real(HLH_json5 *a, double value)
 {
    HLH_json5 node = {0};
-   node.name = NULL;
+   node.name = (HLH_string){};
    node.type = HLH_json5_real;
    node.real = value;
 
@@ -328,7 +234,7 @@ void HLH_json_array_add_real(HLH_json5 *a, double value)
 void HLH_json_array_add_integer(HLH_json5 *a, int64_t value)
 {
    HLH_json5 node = {0};
-   node.name = NULL;
+   node.name = (HLH_string){};
    node.type = HLH_json5_integer;
    node.integer = value;
 
@@ -339,7 +245,7 @@ void HLH_json_array_add_integer(HLH_json5 *a, int64_t value)
 void HLH_json_array_add_boolean(HLH_json5 *a, int value)
 {
    HLH_json5 node = {0};
-   node.name = NULL;
+   node.name = (HLH_string){};
    node.type = HLH_json5_bool;
    node.boolean = value;
 
@@ -349,20 +255,20 @@ void HLH_json_array_add_boolean(HLH_json5 *a, int value)
 
 void HLH_json_array_add_object(HLH_json5 *a, HLH_json5 o)
 {
-   o.name = NULL;
+   o.name = (HLH_string){};
    json5_push(&a->array,o);
    ++a->count;
 }
 
 void HLH_json_array_add_array(HLH_json5 *a, HLH_json5 ar)
 {
-   ar.name = NULL;
+   ar.name = (HLH_string){};
    json5_push(&a->array,ar);
    ++a->count;
 }
 
 
-HLH_json5 *HLH_json_get_object(HLH_json5 *json, const char *name)
+HLH_json5 *HLH_json_get_object(HLH_json5 *json, HLH_string name)
 {
    //Not an object
    if(json->type!=HLH_json5_object)
@@ -370,7 +276,7 @@ HLH_json5 *HLH_json_get_object(HLH_json5 *json, const char *name)
 
    for(int i = 0;i<json->count;i++)
    {
-      if(strcmp(name,json->nodes.data[i].name)==0)
+      if(HLH_string_equal(name, json->nodes.data[i].name))
          return &json->nodes.data[i];
    }
 
@@ -399,7 +305,7 @@ HLH_json5 *HLH_json_get_array_item(HLH_json5 *json, int index)
    return &json->array.data[index];
 }
 
-char *HLH_json_get_object_string(HLH_json5 *json, const char *name, char *fallback)
+HLH_string HLH_json_get_object_string(HLH_json5 *json, HLH_string name, HLH_string fallback)
 {
    if(!json||json->type!=HLH_json5_object)
       return fallback;
@@ -414,7 +320,7 @@ char *HLH_json_get_object_string(HLH_json5 *json, const char *name, char *fallba
    return fallback;
 }
 
-double HLH_json_get_object_real(HLH_json5 *json, const char *name, double fallback)
+double HLH_json_get_object_real(HLH_json5 *json, HLH_string name, double fallback)
 {
    if(!json||json->type!=HLH_json5_object)
       return fallback;
@@ -432,7 +338,7 @@ double HLH_json_get_object_real(HLH_json5 *json, const char *name, double fallba
    return fallback;
 }
 
-int64_t HLH_json_get_object_integer(HLH_json5 *json, const char *name, int64_t fallback)
+int64_t HLH_json_get_object_integer(HLH_json5 *json, HLH_string name, int64_t fallback)
 {
    if(!json||json->type!=HLH_json5_object)
       return fallback;
@@ -450,7 +356,7 @@ int64_t HLH_json_get_object_integer(HLH_json5 *json, const char *name, int64_t f
    return fallback;
 }
 
-int HLH_json_get_object_boolean(HLH_json5 *json, const char *name, int fallback)
+int HLH_json_get_object_boolean(HLH_json5 *json, HLH_string name, int fallback)
 {
    if(!json||json->type!=HLH_json5_object)
       return fallback;
@@ -465,7 +371,7 @@ int HLH_json_get_object_boolean(HLH_json5 *json, const char *name, int fallback)
    return fallback;
 }
 
-HLH_json5 *HLH_json_get_object_object(HLH_json5 *json, const char *name, HLH_json5 *fallback)
+HLH_json5 *HLH_json_get_object_object(HLH_json5 *json, HLH_string name, HLH_json5 *fallback)
 {
    if(!json||json->type!=HLH_json5_object)
       return fallback;
@@ -480,7 +386,7 @@ HLH_json5 *HLH_json_get_object_object(HLH_json5 *json, const char *name, HLH_jso
    return fallback;
 }
 
-HLH_json5 *HLH_json_get_object_array(HLH_json5 *json, const char *name, HLH_json5 *fallback)
+HLH_json5 *HLH_json_get_object_array(HLH_json5 *json, HLH_string name, HLH_json5 *fallback)
 {
    if(!json||json->type!=HLH_json5_object)
       return fallback;
@@ -495,7 +401,7 @@ HLH_json5 *HLH_json_get_object_array(HLH_json5 *json, const char *name, HLH_json
    return fallback;
 }
 
-char *HLH_json_get_array_string(HLH_json5 *json, int index, char *fallback)
+HLH_string HLH_json_get_array_string(HLH_json5 *json, int index, HLH_string fallback)
 {
    if(!json||json->type!=HLH_json5_array)
       return fallback;
@@ -601,7 +507,7 @@ static void json5_push(HLH_json5_dyn_array *array, HLH_json5 ob)
       array->used = 0;
       array->data = HLH_JSON_MALLOC(sizeof(ob)*array->size);
    }
-   
+
    array->data[array->used++] = ob;
    if(array->used==array->size)
    {
@@ -621,27 +527,27 @@ static void json5_array_free(HLH_json5_dyn_array *array)
 // json5 ----------------------------------------------------------------------
 static char *json5__trim(char *p)
 {
-   while (*p) 
+   while (*p)
    {
-      if(isspace(*p)) 
+      if(isspace(*p))
       {
          ++p;
       }
-      else if(p[0]=='/'&&p[1]=='*') 
-      { 
+      else if(p[0]=='/'&&p[1]=='*')
+      {
          //skip C comment
          for(p+=2;*p&&!(p[0]=='*'&&p[1]=='/');++p);
-         if(*p) 
+         if(*p)
             p+=2;
       }
-      else if(p[0]=='/'&&p[1]=='/') 
-      { 
+      else if(p[0]=='/'&&p[1]=='/')
+      {
          //skip C++ comment
          for(p+=2;*p&&p[0]!='\n';++p);
-         if( *p ) 
+         if( *p )
             ++p;
       }
-      else 
+      else
       {
          break;
       }
@@ -654,26 +560,29 @@ static char *json5__parse_string(HLH_json5 *obj, char *p, char **err_code)
 {
    assert(obj&&p);
 
-   if(*p=='"'||*p=='\''||*p=='`') 
+   if(*p=='"'||*p=='\''||*p=='`')
    {
       obj->type = HLH_json5_string;
-      obj->string = p+1;
+      char *start = p + 1;
+      //obj->string = p+1;
 
       char eos_char = *p;
-      char *b = obj->string;
+      char *b = start;
       char *e = b;
-      while (*e) 
+      while (*e)
       {
-         if(*e=='\\'&&(e[1]==eos_char)) 
+         if(*e=='\\'&&(e[1]==eos_char))
             ++e;
-         else if(*e=='\\'&&(e[1]=='\r'||e[1]=='\n')) 
+         else if(*e=='\\'&&(e[1]=='\r'||e[1]=='\n'))
             *e = ' ';
-         else if(*e==eos_char) 
+         else if(*e==eos_char)
             break;
          ++e;
       }
 
       *e = '\0';
+      obj->string = HLH_string_from_cstring(start);
+
       return p = e+1;
    }
 
@@ -686,7 +595,7 @@ static char *json5__parse_object(HLH_json5 *obj, char *p, char **err_code)
    assert(obj&&p);
 
    if(1) /* <-- for SJSON */
-   { 
+   {
       int skip = *p=='{'; /* <-- for SJSON */
       obj->type = HLH_json5_object;
       obj->nodes.data = NULL;
@@ -696,39 +605,41 @@ static char *json5__parse_object(HLH_json5 *obj, char *p, char **err_code)
       while(*p)
       {
          HLH_json5 node = {0};
-         do 
-         { 
+         do
+         {
             p = json5__trim(p+skip);
-            skip = 1; 
+            skip = 1;
          }
          while(*p ==',');
 
-         if(*p =='}') 
+         if(*p =='}')
          {
             ++p;
             break;
          }
          // @todo: is_unicode() (s[0] == '\\' && isxdigit(s[1]) && isxdigit(s[2]) && isxdigit(s[3]) && isxdigit(s[4]))) {
-         else if(isalpha(*p)||*p=='_'||*p=='$') 
-         { 
-             // also || is_unicode(p)
-            node.name = p;
+         else if(isalpha(*p)||*p=='_'||*p=='$')
+         {
+            // also || is_unicode
+            char *start = p;
+            //node.name = p;
 
-            do 
+            do
             {
                ++p;
-            } 
+            }
             while(*p&&(*p=='_'||isalpha(*p)||isdigit(*p))); // also || is_unicode(p)
 
             char *e = p;
             p = json5__trim(p);
             *e = '\0';
+            node.name = HLH_string_from_cstring(start);
          }
-         else 
-         { 
+         else
+         {
             //if( *p == '"' || *p == '\'' || *p == '`' ) {
             char *ps = json5__parse_string(&node, p, err_code);
-            if(!ps) 
+            if(!ps)
             {
                return NULL;
             }
@@ -738,14 +649,14 @@ static char *json5__parse_object(HLH_json5 *obj, char *p, char **err_code)
          }
 
          // @todo: https://www.ecma-international.org/ecma-262/5.1/#sec-7.6
-         if(!(node.name && node.name[0])) 
-         { 
+         if(node.name.size == 0)
+         {
             // !json5__validate_name(node.name) ) {
             JSON5_ASSERT; *err_code = "json5_error_invalid_name";
             return NULL;
          }
 
-         if(!p||(*p&&(*p!=':'&&*p!='='/*<-- for SJSON */))) 
+         if(!p||(*p&&(*p!=':'&&*p!='='/*<-- for SJSON */)))
          {
             JSON5_ASSERT; *err_code = "json5_error_invalid_name";
             return NULL;
@@ -753,21 +664,21 @@ static char *json5__parse_object(HLH_json5 *obj, char *p, char **err_code)
          p = json5__trim(p + 1);
          p = json5__parse_value(&node, p, err_code);
 
-         if(*err_code[0]) 
+         if(*err_code[0])
          {
             return NULL;
          }
 
-         if(node.type!=HLH_json5_undefined) 
+         if(node.type!=HLH_json5_undefined)
          {
             json5_push(&obj->nodes, node);
             ++obj->count;
          }
 
-         if(*p =='}') 
-         { 
-            ++p; 
-            break; 
+         if(*p =='}')
+         {
+            ++p;
+            break;
          }
       }
       return p;
@@ -777,7 +688,7 @@ static char *json5__parse_object(HLH_json5 *obj, char *p, char **err_code)
    return NULL;
 }
 
-static char *json5__parse_value(HLH_json5 *obj, char *p, char **err_code) 
+static char *json5__parse_value(HLH_json5 *obj, char *p, char **err_code)
 {
    assert(obj&&p);
 
@@ -785,7 +696,7 @@ static char *json5__parse_value(HLH_json5 *obj, char *p, char **err_code)
 
    char *is_string = json5__parse_string(obj,p,err_code);
 
-   if(is_string) 
+   if(is_string)
    {
       p = is_string;
       if(*err_code[0])
@@ -793,10 +704,10 @@ static char *json5__parse_value(HLH_json5 *obj, char *p, char **err_code)
          return NULL;
       }
    }
-   else if(*p=='{') 
+   else if(*p=='{')
    {
       p = json5__parse_object(obj,p,err_code);
-      if(*err_code[0]) 
+      if(*err_code[0])
       {
          return NULL;
       }
@@ -806,65 +717,65 @@ static char *json5__parse_value(HLH_json5 *obj, char *p, char **err_code)
       obj->type = HLH_json5_array;
       obj->array.data = NULL;
 
-      while (*p) 
+      while (*p)
       {
          HLH_json5 elem = {0};
          elem.array.data = NULL;
 
          do
-         { 
-            p = json5__trim(p+1); 
-         } 
+         {
+            p = json5__trim(p+1);
+         }
          while(*p==',');
 
-         if(*p ==']') 
-         { 
-            ++p; 
-            break; 
+         if(*p ==']')
+         {
+            ++p;
+            break;
          }
 
          p = json5__parse_value(&elem,p,err_code);
 
-         if(*err_code[0]) 
+         if(*err_code[0])
          {
             return NULL;
          }
 
-         if(elem.type!=HLH_json5_undefined) 
+         if(elem.type!=HLH_json5_undefined)
          {
             json5_push(&obj->array, elem);
             ++obj->count;
          }
-         if(*p==']') 
-         { 
-            ++p; 
-            break; 
+         if(*p==']')
+         {
+            ++p;
+            break;
          }
       }
    }
-   else if(isalpha(*p)||(*p=='-'&&!isdigit(p[1]))) 
+   else if(isalpha(*p)||(*p=='-'&&!isdigit(p[1])))
    {
       const char *labels[] = { "null", "on","true", "off","false", "nan","NaN", "-nan","-NaN", "inf","Infinity", "-inf","-Infinity" };
       const int lenghts[] = { 4, 2,4, 3,5, 3,3, 4,4, 3,8, 4,9 };
       for(int i = 0;labels[i];++i)
       {
-         if(!strncmp(p,labels[i],lenghts[i])) 
+         if(!strncmp(p,labels[i],lenghts[i]))
          {
             p += lenghts[i];
-#ifdef _MSC_VER // somehow, NaN is apparently signed in MSC
-            if(i>=5) 
+            #ifdef _MSC_VER // somehow, NaN is apparently signed in MSC
+            if(i>=5)
             {
                obj->type = HLH_json5_real;
                obj->real = i>=11?-INFINITY:i>=9?INFINITY:i>=7?NAN:-NAN;
             }
-#else
+            #else
             if(i>=5)
             {
                obj->type = HLH_json5_real;
                obj->real = i>=11?-INFINITY:i>=9?INFINITY:i>=7?-NAN:NAN;
             }
-#endif
-            else if(i>=1) 
+            #endif
+            else if(i>=1)
             {
                obj->type = HLH_json5_bool;
                obj->boolean = i <= 2;
@@ -876,7 +787,7 @@ static char *json5__parse_value(HLH_json5 *obj, char *p, char **err_code)
             break;
          }
       }
-      if(obj->type==HLH_json5_undefined ) 
+      if(obj->type==HLH_json5_undefined )
       {
          JSON5_ASSERT; *err_code = "json5_error_invalid_value";
          return NULL;
@@ -888,21 +799,21 @@ static char *json5__parse_value(HLH_json5 *obj, char *p, char **err_code)
       char *buf = buffer;
       char is_hex = 0;
       char is_dbl = 0;
-      while(*p&&strchr("+-.xX0123456789aAbBcCdDeEfF",*p)) 
+      while(*p&&strchr("+-.xX0123456789aAbBcCdDeEfF",*p))
       {
          is_hex |= (*p | 32) == 'x';
          is_dbl |= *p == '.';
          *buf++ = *p++;
       }
       obj->type = is_dbl?HLH_json5_real:HLH_json5_integer;
-      if(is_dbl) 
+      if(is_dbl)
          sscanf(buffer,"%lf",&obj->real);
-      else if(is_hex) 
+      else if(is_hex)
          sscanf(buffer,"%"PRIx64,&obj->integer); // SCNx64 -> inttypes.h
-      else
-         sscanf(buffer,"%" PRId64,&obj->integer); // SCNd64 -> inttypes.h
+         else
+            sscanf(buffer,"%" PRId64,&obj->integer); // SCNd64 -> inttypes.h
    }
-   else 
+   else
    {
       return NULL;
    }
@@ -910,7 +821,7 @@ static char *json5__parse_value(HLH_json5 *obj, char *p, char **err_code)
    return p;
 }
 
-static char *json5_parse(HLH_json5 *root, char *p, int flags) 
+static char *json5_parse(HLH_json5 *root, char *p, int flags)
 {
    assert(root&&p);
 
@@ -918,11 +829,11 @@ static char *json5_parse(HLH_json5 *root, char *p, int flags)
    *root = (HLH_json5) {0};
 
    p = json5__trim(p);
-   if(*p=='[') 
+   if(*p=='[')
    { /* <-- for SJSON */
       json5__parse_value(root, p, &err_code);
-   } 
-   else 
+   }
+   else
    {
       json5__parse_object(root,p,&err_code); /* <-- for SJSON */
    }
@@ -930,20 +841,20 @@ static char *json5_parse(HLH_json5 *root, char *p, int flags)
    return err_code[0] ? err_code : 0;
 }
 
-static void json5_free(HLH_json5 *root) 
+static void json5_free(HLH_json5 *root)
 {
-   if(root->type==HLH_json5_array&&root->array.data!=NULL) 
+   if(root->type==HLH_json5_array&&root->array.data!=NULL)
    {
-      for(int i = 0, cnt = root->array.used;i<cnt;i++) 
+      for(int i = 0, cnt = root->array.used;i<cnt;i++)
       {
          json5_free(&root->array.data[i]);
       }
       json5_array_free(&root->array);
-   } 
+   }
 
-   if(root->type==HLH_json5_object&&root->nodes.data!=NULL) 
+   if(root->type==HLH_json5_object&&root->nodes.data!=NULL)
    {
-      for(int i = 0,cnt = root->nodes.used;i<cnt;i++) 
+      for(int i = 0,cnt = root->nodes.used;i<cnt;i++)
       {
          json5_free(&root->nodes.data[i]);
       }
@@ -958,42 +869,44 @@ static void json5_write(FILE *f, const HLH_json5 *o,int indent)
    if(f==NULL)
       return;
 
-   static const char *tabs = 
+   static const char *tabs =
    "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
    "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
-   if(o->name)
+   if(o->name.size > 0)
    {
-      fprintf(f,"%.*s\"%s\":",indent,tabs,o->name);
+      fprintf(f,"%.*s\"%.*s\":",indent,tabs,(int)o->name.size, o->name.str);
    }
 
    if(o->type==HLH_json5_null)
       fprintf(f,"%s","null");
    else if(o->type==HLH_json5_bool)
       fprintf(f,"%s",o->boolean?"true":"false");
-   else if(o->type==HLH_json5_integer) 
+   else if(o->type==HLH_json5_integer)
       fprintf(f,"%" PRId64,o->integer);
-   else if(o->type==HLH_json5_real) 
+   else if(o->type==HLH_json5_real)
    {
-      if(isnan(o->real)) 
+      if(isnan(o->real))
          fprintf(f,"%s",signbit(o->real)?"-nan":"nan");
-      else if(isinf(o->real)) 
+      else if(isinf(o->real))
          fprintf(f,"%s",signbit(o->real)?"-inf":"inf");
-      else 
+      else
          fprintf(f,"%.4lf",o->real);
    }
-   else if(o->type==HLH_json5_string) 
+   else if(o->type==HLH_json5_string)
    {
       // write (escaped) string
       char chars[] = "\\\"\n\r\b\f\v";
       char remap[] = "\\\"nrbfv";
       char esc[256];
-      for(int i = 0;chars[i];++i) 
+      for(int i = 0;chars[i];++i)
          esc[(unsigned)chars[i]] = remap[i];
 
-      const char *b = o->string;
+      // TODO: strpbrk like function for string library
+      char *str = HLH_string_clone_to_cstring(o->string);
+      const char *b = str;
       const char *e = strpbrk(b, chars);
       const char *sep = "\"";
-      while(e) 
+      while(e)
       {
          fprintf(f,"%s%.*s%c",sep,(int)(e-b),b,esc[(unsigned char)*e]);
          e = strpbrk( b = e + 1, chars);
@@ -1001,35 +914,34 @@ static void json5_write(FILE *f, const HLH_json5 *o,int indent)
       }
       //printf("str %s %s: %s\n",sep,b,o->string);
       fprintf(f, "%s%s\"", sep, b);
+      free(str);
    }
-   else if(o->type==HLH_json5_array) 
+   else if(o->type==HLH_json5_array)
    {
       const char *sep = "";
       fprintf(f, "%s", "[ ");
-      for(int i = 0, cnt = o->count; i < cnt; ++i ) 
+      for(int i = 0, cnt = o->count; i < cnt; ++i )
       {
          fprintf(f, "%s", sep); sep = ", ";
          json5_write(f, &o->array.data[i],indent+1);
       }
       fprintf(f, "%s", " ]");
    }
-   else if(o->type==HLH_json5_object) 
+   else if(o->type==HLH_json5_object)
    {
       const char *sep = "";
       fprintf(f, "%.*s{\n", 0 * (++indent), tabs);
-      for( int i = 0, cnt = o->count; i < cnt; ++i ) 
+      for( int i = 0, cnt = o->count; i < cnt; ++i )
       {
          fprintf(f, "%s", sep); sep = ",\n";
          json5_write(f, &o->nodes.data[i],indent+1);
       }
       fprintf(f, "\n%.*s}", --indent, tabs);
-   } 
-   else 
+   }
+   else
    {
       char p[16] = {0};
       JSON5_ASSERT; /* "json5_error_invalid_value"; */
    }
 }
-
-#endif
-#endif
+//-------------------------------------
