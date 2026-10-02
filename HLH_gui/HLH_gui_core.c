@@ -684,6 +684,21 @@ int HLH_gui_message_loop(void)
 
          win = core_find_window(SDL_GetWindowFromID(event.user.windowID));
       }
+      else if(event.type == ctx.timer_event)
+      {
+         win = core_find_window(SDL_GetWindowFromID(event.user.windowID));
+         if(win != NULL)
+         {
+            HLH_gui_element_msg(event.user.data1, HLH_GUI_MSG_TIMER, 0, NULL);
+
+            // Make sure we do not flood the event queue if our update took longer
+            // than the timer interval (slow frame in game)
+            // TODO: setting to en/disable per timer
+            SDL_FlushEvent(ctx.timer_event);
+         }
+
+         win = core_find_window(SDL_GetWindowFromID(event.user.windowID));
+      }
 
       if(win != NULL && win->redraw)
       {
@@ -991,7 +1006,7 @@ static void image_write_func(void *context, void *data, int size)
    fwrite(data,size,1,(FILE *)context);
 }
 
-uint32_t core_timer_callback(void *userdata, SDL_TimerID timer_id, uint32_t interval)
+uint64_t core_timer_callback(void *userdata, SDL_TimerID timer_id, uint64_t interval)
 {
    HLH_gui_element *e = userdata;
    SDL_Event event;

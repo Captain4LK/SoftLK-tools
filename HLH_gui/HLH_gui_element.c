@@ -285,7 +285,7 @@ void HLH_gui_element_timer(HLH_gui_element *e, int interval)
       e->timer = 0;
    }
    e->timer_interval = interval;
-   e->timer = SDL_AddTimer(interval, core_timer_callback, e);
+   e->timer = SDL_AddTimerNS(interval, core_timer_callback, e);
 }
 
 static void element_redraw_intern(HLH_gui_element *e)

@@ -252,6 +252,8 @@ static struct
 
    bool dialog_open;
    HLH_string watch_path;
+   bool watch;
+   SDL_Time watch_modtime;
 
    // batch window
    HLH_gui_label *label_batch_input;
@@ -414,6 +416,7 @@ static int64_t checkbutton_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, 
 static int64_t radiobutton_dither_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static int64_t radiobutton_distance_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static int64_t button_palette_gen_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
+static int64_t filewatch_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp);
 static void radiobutton_palette_draw(HLH_gui_radiobutton *r);
 
 static void ui_construct_batch();
@@ -459,6 +462,9 @@ void gui_construct(void)
                                                      (HLH_gui_flags){.fill_x = true, .style = 1},menu1,3,menu_save_msg);
    menus[2] = (HLH_gui_element *)HLH_gui_menu_create(&win->e,(HLH_gui_flags){.style = 1, .overlay = true, .no_parent = true},
                                                      (HLH_gui_flags){.fill_x = true, .style = 1},menu2,2,menu_tools_msg);
+   HLH_gui_checkbutton *ck = HLH_gui_checkbutton_create(menus[2], (HLH_gui_flags){.fill_x = true, .style = 1}, "File watch", NULL);
+   ck->e.msg_usr = filewatch_msg;
+   HLH_gui_element_timer(&ck->e, 1e9 / 5);
 
    const char *menubar[] = 
    {
@@ -1110,6 +1116,42 @@ static void gui_set_input_path(const char *path)
    gui_input = img;
 
    gui_process(0);
+}
+
+
+static int64_t filewatch_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
+{
+   if(msg == HLH_GUI_MSG_CLICK)
+   {
+      gui.watch = true;
+   }
+   else if(msg == HLH_GUI_MSG_TIMER)
+   {
+      if(!gui.watch)
+      {
+         return 0;
+      }
+
+      SDL_PathInfo info;
+      char *path = HLH_string_clone_to_cstring(gui.watch_path);
+      bool success = SDL_GetPathInfo(path, &info);
+      if(!success)
+      {
+         free(path);
+         return 0;
+      }
+
+      if(info.modify_time != gui.watch_modtime)
+      {
+         gui.watch_modtime = info.modify_time;
+
+         gui_set_input_path(path);
+      }
+
+      free(path);
+   }
+
+   return 0;
 }
 
 static int64_t menu_load_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, void *dp)
@@ -2190,15 +2232,11 @@ static int64_t main_window_msg(HLH_gui_element *e, HLH_gui_msg msg, int64_t di, 
             HLH_path_base(HLH_string_from_cstring(msg_ctx->file_list[0])));
          HLH_string_delete(&gui.watch_path);
          gui.watch_path = HLH_string_clone_cstring(msg_ctx->file_list[0]);
-
-         // TODO: filewatch
-         /*
-         time, err_mtbp := os.modification_time_by_path(gui_ctx.watch_path)
-         if err_mtbp == nil
+         SDL_PathInfo path_info;
+         if(SDL_GetPathInfo(msg_ctx->file_list[0], &path_info))
          {
-            gui_ctx.watch_modtime = time
+            gui.watch_modtime = path_info.modify_time;
          }
-         */
 
          gui_set_input_path(msg_ctx->file_list[0]);
       }
